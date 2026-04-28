@@ -16,6 +16,8 @@ const timeLabelEl = document.querySelector("#timeLabel");
 const brandLogoEl = document.querySelector(".brand-logo");
 const langJaButton = document.querySelector("#langJa");
 const langEnButton = document.querySelector("#langEn");
+const fullscreenButton = document.querySelector("#fullscreenButton");
+const installHint = document.querySelector("#installHint");
 
 const TILE = 48;
 const WORLD_WIDTH = 5200;
@@ -1854,6 +1856,63 @@ function applyLanguage() {
   if (timeLabelEl) timeLabelEl.firstChild.textContent = `${t("time")} `;
   langJaButton?.classList.toggle("active", language === "ja");
   langEnButton?.classList.toggle("active", language === "en");
+  updateFullscreenButton();
+}
+
+let installHintTimer = 0;
+
+function isStandaloneDisplay() {
+  return window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator.standalone === true;
+}
+
+function isFullscreenActive() {
+  return Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+}
+
+function updateFullscreenButton() {
+  if (!fullscreenButton) return;
+  const standalone = isStandaloneDisplay();
+  const fullscreen = isFullscreenActive();
+  if (standalone || fullscreen) fullscreenButton.textContent = language === "ja" ? "全画面中" : "Full";
+  else fullscreenButton.textContent = language === "ja" ? "全画面" : "Full Screen";
+  fullscreenButton.setAttribute("aria-pressed", fullscreen || standalone ? "true" : "false");
+}
+
+function showInstallHint(message) {
+  if (!installHint) return;
+  clearTimeout(installHintTimer);
+  installHint.textContent = message;
+  installHint.classList.remove("hidden");
+  installHintTimer = window.setTimeout(() => installHint.classList.add("hidden"), 5200);
+}
+
+function nudgeMobileBrowserChrome() {
+  window.setTimeout(() => window.scrollTo({ top: 1, left: 0, behavior: "smooth" }), 80);
+}
+
+async function enterBestFullscreen() {
+  nudgeMobileBrowserChrome();
+  if (isStandaloneDisplay()) {
+    showInstallHint(language === "ja" ? "ホーム画面版で起動中。これがiPhoneの一番広い表示やで。" : "Running from Home Screen. This is the widest iPhone view.");
+    return;
+  }
+
+  const target = document.querySelector(".game-wrap") || document.documentElement;
+  const requestFullscreen = target.requestFullscreen || target.webkitRequestFullscreen;
+  if (requestFullscreen) {
+    try {
+      await requestFullscreen.call(target);
+      try {
+        await screen.orientation?.lock?.("landscape");
+      } catch (_) {}
+      updateFullscreenButton();
+      return;
+    } catch (_) {}
+  }
+
+  showInstallHint(language === "ja"
+    ? "iPhoneのSafariはボタンだけではURLバーを完全に消せないから、共有ボタンから「ホーム画面に追加」で開いてね。"
+    : "iPhone Safari cannot fully hide the URL bar from a button. Use Share, then Add to Home Screen.");
 }
 
 function enemyWeaponStage(owner) {
@@ -5028,6 +5087,16 @@ langEnButton?.addEventListener("click", event => {
   event.stopPropagation();
   setLanguage("en");
 });
+
+fullscreenButton?.addEventListener("click", event => {
+  event.stopPropagation();
+  enterBestFullscreen();
+});
+
+document.addEventListener("fullscreenchange", updateFullscreenButton);
+document.addEventListener("webkitfullscreenchange", updateFullscreenButton);
+window.addEventListener("orientationchange", nudgeMobileBrowserChrome);
+window.addEventListener("resize", updateFullscreenButton);
 
 canvas.addEventListener("pointerdown", event => {
   const pos = canvasPoint(event);

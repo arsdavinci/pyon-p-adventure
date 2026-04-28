@@ -45,6 +45,56 @@ canvas {
   image-rendering: auto;
 }
 
+.fullscreen-button {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  right: max(10px, env(safe-area-inset-right));
+  z-index: 9;
+  min-width: 86px;
+  padding: 8px 12px;
+  border: 2px solid rgba(255, 255, 255, 0.82);
+  border-radius: 8px;
+  background: rgba(158, 232, 255, 0.88);
+  color: #0b1630;
+  font-size: 0.86rem;
+  box-shadow: 0 4px 0 rgba(56, 104, 155, 0.88);
+}
+
+.install-hint {
+  position: absolute;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  z-index: 10;
+  width: min(92%, 720px);
+  transform: translateX(-50%);
+  padding: 12px 16px;
+  border: 2px solid rgba(255, 255, 255, 0.86);
+  border-radius: 8px;
+  background: rgba(37, 31, 76, 0.92);
+  color: #ffffff;
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.45;
+  box-shadow: 0 12px 34px rgba(24, 18, 65, 0.34);
+}
+
+.install-hint.hidden {
+  display: none;
+}
+
+.game-wrap:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  border: 0;
+  border-radius: 0;
+  aspect-ratio: auto;
+}
+
+.game-wrap:fullscreen .fullscreen-button {
+  background: rgba(255, 241, 159, 0.88);
+}
+
 .overlay {
   position: absolute;
   inset: 0;
@@ -262,6 +312,18 @@ button:active {
   .touch-button.jump {
     width: 60px;
     height: 60px;
+  }
+
+  .fullscreen-button {
+    min-width: 76px;
+    padding: 6px 10px;
+    font-size: 0.78rem;
+  }
+
+  .install-hint {
+    bottom: max(8px, env(safe-area-inset-bottom));
+    padding: 9px 12px;
+    font-size: 0.82rem;
   }
 }
 
