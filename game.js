@@ -1880,6 +1880,7 @@ function setControlMode(nextMode) {
   document.body.dataset.controlMode = controlMode === "pc" ? "pc" : "mobile";
   document.body.dataset.controlDevice = controlMode;
   controlModeButtons.forEach(button => button.classList.toggle("active", button.dataset.controlMode === controlMode));
+  updateHud();
 }
 
 function applyLanguage() {
@@ -4958,6 +4959,25 @@ function updateGamepad() {
   gamepadState.shoot = shootPressed;
   gamepadState.select = selectPressed;
   gamepadState.start = startPressed;
+
+  if (state.mode === "playing" && !overlay.classList.contains("hidden")) {
+    const anyStartPressed = jumpPressed || shootPressed || runPressed || startPressed || selectPressed;
+    const anyStartLatched = gamepadState.jumpLatch || gamepadState.shootLatch || gamepadState.runLatch || gamepadState.startLatch || gamepadState.selectLatch;
+    if (anyStartPressed && !anyStartLatched) {
+      if (state?.mode === "ended" && gameOverContinueAvailable) continueFromGameOver();
+      else pendingCourseStart ? startCurrentCourse() : startGame();
+    }
+    gamepadState.leftLatch = gamepadState.left;
+    gamepadState.rightLatch = gamepadState.right;
+    gamepadState.upLatch = gamepadState.up;
+    gamepadState.downLatch = gamepadState.down;
+    gamepadState.runLatch = runPressed;
+    gamepadState.selectLatch = selectPressed;
+    gamepadState.startLatch = startPressed;
+    gamepadState.jumpLatch = jumpPressed;
+    gamepadState.shootLatch = shootPressed;
+    return;
+  }
 
   if (state.mode === "bossIntro") {
     if ((jumpPressed && !gamepadState.jumpLatch) || (shootPressed && !gamepadState.shootLatch) || (startPressed && !gamepadState.startLatch)) advanceBossIntro();
