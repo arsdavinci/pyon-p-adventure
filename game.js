@@ -29,6 +29,12 @@ const MAX_WEAPON_POWER = 16;
 const WEAPON_ATTRIBUTE_SIZE = 8;
 const MAX_INVENTORY_ITEMS = 27;
 const VISIBLE_INVENTORY_ITEMS = 15;
+const STOMP_BOUNCE_VY = -540;
+const BOSS_STOMP_BOUNCE_VY = -700;
+const STOMP_BOOST_VY = -1040;
+const BOSS_STOMP_BOOST_VY = -1120;
+const STOMP_BOOST_BUFFER = 0.16;
+const STOMP_LATE_BOOST_WINDOW = 0.14;
 const WEAPON_ASSET_VERSION = "weapon-cutout-v2";
 const WEAPON_DROP_RATES = [
   { power: 1, chance: 0.8 },
@@ -682,6 +688,8 @@ function newState() {
     fusionPrompt: null,
     itemFullPrompt: 0,
     inventoryMessage: 0,
+    stompBoostTimer: 0,
+    stompLateBoostTimer: 0,
     deathTimer: 0,
     respawnTimer: 0,
     respawnDuration: 3,
@@ -931,6 +939,8 @@ function update(dt) {
   if (state.mode !== "playing") return;
   updateGamepad();
   state.itemFullPrompt = Math.max(0, (state.itemFullPrompt ?? 0) - dt);
+  state.stompBoostTimer = Math.max(0, (state.stompBoostTimer ?? 0) - dt);
+  state.stompLateBoostTimer = Math.max(0, (state.stompLateBoostTimer ?? 0) - dt);
   state.time -= dt;
   if (state.time <= 0) damagePlayer();
 
@@ -1087,6 +1097,25 @@ function updatePlayer(dt) {
   state.camera = clamp(p.x - 330, 0, WORLD_WIDTH - canvas.width);
 }
 
+function queueStompBoost() {
+  if (state?.mode !== "playing") return;
+  state.stompBoostTimer = STOMP_BOOST_BUFFER;
+  if ((state.stompLateBoostTimer ?? 0) > 0) {
+    applyStompBounce(null, true);
+  }
+}
+
+function applyStompBounce(enemySource, boosted = false) {
+  const p = state.player;
+  const boss = Boolean(enemySource?.boss);
+  p.vy = boosted ? (boss ? BOSS_STOMP_BOOST_VY : STOMP_BOOST_VY) : (boss ? BOSS_STOMP_BOUNCE_VY : STOMP_BOUNCE_VY);
+  p.grounded = false;
+  state.stompBoostTimer = 0;
+  state.stompLateBoostTimer = boosted ? 0 : STOMP_LATE_BOOST_WINDOW;
+  spawnJumpSmoke(p.x + p.w / 2, p.y + p.h);
+  playSfx(boosted ? "stompBoost" : "enemyHit", p.x + p.w / 2);
+}
+
 function moveAndCollide(body, dt) {
   const solid = platforms.concat(blocks.filter(b => !b.broken));
   body.x += body.vx * dt;
@@ -1146,7 +1175,7 @@ function updateEnemies(dt) {
     const stomp = p.vy > 120 && p.y + p.h - e.y < 24;
     if (stomp) {
       stunEnemy(e);
-      p.vy = e.boss ? -680 : -520;
+      applyStompBounce(e, (state.stompBoostTimer ?? 0) > 0);
     } else {
       damagePlayer(false, e, true);
     }
@@ -1485,6 +1514,10 @@ function playSfx(name, x = state?.player?.x ?? 0) {
   } else if (name === "enemyHit") {
     playTone({ freq: 620, endFreq: 260, duration: 0.12, type: "square", gain: 0.045, pan });
     playNoise({ duration: 0.08, gain: 0.025, filter: 1900 });
+  } else if (name === "stompBoost") {
+    playTone({ freq: 760, endFreq: 1480, duration: 0.14, type: "triangle", gain: 0.06, pan });
+    playTone({ start: 0.055, freq: 1220, endFreq: 2040, duration: 0.16, type: "sine", gain: 0.042, pan });
+    playNoise({ duration: 0.07, gain: 0.018, filter: 3200 });
   } else if (name === "enemyDefeat") {
     playTone({ freq: 540, endFreq: 920, duration: 0.1, type: "sine", gain: 0.055, pan });
     playTone({ start: 0.075, freq: 820, endFreq: 1320, duration: 0.14, type: "triangle", gain: 0.05, pan });
@@ -4968,6 +5001,7 @@ function updateGamepad() {
   if (startPressed && !gamepadState.startLatch && state.mode === "playing" && overlay.classList.contains("hidden")) {
     pauseGame();
   }
+  if (jumpPressed && !gamepadState.jumpLatch && state.mode === "playing") queueStompBoost();
   if (selectPressed && !gamepadState.selectLatch) toggleInventory();
   if (state.mode === "inventory") {
     if (state.fusionPrompt) {
@@ -5005,6 +5039,7 @@ function updateGamepad() {
 window.addEventListener("keydown", event => {
   const code = normalizeInputCode(event);
   if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", "Tab", "Enter"].includes(code)) event.preventDefault();
+  if (!event.repeat && (code === "Space" || code === "ArrowUp" || code === "KeyW")) queueStompBoost();
   if (state.mode === "bossIntro") {
     if (!event.repeat && ["Enter", "Space", "KeyX", "KeyJ", "KeyZ", "KeyA"].includes(code)) advanceBossIntro();
     return;
