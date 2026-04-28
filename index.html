@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#c8b2ff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ムーニアンズ">
+    <title>ぴょんぴーの大冒険</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/app-icon-192.png">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <section class="game-wrap" aria-label="ぴょんぴーの大冒険 game">
+        <canvas id="game" width="960" height="720"></canvas>
+        <div class="touch-controls" aria-label="Touch controls">
+          <button class="touch-button" data-key="ArrowLeft" type="button" aria-label="Left">&larr;</button>
+          <button class="touch-button" data-key="ArrowRight" type="button" aria-label="Right">&rarr;</button>
+          <button class="touch-button jump" data-key="Space" type="button" aria-label="Jump">&uarr;</button>
+        </div>
+        <div id="overlay" class="overlay">
+          <div class="language-switch" aria-label="Language">
+            <button id="langJa" class="active" type="button">日本語</button>
+            <button id="langEn" type="button">English</button>
+          </div>
+          <img class="brand-logo" src="assets/moonians-logo.png" alt="ムーニアンズ">
+          <h1 class="game-title">ぴょんぴーの大冒険</h1>
+          <p>移動: ← → / A D、ジャンプ: Space、ダッシュ: Shift、攻撃: J / X</p>
+          <button id="startButton" type="button">Start</button>
+        </div>
+      </section>
+      <div class="hud" aria-live="polite">
+        <span id="stageLabel">ステージ <strong id="stageCount">1</strong></span>
+        <span id="kakiLabel">柿の種 <strong id="kakiCount">0</strong></span>
+        <span id="peaLabel">ピーナッツ <strong id="peaCount">0</strong></span>
+        <span id="scoreLabel">スコア <strong id="scoreCount">0</strong></span>
+        <span class="hp-wrap" aria-label="Lives"><strong id="lifeCount">★★★</strong></span>
+        <span id="timeLabel">時間 <strong id="timeCount">120</strong></span>
+      </div>
+    </main>
+    <script src="game.js"></script>
+    <script>
+      if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("./sw.js").catch(() => {});
+        });
+      }
+    </script>
+  </body>
+</html>

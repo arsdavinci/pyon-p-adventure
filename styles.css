@@ -1,0 +1,233 @@
+:root {
+  color-scheme: dark;
+  --ink: #f8f4df;
+  --panel: #f7efff;
+  --rim: #fff19f;
+  --accent: #9ee8ff;
+  --danger: #ff8db7;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: #eee7ff;
+  color: var(--ink);
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+.shell {
+  width: min(100vw, 1040px);
+  padding: 18px;
+}
+
+.game-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border: 4px solid #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #d9ccff;
+  box-shadow: 0 18px 48px rgba(129, 121, 198, 0.34);
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: auto;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 12px;
+  text-align: center;
+  padding: 24px;
+  background: rgba(103, 91, 174, 0.56);
+}
+
+.language-switch {
+  justify-self: center;
+  display: inline-flex;
+  gap: 6px;
+  padding: 5px;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  border-radius: 8px;
+  background: rgba(20, 24, 48, 0.52);
+}
+
+.language-switch button {
+  min-width: 86px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  box-shadow: none;
+  font-size: 0.92rem;
+}
+
+.language-switch button.active {
+  background: var(--accent);
+  color: #0b1630;
+}
+
+.overlay.hidden {
+  display: none;
+}
+
+.brand-logo {
+  justify-self: center;
+  width: min(74vw, 540px);
+  max-height: 150px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 0 rgba(98, 96, 219, 0.55)) drop-shadow(0 16px 18px rgba(0, 0, 0, 0.35));
+}
+
+.game-title {
+  margin: 0;
+  font-size: clamp(2rem, 7vw, 4.8rem);
+  line-height: 1.02;
+  letter-spacing: 0;
+  color: #fff3a4;
+  -webkit-text-stroke: clamp(2px, 0.55vw, 7px) #8587ff;
+  text-shadow:
+    0 5px 0 #8587ff,
+    0 9px 0 #ffffff,
+    0 14px 18px rgba(0, 0, 0, 0.34);
+}
+
+.game-title::first-letter {
+  color: #c9f6ff;
+}
+
+.overlay p {
+  margin: 0;
+  font-size: clamp(0.95rem, 2.4vw, 1.25rem);
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.42);
+}
+
+button {
+  justify-self: center;
+  min-width: 132px;
+  border: 0;
+  border-radius: 8px;
+  padding: 12px 20px;
+  background: var(--accent);
+  color: #0b1630;
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: 0 5px 0 #38689b;
+}
+
+button:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 #38689b;
+}
+
+.touch-controls {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  display: none;
+  align-items: end;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.touch-button {
+  pointer-events: auto;
+  min-width: 52px;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.38);
+  border-radius: 8px;
+  background: rgba(34, 36, 40, 0.68);
+  color: var(--ink);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
+  font-size: 1.5rem;
+}
+
+.touch-button.jump {
+  width: 66px;
+  height: 66px;
+}
+
+.touch-controls .touch-button:nth-child(2) {
+  margin-right: auto;
+  margin-left: 10px;
+}
+
+.hud {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: 0 8px 24px rgba(129, 121, 198, 0.18);
+  font-size: clamp(0.9rem, 2.4vw, 1.15rem);
+  font-weight: 700;
+  color: #4d4773;
+}
+
+.hud span {
+  min-width: 84px;
+}
+
+.hud strong {
+  color: #f5b51b;
+  -webkit-text-stroke: 1px #ffffff;
+  text-shadow:
+    0 2px 0 #6b559a,
+    0 0 6px rgba(255, 255, 255, 0.9);
+}
+
+.hp-wrap {
+  margin-left: auto;
+  text-align: right;
+}
+
+#lifeCount {
+  display: inline-block;
+  min-width: 72px;
+  color: #ffd85a;
+  font-size: 1.35em;
+  letter-spacing: 2px;
+  -webkit-text-stroke: 1px #ffffff;
+  text-shadow:
+    0 2px 0 #8b6ac9,
+    0 0 8px rgba(255, 255, 255, 0.95);
+}
+
+@media (max-width: 560px) {
+  .shell {
+    padding: 8px;
+  }
+
+  .hud {
+    flex-wrap: wrap;
+  }
+
+  .touch-controls {
+    display: flex;
+  }
+
+  .brand-logo {
+    width: min(86vw, 420px);
+    max-height: 104px;
+  }
+}
