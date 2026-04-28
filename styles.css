@@ -14,6 +14,7 @@
 body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
   background: #eee7ff;
@@ -22,14 +23,14 @@ body {
 }
 
 .shell {
-  width: min(100vw, 1040px);
-  padding: 18px;
+  width: min(100vw, 1440px);
+  padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
 }
 
 .game-wrap {
   position: relative;
   width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 9;
   border: 4px solid #ffffff;
   border-radius: 8px;
   overflow: hidden;
@@ -174,12 +175,12 @@ button:active {
   justify-content: space-between;
   gap: 12px;
   margin-top: 10px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border: 2px solid rgba(255, 255, 255, 0.72);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.62);
   box-shadow: 0 8px 24px rgba(129, 121, 198, 0.18);
-  font-size: clamp(0.9rem, 2.4vw, 1.15rem);
+  font-size: clamp(0.78rem, 1.65vw, 1.05rem);
   font-weight: 700;
   color: #4d4773;
 }
@@ -230,4 +231,40 @@ button:active {
     width: min(86vw, 420px);
     max-height: 104px;
   }
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  body {
+    align-items: start;
+  }
+
+  .shell {
+    width: min(100vw, calc(100dvh * 16 / 9));
+    padding: max(4px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+  }
+
+  .hud {
+    margin-top: 4px;
+    padding: 5px 8px;
+    gap: 8px;
+  }
+
+  .touch-controls {
+    display: flex;
+  }
+
+  .touch-button {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+  }
+
+  .touch-button.jump {
+    width: 60px;
+    height: 60px;
+  }
+}
+
+body:not([data-game-mode="playing"]):not([data-game-mode="respawning"]) .touch-controls {
+  display: none;
 }

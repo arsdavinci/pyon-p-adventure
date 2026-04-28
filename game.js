@@ -26,7 +26,7 @@ const MAX_HP = 5;
 const MAX_WEAPON_POWER = 16;
 const WEAPON_ATTRIBUTE_SIZE = 8;
 const MAX_INVENTORY_ITEMS = 27;
-const VISIBLE_INVENTORY_ITEMS = 9;
+const VISIBLE_INVENTORY_ITEMS = 15;
 const WEAPON_ASSET_VERSION = "weapon-cutout-v2";
 const WEAPON_DROP_RATES = [
   { power: 1, chance: 0.8 },
@@ -173,7 +173,7 @@ pastelBackground2.src = "assets/pastel-space-background2.png";
 const moonGround = new Image();
 moonGround.src = "assets/pastel-moon-ground.png";
 const selectUiImage = new Image();
-selectUiImage.src = "assets/select-ui-generated.png";
+selectUiImage.src = "assets/select-ui-generated2.png";
 const stageBackgroundImages = [
   "assets/pastel-space-background.png",
   "assets/stage-mars-bg.png",
@@ -1771,17 +1771,17 @@ function showItemFullPrompt() {
 
 function clampInventoryScroll() {
   const maxScroll = Math.max(0, MAX_INVENTORY_ITEMS - VISIBLE_INVENTORY_ITEMS);
-  const rowScroll = Math.floor((state.inventoryScroll ?? 0) / 3) * 3;
+  const rowScroll = Math.floor((state.inventoryScroll ?? 0) / 5) * 5;
   state.inventoryScroll = clamp(rowScroll, 0, maxScroll);
 }
 
 function ensureInventorySelectionVisible() {
   state.inventorySelection = clamp(state.inventorySelection, 0, MAX_INVENTORY_ITEMS - 1);
   if (state.inventorySelection < state.inventoryScroll) {
-    state.inventoryScroll = Math.floor(state.inventorySelection / 3) * 3;
+    state.inventoryScroll = Math.floor(state.inventorySelection / 5) * 5;
   }
   if (state.inventorySelection >= state.inventoryScroll + VISIBLE_INVENTORY_ITEMS) {
-    state.inventoryScroll = Math.floor(state.inventorySelection / 3) * 3 - 6;
+    state.inventoryScroll = Math.floor(state.inventorySelection / 5) * 5 - 10;
   }
   clampInventoryScroll();
 }
@@ -2283,6 +2283,7 @@ function stageLabel(index = currentCourse) {
 }
 
 function updateHud() {
+  document.body.dataset.gameMode = state.mode;
   stageCount.textContent = stageLabel();
   kakiCount.textContent = state.kakiTotal;
   peaCount.textContent = state.peaTotal;
@@ -2884,14 +2885,14 @@ function drawInventoryDynamicText() {
   ctx.save();
   ctx.textBaseline = "top";
   ctx.textAlign = "left";
-  ctx.font = "900 14px Segoe UI, system-ui, sans-serif";
+  ctx.font = "900 16px Segoe UI, system-ui, sans-serif";
   ctx.fillStyle = "#ffffff";
   ctx.strokeStyle = "rgba(68, 54, 132, 0.9)";
   ctx.lineWidth = 4;
   const lines = [
-    ["NAME    PYON-P", 254, 212],
-    [`STAGE   ${stageLabel()}`, 254, 238],
-    [`WEAPON  ${weaponName()}`, 254, 264]
+    ["NAME    PYON-P", 254, 184],
+    [`STAGE   ${stageLabel()}`, 254, 214],
+    [`WEAPON  ${weaponName()}`, 254, 244]
   ];
   for (const [text, x, y] of lines) {
     ctx.strokeText(text, x, y);
@@ -2902,9 +2903,9 @@ function drawInventoryDynamicText() {
 }
 
 function drawInventoryHpStrip() {
-  const x = 65;
-  const y = 371;
-  const w = 168;
+  const x = 42;
+  const y = 452;
+  const w = 374;
   const h = 26;
   ctx.save();
   ctx.fillStyle = "rgba(255, 250, 255, 0.78)";
@@ -2920,7 +2921,7 @@ function drawInventoryHpStrip() {
   ctx.textBaseline = "middle";
   for (let i = 0; i < MAX_LIVES; i++) {
     ctx.save();
-    ctx.translate(x + 52 + i * 32, y + h / 2 + 1);
+    ctx.translate(x + 156 + i * 36, y + h / 2 + 1);
     ctx.fillStyle = i < state.lives ? "#ffd85a" : "rgba(215, 200, 255, 0.55)";
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 2;
@@ -2935,7 +2936,7 @@ function drawEquippedWeaponPanel() {
   ctx.save();
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  drawWeaponIcon(704, 78, state.weaponPower, 1.18, 1);
+  drawWeaponIcon(1040, 72, state.weaponPower, 1.08, 1);
   ctx.restore();
 }
 
@@ -2950,7 +2951,7 @@ function drawItemCaseOverlay() {
 function drawInventoryScrollBar() {
   const total = MAX_INVENTORY_ITEMS;
   const maxScroll = Math.max(0, total - VISIBLE_INVENTORY_ITEMS);
-  const x = 920;
+  const x = 1250;
   const y = 196;
   const h = 284;
   const thumbH = Math.max(44, h * (VISIBLE_INVENTORY_ITEMS / total));
@@ -2991,16 +2992,16 @@ function drawInventoryPageInfo() {
   ctx.lineWidth = 4;
   const pageText = `${t("page")} ${info.currentPage}/${info.totalPages}`;
   const rangeText = `${t("showing")} ${info.first}-${info.last}/${MAX_INVENTORY_ITEMS}`;
-  ctx.strokeText(pageText, 784, 486);
-  ctx.fillText(pageText, 784, 486);
+  ctx.strokeText(pageText, 1002, 492);
+  ctx.fillText(pageText, 1002, 492);
   ctx.font = "800 12px Segoe UI, system-ui, sans-serif";
-  ctx.strokeText(rangeText, 784, 508);
-  ctx.fillText(rangeText, 784, 508);
+  ctx.strokeText(rangeText, 1002, 514);
+  ctx.fillText(rangeText, 1002, 514);
   ctx.restore();
 }
 
 function inventorySortButtonRect() {
-  return { x: 658, y: 532, w: 252, h: 44 };
+  return { x: 982, y: 36, w: 106, h: 72 };
 }
 
 function drawInventorySortButton() {
@@ -3029,14 +3030,14 @@ function drawInventoryMessage() {
   ctx.strokeStyle = "#fff3a4";
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.roundRect(654, 586, 260, 34, 8);
+  ctx.roundRect(890, 586, 300, 34, 8);
   ctx.fill();
   ctx.stroke();
   ctx.fillStyle = "#ffffff";
   ctx.font = "900 14px Segoe UI, system-ui, sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(t("sorted"), 784, 603);
+  ctx.fillText(t("sorted"), 1040, 603);
   ctx.restore();
 }
 
@@ -3176,17 +3177,18 @@ function drawItemCase(x, y, w, h) {
 function inventorySlotRects() {
   const slots = inventorySlots();
   const rects = [];
-  const startX = 640;
-  const startY = 194;
+  const startX = 760;
+  const startY = 195;
   const size = 88;
-  const gap = 10;
+  const gapX = 10;
+  const gapY = 10;
   clampInventoryScroll();
   for (let i = 0; i < VISIBLE_INVENTORY_ITEMS; i++) {
-    const col = i % 3;
-    const row = Math.floor(i / 3);
+    const col = i % 5;
+    const row = Math.floor(i / 5);
     const index = state.inventoryScroll + i;
     const item = slots[index] || null;
-    rects.push({ ...(item || {}), empty: !item, index, x: startX + col * (size + gap), y: startY + row * (size + gap), w: size, h: size });
+    rects.push({ ...(item || {}), empty: !item, index, x: startX + col * (size + gapX), y: startY + row * (size + gapY), w: size, h: size });
   }
   return rects;
 }
@@ -3206,7 +3208,7 @@ function drawInventorySlot(slot) {
   ctx.stroke();
   if (slot.empty) {
     ctx.fillStyle = "rgba(255,255,255,0.22)";
-    ctx.font = "900 20px Segoe UI, system-ui, sans-serif";
+    ctx.font = "900 14px Segoe UI, system-ui, sans-serif";
     ctx.textAlign = "center";
     ctx.fillText("EMPTY", slot.x + slot.w / 2, slot.y + 43);
     ctx.restore();
@@ -3280,83 +3282,55 @@ function drawWeaponDetail(power) {
   const nextPower = nextFusionPower(power);
   ctx.save();
 
-  const x = 56;
-  const y = 112;
+  const x = 62;
+  const y = 572;
   const w = 560;
-  const h = 402;
+  const h = 96;
   const grad = ctx.createLinearGradient(x, y, x + w, y + h);
-  grad.addColorStop(0, "rgba(255, 245, 252, 0.98)");
-  grad.addColorStop(0.55, "rgba(232, 248, 255, 0.98)");
-  grad.addColorStop(1, "rgba(246, 238, 255, 0.98)");
+  grad.addColorStop(0, "rgba(255, 245, 252, 0.58)");
+  grad.addColorStop(0.55, "rgba(232, 248, 255, 0.48)");
+  grad.addColorStop(1, "rgba(246, 238, 255, 0.54)");
   ctx.fillStyle = grad;
-  ctx.strokeStyle = "#c8b2ff";
-  ctx.lineWidth = 5;
+  ctx.strokeStyle = "rgba(255,255,255,0.65)";
+  ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.roundRect(x, y, w, h, 8);
   ctx.fill();
   ctx.stroke();
 
   ctx.fillStyle = "#7f67c8";
-  ctx.font = "900 25px Segoe UI, system-ui, sans-serif";
+  ctx.font = "900 19px Segoe UI, system-ui, sans-serif";
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
-  ctx.fillText(weaponName(power), x + 28, y + 24);
-  ctx.font = "900 13px Segoe UI, system-ui, sans-serif";
-  ctx.fillStyle = "#ff8db7";
-  ctx.fillText(t("weaponData"), x + 30, y + 64);
-
-  ctx.save();
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = "high";
-  ctx.translate(x + 160, y + 176);
-  drawWeaponIcon(0, 0, power, 2.35, 1);
-  ctx.restore();
-
-  ctx.fillStyle = "#ffffff";
-  ctx.strokeStyle = "#9f91cf";
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.roundRect(x + 312, y + 88, 218, 166, 8);
-  ctx.fill();
-  ctx.stroke();
-  drawStatBar(t("atk"), stage.damage, 14, x + 334, y + 112, 162);
-  drawStatBar(t("range"), stage.range, 1500, x + 334, y + 162, 162);
-  drawStatBar(t("rapid"), Math.round((1 / stage.cooldown) * 10), 55, x + 334, y + 212, 162);
-
-  ctx.fillStyle = "#4d4773";
-  ctx.font = "800 14px Segoe UI, system-ui, sans-serif";
-  wrapText(weaponLore(power), x + 30, y + 284, 304, 20);
-
-  ctx.fillStyle = "rgba(215, 200, 255, 0.75)";
-  ctx.strokeStyle = "#c8b2ff";
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.roundRect(x + 360, y + 280, 150, 104, 8);
-  ctx.fill();
-  ctx.stroke();
-  ctx.fillStyle = "#7f67c8";
+  ctx.fillText(weaponName(power), x + 120, y + 14);
   ctx.font = "900 12px Segoe UI, system-ui, sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText(nextPower ? t("fusionNext") : t("finalEvolution"), x + 435, y + 296);
+  ctx.fillStyle = "#ff8db7";
+  ctx.fillText(t("weaponData"), x + 122, y + 42);
+
   ctx.save();
-  ctx.globalAlpha = nextPower ? 0.28 : 0.18;
-  ctx.filter = "brightness(0)";
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
-  drawWeaponIcon(x + 435, y + 342, nextPower ?? power, 1.05, 1);
+  ctx.translate(x + 64, y + 50);
+  drawWeaponIcon(0, 0, power, 0.92, 1);
   ctx.restore();
+
+  drawStatBar(t("atk"), stage.damage, 14, x + 320, y + 18, 86);
+  drawStatBar(t("range"), stage.range, 1500, x + 320, y + 45, 86);
+  drawStatBar(t("rapid"), Math.round((1 / stage.cooldown) * 10), 55, x + 320, y + 72, 86);
+
   ctx.fillStyle = "#4d4773";
-  ctx.font = "800 11px Segoe UI, system-ui, sans-serif";
-  ctx.fillText(nextPower ? weaponName(nextPower) : t("unknown"), x + 435, y + 370);
+  ctx.font = "800 12px Segoe UI, system-ui, sans-serif";
+  const fusionText = nextPower ? `${t("fusionNext")}: ${weaponName(nextPower)}` : t("finalEvolution");
+  ctx.fillText(fusionText, x + 122, y + 66);
 
   ctx.restore();
 }
 
 function drawPyonpyCommentPanel(power) {
-  const x = 84;
-  const y = 568;
-  const w = 792;
-  const h = 78;
+  const x = 646;
+  const y = 572;
+  const w = 570;
+  const h = 96;
   ctx.save();
   ctx.fillStyle = "rgba(255, 245, 252, 0.34)";
   ctx.strokeStyle = "rgba(200, 178, 255, 0.58)";
@@ -3373,23 +3347,23 @@ function drawPyonpyCommentPanel(power) {
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   const comment = pyonpyWeaponComment(power);
-  wrapText(comment, x + 34, y + 22, w - 68, 25, true);
+  wrapText(comment, x + 30, y + 22, w - 60, 25, true);
   ctx.restore();
 }
 
 function drawStatBar(label, value, max, x, y, width = 180) {
   const ratio = clamp(value / max, 0, 1);
   ctx.fillStyle = "#4d4773";
-  ctx.font = "900 16px Segoe UI, system-ui, sans-serif";
+  ctx.font = "900 11px Segoe UI, system-ui, sans-serif";
   ctx.textAlign = "left";
   ctx.fillText(`${label} ${value}`, x, y);
   ctx.fillStyle = "#d7c8ff";
   ctx.beginPath();
-  ctx.roundRect(x, y + 28, width, 14, 6);
+  ctx.roundRect(x + 54, y - 1, width, 8, 4);
   ctx.fill();
   ctx.fillStyle = "#ff8db7";
   ctx.beginPath();
-  ctx.roundRect(x, y + 28, width * ratio, 14, 6);
+  ctx.roundRect(x + 54, y - 1, width * ratio, 8, 4);
   ctx.fill();
 }
 
@@ -3415,6 +3389,8 @@ function wrapText(text, x, y, maxWidth, lineHeight, stroke = false) {
 
 function drawFusionPrompt() {
   const prompt = state.fusionPrompt;
+  const x = canvas.width / 2 - 270;
+  const y = canvas.height / 2 - 56;
   ctx.save();
   ctx.fillStyle = "rgba(30, 24, 52, 0.78)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -3422,18 +3398,18 @@ function drawFusionPrompt() {
   ctx.strokeStyle = "#c8b2ff";
   ctx.lineWidth = 4;
   ctx.beginPath();
-  ctx.roundRect(210, 378, 540, 112, 6);
+  ctx.roundRect(x, y, 540, 112, 6);
   ctx.fill();
   ctx.stroke();
   ctx.fillStyle = "#4d4773";
   ctx.font = "900 23px Georgia, serif";
   ctx.textAlign = "center";
-  ctx.fillText(`${weaponName(prompt.power)}${t("fuseQuestion")}`, 480, 414);
+  ctx.fillText(`${weaponName(prompt.power)}${t("fuseQuestion")}`, canvas.width / 2, y + 36);
   ctx.font = "900 28px Georgia, serif";
   ctx.fillStyle = prompt.choice === 0 ? "#ff8db7" : "#4d4773";
-  ctx.fillText("Yes", 405, 458);
+  ctx.fillText("Yes", canvas.width / 2 - 75, y + 80);
   ctx.fillStyle = prompt.choice === 1 ? "#ff8db7" : "#4d4773";
-  ctx.fillText("No", 560, 458);
+  ctx.fillText("No", canvas.width / 2 + 80, y + 80);
   ctx.restore();
 }
 
@@ -4939,7 +4915,7 @@ function updateGamepad() {
       if ((gamepadState.left || gamepadState.right) && !(gamepadState.leftLatch || gamepadState.rightLatch)) state.fusionPrompt.choice = 1 - state.fusionPrompt.choice;
       if (jumpPressed && !gamepadState.jumpLatch) confirmFusionPrompt();
     } else {
-      const moveDir = gamepadState.left ? -1 : gamepadState.right ? 1 : gamepadState.up ? -3 : gamepadState.down ? 3 : 0;
+      const moveDir = gamepadState.left ? -1 : gamepadState.right ? 1 : gamepadState.up ? -5 : gamepadState.down ? 5 : 0;
       const freshMove = (gamepadState.left && !gamepadState.leftLatch) || (gamepadState.right && !gamepadState.rightLatch) || (gamepadState.up && !gamepadState.upLatch) || (gamepadState.down && !gamepadState.downLatch);
       if (!moveDir) {
         gamepadState.inventoryMoveDelay = 0;
@@ -5011,8 +4987,8 @@ window.addEventListener("keydown", event => {
     }
     if (code === "ArrowLeft" || code === "KeyA") moveInventorySelection(-1);
     if (code === "ArrowRight" || code === "KeyD") moveInventorySelection(1);
-    if (code === "ArrowUp" || code === "KeyW") moveInventorySelection(-3);
-    if (code === "ArrowDown" || code === "KeyS") moveInventorySelection(3);
+    if (code === "ArrowUp" || code === "KeyW") moveInventorySelection(-5);
+    if (code === "ArrowDown" || code === "KeyS") moveInventorySelection(5);
     if (code === "Enter" || code === "Space") startInventoryGrab(false);
     if (code === "KeyE") equipSelectedInventorySlot();
     if (code === "KeyC") compactInventoryItems();
