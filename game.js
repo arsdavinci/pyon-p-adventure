@@ -919,6 +919,13 @@ function update(dt) {
     updateHud();
     return;
   }
+  if (state.mode === "inventory") {
+    updateGamepad();
+    state.itemFullPrompt = Math.max(0, (state.itemFullPrompt ?? 0) - dt);
+    updateParticles(dt);
+    updateHud();
+    return;
+  }
   if (state.mode !== "playing") return;
   updateGamepad();
   state.itemFullPrompt = Math.max(0, (state.itemFullPrompt ?? 0) - dt);
