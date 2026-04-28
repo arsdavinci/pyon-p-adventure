@@ -19,14 +19,33 @@
         <button id="fullscreenButton" class="fullscreen-button" type="button" aria-label="Fullscreen">全画面</button>
         <div id="installHint" class="install-hint hidden" role="status"></div>
         <div class="touch-controls" aria-label="Touch controls">
-          <button class="touch-button" data-key="ArrowLeft" type="button" aria-label="Left">&larr;</button>
-          <button class="touch-button" data-key="ArrowRight" type="button" aria-label="Right">&rarr;</button>
-          <button class="touch-button jump" data-key="Space" type="button" aria-label="Jump">&uarr;</button>
+          <div class="touch-side touch-side-left">
+            <button class="touch-small" data-key="Select" type="button" aria-label="Select">SELECT</button>
+            <div class="touch-dpad" aria-label="Move">
+              <button class="touch-button up" data-key="ArrowUp" type="button" aria-label="Up">&uarr;</button>
+              <button class="touch-button left" data-key="ArrowLeft" type="button" aria-label="Left">&larr;</button>
+              <button class="touch-button down" data-key="ArrowDown" type="button" aria-label="Down">&darr;</button>
+              <button class="touch-button right" data-key="ArrowRight" type="button" aria-label="Right">&rarr;</button>
+            </div>
+          </div>
+          <div class="touch-side touch-side-right">
+            <button class="touch-small" data-key="Enter" type="button" aria-label="Start">START</button>
+            <div class="touch-actions" aria-label="Actions">
+              <button class="touch-action shoot" data-key="KeyX" type="button" aria-label="Shoot">X</button>
+              <button class="touch-action jump" data-key="Space" type="button" aria-label="Jump">A</button>
+              <button class="touch-action run" data-key="KeyB" type="button" aria-label="Dash">B</button>
+            </div>
+          </div>
         </div>
         <div id="overlay" class="overlay">
           <div class="language-switch" aria-label="Language">
             <button id="langJa" class="active" type="button">日本語</button>
             <button id="langEn" type="button">English</button>
+          </div>
+          <div class="control-switch" aria-label="Control mode">
+            <button id="modeIphone" type="button" data-control-mode="iphone">iPhone</button>
+            <button id="modeIpad" type="button" data-control-mode="ipad">iPad</button>
+            <button id="modePc" type="button" data-control-mode="pc">PC</button>
           </div>
           <img class="brand-logo" src="assets/moonians-logo.png" alt="ムーニアンズ">
           <h1 class="game-title">ぴょんぴーの大冒険</h1>

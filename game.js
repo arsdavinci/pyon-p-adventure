@@ -18,6 +18,7 @@ const langJaButton = document.querySelector("#langJa");
 const langEnButton = document.querySelector("#langEn");
 const fullscreenButton = document.querySelector("#fullscreenButton");
 const installHint = document.querySelector("#installHint");
+const controlModeButtons = document.querySelectorAll("[data-control-mode]");
 
 const TILE = 48;
 const WORLD_WIDTH = 5200;
@@ -344,6 +345,8 @@ let lastTime = 0;
 let animationId = 0;
 let pendingCourseStart = false;
 let language = localStorage.getItem("pyonpLanguage") || "ja";
+let controlMode = localStorage.getItem("pyonpControlMode") || (matchMedia("(pointer: coarse)").matches ? "iphone" : "pc");
+if (controlMode === "mobile") controlMode = "iphone";
 
 let currentCourse = 0;
 let unlockedCourse = 0;
@@ -1871,6 +1874,14 @@ function setLanguage(nextLanguage) {
   draw();
 }
 
+function setControlMode(nextMode) {
+  controlMode = nextMode === "ipad" ? "ipad" : nextMode === "pc" ? "pc" : "iphone";
+  localStorage.setItem("pyonpControlMode", controlMode);
+  document.body.dataset.controlMode = controlMode === "pc" ? "pc" : "mobile";
+  document.body.dataset.controlDevice = controlMode;
+  controlModeButtons.forEach(button => button.classList.toggle("active", button.dataset.controlMode === controlMode));
+}
+
 function applyLanguage() {
   document.documentElement.lang = language;
   document.title = t("title");
@@ -1889,6 +1900,7 @@ function applyLanguage() {
   if (timeLabelEl) timeLabelEl.firstChild.textContent = `${t("time")} `;
   langJaButton?.classList.toggle("active", language === "ja");
   langEnButton?.classList.toggle("active", language === "en");
+  setControlMode(controlMode);
   updateFullscreenButton();
 }
 
@@ -2376,6 +2388,7 @@ function stageLabel(index = currentCourse) {
 
 function updateHud() {
   document.body.dataset.gameMode = state.mode;
+  document.body.dataset.overlayOpen = overlay.classList.contains("hidden") ? "false" : "true";
   stageCount.textContent = stageLabel();
   kakiCount.textContent = state.kakiTotal;
   peaCount.textContent = state.peaTotal;
@@ -5123,6 +5136,13 @@ langEnButton?.addEventListener("click", event => {
   setLanguage("en");
 });
 
+controlModeButtons.forEach(button => {
+  button.addEventListener("click", event => {
+    event.stopPropagation();
+    setControlMode(button.dataset.controlMode);
+  });
+});
+
 fullscreenButton?.addEventListener("click", event => {
   event.stopPropagation();
   enterBestFullscreen();
@@ -5370,21 +5390,60 @@ function inventorySlotAt(x, y) {
   return inventorySlotRects().find(slot => x >= slot.x && x <= slot.x + slot.w && y >= slot.y && y <= slot.y + slot.h) || null;
 }
 
-for (const button of document.querySelectorAll(".touch-button")) {
+function handleTouchStartButton() {
+  if (!overlay.classList.contains("hidden")) {
+    if (state?.mode === "ended" && gameOverContinueAvailable) continueFromGameOver();
+    else pendingCourseStart ? startCurrentCourse() : startGame();
+    return;
+  }
+  if (state.mode === "paused") {
+    resumeGame();
+    return;
+  }
+  if (state.mode === "worldMap") {
+    startMapCourse(mapSelectedCourse);
+    return;
+  }
+  if (state.mode === "playing") pauseGame();
+}
+
+function pressTouchControl(code) {
+  if (code === "Select") {
+    toggleInventory();
+    return;
+  }
+  if (code === "Enter") {
+    handleTouchStartButton();
+    return;
+  }
+  if (code === "Space" || code === "ArrowUp") queueStompBoost();
+  keys.add(code);
+}
+
+function releaseTouchControl(code) {
+  keys.delete(code);
+}
+
+for (const button of document.querySelectorAll("[data-key]")) {
   const code = button.dataset.key;
   const press = event => {
     event.preventDefault();
-    keys.add(code);
+    pressTouchControl(code);
   };
   const release = event => {
     event.preventDefault();
-    keys.delete(code);
+    releaseTouchControl(code);
   };
   button.addEventListener("pointerdown", press);
   button.addEventListener("pointerup", release);
   button.addEventListener("pointercancel", release);
   button.addEventListener("pointerleave", release);
 }
+
+for (const eventName of ["contextmenu", "selectstart", "dragstart"]) {
+  document.addEventListener(eventName, event => event.preventDefault());
+}
+document.addEventListener("touchmove", event => event.preventDefault(), { passive: false });
 
 state = newState();
 applyLanguage();
