@@ -26,6 +26,8 @@ const GRAVITY = 1850;
 const FRICTION = 0.82;
 const MAX_LIVES = 3;
 const MAX_HP = 5;
+const MAX_OXYGEN = 100;
+const STAGE_TRAITS = ["moonFloat", "marsLava", "iceSlide", "underwater", "factoryBelt", "demonPulse"];
 const MAX_WEAPON_POWER = 16;
 const WEAPON_ATTRIBUTE_SIZE = 8;
 const MAX_INVENTORY_ITEMS = 27;
@@ -561,6 +563,7 @@ function makeCourse(worldIndex, areaIndex) {
   const difficulty = STAGE_START_INDICES[worldIndex] + areaIndex + 1;
   const bossStage = areaIndex === stageAreaCount(worldIndex) - 1;
   const finalStage = worldIndex === STAGE_THEMES.length - 1 && bossStage;
+  const trait = STAGE_TRAITS[worldIndex] ?? "moonFloat";
   const platforms = [rect(0, 492, 620, 48)];
   let x = 620;
   for (let i = 0; i < 9; i++) {
@@ -572,9 +575,10 @@ function makeCourse(worldIndex, areaIndex) {
   }
   if (x < 4300) platforms.push(rect(x, 492, 4300 - x + 220, 48));
   platforms.push(rect(4300, 492, 900, 48));
+  if (trait === "underwater") platforms.length = 0;
 
   const blocks = [];
-  for (let i = 0; i < (finalStage ? 0 : 9); i++) {
+  for (let i = 0; i < (finalStage || trait === "underwater" ? 0 : 9); i++) {
     const bx = 560 + i * 430 + (i % 2) * 90;
     const by = 300 - (i % 3) * 38;
     if (i % 3 === 0) blocks.push(breakable(bx, by, "hp"));
@@ -615,17 +619,29 @@ function makeCourse(worldIndex, areaIndex) {
     starItem(2260, 300),
     starItem(3740, 430)
   ];
+  const oxygenItems = trait === "underwater" && !finalStage ? [
+    oxygenItem(780, 96),
+    oxygenItem(2060, 88),
+    oxygenItem(3520, 104)
+  ] : [];
+  const lavaGeysers = trait === "marsLava" && !finalStage ? [
+    lavaGeyser(980, 1.1),
+    lavaGeyser(1780, 2.3),
+    lavaGeyser(2880, 3.4),
+    lavaGeyser(4140, 0.5)
+  ] : [];
 
   return {
     theme: STAGE_THEMES[worldIndex],
     worldIndex,
     areaIndex,
+    trait,
     bossStage,
     finalStage,
     difficulty,
     platforms,
     blocks,
-    level: { enemies, coins, starItems, flag: rect(5060, 252, 28, 240) },
+    level: { enemies, coins, starItems, oxygenItems, lavaGeysers, flag: rect(5060, 252, 28, 240) },
     gun: { x: 330 + areaIndex * 70, y: 430 }
   };
 }
@@ -741,6 +757,14 @@ function starItem(x, y) {
   return { x, y, r: 18, taken: false, bob: Math.random() * Math.PI * 2 };
 }
 
+function oxygenItem(x, y) {
+  return { x, y, r: 22, taken: false, respawn: 0, bob: Math.random() * Math.PI * 2 };
+}
+
+function lavaGeyser(x, phase = 0) {
+  return { x, y: 492, w: 72, h: 390, phase, timer: phase, period: 4.2, active: false };
+}
+
 function newState() {
   applyCourse(currentCourse);
   return {
@@ -767,6 +791,11 @@ function newState() {
     enemies: level.enemies.map((e, id) => ({ ...e, id, spawnX: e.x, spawnY: e.y, alive: true, defeated: 0, alert: e.boss ? 1 : 0, trick: 0, grounded: true, jumpCooldown: 0, gunCooldown: 0, attackAnim: 0, hurtAnim: 0, hp: e.hp ?? 1, maxHp: e.maxHp ?? e.hp ?? 1, facing: e.vx >= 0 ? 1 : -1 })),
     coinItems: (level.coins ?? []).map(c => ({ ...c, taken: false })),
     starItems: (level.starItems ?? []).map(s => ({ ...s, taken: false })),
+    oxygen: MAX_OXYGEN,
+    oxygenHurtCooldown: 0,
+    oxygenItems: (level.oxygenItems ?? []).map(o => ({ ...o, taken: false, respawn: 0 })),
+    lavaGeysers: (level.lavaGeysers ?? []).map(g => ({ ...g })),
+    stagePulse: 0,
     particles: [],
     items: [],
     gun: { x: courses[currentCourse].gun.x, y: courses[currentCourse].gun.y, holder: "player", cooldown: 0, weaponPower: 1 },
@@ -817,8 +846,18 @@ function applyCourse(index) {
     enemies: course.level.enemies.map(e => ({ ...e })),
     coins: (course.level.coins ?? []).map(c => ({ ...c })),
     starItems: (course.level.starItems ?? []).map(s => ({ ...s })),
+    oxygenItems: (course.level.oxygenItems ?? []).map(o => ({ ...o })),
+    lavaGeysers: (course.level.lavaGeysers ?? []).map(g => ({ ...g })),
     flag: { ...course.level.flag }
   };
+}
+
+function currentStageTrait() {
+  return courses[currentCourse]?.trait ?? STAGE_TRAITS[courses[currentCourse]?.worldIndex ?? 0] ?? "moonFloat";
+}
+
+function isUnderwaterStage() {
+  return currentStageTrait() === "underwater";
 }
 
 function startGame() {
@@ -1089,6 +1128,7 @@ function update(dt) {
     return;
   }
   updatePlayer(dt);
+  updateStageTraits(dt);
   updateGun(dt);
   updateItems(dt);
   updateEnemies(dt);
@@ -1096,6 +1136,7 @@ function update(dt) {
   updateParticles(dt);
   collectCoins();
   collectStarItems();
+  collectOxygenItems();
   checkGoal();
   updateHud();
 }
@@ -1242,6 +1283,11 @@ function updateMoonRespawn(dt) {
 
 function updatePlayer(dt) {
   const p = state.player;
+  if (isUnderwaterStage()) {
+    updateSwimmingPlayer(dt);
+    return;
+  }
+  p.swimming = false;
   const movingLeft = keys.has("ArrowLeft") || keys.has("KeyA") || gamepadState.left;
   const movingRight = keys.has("ArrowRight") || keys.has("KeyD") || gamepadState.right;
   const wantsJump = keys.has("Space") || keys.has("ArrowUp") || keys.has("KeyW") || gamepadState.jump;
@@ -1250,8 +1296,10 @@ function updatePlayer(dt) {
   const doubleTapRun = dxInput !== 0 && doubleTapRunDir === dxInput;
   const wantsRun = keys.has("ShiftLeft") || keys.has("ShiftRight") || keys.has("KeyB") || gamepadState.run || doubleTapRun;
   const wantsShoot = keys.has("KeyX") || keys.has("KeyY") || keys.has("KeyJ") || gamepadState.shoot;
-  const accel = wantsRun ? 2100 : 1250;
-  const maxSpeed = wantsRun ? 360 : 235;
+  const trait = currentStageTrait();
+  const slippery = trait === "iceSlide";
+  const accel = slippery ? (wantsRun ? 1380 : 820) : wantsRun ? 2100 : 1250;
+  const maxSpeed = slippery ? (wantsRun ? 410 : 270) : wantsRun ? 360 : 235;
 
   if (movingLeft) {
     p.vx -= accel * dt;
@@ -1261,11 +1309,11 @@ function updatePlayer(dt) {
     p.vx += accel * dt;
     p.facing = 1;
   }
-  if (!movingLeft && !movingRight) p.vx *= FRICTION;
+  if (!movingLeft && !movingRight) p.vx *= slippery ? 0.985 : FRICTION;
 
   if (wantsJump && p.grounded) {
     spawnJumpSmoke(p.x + p.w / 2, p.y + p.h);
-    p.vy = -900;
+    p.vy = trait === "moonFloat" ? -990 : -900;
     p.grounded = false;
   }
 
@@ -1275,13 +1323,90 @@ function updatePlayer(dt) {
   }
 
   p.vx = clamp(p.vx, -maxSpeed, maxSpeed);
-  p.vy += GRAVITY * dt;
+  const gravity = trait === "moonFloat" ? GRAVITY * 0.78 : trait === "demonPulse" ? GRAVITY * (1 + Math.sin(state.stagePulse) * 0.2) : GRAVITY;
+  p.vy += gravity * dt;
   p.invincible = Math.max(0, p.invincible - dt);
 
   moveAndCollide(p, dt);
 
   if (p.y > canvas.height + 100) damagePlayer(true);
   state.camera = clamp(p.x - 330, 0, WORLD_WIDTH - canvas.width);
+}
+
+function updateSwimmingPlayer(dt) {
+  const p = state.player;
+  const movingLeft = keys.has("ArrowLeft") || keys.has("KeyA") || gamepadState.left;
+  const movingRight = keys.has("ArrowRight") || keys.has("KeyD") || gamepadState.right;
+  const movingUp = keys.has("ArrowUp") || keys.has("KeyW") || keys.has("Space") || gamepadState.up || gamepadState.jump;
+  const movingDown = keys.has("ArrowDown") || keys.has("KeyS") || gamepadState.down;
+  const dxInput = (movingRight ? 1 : 0) - (movingLeft ? 1 : 0);
+  if (dxInput === 0 || dxInput !== doubleTapRunDir) doubleTapRunDir = 0;
+  const doubleTapRun = dxInput !== 0 && doubleTapRunDir === dxInput;
+  const wantsRun = keys.has("ShiftLeft") || keys.has("ShiftRight") || keys.has("KeyB") || gamepadState.run || doubleTapRun;
+  const wantsShoot = keys.has("KeyX") || keys.has("KeyY") || keys.has("KeyJ") || gamepadState.shoot;
+  const dx = dxInput;
+  const dy = (movingDown ? 1 : 0) - (movingUp ? 1 : 0);
+  const len = Math.hypot(dx, dy) || 1;
+  const speed = wantsRun ? 330 : 230;
+
+  if (dx || dy) {
+    p.vx += (dx / len * speed - p.vx) * Math.min(1, dt * 8);
+    p.vy += (dy / len * speed - p.vy) * Math.min(1, dt * 8);
+  } else {
+    p.vx *= 0.9;
+    p.vy *= 0.9;
+  }
+  if (dx < 0) p.facing = -1;
+  if (dx > 0) p.facing = 1;
+
+  if (wantsShoot && hasEquippedWeapon() && state.gun.cooldown <= 0) {
+    shootBeam("player", p.x + p.w / 2 + p.facing * 24, p.y + 28, p.facing);
+    state.gun.cooldown = weaponStage().cooldown;
+  }
+
+  p.invincible = Math.max(0, p.invincible - dt);
+  p.x = clamp(p.x + p.vx * dt, 0, WORLD_WIDTH - p.w);
+  p.y = clamp(p.y + p.vy * dt, 58, canvas.height - p.h - 42);
+  p.grounded = false;
+  p.swimming = true;
+  state.camera = clamp(p.x - 330, 0, WORLD_WIDTH - canvas.width);
+}
+
+function updateStageTraits(dt) {
+  const trait = currentStageTrait();
+  state.stagePulse = (state.stagePulse ?? 0) + dt * 2.2;
+  if (trait === "underwater") updateOxygen(dt);
+  if (trait === "marsLava") updateLavaGeysers(dt);
+  if (trait === "factoryBelt" && state.player.grounded) {
+    const belt = Math.sin((state.player.x + currentCourse * 97) / 260) >= 0 ? 1 : -1;
+    state.player.x = clamp(state.player.x + belt * 54 * dt, 0, WORLD_WIDTH - state.player.w);
+    state.player.vx += belt * 18 * dt;
+  }
+}
+
+function updateOxygen(dt) {
+  state.oxygen = clamp((state.oxygen ?? MAX_OXYGEN) - dt * 5.8, 0, MAX_OXYGEN);
+  state.oxygenHurtCooldown = Math.max(0, (state.oxygenHurtCooldown ?? 0) - dt);
+  for (const item of state.oxygenItems ?? []) {
+    if (!item.taken) continue;
+    item.respawn = Math.max(0, (item.respawn ?? 0) - dt);
+    if (item.respawn <= 0) item.taken = false;
+  }
+  if (state.oxygen <= 0 && state.oxygenHurtCooldown <= 0) {
+    state.oxygenHurtCooldown = 1.15;
+    damagePlayer(false, null, false);
+  }
+}
+
+function updateLavaGeysers(dt) {
+  const p = state.player;
+  for (const g of state.lavaGeysers ?? []) {
+    g.timer = ((g.timer ?? 0) + dt) % g.period;
+    g.active = g.timer > 2.55 && g.timer < 3.35;
+    if (!g.active) continue;
+    const jet = { x: g.x, y: canvas.height - g.h, w: g.w, h: g.h };
+    if (hit(p, jet)) damagePlayer(false, null, false);
+  }
 }
 
 function queueStompBoost() {
@@ -1340,10 +1465,11 @@ function updateEnemies(dt) {
     if (!e.alive) continue;
     if (e.boss && courses[currentCourse]?.bossStage && !state.bossIntroPlayed) {
       e.vx = 0;
-      e.vy += GRAVITY * dt;
+      e.vy += isUnderwaterStage() ? 0 : GRAVITY * dt;
       e.attackAnim = 0;
       e.gunCooldown = Math.max(e.gunCooldown ?? 0, 0.5);
-      moveEnemyAndCollide(e, dt);
+      if (isUnderwaterStage()) updateSwimmingEnemy(e, dt, true);
+      else moveEnemyAndCollide(e, dt);
       continue;
     }
     e.gunCooldown = Math.max(0, e.gunCooldown - dt);
@@ -1353,8 +1479,11 @@ function updateEnemies(dt) {
     e.stun = Math.max(0, (e.stun ?? 0) - dt);
     if (e.stun > 0) {
       e.vx = 0;
-      e.vy += GRAVITY * dt;
-      moveEnemyAndCollide(e, dt);
+      e.vy += isUnderwaterStage() ? 0 : GRAVITY * dt;
+      if (isUnderwaterStage()) updateSwimmingEnemy(e, dt, true);
+      else moveEnemyAndCollide(e, dt);
+    } else if (isUnderwaterStage()) {
+      updateSwimmingEnemy(e, dt);
     } else {
       updateEnemyMovement(e, dt);
     }
@@ -1485,6 +1614,32 @@ function updateEnemyMovement(e, dt) {
     e.x = maxX - e.w;
     e.vx = -Math.abs(e.vx) || -86;
   }
+  syncEnemyFacing(e);
+}
+
+function updateSwimmingEnemy(e, dt, idle = false) {
+  const p = state.player;
+  const dx = p.x + p.w / 2 - (e.x + e.w / 2);
+  const dy = p.y + p.h / 2 - (e.y + e.h / 2);
+  const distance = Math.hypot(dx, dy) || 1;
+  const seesPlayer = distance < 1050;
+  const hasGun = state.gun.holder === e.id || e.weaponPower;
+  e.alert = seesPlayer || hasGun ? Math.min(1, e.alert + dt * 2.4) : Math.max(0, e.alert - dt * 0.7);
+  const speed = idle ? 60 : e.boss ? 230 : hasGun ? 190 : 165;
+  if (!idle && e.alert > 0.25) {
+    const targetGap = hasGun ? 210 : 38;
+    const pull = distance > targetGap ? 1 : -0.35;
+    e.vx += dx / distance * speed * pull * dt * 6;
+    e.vy += dy / distance * speed * pull * dt * 5;
+  } else {
+    e.vx += Math.sin((performance.now() / 650) + e.id) * 24 * dt;
+    e.vy += Math.cos((performance.now() / 760) + e.id) * 24 * dt;
+  }
+  e.vx = clamp(e.vx * 0.986, -speed, speed);
+  e.vy = clamp(e.vy * 0.986, -speed * 0.75, speed * 0.75);
+  e.x = clamp(e.x + e.vx * dt, e.boss ? e.left : 0, (e.boss ? e.right : WORLD_WIDTH) - e.w);
+  e.y = clamp(e.y + e.vy * dt, 72, canvas.height - e.h - 48);
+  e.grounded = false;
   syncEnemyFacing(e);
 }
 
@@ -2464,6 +2619,41 @@ function collectStarItems() {
   }
 }
 
+function collectOxygenItems() {
+  if (!isUnderwaterStage()) return;
+  const p = state.player;
+  for (const o of state.oxygenItems ?? []) {
+    if (o.taken) continue;
+    const nearX = p.x < o.x + o.r && p.x + p.w > o.x - o.r;
+    const nearY = p.y < o.y + o.r && p.y + p.h > o.y - o.r;
+    if (nearX && nearY) {
+      o.taken = true;
+      o.respawn = 7.5;
+      state.oxygen = MAX_OXYGEN;
+      state.score += 15;
+      playSfx("pickup", o.x);
+      spawnBubbleBurst(o.x, o.y);
+    }
+  }
+}
+
+function spawnBubbleBurst(x, y) {
+  const colors = ["#bff8ff", "#ffffff", "#9ee8ff", "#d9ffd6"];
+  for (let i = 0; i < 16; i++) {
+    state.particles.push({
+      x,
+      y,
+      vx: -45 + Math.random() * 90,
+      vy: -60 - Math.random() * 100,
+      life: 0.52 + Math.random() * 0.28,
+      maxLife: 0.8,
+      r: 4 + Math.random() * 7,
+      color: colors[i % colors.length],
+      spin: Math.random() * Math.PI
+    });
+  }
+}
+
 function spawnStarBurst(x, y) {
   const colors = ["#fff3a4", "#ffd85a", "#ffffff", "#ffd1ed", "#9ee8ff"];
   for (let i = 0; i < 18; i++) {
@@ -2713,7 +2903,9 @@ function draw() {
   ctx.save();
   ctx.translate(-Math.floor(cam), 0);
   drawMountains();
+  drawStageEnvironment();
   drawPlatforms();
+  drawStageHazards();
   drawGun();
   drawItems();
   drawParticles();
@@ -2725,6 +2917,7 @@ function draw() {
   ctx.restore();
   drawStageBadge();
   drawHpMeter();
+  drawOxygenMeter();
   if (state.mode === "bossIntro" || state.mode === "bossOutro") drawBossIntroOverlay();
   if (state.mode === "paused") drawPauseScreen();
   if (state.itemFullPrompt > 0) drawItemFullPrompt();
@@ -3197,6 +3390,90 @@ function drawHpMeter() {
     ctx.moveTo(sx, y + 13);
     ctx.lineTo(sx, y + 31);
     ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawOxygenMeter() {
+  if (!isUnderwaterStage()) return;
+  const x = canvas.width - 250;
+  const y = 70;
+  const w = 220;
+  const h = 38;
+  const ratio = clamp((state.oxygen ?? MAX_OXYGEN) / MAX_OXYGEN, 0, 1);
+  ctx.save();
+  ctx.fillStyle = "rgba(235, 252, 255, 0.78)";
+  ctx.strokeStyle = "rgba(106, 198, 231, 0.82)";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, 8);
+  ctx.fill();
+  ctx.stroke();
+  ctx.font = "900 14px Segoe UI, system-ui, sans-serif";
+  ctx.fillStyle = "#277394";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText("O2", x + 14, y + h / 2);
+  ctx.fillStyle = "rgba(201, 246, 255, 0.72)";
+  ctx.beginPath();
+  ctx.roundRect(x + 48, y + 11, 154, 16, 6);
+  ctx.fill();
+  const oxGrad = ctx.createLinearGradient(x + 48, y, x + 202, y);
+  oxGrad.addColorStop(0, "#ffffff");
+  oxGrad.addColorStop(0.45, "#9ee8ff");
+  oxGrad.addColorStop(1, "#61f2a5");
+  ctx.fillStyle = oxGrad;
+  ctx.beginPath();
+  ctx.roundRect(x + 48, y + 11, 154 * ratio, 16, 6);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawStageEnvironment() {
+  const trait = currentStageTrait();
+  if (trait === "underwater") {
+    ctx.save();
+    const grad = ctx.createLinearGradient(0, 20, 0, canvas.height);
+    grad.addColorStop(0, "rgba(106, 246, 215, 0.22)");
+    grad.addColorStop(0.55, "rgba(0, 95, 120, 0.26)");
+    grad.addColorStop(1, "rgba(2, 35, 63, 0.32)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, WORLD_WIDTH, canvas.height);
+    ctx.strokeStyle = "rgba(191, 248, 255, 0.38)";
+    ctx.lineWidth = 3;
+    for (let x = -80; x < WORLD_WIDTH + 120; x += 180) {
+      const waveY = 86 + Math.sin(performance.now() / 650 + x * 0.01) * 8;
+      ctx.beginPath();
+      ctx.arc(x, waveY, 58, 0.08 * Math.PI, 0.92 * Math.PI);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+function drawStageHazards() {
+  if (currentStageTrait() !== "marsLava") return;
+  ctx.save();
+  for (const g of state.lavaGeysers ?? []) {
+    const warmup = g.timer > 2.1 && g.timer <= 2.55;
+    if (!g.active && !warmup) continue;
+    const alpha = g.active ? 0.86 : 0.34;
+    const x = g.x;
+    const y = canvas.height - g.h;
+    const grad = ctx.createLinearGradient(x, y, x + g.w, y);
+    grad.addColorStop(0, `rgba(255, 243, 164, ${alpha * 0.25})`);
+    grad.addColorStop(0.45, `rgba(255, 111, 82, ${alpha})`);
+    grad.addColorStop(1, `rgba(255, 141, 183, ${alpha * 0.42})`);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect(x, y, g.w, g.h, 28);
+    ctx.fill();
+    ctx.fillStyle = `rgba(255, 243, 164, ${alpha})`;
+    for (let i = 0; i < 5; i++) {
+      ctx.beginPath();
+      ctx.arc(x + 10 + i * 13, y + 18 + Math.sin(performance.now() / 120 + i) * 9, 5 + i % 2 * 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
   ctx.restore();
 }
@@ -4615,6 +4892,37 @@ function drawCoins(t) {
     const y = s.y + Math.sin(t * 5.6 + s.bob) * 5;
     drawCollectibleStar(s.x, y, s.r);
   }
+  for (const o of state.oxygenItems ?? []) {
+    if (o.taken) continue;
+    const y = o.y + Math.sin(t * 4.6 + o.bob) * 6;
+    drawOxygenBubble(o.x, y, o.r);
+  }
+}
+
+function drawOxygenBubble(x, y, r) {
+  ctx.save();
+  ctx.translate(x, y);
+  const glow = ctx.createRadialGradient(0, 0, 3, 0, 0, r * 1.8);
+  glow.addColorStop(0, "rgba(255, 255, 255, 0.92)");
+  glow.addColorStop(0.5, "rgba(158, 232, 255, 0.62)");
+  glow.addColorStop(1, "rgba(106, 246, 215, 0)");
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 1.8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "rgba(235, 252, 255, 0.72)";
+  ctx.strokeStyle = "#9ee8ff";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#277394";
+  ctx.font = "900 16px Segoe UI, system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("O2", 0, 1);
+  ctx.restore();
 }
 
 function drawCollectibleStar(x, y, r) {
