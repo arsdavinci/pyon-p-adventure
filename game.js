@@ -344,7 +344,10 @@ const gamepadState = {
   shootLatch: false,
   startLatch: false,
   selectLatch: false,
-  inventoryMoveDelay: 0
+  inventoryMoveDelay: 0,
+  padId: "",
+  neutralAxisX: 0,
+  neutralAxisY: 0
 };
 
 let state;
@@ -1094,7 +1097,9 @@ function maybeStartBossIntro() {
   state.bossIntroTimer = 0;
   state.bossIntroBossId = boss.id;
   state.bossIntroStep = 0;
+  state.beams = state.beams.filter(beam => beam.owner === "player");
   boss.attackAnim = 0.8;
+  boss.gunCooldown = Math.max(boss.gunCooldown ?? 0, 1.2);
   p.vx = 0;
   p.vy = 0;
   p.grounded = true;
@@ -1275,6 +1280,14 @@ function updateEnemies(dt) {
       continue;
     }
     if (!e.alive) continue;
+    if (e.boss && courses[currentCourse]?.bossStage && !state.bossIntroPlayed) {
+      e.vx = 0;
+      e.vy += GRAVITY * dt;
+      e.attackAnim = 0;
+      e.gunCooldown = Math.max(e.gunCooldown ?? 0, 0.5);
+      moveEnemyAndCollide(e, dt);
+      continue;
+    }
     e.gunCooldown = Math.max(0, e.gunCooldown - dt);
     e.jumpCooldown = Math.max(0, e.jumpCooldown - dt);
     e.attackAnim = Math.max(0, (e.attackAnim ?? 0) - dt);
@@ -1308,6 +1321,7 @@ function updateEnemies(dt) {
 
 function damageEnemy(e, amount = 1) {
   if (!e.alive) return;
+  if (e.boss && courses[currentCourse]?.bossStage && (!state.bossIntroPlayed || state.mode === "bossIntro")) return;
   e.hp = Math.max(0, (e.hp ?? 3) - amount);
   e.alert = 1;
   e.hurtAnim = e.boss ? 0.38 : 0.24;
@@ -1328,6 +1342,7 @@ function damageEnemy(e, amount = 1) {
 }
 
 function stunEnemy(e) {
+  if (e.boss && courses[currentCourse]?.bossStage && (!state.bossIntroPlayed || state.mode === "bossIntro")) return;
   e.stun = e.boss ? 0.35 : 2;
   e.alert = 1;
   e.vx = 0;
@@ -5502,8 +5517,13 @@ function updateGamepad() {
     return;
   }
 
-  const axisX = pad.axes[0] || 0;
-  const axisY = pad.axes[1] || 0;
+  if (gamepadState.padId !== pad.id) {
+    gamepadState.padId = pad.id;
+    gamepadState.neutralAxisX = pad.axes[0] || 0;
+    gamepadState.neutralAxisY = pad.axes[1] || 0;
+  }
+  const axisX = clamp((pad.axes[0] || 0) - (gamepadState.neutralAxisX || 0), -1, 1);
+  const axisY = clamp((pad.axes[1] || 0) - (gamepadState.neutralAxisY || 0), -1, 1);
   const dpadLeft = Boolean(pad.buttons[14]?.pressed);
   const dpadRight = Boolean(pad.buttons[15]?.pressed);
   const dpadUp = Boolean(pad.buttons[12]?.pressed);
@@ -5523,6 +5543,10 @@ function updateGamepad() {
   gamepadState.shoot = shootPressed;
   gamepadState.select = selectPressed;
   gamepadState.start = startPressed;
+  if (state.mode === "playing") {
+    if (gamepadState.left && !gamepadState.leftLatch) registerMoveTap(-1);
+    if (gamepadState.right && !gamepadState.rightLatch) registerMoveTap(1);
+  }
 
   if (!overlay.classList.contains("hidden")) {
     const anyStartPressed = jumpPressed || shootPressed || runPressed || startPressed || selectPressed;
