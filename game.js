@@ -843,7 +843,8 @@ function moveMapSelection(dir) {
 }
 
 function openInventory() {
-  if (!state || state.mode !== "playing") return;
+  if (!state || (state.mode !== "playing" && state.mode !== "respawning")) return;
+  state.inventoryReturnMode = state.mode;
   state.mode = "inventory";
   const equippedSlot = inventorySlots().findIndex(slot => slot?.power === state.weaponPower);
   state.inventorySelection = equippedSlot >= 0 ? equippedSlot : 0;
@@ -854,7 +855,8 @@ function openInventory() {
 
 function closeInventory() {
   if (!state || state.mode !== "inventory") return;
-  state.mode = "playing";
+  state.mode = state.inventoryReturnMode === "respawning" ? "respawning" : "playing";
+  state.inventoryReturnMode = null;
   lastTime = performance.now();
 }
 
@@ -865,7 +867,8 @@ function toggleInventory() {
 }
 
 function pauseGame() {
-  if (!state || state.mode !== "playing") return;
+  if (!state || (state.mode !== "playing" && state.mode !== "respawning")) return;
+  state.pauseReturnMode = state.mode;
   state.mode = "paused";
   pauseSelection = 0;
   playSfx("equip", state.player.x + state.player.w / 2);
@@ -873,7 +876,8 @@ function pauseGame() {
 
 function resumeGame() {
   if (!state || state.mode !== "paused") return;
-  state.mode = "playing";
+  state.mode = state.pauseReturnMode === "respawning" ? "respawning" : "playing";
+  state.pauseReturnMode = null;
   playSfx("equip", state.player.x + state.player.w / 2);
   lastTime = performance.now();
 }
@@ -5063,7 +5067,7 @@ function updateGamepad() {
     return;
   }
 
-  if (startPressed && !gamepadState.startLatch && state.mode === "playing" && overlay.classList.contains("hidden")) {
+  if (startPressed && !gamepadState.startLatch && (state.mode === "playing" || state.mode === "respawning") && overlay.classList.contains("hidden")) {
     pauseGame();
   }
   if (jumpPressed && !gamepadState.jumpLatch && state.mode === "playing") queueStompBoost();
@@ -5131,7 +5135,7 @@ window.addEventListener("keydown", event => {
     if (code === "Enter" || code === "Space" || code === "KeyX" || code === "KeyY" || code === "KeyJ") startMapCourse(mapSelectedCourse);
     return;
   }
-  if (!event.repeat && code === "Enter" && state.mode === "playing" && overlay.classList.contains("hidden")) {
+  if (!event.repeat && code === "Enter" && (state.mode === "playing" || state.mode === "respawning") && overlay.classList.contains("hidden")) {
     pauseGame();
     return;
   }
@@ -5460,7 +5464,7 @@ function handleTouchStartButton() {
     startMapCourse(mapSelectedCourse);
     return;
   }
-  if (state.mode === "playing") pauseGame();
+  if (state.mode === "playing" || state.mode === "respawning") pauseGame();
 }
 
 function pressTouchControl(code) {
