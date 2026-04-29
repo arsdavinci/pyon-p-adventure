@@ -30,6 +30,12 @@ const MAX_WEAPON_POWER = 16;
 const WEAPON_ATTRIBUTE_SIZE = 8;
 const MAX_INVENTORY_ITEMS = 27;
 const VISIBLE_INVENTORY_ITEMS = 15;
+const INVENTORY_FOCUS_AREAS = ["topMenu", "itemList", "sortButton"];
+const INVENTORY_FOCUS_MODES = {
+  AREA_SELECT: "areaSelect",
+  INSIDE_TOP_MENU: "insideTopMenu",
+  INSIDE_ITEM_LIST: "insideItemList"
+};
 const STOMP_BOUNCE_VY = -540;
 const BOSS_STOMP_BOUNCE_VY = -700;
 const STOMP_BOOST_VY = -1040;
@@ -37,6 +43,7 @@ const BOSS_STOMP_BOOST_VY = -1120;
 const STOMP_BOOST_BUFFER = 0.16;
 const STOMP_LATE_BOOST_WINDOW = 0.14;
 const WEAPON_ASSET_VERSION = "weapon-cutout-v4";
+const SELECT_UI_ASSET_VERSION = "select-ui-generated2-v2";
 const WEAPON_DROP_RATES = [
   { power: 1, chance: 0.8 },
   { power: 2, chance: 0.1 },
@@ -182,7 +189,7 @@ pastelBackground2.src = "assets/pastel-space-background2.png";
 const moonGround = new Image();
 moonGround.src = "assets/pastel-moon-ground.png";
 const selectUiImage = new Image();
-selectUiImage.src = "assets/select-ui-generated2.png";
+selectUiImage.src = `assets/select-ui-generated2.png?v=${SELECT_UI_ASSET_VERSION}`;
 const stageBackgroundImages = [
   "assets/pastel-space-background.png",
   "assets/stage-mars-bg.png",
@@ -436,6 +443,44 @@ const BOSS_DIALOGUES = [
     pyonEn: "Pyon-P: This is not the end. It is the climax!"
   }
 ];
+const BOSS_DEFEAT_DIALOGUES = [
+  {
+    bossJa: "やられたー！ふわふわ王国、今日は閉店だよー！",
+    pyonJa: "ぴょんぴー「閉店セールやな。平和だけもらって帰るで！」",
+    bossEn: "I am beaten! The fluffy kingdom is closed today!",
+    pyonEn: "Pyon-P: Closing sale? I will take the peace back!"
+  },
+  {
+    bossJa: "ぐぬぬ、火星ドームのネオンが消えてしまう！",
+    pyonJa: "ぴょんぴー「節電できてええやん。地球にも優しいで！」",
+    bossEn: "No, the Mars dome neon is going dark!",
+    pyonEn: "Pyon-P: Nice power saving. Space likes that!"
+  },
+  {
+    bossJa: "きらきらに固めるつもりが、こっちが割れたー！",
+    pyonJa: "ぴょんぴー「氷もプライドも、ぴょんと割れたな！」",
+    bossEn: "I tried to freeze you, but I cracked instead!",
+    pyonEn: "Pyon-P: Your ice and pride both cracked!"
+  },
+  {
+    bossJa: "ぶくぶく……星の海に沈むのは私のほうだったわ。",
+    pyonJa: "ぴょんぴー「浮き輪いる？耳でちょっとだけ貸したろか！」",
+    bossEn: "Bubble bubble... I am the one sinking into the star sea.",
+    pyonEn: "Pyon-P: Need a float? My ears are not for rent!"
+  },
+  {
+    bossJa: "リング工場の歯車が、ぜんぶ空回りだー！",
+    pyonJa: "ぴょんぴー「空回りはうちのジャンプだけで十分や！」",
+    bossEn: "All the ring factory gears are spinning uselessly!",
+    pyonEn: "Pyon-P: Leave the fancy spinning to my jumps!"
+  },
+  {
+    bossJa: "魔王星の夜が……朝になってしまう……！",
+    pyonJa: "ぴょんぴー「ほな、おはようさん！大冒険、勝利の朝や！」",
+    bossEn: "The Demon Star night... is turning into morning!",
+    pyonEn: "Pyon-P: Good morning then! Adventure wins!"
+  }
+];
 
 BOSS_DIALOGUES[0].bossJa = "ふわふわ月あめは、ぜんぶぼくの王国だよ！";
 BOSS_DIALOGUES[0].pyonJa = "ぴょんぴー「じゃあ半分こして、平和も返してもらうよ！」";
@@ -485,6 +530,14 @@ const MAP_NODE_POINTS = [
   { x: 971, y: 440 }, { x: 951, y: 269 }, { x: 1064, y: 310 }, { x: 1169, y: 478 }, { x: 1261, y: 473 },
   { x: 1236, y: 395 }, { x: 1187, y: 309 }, { x: 1332, y: 537 }, { x: 1388, y: 613 }, { x: 1467, y: 623 },
   { x: 1562, y: 591 }, { x: 1539, y: 489 }, { x: 1538, y: 438 }, { x: 1518, y: 330 }, { x: 1510, y: 266 }
+];
+const MAP_WORLD_FOG_ZONES = [
+  null,
+  { x: 470, y: 452, rx: 185, ry: 302, rotate: -0.08, color: "rgba(255, 209, 237, 0.74)" },
+  { x: 694, y: 498, rx: 205, ry: 340, rotate: -0.02, color: "rgba(201, 246, 255, 0.76)" },
+  { x: 980, y: 488, rx: 210, ry: 328, rotate: 0.04, color: "rgba(217, 255, 214, 0.72)" },
+  { x: 1254, y: 485, rx: 194, ry: 318, rotate: -0.03, color: "rgba(255, 243, 164, 0.7)" },
+  { x: 1515, y: 450, rx: 255, ry: 380, rotate: 0.07, color: "rgba(200, 178, 255, 0.78)" }
 ];
 
 function makeCourse(worldIndex, areaIndex) {
@@ -540,6 +593,11 @@ function makeCourse(worldIndex, areaIndex) {
   for (let i = 0; i < (finalStage ? 0 : 13); i++) {
     coins.push(coin(540 + i * 350, i % 2 ? 242 + (i % 3) * 36 : 430, i % 2 ? "pea" : "kaki"));
   }
+  const starItems = finalStage ? [] : [
+    starItem(950, 430),
+    starItem(2260, 300),
+    starItem(3740, 430)
+  ];
 
   return {
     theme: STAGE_THEMES[worldIndex],
@@ -550,7 +608,7 @@ function makeCourse(worldIndex, areaIndex) {
     difficulty,
     platforms,
     blocks,
-    level: { enemies, coins, flag: rect(5060, 252, 28, 240) },
+    level: { enemies, coins, starItems, flag: rect(5060, 252, 28, 240) },
     gun: { x: 330 + areaIndex * 70, y: 430 }
   };
 }
@@ -596,6 +654,11 @@ courses[0] = {
       coin(580, 326, "kaki"), coin(660, 326, "pea"), coin(1330, 300, "kaki"), coin(1734, 228, "pea"),
       coin(2510, 326, "kaki"), coin(2920, 254, "pea"), coin(3590, 322, "kaki"), coin(4050, 250, "pea"),
       coin(4480, 330, "kaki"), coin(4550, 330, "pea"), coin(4810, 430, "kaki")
+    ],
+    starItems: [
+      starItem(930, 430),
+      starItem(2240, 430),
+      starItem(3370, 322)
     ],
     flag: rect(5000, 252, 28, 240)
   },
@@ -657,6 +720,10 @@ function coin(x, y, type) {
   return { x, y, type, r: 14, taken: false, bob: Math.random() * Math.PI * 2 };
 }
 
+function starItem(x, y) {
+  return { x, y, r: 18, taken: false, bob: Math.random() * Math.PI * 2 };
+}
+
 function newState() {
   applyCourse(currentCourse);
   return {
@@ -681,7 +748,8 @@ function newState() {
       facing: 1
     },
     enemies: level.enemies.map((e, id) => ({ ...e, id, spawnX: e.x, spawnY: e.y, alive: true, defeated: 0, alert: e.boss ? 1 : 0, trick: 0, grounded: true, jumpCooldown: 0, gunCooldown: 0, attackAnim: 0, hurtAnim: 0, hp: e.hp ?? 1, maxHp: e.maxHp ?? e.hp ?? 1, facing: e.vx >= 0 ? 1 : -1 })),
-    coinItems: level.coins.map(c => ({ ...c, taken: false })),
+    coinItems: (level.coins ?? []).map(c => ({ ...c, taken: false })),
+    starItems: (level.starItems ?? []).map(s => ({ ...s, taken: false })),
     particles: [],
     items: [],
     gun: { x: courses[currentCourse].gun.x, y: courses[currentCourse].gun.y, holder: "player", cooldown: 0, weaponPower: 1 },
@@ -695,6 +763,16 @@ function newState() {
     fusionPrompt: null,
     itemFullPrompt: 0,
     inventoryMessage: 0,
+    inventoryMessageLabel: "",
+    inventoryFocusArea: "itemList",
+    inventoryFocusMode: INVENTORY_FOCUS_MODES.AREA_SELECT,
+    inventoryTopMenuIndex: 0,
+    inventorySortFlash: 0,
+    inventorySortToastLabel: "",
+    inventorySortComment: "",
+    inventorySortCommentUntil: 0,
+    inventoryConfirmWorldMap: false,
+    inventoryConfirmChoice: 0,
     stompBoostTimer: 0,
     stompLateBoostTimer: 0,
     deathTimer: 0,
@@ -706,6 +784,9 @@ function newState() {
     bossIntroTimer: 0,
     bossIntroBossId: null,
     bossIntroStep: 0,
+    bossDialoguePhase: "intro",
+    bossOutroKind: 0,
+    bossOutroFinal: false,
     beams: []
   };
 }
@@ -716,7 +797,8 @@ function applyCourse(index) {
   blocks = course.blocks.map(b => ({ ...b, broken: false }));
   level = {
     enemies: course.level.enemies.map(e => ({ ...e })),
-    coins: course.level.coins.map(c => ({ ...c })),
+    coins: (course.level.coins ?? []).map(c => ({ ...c })),
+    starItems: (course.level.starItems ?? []).map(s => ({ ...s })),
     flag: { ...course.level.flag }
   };
 }
@@ -842,6 +924,18 @@ function moveMapSelection(dir) {
   updateHud();
 }
 
+function returnToWorldMapFromInventory() {
+  if (!state || state.mode !== "inventory") return;
+  campaignKeep = campaignSnapshotFromState();
+  state.inventoryConfirmWorldMap = false;
+  state.inventoryGrab = null;
+  state.fusionPrompt = null;
+  enterWorldMap(currentCourse, false, null);
+  overlay.classList.add("hidden");
+  playSfx("respawn", state.player.x + state.player.w / 2);
+  lastTime = performance.now();
+}
+
 function openInventory() {
   if (!state || (state.mode !== "playing" && state.mode !== "respawning")) return;
   state.inventoryReturnMode = state.mode;
@@ -851,10 +945,14 @@ function openInventory() {
   ensureInventorySelectionVisible();
   state.inventoryGrab = null;
   state.fusionPrompt = null;
+  resetInventoryFocus();
 }
 
 function closeInventory() {
   if (!state || state.mode !== "inventory") return;
+  state.inventoryGrab = null;
+  state.fusionPrompt = null;
+  state.inventoryConfirmWorldMap = false;
   state.mode = state.inventoryReturnMode === "respawning" ? "respawning" : "playing";
   state.inventoryReturnMode = null;
   lastTime = performance.now();
@@ -932,6 +1030,13 @@ function update(dt) {
     updateHud();
     return;
   }
+  if (state.mode === "bossOutro") {
+    updateGamepad();
+    updateBossIntro(dt);
+    updateParticles(dt);
+    updateHud();
+    return;
+  }
   if (state.mode === "dying") {
     updateDeathFall(dt);
     updateParticles(dt);
@@ -960,18 +1065,19 @@ function update(dt) {
   state.time -= dt;
   if (state.time <= 0) damagePlayer();
 
-  updatePlayer(dt);
   if (maybeStartBossIntro()) {
     updateParticles(dt);
     updateHud();
     return;
   }
+  updatePlayer(dt);
   updateGun(dt);
   updateItems(dt);
   updateEnemies(dt);
   updateBeams(dt);
   updateParticles(dt);
   collectCoins();
+  collectStarItems();
   checkGoal();
   updateHud();
 }
@@ -1305,13 +1411,14 @@ function updateEnemyMovement(e, dt) {
     e.x = maxX - e.w;
     e.vx = -Math.abs(e.vx) || -86;
   }
-  if (Math.abs(e.vx) > 8) e.facing = e.vx > 0 ? 1 : -1;
+  syncEnemyFacing(e);
 }
 
 function respawnBoss(e) {
   e.x = e.spawnX ?? 4400;
   e.y = e.spawnY ?? 416;
   e.vx = -Math.abs(e.vx || 120);
+  syncEnemyFacing(e);
   e.vy = 0;
   e.grounded = false;
   e.alert = 1;
@@ -1383,6 +1490,11 @@ function updateEnemyMovementOld(e, dt) {
     e.x = maxX - e.w;
     e.vx = -Math.abs(e.vx) || -86;
   }
+  syncEnemyFacing(e);
+}
+
+function syncEnemyFacing(e) {
+  if (Math.abs(e.vx ?? 0) > 4) e.facing = e.vx > 0 ? 1 : -1;
 }
 
 function moveEnemyAndCollide(e, dt) {
@@ -1550,6 +1662,13 @@ function playSfx(name, x = state?.player?.x ?? 0) {
     playTone({ freq: 640, endFreq: 980, duration: 0.18, type: "sine", gain: 0.055, pan });
     playTone({ start: 0.1, freq: 980, endFreq: 1480, duration: 0.22, type: "triangle", gain: 0.05, pan });
     playTone({ start: 0.22, freq: 1480, endFreq: 1980, duration: 0.18, type: "sine", gain: 0.035, pan });
+  } else if (name === "stageClear") {
+    playTone({ freq: 523, endFreq: 523, duration: 0.12, type: "triangle", gain: 0.052, pan });
+    playTone({ start: 0.08, freq: 659, endFreq: 659, duration: 0.12, type: "triangle", gain: 0.052, pan });
+    playTone({ start: 0.16, freq: 784, endFreq: 784, duration: 0.15, type: "triangle", gain: 0.054, pan });
+    playTone({ start: 0.29, freq: 1046, endFreq: 1174, duration: 0.28, type: "sine", gain: 0.05, pan });
+    playTone({ start: 0.29, freq: 1318, endFreq: 1568, duration: 0.28, type: "triangle", gain: 0.035, pan });
+    playNoise({ start: 0.22, duration: 0.28, gain: 0.018, filter: 4600 });
   } else if (name === "pickup") {
     playTone({ freq: 760, endFreq: 1220, duration: 0.12, type: "sine", gain: 0.045, pan });
     playTone({ start: 0.08, freq: 1220, endFreq: 1640, duration: 0.12, type: "triangle", gain: 0.036, pan });
@@ -1559,6 +1678,11 @@ function playSfx(name, x = state?.player?.x ?? 0) {
     playTone({ start: 0.14, freq: 784, endFreq: 1046, duration: 0.16, type: "sine", gain: 0.048, pan });
     playTone({ start: 0.24, freq: 1318, endFreq: 1568, duration: 0.18, type: "sine", gain: 0.034, pan });
     playNoise({ start: 0.08, duration: 0.24, gain: 0.018, filter: 5200 });
+  } else if (name === "snackStar") {
+    playTone({ freq: 784, endFreq: 1174, duration: 0.1, type: "triangle", gain: 0.07, pan });
+    playTone({ start: 0.055, freq: 1174, endFreq: 1760, duration: 0.13, type: "sine", gain: 0.06, pan });
+    playTone({ start: 0.14, freq: 1760, endFreq: 2637, duration: 0.16, type: "triangle", gain: 0.046, pan });
+    playNoise({ start: 0.03, duration: 0.18, gain: 0.02, filter: 6200 });
   } else if (name === "equip") {
     playTone({ freq: 420, endFreq: 840, duration: 0.11, type: "triangle", gain: 0.045, pan });
     playTone({ start: 0.055, freq: 980, endFreq: 1380, duration: 0.12, type: "sine", gain: 0.04, pan });
@@ -1568,6 +1692,7 @@ function playSfx(name, x = state?.player?.x ?? 0) {
 function shootBeam(owner, x, y, dir) {
   if (owner === "player" && !hasEquippedWeapon()) return;
   const stage = owner === "player" ? weaponStage() : enemyWeaponStage(owner);
+  const beamSpeed = owner === "player" ? stage.speed : stage.speed * 0.5;
   playSfx("laser", x);
   if (stage.pattern === "homing") {
     shootHomingMissiles(owner, x, y, dir, stage);
@@ -1584,10 +1709,10 @@ function shootBeam(owner, x, y, dir) {
       y: y + offsetY,
       w: stage.width,
       h: stage.height,
-      vx: Math.cos(angle) * stage.speed,
-      vy: Math.sin(angle) * stage.speed,
+      vx: Math.cos(angle) * beamSpeed,
+      vy: Math.sin(angle) * beamSpeed,
       angle,
-      life: stage.range / stage.speed,
+      life: stage.range / beamSpeed,
       damage: stage.damage,
       colors: stage.colors,
       power: owner === "player" ? state.weaponPower : stage.damage,
@@ -1695,7 +1820,6 @@ function addWeaponStock(power = 1) {
   }
   const powerValue = clamp(Math.floor(power), 1, MAX_WEAPON_POWER);
   ensureInventoryItems();
-  const upgradedByPickup = previewWeaponPowerAfterPickup(powerValue) > strongestWeaponPower();
   const emptyIndex = state.inventoryItems.findIndex(item => !item);
   if (emptyIndex < 0) {
     showItemFullPrompt();
@@ -1703,7 +1827,7 @@ function addWeaponStock(power = 1) {
   }
   state.inventoryItems[emptyIndex] = powerValue;
   syncWeaponInventoryFromItems();
-  playSfx(upgradedByPickup ? "powerUp" : "pickup", state.player.x + state.player.w / 2);
+  playSfx("powerUp", state.player.x + state.player.w / 2);
   if (state.weaponPower > 0 && !state.weaponInventory[state.weaponPower - 1]) {
     state.weaponPower = 0;
     state.gun.holder = "inventory";
@@ -1795,6 +1919,30 @@ function compactInventoryItems() {
   state.inventoryGrab = null;
   state.fusionPrompt = null;
   state.inventoryMessage = performance.now() + 1400;
+  state.inventoryMessageLabel = t("sorted");
+}
+
+function runInventorySort() {
+  ensureInventoryItems();
+  const items = state.inventoryItems.filter(Boolean);
+  const compacted = [...items, ...Array(MAX_INVENTORY_ITEMS - items.length).fill(null)];
+  const alreadyCompact = state.inventoryItems.every((item, index) => item === compacted[index]);
+  if (items.length === 0) {
+    state.inventorySortToastLabel = "整理するものなし";
+    state.inventorySortComment = "ぴょんぴー「いや整理するものがないがな！」";
+  } else if (alreadyCompact) {
+    state.inventorySortToastLabel = "整理済み";
+    state.inventorySortComment = "ぴょんぴー「いやもう整理されとる！」";
+  } else {
+    compactInventoryItems();
+    state.inventorySortToastLabel = "整理されました";
+    state.inventorySortComment = "ぴょんぴー「わあ、綺麗に並んだな！」";
+  }
+  state.inventorySortFlash = performance.now() + 220;
+  state.inventorySortCommentUntil = performance.now() + 2200;
+  state.inventoryMessage = performance.now() + 1400;
+  state.inventoryMessageLabel = state.inventorySortToastLabel;
+  playSfx("equip", state.player.x + state.player.w / 2);
 }
 
 function totalInventoryItems(inventory = state.inventoryItems) {
@@ -2205,6 +2353,41 @@ function collectCoins() {
   }
 }
 
+function collectStarItems() {
+  const p = state.player;
+  for (const s of state.starItems) {
+    if (s.taken) continue;
+    const nearX = p.x < s.x + s.r && p.x + p.w > s.x - s.r;
+    const nearY = p.y < s.y + s.r && p.y + p.h > s.y - s.r;
+    if (nearX && nearY) {
+      s.taken = true;
+      state.score += 50;
+      state.lives = Math.min(MAX_LIVES, state.lives + 1);
+      playSfx("snackStar", s.x);
+      spawnStarBurst(s.x, s.y);
+    }
+  }
+}
+
+function spawnStarBurst(x, y) {
+  const colors = ["#fff3a4", "#ffd85a", "#ffffff", "#ffd1ed", "#9ee8ff"];
+  for (let i = 0; i < 18; i++) {
+    const angle = i * Math.PI * 2 / 18;
+    const speed = 70 + Math.random() * 150;
+    state.particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 40,
+      life: 0.42 + Math.random() * 0.18,
+      maxLife: 0.6,
+      r: 4 + Math.random() * 5,
+      color: colors[i % colors.length],
+      star: true,
+      spin: Math.random() * Math.PI
+    });
+  }
+}
+
 function spawnJumpSmoke(x, y) {
   const colors = ["#fff3a4", "#c9f6ff", "#ffd1ed", "#d9ffd6", "#d7c8ff"];
   for (let i = 0; i < 14; i++) {
@@ -2350,6 +2533,7 @@ function checkGoal() {
   const bossAlive = state.enemies.some(e => e.boss && e.alive);
   if (currentCourse === courses.length - 1 && bossAlive) return;
   if (hit(state.player, level.flag)) {
+    playSfx("stageClear", state.player.x + state.player.w / 2);
     if (currentCourse < courses.length - 1) {
       nextCourse();
     } else {
@@ -2394,7 +2578,7 @@ function endGame(title, label, message = null, options = {}) {
 }
 
 function kakipiRank() {
-  const total = courses.reduce((sum, course) => sum + course.level.coins.length, 0);
+  const total = courses.reduce((sum, course) => sum + (course.level.coins ?? []).length, 0);
   const ratio = state.coinTotal / total;
   const snackTotal = state.kakiTotal + state.peaTotal;
   const balance = snackTotal > 0 ? Math.round((1 - Math.abs(state.kakiTotal - state.peaTotal) / snackTotal) * 100) : 0;
@@ -2559,6 +2743,76 @@ function mapCourseAt(x, y) {
   return -1;
 }
 
+function mapWorldFogZoneToCanvas(zone) {
+  const layout = mapImageLayout();
+  return {
+    x: layout.x + zone.x * layout.scale,
+    y: layout.y + zone.y * layout.scale,
+    rx: zone.rx * layout.scale,
+    ry: zone.ry * layout.scale,
+    rotate: zone.rotate,
+    color: zone.color,
+    scale: layout.scale
+  };
+}
+
+function drawMapIslandFog(zone, alpha = 1) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  const t = performance.now() / 1000;
+  const main = mapWorldFogZoneToCanvas(zone);
+  ctx.translate(main.x, main.y);
+  ctx.rotate(main.rotate + Math.sin(t * 0.5) * 0.015);
+
+  const base = ctx.createRadialGradient(0, 0, Math.min(main.rx, main.ry) * 0.08, 0, 0, Math.max(main.rx, main.ry));
+  base.addColorStop(0, "rgba(255, 255, 255, 0.86)");
+  base.addColorStop(0.42, zone.color);
+  base.addColorStop(0.82, "rgba(231, 225, 255, 0.64)");
+  base.addColorStop(1, "rgba(231, 225, 255, 0)");
+  ctx.fillStyle = base;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, main.rx, main.ry, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const puffs = [
+    { x: -0.42, y: -0.22, r: 0.34 },
+    { x: -0.1, y: -0.36, r: 0.36 },
+    { x: 0.28, y: -0.26, r: 0.32 },
+    { x: 0.44, y: 0.02, r: 0.3 },
+    { x: 0.18, y: 0.28, r: 0.36 },
+    { x: -0.28, y: 0.24, r: 0.34 }
+  ];
+  for (let i = 0; i < puffs.length; i++) {
+    const p = puffs[i];
+    const drift = Math.sin(t + i * 1.6) * main.rx * 0.03;
+    const x = p.x * main.rx + drift;
+    const y = p.y * main.ry;
+    const r = p.r * Math.max(main.rx, main.ry);
+    const puff = ctx.createRadialGradient(x, y, 2, x, y, r);
+    puff.addColorStop(0, "rgba(255, 255, 255, 0.78)");
+    puff.addColorStop(0.62, "rgba(255, 231, 247, 0.42)");
+    puff.addColorStop(1, "rgba(255, 255, 255, 0)");
+    ctx.fillStyle = puff;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawLockedMapFog(reveal) {
+  const unlockedWorld = courses[unlockedCourse]?.worldIndex ?? 0;
+  for (let worldIndex = 1; worldIndex < MAP_WORLD_FOG_ZONES.length; worldIndex++) {
+    const zone = MAP_WORLD_FOG_ZONES[worldIndex];
+    if (!zone) continue;
+    if (worldIndex > unlockedWorld) {
+      drawMapIslandFog(zone, 0.98);
+    } else if (mapRevealTimer > 0 && worldIndex === unlockedWorld && mapRevealFromWorld !== unlockedWorld) {
+      drawMapIslandFog(zone, 1 - reveal);
+    }
+  }
+}
+
 function drawWorldMapScreen() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   const layout = mapImageLayout();
@@ -2599,7 +2853,9 @@ function drawWorldMapScreen() {
   }
   ctx.restore();
 
-  const visibleNodeLimit = Math.min(MAP_NODE_POINTS.length - 1, unlockedCourse + 1);
+  drawLockedMapFog(reveal);
+
+  const visibleNodeLimit = Math.min(MAP_NODE_POINTS.length - 1, unlockedCourse);
   for (let i = 0; i <= visibleNodeLimit; i++) {
     const unlocked = i <= unlockedCourse;
     const completed = completedCourses.has(i);
@@ -3003,7 +3259,6 @@ function drawInventoryScreen() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
   drawInventoryDynamicText();
-  drawEquippedWeaponPanel();
   drawItemCaseOverlay();
   drawSelectedWeaponPreview();
   drawGamepadInventoryGhost();
@@ -3016,58 +3271,52 @@ function drawInventoryDynamicText() {
   ctx.save();
   ctx.textBaseline = "top";
   ctx.textAlign = "left";
-  ctx.font = "900 16px Segoe UI, system-ui, sans-serif";
   ctx.fillStyle = "#ffffff";
   ctx.strokeStyle = "rgba(68, 54, 132, 0.9)";
   ctx.lineWidth = 4;
+
+  ctx.font = "900 15px Segoe UI, system-ui, sans-serif";
   const lines = [
-    ["NAME    PYON-P", 254, 184],
-    [`STAGE   ${stageLabel()}`, 254, 214],
-    [`WEAPON  ${weaponName()}`, 254, 244]
+    ["NAME   PYON-P", 254, 200],
+    [`STAGE  ${stageLabel()}`, 254, 230],
+    ["WEAPON", 254, 260]
   ];
   for (const [text, x, y] of lines) {
     ctx.strokeText(text, x, y);
     ctx.fillText(text, x, y);
   }
+  ctx.font = "900 14px Segoe UI, system-ui, sans-serif";
+  wrapText(weaponName(), 254, 286, 196, 18, true);
   drawInventoryHpStrip();
   ctx.restore();
 }
 
 function drawInventoryHpStrip() {
-  const x = 42;
-  const y = 452;
-  const w = 374;
-  const h = 26;
+  const x = 276;
+  const y = 382;
+  const w = 142;
+  const h = 34;
   ctx.save();
-  ctx.fillStyle = "rgba(255, 250, 255, 0.78)";
-  ctx.strokeStyle = "rgba(159, 145, 207, 0.84)";
+  ctx.fillStyle = "rgba(255, 250, 255, 0.36)";
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.48)";
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.roundRect(x, y, w, h, 8);
+  ctx.roundRect(x, y, w, h, 10);
   ctx.fill();
   ctx.stroke();
 
-  ctx.font = "900 17px Segoe UI, system-ui, sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   for (let i = 0; i < MAX_LIVES; i++) {
     ctx.save();
-    ctx.translate(x + 156 + i * 36, y + h / 2 + 1);
+    ctx.translate(x + 34 + i * 38, y + h / 2 + 1);
     ctx.fillStyle = i < state.lives ? "#ffd85a" : "rgba(215, 200, 255, 0.55)";
-    ctx.strokeStyle = "#ffffff";
-    ctx.lineWidth = 2;
-    drawTinyStar(0, 0, 10);
+    ctx.strokeStyle = i < state.lives ? "#ffffff" : "rgba(255, 255, 255, 0.58)";
+    ctx.lineWidth = 2.4;
+    drawFivePointStar(0, 0, 12);
     ctx.stroke();
     ctx.restore();
   }
-  ctx.restore();
-}
-
-function drawEquippedWeaponPanel() {
-  ctx.save();
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-  drawWeaponIcon(1040, 72, state.weaponPower, 1.08, 1);
   ctx.restore();
 }
 
@@ -3075,7 +3324,9 @@ function drawItemCaseOverlay() {
   for (const slot of inventorySlotRects()) drawInventorySlot(slot);
   drawInventoryScrollBar();
   drawInventoryPageInfo();
-  drawInventorySortButton();
+  drawEquippedWeaponPanel();
+  drawInventorySortPlanetButton();
+  drawInventoryFocusNavigation();
   drawInventoryMessage();
 }
 
@@ -3132,24 +3383,226 @@ function drawInventoryPageInfo() {
 }
 
 function inventorySortButtonRect() {
-  return { x: 982, y: 36, w: 106, h: 72 };
+  return { x: 1190, y: 118, w: 74, h: 70 };
 }
 
-function drawInventorySortButton() {
-  const r = inventorySortButtonRect();
+function inventoryTopMenuAreaRect() {
+  return { x: 38, y: 44, w: 540, h: 92 };
+}
+
+function inventoryItemListAreaRect() {
+  return { x: 748, y: 148, w: 505, h: 355 };
+}
+
+function inventoryTopMenuButtonRects() {
+  return [
+    { x: 50, y: 54, w: 118, h: 64 },
+    { x: 184, y: 54, w: 118, h: 64 },
+    { x: 318, y: 54, w: 118, h: 64 },
+    { x: 452, y: 54, w: 118, h: 64 }
+  ];
+}
+
+function resetInventoryFocus() {
+  if (!state) return;
+  state.inventoryFocusArea = "itemList";
+  state.inventoryFocusMode = INVENTORY_FOCUS_MODES.AREA_SELECT;
+  state.inventoryTopMenuIndex = 0;
+  state.inventoryConfirmWorldMap = false;
+  state.inventoryConfirmChoice = 0;
+}
+
+function moveInventoryFocusArea(dir) {
+  const current = INVENTORY_FOCUS_AREAS.indexOf(state.inventoryFocusArea ?? "itemList");
+  const next = (current + dir + INVENTORY_FOCUS_AREAS.length) % INVENTORY_FOCUS_AREAS.length;
+  state.inventoryFocusArea = INVENTORY_FOCUS_AREAS[next];
+  playSfx("equip", state.player.x + state.player.w / 2);
+}
+
+function enterInventoryFocusedArea() {
+  if (state.inventoryFocusArea === "topMenu") {
+    state.inventoryFocusMode = INVENTORY_FOCUS_MODES.INSIDE_TOP_MENU;
+    playSfx("equip", state.player.x + state.player.w / 2);
+    return;
+  }
+  if (state.inventoryFocusArea === "itemList") {
+    state.inventoryFocusMode = INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST;
+    playSfx("equip", state.player.x + state.player.w / 2);
+    return;
+  }
+  if (state.inventoryFocusArea === "sortButton") runInventorySort();
+}
+
+function leaveInventoryInnerFocus() {
+  state.inventoryGrab = null;
+  state.inventoryFocusMode = INVENTORY_FOCUS_MODES.AREA_SELECT;
+  playSfx("equip", state.player.x + state.player.w / 2);
+}
+
+function activateInventoryTopMenuButton() {
+  const index = state.inventoryTopMenuIndex ?? 0;
+  if (index === 0) {
+    closeInventory();
+    return;
+  }
+  if (index === 2) {
+    state.inventoryConfirmWorldMap = true;
+    state.inventoryConfirmChoice = 0;
+    playSfx("equip", state.player.x + state.player.w / 2);
+    return;
+  }
+  state.inventoryMessage = performance.now() + 1000;
+  state.inventoryMessageLabel = "未定ボタンです";
+  playSfx("equip", state.player.x + state.player.w / 2);
+}
+
+function handleInventoryWorldMapConfirm(accept) {
+  if (accept) returnToWorldMapFromInventory();
+  else {
+    state.inventoryConfirmWorldMap = false;
+    playSfx("equip", state.player.x + state.player.w / 2);
+  }
+}
+
+function drawEquippedWeaponPanel() {
+  const r = { x: 956, y: 36, w: 158, h: 70 };
   ctx.save();
-  ctx.fillStyle = "#fff3a4";
+  ctx.fillStyle = "rgba(255, 243, 164, 0.94)";
   ctx.strokeStyle = "#9f91cf";
   ctx.lineWidth = 3;
   ctx.beginPath();
   ctx.roundRect(r.x, r.y, r.w, r.h, 8);
   ctx.fill();
   ctx.stroke();
-  ctx.fillStyle = "#4d4773";
-  ctx.font = "900 18px Segoe UI, system-ui, sans-serif";
+  const equipped = hasEquippedWeapon();
+  if (equipped) {
+    drawWeaponIcon(r.x + r.w / 2 - 2, r.y + 36, state.weaponPower, 0.9, 1);
+  }
+  ctx.restore();
+}
+
+function drawInventorySortPlanetButton() {
+  const r = inventorySortButtonRect();
+  ctx.save();
+  const pressed = state.inventorySortFlash && performance.now() < state.inventorySortFlash;
+  const focused = state.inventoryFocusMode === INVENTORY_FOCUS_MODES.AREA_SELECT && state.inventoryFocusArea === "sortButton";
+  const pulse = 0.55 + Math.sin(performance.now() / 260) * 0.12;
+  ctx.translate(pressed ? 2 : 0, pressed ? 3 : 0);
+  ctx.fillStyle = pressed ? "rgba(255, 243, 164, 0.82)" : focused ? "rgba(255, 209, 237, 0.62)" : `rgba(158, 232, 255, ${pulse})`;
+  ctx.strokeStyle = pressed || focused ? "#ff8db7" : "#fff3a4";
+  ctx.lineWidth = pressed || focused ? 6 : 4;
+  ctx.beginPath();
+  ctx.arc(r.x + r.w / 2, r.y + r.h / 2, 34, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fill();
+  ctx.strokeStyle = "#7f67c8";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.ellipse(r.x + r.w / 2, r.y + r.h / 2, 36, 12, -0.35, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawInventoryFocusNavigation() {
+  if (state.inventoryConfirmWorldMap) {
+    drawInventoryWorldMapConfirm();
+    return;
+  }
+  if (state.fusionPrompt) return;
+  const mode = state.inventoryFocusMode ?? INVENTORY_FOCUS_MODES.AREA_SELECT;
+  const area = state.inventoryFocusArea ?? "itemList";
+  const buttons = inventoryTopMenuButtonRects();
+  if (area === "itemList") {
+    drawInventoryItemListFocusGlow(mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST);
+  }
+  if (area === "topMenu" || mode === INVENTORY_FOCUS_MODES.INSIDE_TOP_MENU) {
+    for (let i = 0; i < buttons.length; i++) {
+      drawTopMenuNumberBadge(buttons[i], i + 1, mode === INVENTORY_FOCUS_MODES.INSIDE_TOP_MENU && i === state.inventoryTopMenuIndex);
+    }
+  }
+  if (mode === INVENTORY_FOCUS_MODES.INSIDE_TOP_MENU) {
+    drawInventoryFocusRect(buttons[state.inventoryTopMenuIndex ?? 0], "#ff5f9e", 5, 8);
+  }
+}
+
+function drawInventoryItemListFocusGlow(active) {
+  const r = inventoryItemListAreaRect();
+  ctx.save();
+  ctx.fillStyle = active ? "rgba(255, 243, 164, 0.1)" : "rgba(255, 209, 237, 0.08)";
+  ctx.strokeStyle = active ? "#fff3a4" : "#ff8db7";
+  ctx.shadowColor = active ? "#fff3a4" : "#ff8db7";
+  ctx.shadowBlur = active ? 18 : 12;
+  ctx.lineWidth = active ? 5 : 4;
+  ctx.beginPath();
+  ctx.roundRect(r.x, r.y, r.w, r.h, 10);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawInventoryFocusRect(r, color, width = 4, radius = 12) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 14;
+  ctx.lineWidth = width;
+  ctx.beginPath();
+  ctx.roundRect(r.x + 2, r.y + 2, r.w - 4, r.h - 4, radius);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawTopMenuNumberBadge(r, number, active) {
+  ctx.save();
+  const x = r.x + r.w - 18;
+  const y = r.y + 18;
+  ctx.fillStyle = active ? "#ff3d7f" : "rgba(255, 95, 158, 0.86)";
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = active ? 4 : 3;
+  ctx.beginPath();
+  ctx.arc(x, y, active ? 17 : 14, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "900 16px Segoe UI, system-ui, sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(t("sortItems"), r.x + r.w / 2, r.y + r.h / 2 + 1);
+  ctx.fillText(String(number), x, y + 1);
+  ctx.restore();
+}
+
+function drawInventoryWorldMapConfirm() {
+  ctx.save();
+  ctx.fillStyle = "rgba(35, 25, 75, 0.48)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const r = { x: 420, y: 240, w: 440, h: 190 };
+  ctx.fillStyle = "rgba(255, 250, 255, 0.96)";
+  ctx.strokeStyle = "#ff8db7";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.roundRect(r.x, r.y, r.w, r.h, 8);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#4d4773";
+  ctx.font = "900 24px Segoe UI, system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.fillText("ワールドマップに戻りますか？", r.x + r.w / 2, r.y + 36);
+  const labels = ["はい", "いいえ"];
+  for (let i = 0; i < labels.length; i++) {
+    const b = { x: r.x + 86 + i * 160, y: r.y + 112, w: 112, h: 46 };
+    const selected = (state.inventoryConfirmChoice ?? 0) === i;
+    ctx.fillStyle = selected ? "#fff3a4" : "#ffffff";
+    ctx.strokeStyle = selected ? "#ff5f9e" : "#c8b2ff";
+    ctx.lineWidth = selected ? 4 : 2;
+    ctx.beginPath();
+    ctx.roundRect(b.x, b.y, b.w, b.h, 8);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#4d4773";
+    ctx.font = "900 18px Segoe UI, system-ui, sans-serif";
+    ctx.fillText(labels[i], b.x + b.w / 2, b.y + 12);
+  }
   ctx.restore();
 }
 
@@ -3161,14 +3614,14 @@ function drawInventoryMessage() {
   ctx.strokeStyle = "#fff3a4";
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.roundRect(890, 586, 300, 34, 8);
+  ctx.roundRect(928, 158, 230, 34, 8);
   ctx.fill();
   ctx.stroke();
   ctx.fillStyle = "#ffffff";
   ctx.font = "900 14px Segoe UI, system-ui, sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(t("sorted"), 1040, 603);
+  ctx.fillText(state.inventoryMessageLabel || t("sorted"), 1043, 175);
   ctx.restore();
 }
 
@@ -3346,8 +3799,8 @@ function drawInventorySlot(slot) {
     return;
   }
   ctx.save();
-  ctx.translate(slot.x + slot.w / 2, slot.y + 36);
-  drawWeaponIcon(0, 0, slot.power, 0.98, 1);
+  ctx.translate(slot.x + slot.w / 2, slot.y + 44);
+  drawWeaponIcon(0, 0, slot.power, 1.08, 1);
   ctx.restore();
   const count = state.weaponInventory[slot.power - 1] ?? 0;
   if (count > 1) {
@@ -3363,13 +3816,6 @@ function drawInventorySlot(slot) {
     ctx.textAlign = "center";
     ctx.fillText(`x${count}`, slot.x + slot.w - 20, slot.y + 13);
   }
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "800 11px Segoe UI, system-ui, sans-serif";
-  ctx.textAlign = "center";
-  ctx.strokeStyle = "rgba(68, 54, 132, 0.9)";
-  ctx.lineWidth = 3;
-  ctx.strokeText(weaponName(slot.power), slot.x + slot.w / 2, slot.y + 68);
-  ctx.fillText(weaponName(slot.power), slot.x + slot.w / 2, slot.y + 68);
   ctx.restore();
 }
 
@@ -3403,9 +3849,9 @@ function drawGamepadInventoryGhost() {
 
 function drawSelectedWeaponPreview() {
   const slot = inventorySlots()[state.inventorySelection];
-  if (!slot || state.fusionPrompt) return;
-  drawWeaponDetail(slot.power);
-  drawPyonpyCommentPanel(slot.power);
+  if (state.fusionPrompt || state.inventoryConfirmWorldMap) return;
+  if (slot) drawWeaponDetail(slot.power);
+  drawPyonpyCommentPanel(inventoryFocusComment(slot?.power));
 }
 
 function drawWeaponDetail(power) {
@@ -3413,54 +3859,98 @@ function drawWeaponDetail(power) {
   const nextPower = nextFusionPower(power);
   ctx.save();
 
-  const x = 62;
-  const y = 572;
-  const w = 560;
-  const h = 96;
+  const x = 462;
+  const y = 154;
+  const w = 252;
+  const h = 370;
   const grad = ctx.createLinearGradient(x, y, x + w, y + h);
-  grad.addColorStop(0, "rgba(255, 245, 252, 0.58)");
-  grad.addColorStop(0.55, "rgba(232, 248, 255, 0.48)");
-  grad.addColorStop(1, "rgba(246, 238, 255, 0.54)");
+  grad.addColorStop(0, "rgba(255, 245, 252, 0.34)");
+  grad.addColorStop(0.55, "rgba(232, 248, 255, 0.28)");
+  grad.addColorStop(1, "rgba(246, 238, 255, 0.32)");
   ctx.fillStyle = grad;
-  ctx.strokeStyle = "rgba(255,255,255,0.65)";
+  ctx.strokeStyle = "rgba(255,255,255,0.38)";
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.roundRect(x, y, w, h, 8);
   ctx.fill();
   ctx.stroke();
 
-  ctx.fillStyle = "#7f67c8";
-  ctx.font = "900 19px Segoe UI, system-ui, sans-serif";
-  ctx.textAlign = "left";
+  ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  ctx.fillText(weaponName(power), x + 120, y + 14);
-  ctx.font = "900 12px Segoe UI, system-ui, sans-serif";
-  ctx.fillStyle = "#ff8db7";
-  ctx.fillText(t("weaponData"), x + 122, y + 42);
-
   ctx.save();
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
-  ctx.translate(x + 64, y + 50);
-  drawWeaponIcon(0, 0, power, 0.92, 1);
+  ctx.translate(x + w / 2, y + 48);
+  drawWeaponIcon(0, 0, power, 1.02, 1);
   ctx.restore();
 
-  drawStatBar(t("atk"), stage.damage, 14, x + 320, y + 18, 86);
-  drawStatBar(t("range"), stage.range, 1500, x + 320, y + 45, 86);
-  drawStatBar(t("rapid"), Math.round((1 / stage.cooldown) * 10), 55, x + 320, y + 72, 86);
+  ctx.fillStyle = "#7f67c8";
+  ctx.font = "900 17px Segoe UI, system-ui, sans-serif";
+  wrapText(weaponName(power), x + w / 2, y + 88, w - 42, 21, true);
+  ctx.fillStyle = "#ff8db7";
+  ctx.font = "900 13px Segoe UI, system-ui, sans-serif";
+  ctx.fillText(`Lv ${power}`, x + w / 2, y + 132);
 
-  ctx.fillStyle = "#4d4773";
-  ctx.font = "800 12px Segoe UI, system-ui, sans-serif";
-  const fusionText = nextPower ? `${t("fusionNext")}: ${weaponName(nextPower)}` : t("finalEvolution");
-  ctx.fillText(fusionText, x + 122, y + 66);
+  drawStatBar(t("atk"), stage.damage, 16, x + 32, y + 166, 188);
+  drawStatBar(t("range"), stage.range, 2400, x + 32, y + 212, 188);
+  drawStatBar(t("rapid"), Math.round((1 / stage.cooldown) * 10), 80, x + 32, y + 258, 188);
+
+  ctx.textAlign = "center";
+  if (nextPower) {
+    ctx.fillStyle = "#4d4773";
+    ctx.font = "900 12px Segoe UI, system-ui, sans-serif";
+    ctx.fillText(t("fusionNext"), x + w / 2, y + 292);
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.filter = "grayscale(1) brightness(0.62) contrast(1.25)";
+    drawWeaponIcon(x + w / 2, y + 322, nextPower, 0.54, 1);
+    ctx.restore();
+    ctx.fillStyle = "#4d4773";
+    ctx.font = "800 11px Segoe UI, system-ui, sans-serif";
+    wrapText(weaponName(nextPower), x + w / 2, y + 348, w - 54, 15, true);
+  } else {
+    ctx.fillStyle = "#4d4773";
+    ctx.font = "900 13px Segoe UI, system-ui, sans-serif";
+    wrapText(t("finalEvolution"), x + w / 2, y + 330, w - 48, 18, true);
+  }
 
   ctx.restore();
 }
 
-function drawPyonpyCommentPanel(power) {
-  const x = 646;
-  const y = 572;
-  const w = 570;
+function inventoryFocusComment(power = state.weaponPower) {
+  if (state.inventorySortComment && performance.now() < (state.inventorySortCommentUntil ?? 0)) {
+    return state.inventorySortComment;
+  }
+  if (state.inventoryConfirmWorldMap) {
+    return "ぴょんぴー「ワールドマップに戻る？ はいならマップへ、いいえならここに残るよ！」";
+  }
+  const mode = state.inventoryFocusMode ?? INVENTORY_FOCUS_MODES.AREA_SELECT;
+  const area = state.inventoryFocusArea ?? "itemList";
+  if (mode === INVENTORY_FOCUS_MODES.INSIDE_TOP_MENU) {
+    const messages = [
+      "ぴょんぴー「ここはゲーム画面に戻るボタンだよ。冒険に戻ろう！」",
+      "ぴょんぴー「ここはまだ準備中のボタンだよ。今は押しても何も起きないよ！」",
+      "ぴょんぴー「ここはワールドマップに戻るボタンだよ。押す前に確認するね！」",
+      "ぴょんぴー「ここもまだ準備中だよ。あとで何か入れよう！」"
+    ];
+    return messages[state.inventoryTopMenuIndex ?? 0] ?? messages[0];
+  }
+  if (mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST && power) {
+    return pyonpyWeaponComment(power);
+  }
+  if (area === "topMenu") {
+    return "ぴょんぴー「上のメニューだよ。Aで入ると、ゲームに戻るボタンやマップに戻るボタンを選べるよ！」";
+  }
+  if (area === "sortButton") {
+    return "ぴょんぴー「この惑星ボタンを押すと、アイテムが前からきれいに整理されるよ！」";
+  }
+  return "ぴょんぴー「ここはアイテムリストだよ。武器と武器を融合させて、もっと強い武器を作れるよ！」";
+}
+
+function drawPyonpyCommentPanel(comment) {
+  const x = 40;
+  const y = 570;
+  const w = 1188;
   const h = 96;
   ctx.save();
   ctx.fillStyle = "rgba(255, 245, 252, 0.34)";
@@ -3477,24 +3967,23 @@ function drawPyonpyCommentPanel(power) {
   ctx.font = "900 20px Segoe UI, system-ui, sans-serif";
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
-  const comment = pyonpyWeaponComment(power);
-  wrapText(comment, x + 30, y + 22, w - 60, 25, true);
+  wrapText(comment, x + 36, y + 24, w - 72, 28, true);
   ctx.restore();
 }
 
 function drawStatBar(label, value, max, x, y, width = 180) {
   const ratio = clamp(value / max, 0, 1);
   ctx.fillStyle = "#4d4773";
-  ctx.font = "900 11px Segoe UI, system-ui, sans-serif";
+  ctx.font = "900 12px Segoe UI, system-ui, sans-serif";
   ctx.textAlign = "left";
   ctx.fillText(`${label} ${value}`, x, y);
   ctx.fillStyle = "#d7c8ff";
   ctx.beginPath();
-  ctx.roundRect(x + 54, y - 1, width, 8, 4);
+  ctx.roundRect(x, y + 17, width, 8, 4);
   ctx.fill();
   ctx.fillStyle = "#ff8db7";
   ctx.beginPath();
-  ctx.roundRect(x + 54, y - 1, width * ratio, 8, 4);
+  ctx.roundRect(x, y + 17, width * ratio, 8, 4);
   ctx.fill();
 }
 
@@ -4022,6 +4511,31 @@ function drawCoins(t) {
     const y = c.y + Math.sin(t * 5 + c.bob) * 4;
     drawKakipi(c.x, y, c.type);
   }
+  for (const s of state.starItems) {
+    if (s.taken) continue;
+    const y = s.y + Math.sin(t * 5.6 + s.bob) * 5;
+    drawCollectibleStar(s.x, y, s.r);
+  }
+}
+
+function drawCollectibleStar(x, y, r) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(performance.now() / 360);
+  const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, r * 1.8);
+  glow.addColorStop(0, "rgba(255, 255, 255, 0.9)");
+  glow.addColorStop(0.45, "rgba(255, 243, 164, 0.52)");
+  glow.addColorStop(1, "rgba(255, 216, 90, 0)");
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 1.8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#ffd85a";
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 3;
+  drawTinyStar(0, 0, r);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawKakipi(x, y, type) {
@@ -4418,7 +4932,7 @@ function drawBossAlien(e) {
 
   if ((state.gun.holder === e.id || e.weaponPower) && e.alive) {
     const dir = state.player.x < e.x ? -1 : 1;
-    drawRayGun(e.x + e.w / 2 + dir * 28, e.y + 46, dir, 0.92, e.weaponPower ?? Math.min(2, state.weaponPower));
+    drawRayGun(e.x + e.w / 2 + dir * 28, e.y + 46, -dir, 0.92, e.weaponPower ?? Math.min(2, state.weaponPower));
   }
   if (dying) drawAlienPoof(cx, baseY - 28, t);
 }
@@ -4465,7 +4979,7 @@ function drawBossImage(e) {
   }
   if ((state.gun.holder === e.id || e.weaponPower) && e.alive) {
     const dir = state.player.x < e.x ? -1 : 1;
-    drawRayGun(e.x + e.w / 2 + dir * (e.finalBoss ? 72 : 34), e.y + e.h * 0.52, dir, e.finalBoss ? 1.35 : 0.92, e.weaponPower ?? Math.min(2, state.weaponPower));
+    drawRayGun(e.x + e.w / 2 + dir * (e.finalBoss ? 72 : 34), e.y + e.h * 0.52, -dir, e.finalBoss ? 1.35 : 0.92, e.weaponPower ?? Math.min(2, state.weaponPower));
   }
   if (dying) drawAlienPoof(e.x + e.w / 2, e.y + e.h / 2, t);
   return true;
@@ -4560,7 +5074,7 @@ function drawFinalBossAlien(e) {
 
   if (e.alive) {
     const dir = state.player.x < e.x ? -1 : 1;
-    drawRayGun(e.x + e.w / 2 + dir * 72, e.y + 82, dir, 1.35, e.weaponPower);
+    drawRayGun(e.x + e.w / 2 + dir * 72, e.y + 82, -dir, 1.35, e.weaponPower);
   }
   if (dying) drawAlienPoof(cx, baseY - 70, 1 - e.defeated / 0.42);
 }
@@ -4620,7 +5134,7 @@ function drawPastelAlien(e) {
 
   if ((state.gun.holder === e.id || e.weaponPower) && e.alive) {
     const dir = state.player.x < e.x ? -1 : 1;
-    drawRayGun(e.x + e.w / 2 + dir * 18, e.y + 24, dir, 0.72, e.weaponPower ?? Math.min(2, state.weaponPower));
+    drawRayGun(e.x + e.w / 2 + dir * 18, e.y + 24, -dir, 0.72, e.weaponPower ?? Math.min(2, state.weaponPower));
   }
   if (dying) drawAlienPoof(cx, baseY - 18, t);
 }
@@ -4643,8 +5157,8 @@ function drawEnemyImage(e) {
   ctx.globalAlpha = alpha;
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
-  const facingRight = (e.vx ?? 0) > 0;
-  const flipImage = kind === 0 ? !facingRight : facingRight;
+  const facingRight = (e.facing ?? (e.vx >= 0 ? 1 : -1)) > 0;
+  const flipImage = !facingRight;
   if (flipImage) {
     ctx.translate(dx + drawW, dy);
     ctx.scale(-1, 1);
@@ -4655,7 +5169,7 @@ function drawEnemyImage(e) {
   ctx.restore();
   if ((state.gun.holder === e.id || e.weaponPower) && e.alive) {
     const dir = state.player.x < e.x ? -1 : 1;
-    drawRayGun(e.x + e.w / 2 + dir * 18, e.y + 24, dir, 0.72, e.weaponPower ?? Math.min(2, state.weaponPower));
+    drawRayGun(e.x + e.w / 2 + dir * 18, e.y + 24, -dir, 0.72, e.weaponPower ?? Math.min(2, state.weaponPower));
   }
   if (dying) drawAlienPoof(e.x + e.w / 2, e.y + e.h / 2, t);
   return true;
@@ -4680,6 +5194,20 @@ function drawTinyStar(x, y, r) {
   for (let i = 0; i < 8; i++) {
     const a = -Math.PI / 2 + i * Math.PI / 4;
     const radius = i % 2 === 0 ? r : r * 0.45;
+    const px = x + Math.cos(a) * radius;
+    const py = y + Math.sin(a) * radius;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawFivePointStar(x, y, r) {
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + i * Math.PI / 5;
+    const radius = i % 2 === 0 ? r : r * 0.48;
     const px = x + Math.cos(a) * radius;
     const py = y + Math.sin(a) * radius;
     if (i === 0) ctx.moveTo(px, py);
@@ -5073,24 +5601,9 @@ function updateGamepad() {
   if (jumpPressed && !gamepadState.jumpLatch && state.mode === "playing") queueStompBoost();
   if (selectPressed && !gamepadState.selectLatch) toggleInventory();
   if (state.mode === "inventory") {
-    if (state.fusionPrompt) {
-      if ((gamepadState.left || gamepadState.right) && !(gamepadState.leftLatch || gamepadState.rightLatch)) state.fusionPrompt.choice = 1 - state.fusionPrompt.choice;
-      if (jumpPressed && !gamepadState.jumpLatch) confirmFusionPrompt();
-    } else {
-      const moveDir = gamepadState.left ? -1 : gamepadState.right ? 1 : gamepadState.up ? -5 : gamepadState.down ? 5 : 0;
-      const freshMove = (gamepadState.left && !gamepadState.leftLatch) || (gamepadState.right && !gamepadState.rightLatch) || (gamepadState.up && !gamepadState.upLatch) || (gamepadState.down && !gamepadState.downLatch);
-      if (!moveDir) {
-        gamepadState.inventoryMoveDelay = 0;
-      } else if (freshMove || now >= gamepadState.inventoryMoveDelay) {
-        moveInventorySelection(moveDir);
-        gamepadState.inventoryMoveDelay = now + (freshMove ? 230 : 115);
-      }
-      if (jumpPressed && !gamepadState.jumpLatch) startInventoryGrab(true);
-      if (!jumpPressed && gamepadState.jumpLatch && state.inventoryGrab?.gamepad) releaseInventoryGrab();
-      updateGamepadInventoryGrabPosition();
-    }
+    updateInventoryGamepadFocus(now, jumpPressed, runPressed, shootPressed);
   }
-  if (startPressed && !gamepadState.startLatch && !overlay.classList.contains("hidden")) {
+  if (startPressed && !gamepadState.startLatch && state.mode !== "inventory" && !overlay.classList.contains("hidden")) {
     if (state?.mode === "ended" && gameOverContinueAvailable) continueFromGameOver();
     else pendingCourseStart ? startCurrentCourse() : startGame();
   }
@@ -5144,23 +5657,7 @@ window.addEventListener("keydown", event => {
     return;
   }
   if (state.mode === "inventory") {
-    if (state.fusionPrompt) {
-      if (code === "ArrowLeft" || code === "ArrowRight" || code === "KeyA" || code === "KeyD") state.fusionPrompt.choice = 1 - state.fusionPrompt.choice;
-      if (code === "Enter" || code === "Space") confirmFusionPrompt();
-      if (code === "Escape") state.fusionPrompt = null;
-      return;
-    }
-    if (code === "ArrowLeft" || code === "KeyA") moveInventorySelection(-1);
-    if (code === "ArrowRight" || code === "KeyD") moveInventorySelection(1);
-    if (code === "ArrowUp" || code === "KeyW") moveInventorySelection(-5);
-    if (code === "ArrowDown" || code === "KeyS") moveInventorySelection(5);
-    if (code === "Enter" || code === "Space") startInventoryGrab(false);
-    if (code === "KeyE") equipSelectedInventorySlot();
-    if (code === "KeyC") compactInventoryItems();
-    if (code === "Escape") {
-      state.inventoryGrab = null;
-      closeInventory();
-    }
+    handleInventoryKeyboardFocus(code, event.repeat);
     return;
   }
   if ((code === "Enter" || code === "Space") && !overlay.classList.contains("hidden")) {
@@ -5241,7 +5738,7 @@ canvas.addEventListener("pointerdown", event => {
     if (handleFusionPromptPointer(pos.x, pos.y)) return;
     const sortButton = inventorySortButtonRect();
     if (pos.x >= sortButton.x && pos.x <= sortButton.x + sortButton.w && pos.y >= sortButton.y && pos.y <= sortButton.y + sortButton.h) {
-      compactInventoryItems();
+      runInventorySort();
       event.preventDefault();
       return;
     }
@@ -5448,6 +5945,164 @@ function handleFusionPromptPointer(x, y) {
 
 function inventorySlotAt(x, y) {
   return inventorySlotRects().find(slot => x >= slot.x && x <= slot.x + slot.w && y >= slot.y && y <= slot.y + slot.h) || null;
+}
+
+function inventoryFreshMove() {
+  return (gamepadState.left && !gamepadState.leftLatch) ||
+    (gamepadState.right && !gamepadState.rightLatch) ||
+    (gamepadState.up && !gamepadState.upLatch) ||
+    (gamepadState.down && !gamepadState.downLatch);
+}
+
+function handleInventoryKeyboardFocus(code, repeat = false) {
+  if (state.inventoryConfirmWorldMap) {
+    if (code === "ArrowLeft" || code === "ArrowRight" || code === "KeyA" || code === "KeyD") {
+      state.inventoryConfirmChoice = 1 - (state.inventoryConfirmChoice ?? 0);
+      playSfx("equip", state.player.x + state.player.w / 2);
+      return true;
+    }
+    if (code === "Enter" || code === "Space" || code === "KeyZ") {
+      handleInventoryWorldMapConfirm((state.inventoryConfirmChoice ?? 0) === 0);
+      return true;
+    }
+    if (code === "Escape" || code === "KeyB") {
+      handleInventoryWorldMapConfirm(false);
+      return true;
+    }
+    return true;
+  }
+
+  if (state.fusionPrompt) {
+    if (code === "ArrowLeft" || code === "ArrowRight" || code === "KeyA" || code === "KeyD") state.fusionPrompt.choice = 1 - state.fusionPrompt.choice;
+    if (code === "Enter" || code === "Space" || code === "KeyZ") confirmFusionPrompt();
+    if (code === "Escape" || code === "KeyB") state.fusionPrompt = null;
+    return true;
+  }
+
+  const mode = state.inventoryFocusMode ?? INVENTORY_FOCUS_MODES.AREA_SELECT;
+  if (mode === INVENTORY_FOCUS_MODES.AREA_SELECT) {
+    if (!repeat && (code === "ArrowLeft" || code === "ArrowUp" || code === "KeyA" || code === "KeyW")) {
+      moveInventoryFocusArea(-1);
+      return true;
+    }
+    if (!repeat && (code === "ArrowRight" || code === "ArrowDown" || code === "KeyD" || code === "KeyS")) {
+      moveInventoryFocusArea(1);
+      return true;
+    }
+    if (!repeat && (code === "Enter" || code === "Space" || code === "KeyZ")) {
+      enterInventoryFocusedArea();
+      return true;
+    }
+    if (!repeat && (code === "KeyX" || code === "KeyY") && state.inventoryFocusArea === "itemList") {
+      runInventorySort();
+      return true;
+    }
+    if (!repeat && code === "Escape") {
+      closeInventory();
+      return true;
+    }
+    return true;
+  }
+
+  if (mode === INVENTORY_FOCUS_MODES.INSIDE_TOP_MENU) {
+    if (!repeat && (code === "ArrowLeft" || code === "KeyA")) {
+      state.inventoryTopMenuIndex = (state.inventoryTopMenuIndex + 3) % 4;
+      playSfx("equip", state.player.x + state.player.w / 2);
+      return true;
+    }
+    if (!repeat && (code === "ArrowRight" || code === "KeyD")) {
+      state.inventoryTopMenuIndex = (state.inventoryTopMenuIndex + 1) % 4;
+      playSfx("equip", state.player.x + state.player.w / 2);
+      return true;
+    }
+    if (!repeat && (code === "Enter" || code === "Space" || code === "KeyZ")) {
+      activateInventoryTopMenuButton();
+      return true;
+    }
+    if (!repeat && (code === "Escape" || code === "KeyB")) {
+      leaveInventoryInnerFocus();
+      return true;
+    }
+    return true;
+  }
+
+  if (mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST) {
+    if (code === "ArrowLeft" || code === "KeyA") moveInventorySelection(-1);
+    if (code === "ArrowRight" || code === "KeyD") moveInventorySelection(1);
+    if (code === "ArrowUp" || code === "KeyW") moveInventorySelection(-5);
+    if (code === "ArrowDown" || code === "KeyS") moveInventorySelection(5);
+    if (!repeat && (code === "Enter" || code === "Space" || code === "KeyZ")) startInventoryGrab(false);
+    if (!repeat && code === "KeyE") equipSelectedInventorySlot();
+    if (!repeat && (code === "KeyX" || code === "KeyY" || code === "KeyC")) runInventorySort();
+    if (!repeat && (code === "Escape" || code === "KeyB")) leaveInventoryInnerFocus();
+    return true;
+  }
+  return false;
+}
+
+function updateInventoryGamepadFocus(now, jumpPressed, runPressed, shootPressed) {
+  if (state.inventoryConfirmWorldMap) {
+    if ((gamepadState.left || gamepadState.right) && !(gamepadState.leftLatch || gamepadState.rightLatch)) {
+      state.inventoryConfirmChoice = 1 - (state.inventoryConfirmChoice ?? 0);
+      playSfx("equip", state.player.x + state.player.w / 2);
+    }
+    if (jumpPressed && !gamepadState.jumpLatch) handleInventoryWorldMapConfirm((state.inventoryConfirmChoice ?? 0) === 0);
+    if (runPressed && !gamepadState.runLatch) handleInventoryWorldMapConfirm(false);
+    return;
+  }
+
+  if (state.fusionPrompt) {
+    if ((gamepadState.left || gamepadState.right) && !(gamepadState.leftLatch || gamepadState.rightLatch)) state.fusionPrompt.choice = 1 - state.fusionPrompt.choice;
+    if (jumpPressed && !gamepadState.jumpLatch) confirmFusionPrompt();
+    if (runPressed && !gamepadState.runLatch) state.fusionPrompt = null;
+    return;
+  }
+
+  const mode = state.inventoryFocusMode ?? INVENTORY_FOCUS_MODES.AREA_SELECT;
+  if (mode === INVENTORY_FOCUS_MODES.AREA_SELECT) {
+    const moveDir = gamepadState.left || gamepadState.up ? -1 : gamepadState.right || gamepadState.down ? 1 : 0;
+    const freshMove = inventoryFreshMove();
+    if (!moveDir) {
+      gamepadState.inventoryMoveDelay = 0;
+    } else if (freshMove || now >= gamepadState.inventoryMoveDelay) {
+      moveInventoryFocusArea(moveDir);
+      gamepadState.inventoryMoveDelay = now + (freshMove ? 230 : 140);
+    }
+    if (jumpPressed && !gamepadState.jumpLatch) enterInventoryFocusedArea();
+    if (shootPressed && !gamepadState.shootLatch && state.inventoryFocusArea === "itemList") runInventorySort();
+    return;
+  }
+
+  if (mode === INVENTORY_FOCUS_MODES.INSIDE_TOP_MENU) {
+    const moveDir = gamepadState.left ? -1 : gamepadState.right ? 1 : 0;
+    const freshMove = (gamepadState.left && !gamepadState.leftLatch) || (gamepadState.right && !gamepadState.rightLatch);
+    if (!moveDir) {
+      gamepadState.inventoryMoveDelay = 0;
+    } else if (freshMove || now >= gamepadState.inventoryMoveDelay) {
+      state.inventoryTopMenuIndex = (state.inventoryTopMenuIndex + moveDir + 4) % 4;
+      playSfx("equip", state.player.x + state.player.w / 2);
+      gamepadState.inventoryMoveDelay = now + (freshMove ? 230 : 140);
+    }
+    if (jumpPressed && !gamepadState.jumpLatch) activateInventoryTopMenuButton();
+    if (runPressed && !gamepadState.runLatch) leaveInventoryInnerFocus();
+    return;
+  }
+
+  if (mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST) {
+    const moveDir = gamepadState.left ? -1 : gamepadState.right ? 1 : gamepadState.up ? -5 : gamepadState.down ? 5 : 0;
+    const freshMove = inventoryFreshMove();
+    if (!moveDir) {
+      gamepadState.inventoryMoveDelay = 0;
+    } else if (freshMove || now >= gamepadState.inventoryMoveDelay) {
+      moveInventorySelection(moveDir);
+      gamepadState.inventoryMoveDelay = now + (freshMove ? 230 : 115);
+    }
+    if (jumpPressed && !gamepadState.jumpLatch) startInventoryGrab(true);
+    if (!jumpPressed && gamepadState.jumpLatch && state.inventoryGrab?.gamepad) releaseInventoryGrab();
+    if (shootPressed && !gamepadState.shootLatch) runInventorySort();
+    if (runPressed && !gamepadState.runLatch) leaveInventoryInnerFocus();
+    updateGamepadInventoryGrabPosition();
+  }
 }
 
 function handleTouchStartButton() {

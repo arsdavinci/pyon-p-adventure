@@ -71,7 +71,8 @@
     </main>
     <script src="game.js"></script>
     <script>
-      if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+      const isLocalPreview = ["localhost", "127.0.0.1", "::1"].includes(location.hostname);
+      if ("serviceWorker" in navigator && location.protocol.startsWith("http") && !isLocalPreview) {
         window.addEventListener("load", () => {
           navigator.serviceWorker.register("./sw.js").catch(() => {});
         });
