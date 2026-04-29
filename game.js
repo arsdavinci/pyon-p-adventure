@@ -83,7 +83,7 @@ const WEAPON_STAGES = [
 const TEXT = {
   ja: {
     title: "ぴょんぴーの大冒険",
-    controls: "移動: ← → / A D、ジャンプ: Space、ダッシュ: Shift、攻撃: J / X",
+    controls: "移動: ← → / A D、ジャンプ: Space、ダッシュ: Shift、攻撃: J / X / Y",
     start: "Start",
     next: "Spaceでスタート",
     allClear: "全クリア！",
@@ -123,7 +123,7 @@ const TEXT = {
   },
   en: {
     title: "Pyon-P Adventure",
-    controls: "Move: Arrow / A D. Jump: Space. Dash: Shift. Attack: J / X.",
+    controls: "Move: Arrow / A D. Jump: Space. Dash: Shift. Attack: J / X / Y.",
     start: "Start",
     next: "Press Space to start",
     allClear: "All Clear!",
@@ -1065,7 +1065,7 @@ function updatePlayer(dt) {
   const movingRight = keys.has("ArrowRight") || keys.has("KeyD") || gamepadState.right;
   const wantsJump = keys.has("Space") || keys.has("ArrowUp") || keys.has("KeyW") || gamepadState.jump;
   const wantsRun = keys.has("ShiftLeft") || keys.has("ShiftRight") || keys.has("KeyB") || gamepadState.run;
-  const wantsShoot = keys.has("KeyX") || keys.has("KeyJ") || gamepadState.shoot;
+  const wantsShoot = keys.has("KeyX") || keys.has("KeyY") || keys.has("KeyJ") || gamepadState.shoot;
   const accel = wantsRun ? 2100 : 1250;
   const maxSpeed = wantsRun ? 360 : 235;
 
@@ -1852,7 +1852,7 @@ function t(key) {
 function weaponName(power = state?.weaponPower ?? 1) {
   if (!power || power < 1) return t("unequipped");
   const index = clamp(Math.floor(power), 1, MAX_WEAPON_POWER) - 1;
-  return WEAPON_STAGES[index].name;
+  return language === "ja" ? WEAPON_NAMES_JA[index] : WEAPON_STAGES[index].name;
 }
 
 function weaponLore(power) {
@@ -4946,7 +4946,7 @@ function updateGamepad() {
   const dpadDown = Boolean(pad.buttons[13]?.pressed);
   const jumpPressed = Boolean(pad.buttons[0]?.pressed);
   const runPressed = Boolean(pad.buttons[1]?.pressed);
-  const shootPressed = Boolean(pad.buttons[2]?.pressed);
+  const shootPressed = Boolean(pad.buttons[2]?.pressed || pad.buttons[3]?.pressed);
   const selectPressed = Boolean(pad.buttons[8]?.pressed);
   const startPressed = Boolean(pad.buttons[9]?.pressed);
 
@@ -5074,7 +5074,7 @@ window.addEventListener("keydown", event => {
   if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", "Tab", "Enter"].includes(code)) event.preventDefault();
   if (!event.repeat && (code === "Space" || code === "ArrowUp" || code === "KeyW")) queueStompBoost();
   if (state.mode === "bossIntro") {
-    if (!event.repeat && ["Enter", "Space", "KeyX", "KeyJ", "KeyZ", "KeyA"].includes(code)) advanceBossIntro();
+    if (!event.repeat && ["Enter", "Space", "KeyX", "KeyY", "KeyJ", "KeyZ", "KeyA"].includes(code)) advanceBossIntro();
     return;
   }
   if (state.mode === "paused") {
@@ -5086,7 +5086,7 @@ window.addEventListener("keydown", event => {
       pauseSelection = 1 - pauseSelection;
       playSfx("equip", state.player.x + state.player.w / 2);
     }
-    if (!event.repeat && (code === "Space" || code === "KeyX" || code === "KeyJ")) choosePauseOption();
+    if (!event.repeat && (code === "Space" || code === "KeyX" || code === "KeyY" || code === "KeyJ")) choosePauseOption();
     return;
   }
   if (state.mode === "worldMap") {
@@ -5094,7 +5094,7 @@ window.addEventListener("keydown", event => {
     if (code === "ArrowRight" || code === "KeyD") moveMapSelection(1);
     if (code === "ArrowUp" || code === "KeyW") moveMapSelection(-1);
     if (code === "ArrowDown" || code === "KeyS") moveMapSelection(1);
-    if (code === "Enter" || code === "Space" || code === "KeyX" || code === "KeyJ") startMapCourse(mapSelectedCourse);
+    if (code === "Enter" || code === "Space" || code === "KeyX" || code === "KeyY" || code === "KeyJ") startMapCourse(mapSelectedCourse);
     return;
   }
   if (!event.repeat && code === "Enter" && state.mode === "playing" && overlay.classList.contains("hidden")) {
@@ -5301,6 +5301,8 @@ function normalizeInputCode(event) {
     " ": "Space",
     b: "KeyB",
     B: "KeyB",
+    y: "KeyY",
+    Y: "KeyY",
     Tab: "Tab",
     Select: "Select",
     Shift: "ShiftLeft"
