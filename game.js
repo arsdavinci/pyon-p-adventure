@@ -48,11 +48,11 @@ const WEAPON_NAMES_JA = [
   "ムーンポッパー",
   "ツインムーンシューター",
   "ミルキーウェイキャノン",
-  "リボンレーザー",
-  "ムーニアンノヴァ",
-  "コメットリバース",
   "オービットリング",
+  "リボンレーザー",
   "ネビュラファン",
+  "コメットリバース",
+  "ムーニアンノヴァ",
   "サターンスプリッター",
   "アクアリウムスピア",
   "クエーサードライブ",
@@ -63,22 +63,22 @@ const WEAPON_NAMES_JA = [
   "ステラガーディアンキャノン"
 ];
 const WEAPON_STAGES = [
-  { name: "weapon-moon-01-moon-popper", count: 1, damage: 1, range: 180, speed: 560, width: 24, height: 7, spread: 0, cooldown: 0.42, pattern: "forward", colors: ["#fff3a4","#bff8ff","#ff9bd4"] },
-  { name: "weapon-moon-02-twinmoon-shooter", count: 2, damage: 2, range: 360, speed: 720, width: 34, height: 8, spread: 10, cooldown: 0.35, pattern: "both", colors: ["#fff3a4","#c9f6ff","#c8b2ff"] },
-  { name: "weapon-moon-03-milkyway-cannon", count: 3, damage: 3, range: 450, speed: 800, width: 38, height: 8, spread: 12, cooldown: 0.31, pattern: "spread", colors: ["#ffd1ed","#d9ffd6","#c8b2ff"] },
-  { name: "weapon-moon-04-ribbon-laser", count: 4, damage: 3, range: 560, speed: 900, width: 44, height: 9, spread: 10, cooldown: 0.28, pattern: "fan", colors: ["#fff3a4","#ffd1ed","#9ee8ff"] },
-  { name: "weapon-moon-05-moonian-nova", count: 5, damage: 4, range: 720, speed: 980, width: 54, height: 10, spread: 12, cooldown: 0.24, pattern: "spread", colors: ["#ffffff","#fff3a4","#ff8db7"] },
-  { name: "weapon-moon-06-comet-reverse", count: 4, damage: 5, range: 780, speed: 1040, width: 50, height: 10, spread: 0, cooldown: 0.24, pattern: "bothSpread", colors: ["#c9f6ff","#ffffff","#64d2ff"] },
-  { name: "weapon-moon-07-orbit-ring", count: 8, damage: 5, range: 660, speed: 900, width: 40, height: 9, spread: 0, cooldown: 0.38, pattern: "radial", colors: ["#d9ffd6","#fff3a4","#61f2a5"] },
-  { name: "weapon-moon-08-nebula-fan", count: 7, damage: 6, range: 860, speed: 1060, width: 50, height: 10, spread: 0, cooldown: 0.26, pattern: "fan", colors: ["#ffd1ed","#9ee8ff","#a976ff"] },
-  { name: "weapon-star-01-saturn-splitter", count: 8, damage: 6, range: 940, speed: 1120, width: 52, height: 10, spread: 0, cooldown: 0.28, pattern: "cross", colors: ["#fff6a6","#ffb86b","#ffffff"] },
-  { name: "weapon-star-02-aquarium-spear", count: 6, damage: 7, range: 1040, speed: 1180, width: 58, height: 11, spread: 0, cooldown: 0.24, pattern: "wave", colors: ["#bff8ff","#4fe3ff","#ffffff"] },
-  { name: "weapon-star-03-quasar-drive", count: 10, damage: 7, range: 1080, speed: 1240, width: 56, height: 11, spread: 0, cooldown: 0.21, pattern: "fan", colors: ["#ffffff","#ffd85a","#ff5f9e"] },
-  { name: "weapon-star-04-galaxy-boomerang", count: 6, damage: 8, range: 1120, speed: 1040, width: 64, height: 12, spread: 18, cooldown: 0.2, pattern: "bothSpread", colors: ["#d7c8ff","#ffffff","#7d8cff"] },
-  { name: "weapon-star-05-black-hole-pulse", count: 14, damage: 8, range: 860, speed: 980, width: 48, height: 12, spread: 0, cooldown: 0.34, pattern: "radial", pierce: 1, colors: ["#2d245d","#9ee8ff","#ffffff"] },
-  { name: "weapon-star-06-cosmo-crown", count: 13, damage: 9, range: 1180, speed: 1300, width: 62, height: 13, spread: 0, cooldown: 0.19, pattern: "crown", colors: ["#fff3a4","#ff8db7","#ffffff"] },
-  { name: "weapon-star-07-supernova-360", count: 18, damage: 10, range: 1260, speed: 1380, width: 68, height: 14, spread: 0, cooldown: 0.3, pattern: "radial", pierce: 2, colors: ["#ffffff","#fff3a4","#ff3d7f"] },
-  { name: "weapon-star-08-stellar-guardian-cannon", count: 12, damage: 14, range: 1500, speed: 980, width: 26, height: 12, spread: 0, cooldown: 0.95, pattern: "homing", explosion: 118, colors: ["#ffffff","#9ee8ff","#ff3d7f"] }
+  { name: "weapon-moon-01-moon-popper", count: 1, damage: 1, range: 220, speed: 560, width: 24, height: 7, spread: 0, cooldown: 0.42, pattern: "forward", colors: ["#fff3a4","#bff8ff","#ff9bd4"] },
+  { name: "weapon-moon-02-twinmoon-shooter", count: 2, damage: 2, range: 360, speed: 720, width: 34, height: 8, spread: 10, cooldown: 0.36, pattern: "both", colors: ["#fff3a4","#c9f6ff","#c8b2ff"] },
+  { name: "weapon-moon-03-milkyway-cannon", count: 3, damage: 3, range: 500, speed: 820, width: 38, height: 8, spread: 12, cooldown: 0.32, pattern: "spread", colors: ["#ffd1ed","#d9ffd6","#c8b2ff"] },
+  { name: "weapon-moon-04-orbit-ring", count: 5, damage: 4, range: 640, speed: 900, width: 40, height: 9, spread: 0, cooldown: 0.3, pattern: "radial", colors: ["#d9ffd6","#fff3a4","#61f2a5"] },
+  { name: "weapon-moon-05-ribbon-laser", count: 5, damage: 5, range: 780, speed: 980, width: 44, height: 9, spread: 10, cooldown: 0.27, pattern: "fan", colors: ["#fff3a4","#ffd1ed","#9ee8ff"] },
+  { name: "weapon-moon-06-nebula-fan", count: 7, damage: 6, range: 920, speed: 1060, width: 50, height: 10, spread: 0, cooldown: 0.25, pattern: "fan", colors: ["#ffd1ed","#9ee8ff","#a976ff"] },
+  { name: "weapon-moon-07-comet-reverse", count: 7, damage: 7, range: 1060, speed: 1140, width: 54, height: 11, spread: 0, cooldown: 0.23, pattern: "bothSpread", colors: ["#c9f6ff","#ffffff","#64d2ff"] },
+  { name: "weapon-moon-08-moonian-nova", count: 9, damage: 8, range: 1200, speed: 1220, width: 60, height: 12, spread: 12, cooldown: 0.21, pattern: "spread", colors: ["#ffffff","#fff3a4","#ff8db7"] },
+  { name: "weapon-star-01-saturn-splitter", count: 9, damage: 9, range: 1340, speed: 1300, width: 62, height: 12, spread: 0, cooldown: 0.2, pattern: "cross", colors: ["#fff6a6","#ffb86b","#ffffff"] },
+  { name: "weapon-star-02-aquarium-spear", count: 10, damage: 10, range: 1480, speed: 1380, width: 66, height: 13, spread: 0, cooldown: 0.19, pattern: "wave", colors: ["#bff8ff","#4fe3ff","#ffffff"] },
+  { name: "weapon-star-03-quasar-drive", count: 11, damage: 11, range: 1620, speed: 1460, width: 70, height: 14, spread: 0, cooldown: 0.18, pattern: "fan", colors: ["#ffffff","#ffd85a","#ff5f9e"] },
+  { name: "weapon-star-04-galaxy-boomerang", count: 12, damage: 12, range: 1760, speed: 1540, width: 74, height: 15, spread: 18, cooldown: 0.17, pattern: "bothSpread", colors: ["#d7c8ff","#ffffff","#7d8cff"] },
+  { name: "weapon-star-05-black-hole-pulse", count: 14, damage: 13, range: 1900, speed: 1620, width: 76, height: 16, spread: 0, cooldown: 0.16, pattern: "radial", pierce: 1, colors: ["#2d245d","#9ee8ff","#ffffff"] },
+  { name: "weapon-star-06-cosmo-crown", count: 15, damage: 14, range: 2040, speed: 1700, width: 80, height: 17, spread: 0, cooldown: 0.15, pattern: "crown", colors: ["#fff3a4","#ff8db7","#ffffff"] },
+  { name: "weapon-star-07-supernova-360", count: 18, damage: 15, range: 2180, speed: 1780, width: 84, height: 18, spread: 0, cooldown: 0.14, pattern: "radial", pierce: 2, colors: ["#ffffff","#fff3a4","#ff3d7f"] },
+  { name: "weapon-star-08-stellar-guardian-cannon", count: 20, damage: 16, range: 2320, speed: 1860, width: 88, height: 19, spread: 0, cooldown: 0.13, pattern: "homing", explosion: 140, colors: ["#ffffff","#9ee8ff","#ff3d7f"] }
 ];
 const TEXT = {
   ja: {
@@ -283,11 +283,11 @@ const weaponIcons = [
   "assets/weapon-moon-01-moon-popper.png",
   "assets/weapon-moon-02-twinmoon-shooter.png",
   "assets/weapon-moon-03-milkyway-cannon.png",
-  "assets/weapon-moon-04-ribbon-laser.png",
-  "assets/weapon-moon-05-moonian-nova.png",
-  "assets/weapon-moon-06-comet-reverse.png",
-  "assets/weapon-moon-07-orbit-ring.png",
-  "assets/weapon-moon-08-nebula-fan.png",
+  "assets/weapon-moon-04-orbit-ring.png",
+  "assets/weapon-moon-05-ribbon-laser.png",
+  "assets/weapon-moon-06-nebula-fan.png",
+  "assets/weapon-moon-07-comet-reverse.png",
+  "assets/weapon-moon-08-moonian-nova.png",
   "assets/weapon-star-01-saturn-splitter.png",
   "assets/weapon-star-02-aquarium-spear.png",
   "assets/weapon-star-03-quasar-drive.png",
@@ -1549,6 +1549,12 @@ function playSfx(name, x = state?.player?.x ?? 0) {
   } else if (name === "pickup") {
     playTone({ freq: 760, endFreq: 1220, duration: 0.12, type: "sine", gain: 0.045, pan });
     playTone({ start: 0.08, freq: 1220, endFreq: 1640, duration: 0.12, type: "triangle", gain: 0.036, pan });
+  } else if (name === "powerUp") {
+    playTone({ freq: 523, endFreq: 659, duration: 0.12, type: "triangle", gain: 0.052, pan });
+    playTone({ start: 0.07, freq: 659, endFreq: 784, duration: 0.13, type: "triangle", gain: 0.05, pan });
+    playTone({ start: 0.14, freq: 784, endFreq: 1046, duration: 0.16, type: "sine", gain: 0.048, pan });
+    playTone({ start: 0.24, freq: 1318, endFreq: 1568, duration: 0.18, type: "sine", gain: 0.034, pan });
+    playNoise({ start: 0.08, duration: 0.24, gain: 0.018, filter: 5200 });
   } else if (name === "equip") {
     playTone({ freq: 420, endFreq: 840, duration: 0.11, type: "triangle", gain: 0.045, pan });
     playTone({ start: 0.055, freq: 980, endFreq: 1380, duration: 0.12, type: "sine", gain: 0.04, pan });
@@ -1685,6 +1691,7 @@ function addWeaponStock(power = 1) {
   }
   const powerValue = clamp(Math.floor(power), 1, MAX_WEAPON_POWER);
   ensureInventoryItems();
+  const upgradedByPickup = previewWeaponPowerAfterPickup(powerValue) > strongestWeaponPower();
   const emptyIndex = state.inventoryItems.findIndex(item => !item);
   if (emptyIndex < 0) {
     showItemFullPrompt();
@@ -1692,7 +1699,7 @@ function addWeaponStock(power = 1) {
   }
   state.inventoryItems[emptyIndex] = powerValue;
   syncWeaponInventoryFromItems();
-  playSfx("pickup", state.player.x + state.player.w / 2);
+  playSfx(upgradedByPickup ? "powerUp" : "pickup", state.player.x + state.player.w / 2);
   if (state.weaponPower > 0 && !state.weaponInventory[state.weaponPower - 1]) {
     state.weaponPower = 0;
     state.gun.holder = "inventory";
@@ -2272,9 +2279,12 @@ function damagePlayer(fell = false, sourceEnemy = null, canStealWeapon = false) 
       sourceEnemy.gunCooldown = sourceEnemy.boss ? 0.2 : 0.5;
     }
   }
-  state.hp = fell ? 0 : Math.max(0, state.hp - 1);
-  if (!fell && sourceEnemy?.weaponPower) {
-    state.hp = Math.max(0, state.hp - Math.max(0, weaponStage(sourceEnemy.weaponPower).damage - 1));
+  if (fell) {
+    state.hp = 0;
+  } else {
+    const hitDamage = sourceEnemy?.weaponPower ? Math.max(1, weaponStage(sourceEnemy.weaponPower).damage) : 1;
+    const minHpAfterHit = state.hp > 1 ? 1 : 0;
+    state.hp = Math.max(minHpAfterHit, state.hp - hitDamage);
   }
   if (state.hp > 0) {
     playSfx("playerDamage", p.x + p.w / 2);

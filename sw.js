@@ -1,4 +1,4 @@
-const CACHE_NAME = "pyon-p-adventure-v10";
+const CACHE_NAME = "pyon-p-adventure-v11";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -31,13 +31,25 @@ self.addEventListener("activate", event => {
 self.addEventListener("fetch", event => {
   const request = event.request;
   if (request.method !== "GET") return;
+  const url = new URL(request.url);
+
+  if (url.origin === location.origin && (url.pathname.endsWith("/game.js") || url.pathname.endsWith("/styles.css"))) {
+    event.respondWith(
+      fetch(request).then(response => {
+        const copy = response.clone();
+        if (response.ok) caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
+        return response;
+      }).catch(() => caches.match(request))
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(request).then(cached => {
       if (cached) return cached;
       return fetch(request).then(response => {
         const copy = response.clone();
-        if (new URL(request.url).origin === location.origin && response.ok) {
+        if (url.origin === location.origin && response.ok) {
           caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
         }
         return response;
