@@ -367,6 +367,7 @@ let mapSelectedCourse = 0;
 let completedCourses = new Set();
 let doubleTapRunDir = 0;
 let doubleTapRunUntil = 0;
+let doubleTapRunGraceUntil = 0;
 let lastMoveTapDir = 0;
 let lastMoveTapAt = 0;
 let mapRevealTimer = 0;
@@ -1292,9 +1293,8 @@ function updatePlayer(dt) {
   const movingRight = keys.has("ArrowRight") || keys.has("KeyD") || gamepadState.right;
   const wantsJump = keys.has("Space") || keys.has("ArrowUp") || keys.has("KeyW") || gamepadState.jump;
   const dxInput = (movingRight ? 1 : 0) - (movingLeft ? 1 : 0);
-  if (dxInput === 0 || dxInput !== doubleTapRunDir) doubleTapRunDir = 0;
-  const doubleTapRun = dxInput !== 0 && doubleTapRunDir === dxInput;
-  const wantsRun = keys.has("ShiftLeft") || keys.has("ShiftRight") || keys.has("KeyB") || gamepadState.run || doubleTapRun;
+  const doubleTapRun = isDoubleTapRunActive(dxInput);
+  const wantsRun = isRunHeld(dxInput) || doubleTapRun;
   const wantsShoot = keys.has("KeyX") || keys.has("KeyY") || keys.has("KeyJ") || gamepadState.shoot;
   const trait = currentStageTrait();
   const slippery = trait === "iceSlide";
@@ -1340,9 +1340,8 @@ function updateSwimmingPlayer(dt) {
   const movingUp = keys.has("ArrowUp") || keys.has("KeyW") || keys.has("Space") || gamepadState.up || gamepadState.jump;
   const movingDown = keys.has("ArrowDown") || keys.has("KeyS") || gamepadState.down;
   const dxInput = (movingRight ? 1 : 0) - (movingLeft ? 1 : 0);
-  if (dxInput === 0 || dxInput !== doubleTapRunDir) doubleTapRunDir = 0;
-  const doubleTapRun = dxInput !== 0 && doubleTapRunDir === dxInput;
-  const wantsRun = keys.has("ShiftLeft") || keys.has("ShiftRight") || keys.has("KeyB") || gamepadState.run || doubleTapRun;
+  const doubleTapRun = isDoubleTapRunActive(dxInput);
+  const wantsRun = isRunHeld(dxInput) || doubleTapRun;
   const wantsShoot = keys.has("KeyX") || keys.has("KeyY") || keys.has("KeyJ") || gamepadState.shoot;
   const dx = dxInput;
   const dy = (movingDown ? 1 : 0) - (movingUp ? 1 : 0);
@@ -1370,6 +1369,32 @@ function updateSwimmingPlayer(dt) {
   p.grounded = false;
   p.swimming = true;
   state.camera = clamp(p.x - 330, 0, WORLD_WIDTH - canvas.width);
+}
+
+function isRunHeld(dxInput = 0) {
+  const keyboardRun = keys.has("ShiftLeft") || keys.has("ShiftRight") || keys.has("KeyB");
+  const gamepadRun = gamepadState.run || (dxInput !== 0 && gamepadState.jump);
+  return keyboardRun || gamepadRun;
+}
+
+function isDoubleTapRunActive(dxInput) {
+  const now = performance.now();
+  if (dxInput !== 0 && dxInput === doubleTapRunDir && now <= doubleTapRunUntil) {
+    doubleTapRunGraceUntil = now + 180;
+    return true;
+  }
+  if (dxInput !== 0 && dxInput !== doubleTapRunDir) {
+    doubleTapRunDir = 0;
+    doubleTapRunUntil = 0;
+    doubleTapRunGraceUntil = 0;
+    return false;
+  }
+  if (dxInput === 0 && now > doubleTapRunGraceUntil) {
+    doubleTapRunDir = 0;
+    doubleTapRunUntil = 0;
+    return false;
+  }
+  return dxInput !== 0 && dxInput === doubleTapRunDir;
 }
 
 function updateStageTraits(dt) {
@@ -5887,6 +5912,7 @@ function registerMoveTap(dir) {
   if (lastMoveTapDir === dir && now - lastMoveTapAt <= 280) {
     doubleTapRunDir = dir;
     doubleTapRunUntil = Infinity;
+    doubleTapRunGraceUntil = now + 180;
   }
   lastMoveTapDir = dir;
   lastMoveTapAt = now;
@@ -5921,7 +5947,7 @@ function updateGamepad() {
   const dpadUp = Boolean(pad.buttons[12]?.pressed);
   const dpadDown = Boolean(pad.buttons[13]?.pressed);
   const jumpPressed = Boolean(pad.buttons[0]?.pressed);
-  const runPressed = Boolean(pad.buttons[1]?.pressed);
+  const runPressed = Boolean(pad.buttons[1]?.pressed || pad.buttons[5]?.pressed);
   const shootPressed = Boolean(pad.buttons[2]?.pressed || pad.buttons[3]?.pressed);
   const selectPressed = Boolean(pad.buttons[8]?.pressed);
   const startPressed = Boolean(pad.buttons[9]?.pressed);
