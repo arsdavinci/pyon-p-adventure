@@ -605,7 +605,7 @@ function makeCourse(worldIndex, areaIndex) {
       final: finalStage,
       bossKind: worldIndex,
       weaponPower: bossPower,
-      hp: finalStage ? 180 : 42 + worldIndex * 18,
+      hp: finalStage ? 320 : 96 + worldIndex * 34,
       w: finalStage ? 190 : 96 + worldIndex * 10,
       h: finalStage ? 172 : 96 + worldIndex * 10
     }));
@@ -746,7 +746,9 @@ function bossEnemy(x, y, left, right, options = {}) {
     weaponPower: options.weaponPower ?? 4,
     gunCooldown: options.final ? 0.16 : 0.35,
     hp: options.hp ?? 34,
-    maxHp: options.hp ?? 34
+    maxHp: options.hp ?? 34,
+    bossPattern: null,
+    bossPatternCooldown: options.final ? 1.0 : 1.35
   };
 }
 
@@ -796,6 +798,7 @@ function newState() {
     oxygenHurtCooldown: 0,
     oxygenItems: (level.oxygenItems ?? []).map(o => ({ ...o, taken: false, respawn: 0 })),
     lavaGeysers: (level.lavaGeysers ?? []).map(g => ({ ...g })),
+    bossHazards: [],
     stagePulse: 0,
     particles: [],
     items: [],
@@ -1133,6 +1136,7 @@ function update(dt) {
   updateGun(dt);
   updateItems(dt);
   updateEnemies(dt);
+  updateBossHazards(dt);
   updateBeams(dt);
   updateParticles(dt);
   collectCoins();
@@ -1512,7 +1516,9 @@ function updateEnemies(dt) {
     } else {
       updateEnemyMovement(e, dt);
     }
-    if ((state.gun.holder === e.id || e.weaponPower) && e.gunCooldown <= 0) {
+    if (e.boss && courses[currentCourse]?.bossStage && state.bossIntroPlayed) {
+      updateBossAttackPattern(e, dt);
+    } else if ((state.gun.holder === e.id || e.weaponPower) && e.gunCooldown <= 0) {
       const dir = state.player.x + state.player.w / 2 < e.x + e.w / 2 ? -1 : 1;
       shootBeam(e.id, e.x + e.w / 2 + dir * 22, e.y + 22, dir);
       e.attackAnim = e.boss ? 0.42 : 0.28;
@@ -1666,6 +1672,129 @@ function updateSwimmingEnemy(e, dt, idle = false) {
   e.y = clamp(e.y + e.vy * dt, 72, canvas.height - e.h - 48);
   e.grounded = false;
   syncEnemyFacing(e);
+}
+
+function updateBossAttackPattern(boss, dt) {
+  if (!boss.alive || state.mode !== "playing") return;
+  boss.bossPatternCooldown = Math.max(0, (boss.bossPatternCooldown ?? 1) - dt);
+  if (!boss.bossPattern && boss.bossPatternCooldown <= 0) {
+    boss.bossPattern = chooseBossPattern(boss);
+    boss.attackAnim = 0.9;
+    playSfx("equip", boss.x + boss.w / 2);
+  }
+  if (!boss.bossPattern) return;
+  boss.bossPattern.timer -= dt;
+  boss.attackAnim = Math.max(boss.attackAnim ?? 0, 0.18);
+  if (boss.bossPattern.timer > 0) return;
+  fireBossPattern(boss, boss.bossPattern);
+  const phase = 1 - clamp((boss.hp ?? boss.maxHp) / Math.max(1, boss.maxHp ?? 1), 0, 1);
+  boss.bossPattern = null;
+  boss.bossPatternCooldown = boss.finalBoss ? 0.85 - phase * 0.18 : 1.25 - phase * 0.16;
+}
+
+function chooseBossPattern(boss) {
+  const p = state.player;
+  const phase = 1 - clamp((boss.hp ?? boss.maxHp) / Math.max(1, boss.maxHp ?? 1), 0, 1);
+  const patterns = boss.finalBoss || phase > 0.45
+    ? ["orb", "eruption", "rain", "rain"]
+    : ["orb", "eruption", "rain"];
+  const type = patterns[Math.floor((performance.now() / 500 + (boss.bossKind ?? 0)) % patterns.length)];
+  return {
+    type,
+    timer: type === "orb" ? 0.45 : 0.75,
+    targetX: clamp(p.x + p.w / 2, boss.left + 120, boss.right - 120),
+    targetY: p.y + p.h / 2,
+    count: boss.finalBoss ? 5 : phase > 0.45 ? 4 : 3
+  };
+}
+
+function fireBossPattern(boss, pattern) {
+  if (pattern.type === "orb") {
+    const dir = state.player.x + state.player.w / 2 < boss.x + boss.w / 2 ? -1 : 1;
+    const speed = boss.finalBoss ? 230 : 190;
+    const count = boss.finalBoss ? 3 : 2;
+    for (let i = 0; i < count; i++) {
+      const angle = Math.atan2((state.player.y + state.player.h / 2) - (boss.y + 34 + i * 18), (state.player.x + state.player.w / 2) - (boss.x + boss.w / 2));
+      state.beams.push({
+        owner: boss.id,
+        bossOrb: true,
+        x: boss.x + boss.w / 2 + dir * 22,
+        y: boss.y + 26 + i * 18,
+        w: 38,
+        h: 38,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        angle,
+        life: 4.2,
+        damage: 1,
+        colors: ["#fff3a4", "#ff8db7", "#c8b2ff"],
+        power: boss.weaponPower ?? 4,
+        distance: 0,
+        range: 960
+      });
+    }
+    playSfx("laser", boss.x + boss.w / 2);
+    return;
+  }
+
+  if (pattern.type === "rain") {
+    const spacing = 118;
+    for (let i = 0; i < pattern.count; i++) {
+      const side = i - (pattern.count - 1) / 2;
+      state.bossHazards.push({
+        type: "fall",
+        x: clamp(pattern.targetX + side * spacing, state.camera + 90, state.camera + canvas.width - 90),
+        y: -90 - i * 28,
+        r: 24,
+        telegraph: 0.72,
+        life: 3.2,
+        vy: boss.finalBoss ? 640 : 560,
+        owner: boss.id
+      });
+    }
+    return;
+  }
+
+  const spacing = 112;
+  for (let i = 0; i < pattern.count; i++) {
+    const side = i - (pattern.count - 1) / 2;
+    state.bossHazards.push({
+      type: "eruption",
+      x: clamp(pattern.targetX + side * spacing, boss.left + 80, boss.right - 80),
+      y: 492,
+      w: 72,
+      h: boss.finalBoss ? 210 : 168,
+      telegraph: 0.84,
+      active: 0,
+      life: 1.45,
+      owner: boss.id
+    });
+  }
+}
+
+function updateBossHazards(dt) {
+  const p = state.player;
+  for (const h of state.bossHazards ?? []) {
+    h.life -= dt;
+    if (h.telegraph > 0) {
+      h.telegraph -= dt;
+      if (h.telegraph <= 0) h.active = h.type === "eruption" ? 0.55 : 1;
+      continue;
+    }
+    if (h.type === "fall") {
+      h.y += h.vy * dt;
+      const hitbox = rect(h.x - h.r, h.y - h.r, h.r * 2, h.r * 2);
+      if (hit(hitbox, p)) {
+        h.life = 0;
+        damagePlayer(false, state.enemies.find(e => e.id === h.owner));
+      }
+    } else if (h.type === "eruption") {
+      h.active -= dt;
+      const hitbox = rect(h.x - h.w / 2, canvas.height - h.h, h.w, h.h);
+      if (h.active > 0 && hit(hitbox, p)) damagePlayer(false, state.enemies.find(e => e.id === h.owner));
+    }
+  }
+  state.bossHazards = (state.bossHazards ?? []).filter(h => h.life > 0 && h.y < canvas.height + 120);
 }
 
 function respawnBoss(e) {
@@ -2931,6 +3060,7 @@ function draw() {
   drawStageEnvironment();
   drawPlatforms();
   drawStageHazards();
+  drawBossHazards();
   drawGun();
   drawItems();
   drawParticles();
@@ -2943,6 +3073,7 @@ function draw() {
   drawStageBadge();
   drawHpMeter();
   drawOxygenMeter();
+  drawBossHpMeter();
   if (state.mode === "bossIntro" || state.mode === "bossOutro") drawBossIntroOverlay();
   if (state.mode === "paused") drawPauseScreen();
   if (state.itemFullPrompt > 0) drawItemFullPrompt();
@@ -3454,6 +3585,46 @@ function drawOxygenMeter() {
   ctx.restore();
 }
 
+function drawBossHpMeter() {
+  const boss = state.enemies?.find(e => e.boss && e.alive && courses[currentCourse]?.bossStage && state.bossIntroPlayed);
+  if (!boss || state.mode !== "playing") return;
+  const w = 520;
+  const h = 34;
+  const x = canvas.width / 2 - w / 2;
+  const y = canvas.height - 62;
+  const ratio = clamp((boss.hp ?? 0) / Math.max(1, boss.maxHp ?? 1), 0, 1);
+  ctx.save();
+  ctx.fillStyle = "rgba(30, 24, 52, 0.54)";
+  ctx.strokeStyle = boss.finalBoss ? "#ff3d7f" : "#ff8db7";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, 8);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
+  ctx.beginPath();
+  ctx.roundRect(x + 12, y + 11, w - 24, 12, 6);
+  ctx.fill();
+  const grad = ctx.createLinearGradient(x + 12, y, x + w - 12, y);
+  grad.addColorStop(0, "#fff3a4");
+  grad.addColorStop(0.45, "#ff8db7");
+  grad.addColorStop(1, boss.finalBoss ? "#ff3d7f" : "#c8b2ff");
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.roundRect(x + 12, y + 11, (w - 24) * ratio, 12, 6);
+  ctx.fill();
+  ctx.font = "900 15px Segoe UI, system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "bottom";
+  ctx.fillStyle = "#fffaf0";
+  ctx.strokeStyle = "rgba(44, 38, 80, 0.8)";
+  ctx.lineWidth = 3;
+  const label = boss.finalBoss ? "FINAL BOSS" : "BOSS";
+  ctx.strokeText(label, x + w / 2, y - 4);
+  ctx.fillText(label, x + w / 2, y - 4);
+  ctx.restore();
+}
+
 function drawStageEnvironment() {
   const trait = currentStageTrait();
   if (trait === "underwater") {
@@ -3498,6 +3669,51 @@ function drawStageHazards() {
       ctx.beginPath();
       ctx.arc(x + 10 + i * 13, y + 18 + Math.sin(performance.now() / 120 + i) * 9, 5 + i % 2 * 3, 0, Math.PI * 2);
       ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+function drawBossHazards() {
+  ctx.save();
+  for (const h of state.bossHazards ?? []) {
+    if (h.type === "fall") {
+      const warning = h.telegraph > 0;
+      const x = h.x;
+      const y = warning ? 92 : h.y;
+      const pulse = 1 + Math.sin(performance.now() / 95) * 0.08;
+      ctx.globalAlpha = warning ? 0.62 : 0.92;
+      ctx.strokeStyle = warning ? "#ff8db7" : "#fff3a4";
+      ctx.fillStyle = warning ? "rgba(255, 141, 183, 0.16)" : "rgba(255, 111, 82, 0.78)";
+      ctx.lineWidth = warning ? 4 : 2;
+      ctx.beginPath();
+      ctx.arc(x, y, h.r * (warning ? 1.6 * pulse : 1), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      if (!warning) {
+        ctx.fillStyle = "rgba(255, 243, 164, 0.86)";
+        drawTinyStar(x, y, h.r * 0.72);
+      }
+    } else if (h.type === "eruption") {
+      const warning = h.telegraph > 0;
+      const x = h.x - h.w / 2;
+      const y = canvas.height - h.h;
+      ctx.globalAlpha = warning ? 0.64 : 0.9;
+      ctx.fillStyle = warning ? "rgba(255, 141, 183, 0.18)" : "rgba(255, 111, 82, 0.82)";
+      ctx.strokeStyle = warning ? "#ff8db7" : "#fff3a4";
+      ctx.lineWidth = warning ? 4 : 2;
+      ctx.beginPath();
+      ctx.roundRect(x, warning ? canvas.height - 42 : y, h.w, warning ? 28 : h.h, 20);
+      ctx.fill();
+      ctx.stroke();
+      if (!warning) {
+        ctx.fillStyle = "rgba(255, 243, 164, 0.7)";
+        for (let i = 0; i < 4; i++) {
+          ctx.beginPath();
+          ctx.arc(x + 12 + i * 16, y + 18 + Math.sin(performance.now() / 110 + i) * 8, 6, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
     }
   }
   ctx.restore();
@@ -5034,6 +5250,11 @@ function drawBeams() {
     ctx.globalAlpha = 0.9;
     ctx.translate(b.x + b.w / 2, b.y + b.h / 2);
     ctx.rotate(b.angle ?? 0);
+    if (b.bossOrb) {
+      drawBossOrb(b);
+      ctx.restore();
+      continue;
+    }
     if (b.homing) {
       drawHomingMissile(b);
       ctx.restore();
@@ -5058,6 +5279,31 @@ function drawBeams() {
     ctx.fillRect(-b.w / 2 + 4, -b.h / 2 + 2, b.w - 8, 2);
     ctx.restore();
   }
+}
+
+function drawBossOrb(b) {
+  const r = Math.max(b.w, b.h) / 2;
+  const colors = b.colors || ["#fff3a4", "#ff8db7", "#c8b2ff"];
+  const glow = ctx.createRadialGradient(0, 0, 4, 0, 0, r * 1.9);
+  glow.addColorStop(0, "rgba(255,255,255,0.95)");
+  glow.addColorStop(0.35, colors[1]);
+  glow.addColorStop(1, "rgba(255,141,183,0)");
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 1.9, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = colors[0];
+  ctx.lineWidth = 3;
+  ctx.fillStyle = colors[2];
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(255,255,255,0.72)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.55, 0, Math.PI * 2);
+  ctx.stroke();
 }
 
 function drawHomingMissile(b) {
