@@ -171,6 +171,7 @@ const TEXT = {
 };
 const keys = new Set();
 let audioCtx = null;
+let audioUnlocked = false;
 let lastSfxAt = {};
 const pyompySprite = new Image();
 pyompySprite.src = "assets/pyompy-spritesheet.png";
@@ -1600,8 +1601,29 @@ function getAudioContext() {
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
   if (!AudioContextClass) return null;
   if (!audioCtx) audioCtx = new AudioContextClass();
-  if (audioCtx.state === "suspended") audioCtx.resume();
+  if (audioCtx.state === "suspended") {
+    audioCtx.resume().then(() => {
+      audioUnlocked = true;
+    }).catch(() => {});
+  } else {
+    audioUnlocked = true;
+  }
   return audioCtx;
+}
+
+function unlockAudio() {
+  const ctxAudio = getAudioContext();
+  if (!ctxAudio || audioUnlocked) return;
+  try {
+    const source = ctxAudio.createBufferSource();
+    const gain = ctxAudio.createGain();
+    source.buffer = ctxAudio.createBuffer(1, 1, ctxAudio.sampleRate);
+    gain.gain.value = 0.0001;
+    source.connect(gain);
+    gain.connect(ctxAudio.destination);
+    source.start(0);
+    audioUnlocked = ctxAudio.state === "running";
+  } catch (_) {}
 }
 
 function playTone({ start = 0, freq = 440, endFreq = freq, duration = 0.12, type = "sine", gain = 0.08, pan = 0 }) {
@@ -5643,6 +5665,7 @@ function updateGamepad() {
 }
 
 window.addEventListener("keydown", event => {
+  unlockAudio();
   const code = normalizeInputCode(event);
   if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", "Tab", "Enter"].includes(code)) event.preventDefault();
   if (!event.repeat && (code === "ArrowLeft" || code === "KeyA")) registerMoveTap(-1);
@@ -5701,6 +5724,7 @@ window.addEventListener("keyup", event => {
   keys.delete(code);
 });
 startButton.addEventListener("click", () => {
+  unlockAudio();
   if (state?.mode === "ended" && gameOverContinueAvailable) continueFromGameOver();
   else pendingCourseStart ? startCurrentCourse() : startGame();
 });
@@ -5733,6 +5757,7 @@ window.addEventListener("orientationchange", nudgeMobileBrowserChrome);
 window.addEventListener("resize", updateFullscreenButton);
 
 canvas.addEventListener("pointerdown", event => {
+  unlockAudio();
   const pos = canvasPoint(event);
   if (state.mode === "paused") {
     const rects = pauseButtonRects();
@@ -6147,6 +6172,7 @@ function handleTouchStartButton() {
 }
 
 function pressTouchControl(code) {
+  unlockAudio();
   if (code === "Select") {
     toggleInventory();
     return;
@@ -6184,6 +6210,8 @@ for (const button of document.querySelectorAll("[data-key]")) {
 for (const eventName of ["contextmenu", "selectstart", "dragstart"]) {
   document.addEventListener(eventName, event => event.preventDefault());
 }
+document.addEventListener("pointerdown", unlockAudio, { passive: true });
+document.addEventListener("touchstart", unlockAudio, { passive: true });
 document.addEventListener("touchmove", event => event.preventDefault(), { passive: false });
 
 state = newState();
