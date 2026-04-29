@@ -36,7 +36,7 @@ const STOMP_BOOST_VY = -1040;
 const BOSS_STOMP_BOOST_VY = -1120;
 const STOMP_BOOST_BUFFER = 0.16;
 const STOMP_LATE_BOOST_WINDOW = 0.14;
-const WEAPON_ASSET_VERSION = "weapon-cutout-v2";
+const WEAPON_ASSET_VERSION = "weapon-cutout-v3";
 const WEAPON_DROP_RATES = [
   { power: 1, chance: 0.8 },
   { power: 2, chance: 0.1 },
