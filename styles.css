@@ -38,13 +38,20 @@ body {
 }
 
 .shell {
+  --hud-space: 72px;
   width: min(100vw, 1440px);
+  height: 100dvh;
   padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-content: center;
 }
 
 .game-wrap {
   position: relative;
-  width: 100%;
+  justify-self: center;
+  width: min(100%, calc((100dvh - var(--hud-space) - max(8px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom))) * 16 / 9));
+  max-height: calc(100dvh - var(--hud-space) - max(8px, env(safe-area-inset-top)) - max(8px, env(safe-area-inset-bottom)));
   aspect-ratio: 16 / 9;
   border: 4px solid #ffffff;
   border-radius: 8px;
@@ -63,10 +70,10 @@ canvas {
 }
 
 .fullscreen-button {
-  position: absolute;
-  top: max(10px, env(safe-area-inset-top));
-  right: max(10px, env(safe-area-inset-right));
-  z-index: 9;
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  right: max(14px, env(safe-area-inset-right));
+  z-index: 12;
   min-width: 86px;
   padding: 8px 12px;
   border: 2px solid rgba(255, 255, 255, 0.82);
@@ -78,7 +85,7 @@ canvas {
 }
 
 .install-hint {
-  position: absolute;
+  position: fixed;
   left: 50%;
   bottom: max(18px, env(safe-area-inset-bottom));
   z-index: 10;
@@ -99,6 +106,13 @@ canvas {
   display: none;
 }
 
+.shell:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  padding: max(4px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+}
+
 .game-wrap:fullscreen {
   width: 100vw;
   height: 100vh;
@@ -108,6 +122,7 @@ canvas {
   aspect-ratio: auto;
 }
 
+.shell:fullscreen .fullscreen-button,
 .game-wrap:fullscreen .fullscreen-button {
   background: rgba(255, 241, 159, 0.88);
 }
@@ -218,7 +233,7 @@ button:active {
 .touch-controls {
   position: fixed;
   inset: 0;
-  z-index: 8;
+  z-index: 11;
   display: none;
   justify-content: space-between;
   pointer-events: none;
@@ -227,16 +242,16 @@ button:active {
 
 .touch-side {
   position: absolute;
-  top: max(70px, calc(env(safe-area-inset-top) + 56px));
-  bottom: max(24px, env(safe-area-inset-bottom));
-  width: max(112px, calc((100vw - min(100vw, calc(100dvh * 16 / 9))) / 2));
-  min-width: 104px;
+  top: max(12px, env(safe-area-inset-top));
+  bottom: max(14px, env(safe-area-inset-bottom));
+  width: max(120px, calc((100vw - min(100vw, calc((100dvh - 72px) * 16 / 9))) / 2));
+  min-width: 112px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  padding: 0 8px;
+  padding: 0 10px;
   pointer-events: none;
 }
 
@@ -258,13 +273,14 @@ button:active {
 .touch-actions {
   position: relative;
   width: 150px;
-  height: 166px;
+  height: 176px;
   pointer-events: none;
 }
 
 .touch-button,
 .touch-action,
-.touch-small {
+.touch-small,
+.touch-shoulder {
   pointer-events: auto;
   min-width: 56px;
   width: 56px;
@@ -314,20 +330,44 @@ button:active {
 }
 
 .touch-action.jump {
-  right: 42px;
-  bottom: 74px;
+  left: 43px;
+  bottom: 0;
   background: rgba(158, 232, 255, 0.7);
+  color: #0b1630;
+}
+
+.touch-action.y {
+  left: 43px;
+  top: 0;
+  background: rgba(255, 241, 159, 0.76);
   color: #0b1630;
 }
 
 .touch-action.shoot {
   left: 0;
-  bottom: 34px;
+  top: 56px;
 }
 
 .touch-action.run {
   right: 0;
-  bottom: 0;
+  top: 56px;
+}
+
+.touch-top-group {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  pointer-events: none;
+}
+
+.touch-shoulder {
+  width: 86px;
+  min-width: 86px;
+  height: 44px;
+  border-radius: 999px;
+  background: rgba(255, 241, 159, 0.76);
+  color: #3f3769;
+  font-size: 1rem;
 }
 
 .touch-small {
@@ -385,6 +425,7 @@ button:active {
 
 @media (max-width: 560px) {
   .shell {
+    height: 100dvh;
     padding: 8px;
   }
 
@@ -412,8 +453,14 @@ button:active {
   }
 
   .shell {
-    width: min(100vw, calc((100dvh - 58px) * 16 / 9));
+    --hud-space: 48px;
+    width: min(100vw, calc((100dvh - var(--hud-space)) * 16 / 9 + 220px));
     padding: max(4px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+  }
+
+  .game-wrap {
+    width: min(calc(100vw - 220px), calc((100dvh - var(--hud-space) - 8px) * 16 / 9));
+    max-height: calc(100dvh - var(--hud-space) - 8px);
   }
 
   .overlay {
@@ -468,16 +515,17 @@ button:active {
   }
 
   .touch-button {
-    width: 52px;
-    height: 52px;
-    min-width: 52px;
+    width: 50px;
+    height: 50px;
+    min-width: 50px;
   }
 
   .touch-side {
     top: max(8px, env(safe-area-inset-top));
-    bottom: max(10px, env(safe-area-inset-bottom));
-    min-width: 96px;
-    padding: 0 4px;
+    bottom: max(6px, env(safe-area-inset-bottom));
+    width: max(104px, calc((100vw - min(calc(100vw - 220px), calc((100dvh - var(--hud-space) - 8px) * 16 / 9))) / 2));
+    min-width: 104px;
+    padding: 0 6px;
   }
 
   .touch-dpad {
@@ -486,37 +534,52 @@ button:active {
   }
 
   .touch-button.up {
-    left: 37px;
+    left: 38px;
   }
 
   .touch-button.left {
-    top: 37px;
+    top: 38px;
   }
 
   .touch-button.down {
-    left: 37px;
-    top: 74px;
+    left: 38px;
+    top: 76px;
   }
 
   .touch-button.right {
-    left: 74px;
-    top: 37px;
+    left: 76px;
+    top: 38px;
   }
 
   .touch-action {
-    width: 58px;
-    height: 58px;
-    min-width: 58px;
+    width: 54px;
+    height: 54px;
+    min-width: 54px;
   }
 
   .touch-actions {
-    width: 132px;
-    height: 148px;
+    width: 128px;
+    height: 160px;
   }
 
   .touch-action.jump {
-    right: 36px;
-    bottom: 66px;
+    left: 37px;
+    bottom: 0;
+  }
+
+  .touch-action.y {
+    left: 37px;
+    top: 0;
+  }
+
+  .touch-action.shoot {
+    left: 0;
+    top: 53px;
+  }
+
+  .touch-action.run {
+    right: 0;
+    top: 53px;
   }
 
   .touch-small {
@@ -526,10 +589,23 @@ button:active {
     font-size: 0.66rem;
   }
 
-  .fullscreen-button {
+  .touch-shoulder {
+    width: 76px;
     min-width: 76px;
+    height: 34px;
+    font-size: 0.86rem;
+  }
+
+  .touch-top-group {
+    gap: 8px;
+  }
+
+  .fullscreen-button {
+    min-width: 82px;
     padding: 6px 10px;
     font-size: 0.78rem;
+    top: max(86px, env(safe-area-inset-top));
+    right: max(16px, env(safe-area-inset-right));
   }
 
   .install-hint {

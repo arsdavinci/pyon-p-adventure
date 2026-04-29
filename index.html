@@ -14,13 +14,16 @@
   </head>
   <body>
     <main class="shell">
+      <button id="fullscreenButton" class="fullscreen-button" type="button" aria-label="Fullscreen">全画面</button>
       <section class="game-wrap" aria-label="ぴょんぴーの大冒険 game">
         <canvas id="game" width="1280" height="720"></canvas>
-        <button id="fullscreenButton" class="fullscreen-button" type="button" aria-label="Fullscreen">全画面</button>
         <div id="installHint" class="install-hint hidden" role="status"></div>
         <div class="touch-controls" aria-label="Touch controls">
           <div class="touch-side touch-side-left">
-            <button class="touch-small" data-key="Select" type="button" aria-label="Select">SELECT</button>
+            <div class="touch-top-group">
+              <button class="touch-shoulder" data-key="Select" type="button" aria-label="L Button">L</button>
+              <button class="touch-small" data-key="Select" type="button" aria-label="Select">SELECT</button>
+            </div>
             <div class="touch-dpad" aria-label="Move">
               <button class="touch-button up" data-key="ArrowUp" type="button" aria-label="Up">&uarr;</button>
               <button class="touch-button left" data-key="ArrowLeft" type="button" aria-label="Left">&larr;</button>
@@ -29,8 +32,12 @@
             </div>
           </div>
           <div class="touch-side touch-side-right">
-            <button class="touch-small" data-key="Enter" type="button" aria-label="Start">START</button>
+            <div class="touch-top-group">
+              <button class="touch-shoulder" data-key="Enter" type="button" aria-label="R Button">R</button>
+              <button class="touch-small" data-key="Enter" type="button" aria-label="Start">START</button>
+            </div>
             <div class="touch-actions" aria-label="Actions">
+              <button class="touch-action y" data-key="KeyY" type="button" aria-label="Shoot Y">Y</button>
               <button class="touch-action shoot" data-key="KeyX" type="button" aria-label="Shoot">X</button>
               <button class="touch-action jump" data-key="Space" type="button" aria-label="Jump">A</button>
               <button class="touch-action run" data-key="KeyB" type="button" aria-label="Dash">B</button>

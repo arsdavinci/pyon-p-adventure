@@ -352,6 +352,10 @@ let currentCourse = 0;
 let unlockedCourse = 0;
 let mapSelectedCourse = 0;
 let completedCourses = new Set();
+let doubleTapRunDir = 0;
+let doubleTapRunUntil = 0;
+let lastMoveTapDir = 0;
+let lastMoveTapAt = 0;
 let mapRevealTimer = 0;
 let mapRevealFromWorld = 0;
 let mapMessageTimer = 0;
@@ -897,6 +901,11 @@ function loop(now) {
 }
 
 function update(dt) {
+  if (!overlay.classList.contains("hidden") && (state.mode === "playing" || state.mode === "ended" || pendingCourseStart)) {
+    updateGamepad();
+    updateHud();
+    return;
+  }
   if (state.mode === "worldMap") {
     updateGamepad();
     mapRevealTimer = Math.max(0, mapRevealTimer - dt);
@@ -1064,7 +1073,9 @@ function updatePlayer(dt) {
   const movingLeft = keys.has("ArrowLeft") || keys.has("KeyA") || gamepadState.left;
   const movingRight = keys.has("ArrowRight") || keys.has("KeyD") || gamepadState.right;
   const wantsJump = keys.has("Space") || keys.has("ArrowUp") || keys.has("KeyW") || gamepadState.jump;
-  const wantsRun = keys.has("ShiftLeft") || keys.has("ShiftRight") || keys.has("KeyB") || gamepadState.run;
+  const dxInput = (movingRight ? 1 : 0) - (movingLeft ? 1 : 0);
+  const doubleTapRun = dxInput !== 0 && doubleTapRunDir === dxInput && performance.now() < doubleTapRunUntil;
+  const wantsRun = keys.has("ShiftLeft") || keys.has("ShiftRight") || keys.has("KeyB") || gamepadState.run || doubleTapRun;
   const wantsShoot = keys.has("KeyX") || keys.has("KeyY") || keys.has("KeyJ") || gamepadState.shoot;
   const accel = wantsRun ? 2100 : 1250;
   const maxSpeed = wantsRun ? 360 : 235;
@@ -1943,7 +1954,7 @@ async function enterBestFullscreen() {
     return;
   }
 
-  const target = document.querySelector(".game-wrap") || document.documentElement;
+  const target = document.querySelector(".shell") || document.documentElement;
   const requestFullscreen = target.requestFullscreen || target.webkitRequestFullscreen;
   if (requestFullscreen) {
     try {
@@ -4921,6 +4932,17 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
+function registerMoveTap(dir) {
+  if (!dir) return;
+  const now = performance.now();
+  if (lastMoveTapDir === dir && now - lastMoveTapAt <= 280) {
+    doubleTapRunDir = dir;
+    doubleTapRunUntil = now + 780;
+  }
+  lastMoveTapDir = dir;
+  lastMoveTapAt = now;
+}
+
 function updateGamepad() {
   const now = performance.now();
   const pads = navigator.getGamepads ? navigator.getGamepads() : [];
@@ -4960,7 +4982,7 @@ function updateGamepad() {
   gamepadState.select = selectPressed;
   gamepadState.start = startPressed;
 
-  if (state.mode === "playing" && !overlay.classList.contains("hidden")) {
+  if (!overlay.classList.contains("hidden")) {
     const anyStartPressed = jumpPressed || shootPressed || runPressed || startPressed || selectPressed;
     const anyStartLatched = gamepadState.jumpLatch || gamepadState.shootLatch || gamepadState.runLatch || gamepadState.startLatch || gamepadState.selectLatch;
     if (anyStartPressed && !anyStartLatched) {
@@ -5072,6 +5094,8 @@ function updateGamepad() {
 window.addEventListener("keydown", event => {
   const code = normalizeInputCode(event);
   if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", "Tab", "Enter"].includes(code)) event.preventDefault();
+  if (!event.repeat && (code === "ArrowLeft" || code === "KeyA")) registerMoveTap(-1);
+  if (!event.repeat && (code === "ArrowRight" || code === "KeyD")) registerMoveTap(1);
   if (!event.repeat && (code === "Space" || code === "ArrowUp" || code === "KeyW")) queueStompBoost();
   if (state.mode === "bossIntro") {
     if (!event.repeat && ["Enter", "Space", "KeyX", "KeyY", "KeyJ", "KeyZ", "KeyA"].includes(code)) advanceBossIntro();
@@ -5438,6 +5462,8 @@ function pressTouchControl(code) {
     handleTouchStartButton();
     return;
   }
+  if (code === "ArrowLeft") registerMoveTap(-1);
+  if (code === "ArrowRight") registerMoveTap(1);
   if (code === "Space" || code === "ArrowUp") queueStompBoost();
   keys.add(code);
 }
@@ -5471,3 +5497,5 @@ state = newState();
 applyLanguage();
 updateHud();
 draw();
+lastTime = performance.now();
+animationId = requestAnimationFrame(loop);
