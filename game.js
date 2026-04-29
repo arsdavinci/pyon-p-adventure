@@ -1246,7 +1246,8 @@ function updatePlayer(dt) {
   const movingRight = keys.has("ArrowRight") || keys.has("KeyD") || gamepadState.right;
   const wantsJump = keys.has("Space") || keys.has("ArrowUp") || keys.has("KeyW") || gamepadState.jump;
   const dxInput = (movingRight ? 1 : 0) - (movingLeft ? 1 : 0);
-  const doubleTapRun = dxInput !== 0 && doubleTapRunDir === dxInput && performance.now() < doubleTapRunUntil;
+  if (dxInput === 0 || dxInput !== doubleTapRunDir) doubleTapRunDir = 0;
+  const doubleTapRun = dxInput !== 0 && doubleTapRunDir === dxInput;
   const wantsRun = keys.has("ShiftLeft") || keys.has("ShiftRight") || keys.has("KeyB") || gamepadState.run || doubleTapRun;
   const wantsShoot = keys.has("KeyX") || keys.has("KeyY") || keys.has("KeyJ") || gamepadState.shoot;
   const accel = wantsRun ? 2100 : 1250;
@@ -5577,7 +5578,7 @@ function registerMoveTap(dir) {
   const now = performance.now();
   if (lastMoveTapDir === dir && now - lastMoveTapAt <= 280) {
     doubleTapRunDir = dir;
-    doubleTapRunUntil = now + 780;
+    doubleTapRunUntil = Infinity;
   }
   lastMoveTapDir = dir;
   lastMoveTapAt = now;
