@@ -36,7 +36,7 @@ const STOMP_BOOST_VY = -1040;
 const BOSS_STOMP_BOOST_VY = -1120;
 const STOMP_BOOST_BUFFER = 0.16;
 const STOMP_LATE_BOOST_WINDOW = 0.14;
-const WEAPON_ASSET_VERSION = "weapon-cutout-v3";
+const WEAPON_ASSET_VERSION = "weapon-cutout-v4";
 const WEAPON_DROP_RATES = [
   { power: 1, chance: 0.8 },
   { power: 2, chance: 0.1 },
@@ -46,8 +46,8 @@ const WEAPON_DROP_RATES = [
 ];
 const WEAPON_NAMES_JA = [
   "ムーンポッパー",
+  "ツインムーンシューター",
   "ミルキーウェイキャノン",
-  "ツインスターシューター",
   "リボンレーザー",
   "ムーニアンノヴァ",
   "コメットリバース",
@@ -64,8 +64,8 @@ const WEAPON_NAMES_JA = [
 ];
 const WEAPON_STAGES = [
   { name: "weapon-moon-01-moon-popper", count: 1, damage: 1, range: 180, speed: 560, width: 24, height: 7, spread: 0, cooldown: 0.42, pattern: "forward", colors: ["#fff3a4","#bff8ff","#ff9bd4"] },
-  { name: "weapon-moon-02-milkyway-cannon", count: 3, damage: 2, range: 360, speed: 720, width: 36, height: 8, spread: 8, cooldown: 0.34, pattern: "spread", colors: ["#ffd1ed","#d9ffd6","#c8b2ff"] },
-  { name: "weapon-moon-03-twinstar-shooter", count: 2, damage: 3, range: 450, speed: 800, width: 38, height: 8, spread: 12, cooldown: 0.31, pattern: "both", colors: ["#fff3a4","#c9f6ff","#c8b2ff"] },
+  { name: "weapon-moon-02-twinmoon-shooter", count: 2, damage: 2, range: 360, speed: 720, width: 34, height: 8, spread: 10, cooldown: 0.35, pattern: "both", colors: ["#fff3a4","#c9f6ff","#c8b2ff"] },
+  { name: "weapon-moon-03-milkyway-cannon", count: 3, damage: 3, range: 450, speed: 800, width: 38, height: 8, spread: 12, cooldown: 0.31, pattern: "spread", colors: ["#ffd1ed","#d9ffd6","#c8b2ff"] },
   { name: "weapon-moon-04-ribbon-laser", count: 4, damage: 3, range: 560, speed: 900, width: 44, height: 9, spread: 10, cooldown: 0.28, pattern: "fan", colors: ["#fff3a4","#ffd1ed","#9ee8ff"] },
   { name: "weapon-moon-05-moonian-nova", count: 5, damage: 4, range: 720, speed: 980, width: 54, height: 10, spread: 12, cooldown: 0.24, pattern: "spread", colors: ["#ffffff","#fff3a4","#ff8db7"] },
   { name: "weapon-moon-06-comet-reverse", count: 4, damage: 5, range: 780, speed: 1040, width: 50, height: 10, spread: 0, cooldown: 0.24, pattern: "bothSpread", colors: ["#c9f6ff","#ffffff","#64d2ff"] },
@@ -281,8 +281,8 @@ const bossHurtImages = [
 });
 const weaponIcons = [
   "assets/weapon-moon-01-moon-popper.png",
-  "assets/weapon-moon-02-milkyway-cannon.png",
-  "assets/weapon-moon-03-twinstar-shooter.png",
+  "assets/weapon-moon-02-twinmoon-shooter.png",
+  "assets/weapon-moon-03-milkyway-cannon.png",
   "assets/weapon-moon-04-ribbon-laser.png",
   "assets/weapon-moon-05-moonian-nova.png",
   "assets/weapon-moon-06-comet-reverse.png",
@@ -4140,8 +4140,8 @@ function drawRayGun(x, y, dir = 1, scale = 1, power = 1) {
   ctx.translate(x, y);
   ctx.scale(dir * scale, scale);
   if (stageIndex === 0) drawMoonPopper(colors);
-  else if (stageIndex === 1) drawMilkyWayCannon(colors);
-  else if (stageIndex === 2) drawTwinStarShooter(colors);
+  else if (stageIndex === 1) drawTwinStarShooter(colors);
+  else if (stageIndex === 2) drawMilkyWayCannon(colors);
   else if (stageIndex === 3) drawRibbonLaser(colors);
   else if (stageIndex === 4) drawMoonianNova(colors);
   else drawExperimentalGun(colors, stageIndex);
@@ -4152,7 +4152,7 @@ function drawWeaponIcon(x, y, power = 1, scale = 1, dir = 1) {
   const index = clamp(Math.floor(power), 1, MAX_WEAPON_POWER) - 1;
   const img = weaponIcons[index];
   if (!img || !img.complete || img.naturalWidth <= 0) return false;
-  const baseW = ([58, 82, 70, 76, 92][index] ?? Math.min(150, 86 + index * 4)) * scale;
+  const baseW = ([58, 70, 82, 76, 92][index] ?? Math.min(150, 86 + index * 4)) * scale;
   const baseH = baseW * (img.naturalHeight / img.naturalWidth);
   ctx.save();
   ctx.imageSmoothingEnabled = true;
