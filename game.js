@@ -1026,7 +1026,7 @@ function lavaPool(x, y, w) {
 }
 
 function rotatingFire(x, y, radius = 64, speed = 1.2) {
-  return { x, y, radius, speed, angle: Math.random() * Math.PI * 2, length: 58 };
+  return { x, y, radius, speed, angle: Math.random() * Math.PI * 2, length: 96 };
 }
 
 function newState() {
@@ -1709,8 +1709,21 @@ function updateFinalStageHazards(dt) {
     fire.angle += fire.speed * dt;
     const fx = fire.x + Math.cos(fire.angle) * fire.radius;
     const fy = fire.y + Math.sin(fire.angle) * fire.radius;
-    if (hit(p, rect(fx - 16, fy - 16, 32, 32))) damagePlayer(false, null, false);
+    const playerCenterX = p.x + p.w / 2;
+    const playerCenterY = p.y + p.h / 2;
+    const dist = distanceToSegment(playerCenterX, playerCenterY, fire.x, fire.y, fx, fy);
+    if (dist < 24 || hit(p, rect(fx - 18, fy - 18, 36, 36))) damagePlayer(false, null, false);
   }
+}
+
+function distanceToSegment(px, py, ax, ay, bx, by) {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const lenSq = dx * dx + dy * dy || 1;
+  const t = clamp(((px - ax) * dx + (py - ay) * dy) / lenSq, 0, 1);
+  const sx = ax + dx * t;
+  const sy = ay + dy * t;
+  return Math.hypot(px - sx, py - sy);
 }
 
 function updateMovingPlatforms(dt) {
@@ -4026,6 +4039,18 @@ function drawFinalStageHazards() {
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.arc(fire.x, fire.y, fire.radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = "#ff6f34";
+    ctx.lineWidth = 9;
+    ctx.beginPath();
+    ctx.moveTo(fire.x, fire.y);
+    ctx.lineTo(fx, fy);
+    ctx.stroke();
+    ctx.strokeStyle = "#fff3a4";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(fire.x, fire.y);
+    ctx.lineTo(fx, fy);
     ctx.stroke();
     ctx.save();
     ctx.translate(fx, fy);
@@ -6415,11 +6440,12 @@ function drawBackCannon(p) {
 }
 
 function drawPlayerSprite(p) {
-  if (!p.grounded && pyompyJump.complete && pyompyJump.naturalWidth > 0) {
+  const visuallyGrounded = p.grounded || isPlayerVisuallyOnGround(p);
+  if (!visuallyGrounded && pyompyJump.complete && pyompyJump.naturalWidth > 0) {
     drawPlayerJumpSprite(p);
     return;
   }
-  if (p.grounded && Math.abs(p.vx) > 55 && pyompyRun.complete && pyompyRun.naturalWidth > 0) {
+  if (visuallyGrounded && Math.abs(p.vx) > 35 && pyompyRun.complete && pyompyRun.naturalWidth > 0) {
     drawPlayerRunSprite(p);
     return;
   }
@@ -6428,7 +6454,7 @@ function drawPlayerSprite(p) {
   const t = performance.now() / 1000;
   let frame = 0;
 
-  const airborne = !p.grounded;
+  const airborne = !visuallyGrounded;
   if (airborne) {
     frame = 0;
   } else if (speed > 45) {
@@ -6450,6 +6476,12 @@ function drawPlayerSprite(p) {
     ctx.drawImage(pyompySprite, source.x, source.y, source.w, source.h, dx, dy, drawW, drawH);
   }
   ctx.restore();
+}
+
+function isPlayerVisuallyOnGround(p) {
+  if (p.swimming || p.vy < -40) return false;
+  const probe = rect(p.x + 5, p.y + p.h, p.w - 10, 10);
+  return platforms.concat(blocks.filter(b => !b.broken)).some(s => hit(probe, s));
 }
 
 function drawPlayerRunSprite(p) {
