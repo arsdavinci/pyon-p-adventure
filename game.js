@@ -46,6 +46,7 @@ const STOMP_BOOST_BUFFER = 0.16;
 const STOMP_LATE_BOOST_WINDOW = 0.14;
 const WEAPON_ASSET_VERSION = "weapon-cutout-v4";
 const SELECT_UI_ASSET_VERSION = "select-ui-generated2-v2";
+const BACKGROUND_ASSET_VERSION = "mirrored-bg-v1";
 const WEAPON_DROP_RATES = [
   { power: 1, chance: 0.8 },
   { power: 2, chance: 0.1 },
@@ -186,9 +187,9 @@ pyompyCrescentRespawn.src = "assets/pyonpy-crescent-respawn.png";
 const worldMapImage = new Image();
 worldMapImage.src = "assets/world-map.png";
 const pastelBackground = new Image();
-pastelBackground.src = "assets/pastel-space-background.png";
+pastelBackground.src = `assets/pastel-space-background.png?v=${BACKGROUND_ASSET_VERSION}`;
 const pastelBackground2 = new Image();
-pastelBackground2.src = "assets/pastel-space-background2.png";
+pastelBackground2.src = `assets/pastel-space-background2.png?v=${BACKGROUND_ASSET_VERSION}`;
 const moonGround = new Image();
 moonGround.src = "assets/pastel-moon-ground.png";
 const selectUiImage = new Image();
@@ -202,7 +203,19 @@ const stageBackgroundImages = [
   "assets/stage-demon-bg.png"
 ].map(src => {
   const img = new Image();
-  img.src = src;
+  img.src = `${src}?v=${BACKGROUND_ASSET_VERSION}`;
+  return img;
+});
+const stageBackgroundMirrorImages = [
+  "assets/pastel-space-background2.png",
+  "assets/stage-mars-bg2.png",
+  "assets/stage-crystal-bg2.png",
+  "assets/stage-ocean-bg2.png",
+  "assets/stage-ring-bg2.png",
+  "assets/stage-demon-bg2.png"
+].map(src => {
+  const img = new Image();
+  img.src = `${src}?v=${BACKGROUND_ASSET_VERSION}`;
   return img;
 });
 const stageGroundImages = [
@@ -5078,7 +5091,7 @@ function drawSky(cam) {
   const bg = stageBackgroundImages[theme.imageIndex];
   if (bg?.complete && bg.naturalWidth > 0) {
     if (theme.imageIndex === 0) drawPastelBackgroundImage(cam);
-    else drawStageBackgroundImage(bg, cam);
+    else drawStageBackgroundImage(bg, stageBackgroundMirrorImages[theme.imageIndex], cam);
     return;
   }
 
@@ -5105,16 +5118,19 @@ function drawSky(cam) {
   drawWorldIllustration(theme, cam);
 }
 
-function drawStageBackgroundImage(img, cam) {
+function drawStageBackgroundImage(img, mirrorImg, cam) {
   const imgW = img.naturalWidth;
   const imgH = img.naturalHeight;
   const scale = Math.max(canvas.width / imgW, canvas.height / imgH);
   const drawW = imgW * scale;
   const drawH = imgH * scale;
   const y = (canvas.height - drawH) / 2;
-  const parallax = (cam * 0.08) % drawW;
-  for (let x = -parallax - drawW; x < canvas.width + drawW; x += drawW) {
+  const mirrorReady = mirrorImg?.complete && mirrorImg.naturalWidth > 0;
+  const pairW = mirrorReady ? drawW * 2 : drawW;
+  const parallax = (cam * 0.08) % pairW;
+  for (let x = -parallax - pairW; x < canvas.width + pairW; x += pairW) {
     ctx.drawImage(img, x, y, drawW, drawH);
+    if (mirrorReady) ctx.drawImage(mirrorImg, x + drawW, y, drawW, drawH);
   }
 }
 
