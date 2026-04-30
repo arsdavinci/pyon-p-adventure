@@ -565,7 +565,7 @@ function makeCourse(worldIndex, areaIndex) {
   const bossStage = areaIndex === stageAreaCount(worldIndex) - 1;
   const finalStage = worldIndex === STAGE_THEMES.length - 1 && bossStage;
   const trait = STAGE_TRAITS[worldIndex] ?? "moonFloat";
-  const platforms = [rect(0, 492, 620, 48)];
+  let platforms = [rect(0, 492, 620, 48)];
   let x = 620;
   for (let i = 0; i < 9; i++) {
     const w = Math.max(260, 440 - difficulty * 5 - (i % 3) * 28);
@@ -577,12 +577,13 @@ function makeCourse(worldIndex, areaIndex) {
   if (x < 4300) platforms.push(rect(x, 492, 4300 - x + 220, 48));
   platforms.push(rect(4300, 492, 900, 48));
   if (trait === "iceSlide") {
-    platforms.length = 0;
-    platforms.push(...buildIceCoursePlatforms(difficulty, bossStage));
+    platforms = buildIceCoursePlatforms(difficulty, areaIndex, bossStage);
   }
   if (trait === "factoryBelt") {
-    platforms.length = 0;
-    platforms.push(...buildFactoryCoursePlatforms(difficulty, bossStage));
+    platforms = buildFactoryCoursePlatforms(difficulty, areaIndex, bossStage);
+  }
+  if (trait !== "iceSlide" && trait !== "factoryBelt" && trait !== "underwater") {
+    platforms = buildVariedCoursePlatforms(worldIndex, areaIndex, difficulty, bossStage, finalStage);
   }
   if (trait === "underwater") platforms.length = 0;
 
@@ -606,7 +607,7 @@ function makeCourse(worldIndex, areaIndex) {
     foe.enemyKind = worldIndex;
     enemies.push(foe);
   }
-  if (trait === "iceSlide" || trait === "factoryBelt") placeEnemiesOnPlatforms(enemies, platforms);
+  if (trait !== "underwater") placeEnemiesOnPlatforms(enemies, platforms);
   if (bossStage) {
     const bossPowers = [5, 4, 7, 9, 11, 16];
     const bossPower = finalStage ? 16 : bossPowers[worldIndex] ?? Math.min(MAX_WEAPON_POWER, 5 + worldIndex * 2);
@@ -660,7 +661,93 @@ function icePlatform(x, y, w, h = 48, ramp = null) {
   return { ...rect(x, y, w, h), iceRamp: ramp };
 }
 
-function buildIceCoursePlatforms(difficulty, bossStage) {
+function buildVariedCoursePlatforms(worldIndex, areaIndex, difficulty, bossStage, finalStage) {
+  const lift = worldIndex % 2 ? 16 : 0;
+  const variant = bossStage ? 4 : areaIndex % 4;
+  if (variant === 0) {
+    return [
+      rect(0, 492, 760, 48),
+      rect(900, 456 - lift, 300, 48),
+      rect(1320, 420 - lift, 260, 48),
+      rect(1710, 384 - lift, 300, 48),
+      rect(2140, 348 - lift, 260, 48),
+      rect(2540, 420, 340, 48),
+      rect(3060, 492, 420, 48),
+      rect(3660, 436, 300, 48),
+      rect(4140, 388, 260, 48),
+      rect(4600, 492, 600, 48),
+      rect(1040, 294, 180, 36),
+      rect(2920, 300, 210, 36),
+      rect(3940, 264, 180, 36)
+    ];
+  }
+  if (variant === 1) {
+    return [
+      rect(0, 492, 700, 48),
+      rect(840, 438, 260, 48),
+      rect(1210, 370, 230, 48),
+      rect(1540, 296, 230, 48),
+      rect(1940, 250, 300, 48),
+      rect(2380, 326, 260, 48),
+      rect(2760, 402, 300, 48),
+      rect(3180, 492, 360, 48),
+      rect(3720, 396, 260, 48),
+      rect(4140, 310, 260, 48),
+      rect(4560, 492, 640, 48),
+      rect(2060, 420, 170, 34),
+      rect(3420, 304, 170, 34)
+    ];
+  }
+  if (variant === 2) {
+    return [
+      rect(0, 492, 760, 48),
+      rect(940, 492, 280, 48),
+      rect(1380, 492, 220, 48),
+      rect(1770, 456, 300, 48),
+      rect(2220, 420, 260, 48),
+      rect(2640, 456, 240, 48),
+      rect(3060, 492, 300, 48),
+      rect(3540, 492, 240, 48),
+      rect(3960, 448, 300, 48),
+      rect(4460, 492, 740, 48),
+      rect(1120, 332, 180, 36),
+      rect(2500, 292, 190, 36),
+      rect(3820, 318, 190, 36)
+    ];
+  }
+  if (variant === 3) {
+    return [
+      rect(0, 492, 680, 48),
+      rect(860, 430, 220, 48),
+      rect(1240, 492, 260, 48),
+      rect(1680, 384, 220, 48),
+      rect(2100, 492, 300, 48),
+      rect(2580, 338, 220, 48),
+      rect(2960, 420, 240, 48),
+      rect(3380, 492, 300, 48),
+      rect(3880, 370, 240, 48),
+      rect(4320, 492, 880, 48),
+      rect(980, 286, 160, 34),
+      rect(1840, 260, 160, 34),
+      rect(3140, 292, 180, 34)
+    ];
+  }
+  return [
+    rect(0, 492, 820, 48),
+    rect(980, 452, 260, 48),
+    rect(1420, 408, 260, 48),
+    rect(1840, 492, 360, 48),
+    rect(2380, 370, 300, 48),
+    rect(2860, 492, 420, 48),
+    rect(3460, 430, 300, 48),
+    rect(3940, 492, finalStage ? 1260 : 1120, 48),
+    rect(1220, 306, 170, 34),
+    rect(2260, 292, 190, 34),
+    rect(3360, 304, 190, 34)
+  ];
+}
+
+function buildIceCoursePlatforms(difficulty, areaIndex, bossStage) {
   const shift = (difficulty % 3) * 18;
   const platforms = [
     icePlatform(0, 492, 650),
@@ -676,6 +763,18 @@ function buildIceCoursePlatforms(difficulty, bossStage) {
     icePlatform(3500, 492, 300),
     icePlatform(3940, 492, bossStage ? 1260 : 360)
   ];
+  if (areaIndex % 2 === 1 && !bossStage) {
+    platforms.splice(5, 0,
+      icePlatform(2120, 430, 130, 48, "down"),
+      icePlatform(2250, 386, 130, 48, "down")
+    );
+  }
+  if (areaIndex % 3 === 2) {
+    platforms.push(
+      icePlatform(820, 260, 150, 32),
+      icePlatform(3020, 250, 160, 32)
+    );
+  }
   if (!bossStage) {
     platforms.push(
       icePlatform(4320, 468, 170, 48, "down"),
@@ -703,19 +802,23 @@ function movingPlatform(x, y, w, h = 42, axis = "x", range = 180, speed = 1, pha
   return { ...rect(x, y, w, h), mover: { baseX: x, baseY: y, axis, range, speed, phase } };
 }
 
-function buildFactoryCoursePlatforms(difficulty, bossStage) {
+function buildFactoryCoursePlatforms(difficulty, areaIndex, bossStage) {
   const phase = (difficulty % 4) * 0.7;
+  const longBelt = areaIndex % 2 === 0 ? -260 : -190;
   const platforms = [
     beltPlatform(0, 492, 720, 48, 0),
-    beltPlatform(840, 492, 360, 48, -190),
+    beltPlatform(840, 492, 360, 48, longBelt),
     movingPlatform(1320, 448, 220, 42, "x", 210, 1.15, phase),
     beltPlatform(1700, 492, 420, 48, -230),
     movingPlatform(2260, 388, 210, 42, "y", 84, 1.35, phase + 1.4),
     beltPlatform(2600, 492, 390, 48, 210),
     movingPlatform(3180, 438, 240, 42, "x", 250, 1.05, phase + 2.2),
-    beltPlatform(3680, 492, 420, 48, -245),
+    beltPlatform(3680, 492, 420, 48, areaIndex % 3 === 1 ? 240 : -245),
     beltPlatform(4300, 492, bossStage ? 900 : 360, 48, bossStage ? 0 : -210)
   ];
+  if (areaIndex % 3 === 2 && !bossStage) {
+    platforms.splice(4, 0, movingPlatform(2140, 300, 190, 42, "x", 250, 1.45, phase + 0.9));
+  }
   if (!bossStage) {
     platforms.push(
       movingPlatform(4680, 430, 220, 42, "x", 190, 1.25, phase + 3.1),
