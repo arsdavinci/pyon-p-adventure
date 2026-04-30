@@ -576,6 +576,14 @@ function makeCourse(worldIndex, areaIndex) {
   }
   if (x < 4300) platforms.push(rect(x, 492, 4300 - x + 220, 48));
   platforms.push(rect(4300, 492, 900, 48));
+  if (trait === "iceSlide") {
+    platforms.length = 0;
+    platforms.push(...buildIceCoursePlatforms(difficulty, bossStage));
+  }
+  if (trait === "factoryBelt") {
+    platforms.length = 0;
+    platforms.push(...buildFactoryCoursePlatforms(difficulty, bossStage));
+  }
   if (trait === "underwater") platforms.length = 0;
 
   const blocks = [];
@@ -598,6 +606,7 @@ function makeCourse(worldIndex, areaIndex) {
     foe.enemyKind = worldIndex;
     enemies.push(foe);
   }
+  if (trait === "iceSlide" || trait === "factoryBelt") placeEnemiesOnPlatforms(enemies, platforms);
   if (bossStage) {
     const bossPowers = [5, 4, 7, 9, 11, 16];
     const bossPower = finalStage ? 16 : bossPowers[worldIndex] ?? Math.min(MAX_WEAPON_POWER, 5 + worldIndex * 2);
@@ -645,6 +654,95 @@ function makeCourse(worldIndex, areaIndex) {
     level: { enemies, coins, starItems, oxygenItems, lavaGeysers, flag: rect(5060, 252, 28, 240) },
     gun: { x: 330 + areaIndex * 70, y: 430 }
   };
+}
+
+function icePlatform(x, y, w, h = 48, ramp = null) {
+  return { ...rect(x, y, w, h), iceRamp: ramp };
+}
+
+function buildIceCoursePlatforms(difficulty, bossStage) {
+  const shift = (difficulty % 3) * 18;
+  const platforms = [
+    icePlatform(0, 492, 650),
+    icePlatform(790, 492, 300),
+    icePlatform(1230, 468, 170, 48, "down"),
+    icePlatform(1400, 444, 170, 48, "down"),
+    icePlatform(1570, 420, 230, 48, "down"),
+    icePlatform(1940, 492, 310),
+    icePlatform(2380, 492, 260),
+    icePlatform(2780, 468, 160, 48, "up"),
+    icePlatform(2940, 444, 160, 48, "up"),
+    icePlatform(3100, 420, 230, 48, "up"),
+    icePlatform(3500, 492, 300),
+    icePlatform(3940, 492, bossStage ? 1260 : 360)
+  ];
+  if (!bossStage) {
+    platforms.push(
+      icePlatform(4320, 468, 170, 48, "down"),
+      icePlatform(4490, 444, 170, 48, "down"),
+      icePlatform(4660, 420, 180, 48, "down"),
+      icePlatform(4920, 492, 280)
+    );
+  }
+  platforms.push(
+    icePlatform(640 + shift, 344, 170, 32),
+    icePlatform(1120 - shift, 304, 150, 32),
+    icePlatform(1840 + shift, 318, 180, 32),
+    icePlatform(2260, 270, 170, 32),
+    icePlatform(3340 - shift, 316, 190, 32),
+    icePlatform(3820, 286, 170, 32)
+  );
+  return platforms;
+}
+
+function beltPlatform(x, y, w, h = 48, conveyor = 0) {
+  return { ...rect(x, y, w, h), conveyor };
+}
+
+function movingPlatform(x, y, w, h = 42, axis = "x", range = 180, speed = 1, phase = 0) {
+  return { ...rect(x, y, w, h), mover: { baseX: x, baseY: y, axis, range, speed, phase } };
+}
+
+function buildFactoryCoursePlatforms(difficulty, bossStage) {
+  const phase = (difficulty % 4) * 0.7;
+  const platforms = [
+    beltPlatform(0, 492, 720, 48, 0),
+    beltPlatform(840, 492, 360, 48, -190),
+    movingPlatform(1320, 448, 220, 42, "x", 210, 1.15, phase),
+    beltPlatform(1700, 492, 420, 48, -230),
+    movingPlatform(2260, 388, 210, 42, "y", 84, 1.35, phase + 1.4),
+    beltPlatform(2600, 492, 390, 48, 210),
+    movingPlatform(3180, 438, 240, 42, "x", 250, 1.05, phase + 2.2),
+    beltPlatform(3680, 492, 420, 48, -245),
+    beltPlatform(4300, 492, bossStage ? 900 : 360, 48, bossStage ? 0 : -210)
+  ];
+  if (!bossStage) {
+    platforms.push(
+      movingPlatform(4680, 430, 220, 42, "x", 190, 1.25, phase + 3.1),
+      beltPlatform(5000, 492, 260, 48, 0)
+    );
+  }
+  platforms.push(
+    movingPlatform(760, 334, 170, 36, "x", 120, 1.2, phase + 0.5),
+    beltPlatform(1540, 308, 210, 36, 160),
+    movingPlatform(2500, 292, 170, 36, "y", 72, 1.25, phase + 1.8),
+    beltPlatform(3500, 324, 230, 36, -170)
+  );
+  return platforms;
+}
+
+function placeEnemiesOnPlatforms(enemies, platforms) {
+  const ground = platforms.filter(p => p.w >= 150 && p.y >= 380);
+  for (const e of enemies) {
+    const center = e.x + e.w / 2;
+    const match = ground.find(p => center >= p.x + 24 && center <= p.x + p.w - 24) ??
+      ground.reduce((best, p) => Math.abs((p.x + p.w / 2) - center) < Math.abs((best.x + best.w / 2) - center) ? p : best, ground[0]);
+    if (!match) continue;
+    e.x = clamp(center - e.w / 2, match.x + 12, match.x + match.w - e.w - 12);
+    e.y = match.y - e.h;
+    e.left = Math.max(match.x + 4, e.x - 160);
+    e.right = Math.min(match.x + match.w - 4, e.x + 220);
+  }
 }
 
 const courses = Array.from({ length: TOTAL_COURSES }, (_, index) => {
@@ -1131,6 +1229,7 @@ function update(dt) {
     updateHud();
     return;
   }
+  updateMovingPlatforms(dt);
   updatePlayer(dt);
   updateStageTraits(dt);
   updateGun(dt);
@@ -1407,10 +1506,39 @@ function updateStageTraits(dt) {
   if (trait === "underwater") updateOxygen(dt);
   if (trait === "marsLava") updateLavaGeysers(dt);
   if (trait === "factoryBelt" && state.player.grounded) {
-    const belt = Math.sin((state.player.x + currentCourse * 97) / 260) >= 0 ? 1 : -1;
-    state.player.x = clamp(state.player.x + belt * 54 * dt, 0, WORLD_WIDTH - state.player.w);
-    state.player.vx += belt * 18 * dt;
+    const support = platformUnderBody(state.player);
+    if (support?.conveyor) {
+      const dxInput = (keys.has("ArrowRight") || keys.has("KeyD") || gamepadState.right ? 1 : 0) - (keys.has("ArrowLeft") || keys.has("KeyA") || gamepadState.left ? 1 : 0);
+      const resisting = dxInput && Math.sign(dxInput) !== Math.sign(support.conveyor);
+      const runBonus = resisting && isRunHeld(dxInput) ? 0.45 : 1;
+      state.player.x = clamp(state.player.x + support.conveyor * runBonus * dt, 0, WORLD_WIDTH - state.player.w);
+    }
   }
+}
+
+function updateMovingPlatforms(dt) {
+  if (currentStageTrait() !== "factoryBelt") return;
+  const p = state.player;
+  const t = (state.stagePulse ?? 0) + dt;
+  for (const platform of platforms) {
+    if (!platform.mover) continue;
+    const oldX = platform.x;
+    const oldY = platform.y;
+    const m = platform.mover;
+    const offset = Math.sin(t * m.speed + m.phase) * m.range;
+    platform.x = m.baseX + (m.axis === "x" ? offset : 0);
+    platform.y = m.baseY + (m.axis === "y" ? offset : 0);
+    const carried = p.y + p.h <= oldY + 12 && p.y + p.h >= oldY - 12 && p.x + p.w > oldX && p.x < oldX + platform.w;
+    if (carried) {
+      p.x = clamp(p.x + platform.x - oldX, 0, WORLD_WIDTH - p.w);
+      p.y += platform.y - oldY;
+    }
+  }
+}
+
+function platformUnderBody(body) {
+  const foot = rect(body.x + 4, body.y + body.h, body.w - 8, 8);
+  return platforms.find(p => hit(foot, p)) ?? null;
 }
 
 function updateOxygen(dt) {
@@ -5000,12 +5128,60 @@ function drawMountains() {
 
 function drawPlatforms() {
   const theme = courses[currentCourse]?.theme;
-  for (const p of platforms) drawMoonRock(p, theme?.ground[0] ?? "#f4e9cc", theme?.ground[1] ?? "#cfc7d6");
+  for (const p of platforms) {
+    drawMoonRock(p, theme?.ground[0] ?? "#f4e9cc", theme?.ground[1] ?? "#cfc7d6");
+    if (p.iceRamp) drawIceSlopeMarks(p);
+    if (p.conveyor) drawConveyorSurface(p);
+    if (p.mover) drawMovingPlatformGlow(p);
+  }
   for (const b of blocks) {
     if (b.broken) continue;
     if (b.breakable) drawBreakableBlock(b);
     else drawMoonRock(b, theme?.ground[1] ?? "#d8d3ff", theme?.accent ?? "#aaa7d8");
   }
+}
+
+function drawIceSlopeMarks(p) {
+  ctx.save();
+  ctx.globalAlpha = 0.72;
+  ctx.strokeStyle = "#c6fff4";
+  ctx.lineWidth = 3;
+  const dir = p.iceRamp === "up" ? -1 : 1;
+  for (let x = p.x + 28; x < p.x + p.w - 20; x += 42) {
+    ctx.beginPath();
+    ctx.moveTo(x, p.y + 13);
+    ctx.lineTo(x + dir * 22, p.y + 30);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawConveyorSurface(p) {
+  ctx.save();
+  ctx.globalAlpha = 0.86;
+  ctx.fillStyle = "rgba(30, 24, 52, 0.28)";
+  ctx.fillRect(p.x, p.y + 4, p.w, 12);
+  const dir = Math.sign(p.conveyor);
+  ctx.fillStyle = p.conveyor > 0 ? "#9ee8ff" : "#ff8db7";
+  const offset = (performance.now() / 28) % 44;
+  for (let x = p.x - 44 + offset; x < p.x + p.w + 44; x += 44) {
+    ctx.beginPath();
+    ctx.moveTo(x, p.y + 10);
+    ctx.lineTo(x - dir * 15, p.y + 4);
+    ctx.lineTo(x - dir * 15, p.y + 16);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawMovingPlatformGlow(p) {
+  ctx.save();
+  ctx.globalAlpha = 0.62;
+  ctx.strokeStyle = "#fff3a4";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(p.x + 4, p.y + 4, p.w - 8, p.h - 8);
+  ctx.restore();
 }
 
 function drawBreakableBlock(b) {
