@@ -585,6 +585,7 @@ function makeCourse(worldIndex, areaIndex) {
   if (trait !== "iceSlide" && trait !== "factoryBelt" && trait !== "underwater") {
     platforms = buildVariedCoursePlatforms(worldIndex, areaIndex, difficulty, bossStage, finalStage);
   }
+  if (finalStage) platforms = buildFinalBossCoursePlatforms();
   if (trait === "underwater") platforms.length = 0;
 
   const blocks = [];
@@ -594,6 +595,16 @@ function makeCourse(worldIndex, areaIndex) {
     if (i % 3 === 0) blocks.push(breakable(bx, by, "hp"));
     else if (i % 3 === 1) blocks.push(breakable(bx, by, "power"));
     else blocks.push(breakable(bx, by, "power"));
+  }
+  if (finalStage) {
+    blocks.push(
+      hiddenItemBox(3420, 252, "power"),
+      hiddenItemBox(3520, 252, "hp"),
+      hiddenItemBox(3620, 252, "power"),
+      hiddenItemBox(3390, 308, "power"),
+      hiddenItemBox(3490, 308, "hp"),
+      hiddenItemBox(3590, 308, "power")
+    );
   }
 
   const enemies = [];
@@ -641,6 +652,20 @@ function makeCourse(worldIndex, areaIndex) {
     lavaGeyser(2880, 3.4),
     lavaGeyser(4140, 0.5)
   ] : [];
+  const lavaPools = finalStage ? [
+    lavaPool(410, 492, 88),
+    lavaPool(860, 492, 115),
+    lavaPool(1040, 492, 105),
+    lavaPool(4050, 492, 640)
+  ] : [];
+  const rotatingFires = finalStage ? [
+    rotatingFire(740, 364, 66, 1.25),
+    rotatingFire(1460, 266, 62, -1.4),
+    rotatingFire(1880, 258, 58, 1.55),
+    rotatingFire(2320, 248, 66, -1.25),
+    rotatingFire(2920, 244, 70, 1.35),
+    rotatingFire(3300, 260, 58, -1.55)
+  ] : [];
 
   return {
     theme: STAGE_THEMES[worldIndex],
@@ -652,7 +677,7 @@ function makeCourse(worldIndex, areaIndex) {
     difficulty,
     platforms,
     blocks,
-    level: { enemies, coins, starItems, oxygenItems, lavaGeysers, flag: rect(5060, 252, 28, 240) },
+    level: { enemies, coins, starItems, oxygenItems, lavaGeysers, lavaPools, rotatingFires, flag: rect(5060, 252, 28, 240) },
     gun: { x: 330 + areaIndex * 70, y: 430 }
   };
 }
@@ -744,6 +769,29 @@ function buildVariedCoursePlatforms(worldIndex, areaIndex, difficulty, bossStage
     rect(1220, 306, 170, 34),
     rect(2260, 292, 190, 34),
     rect(3360, 304, 190, 34)
+  ];
+}
+
+function buildFinalBossCoursePlatforms() {
+  return [
+    rect(0, 492, 360, 48),
+    rect(500, 430, 260, 48),
+    rect(920, 492, 120, 48),
+    rect(1160, 430, 280, 48),
+    rect(1580, 360, 260, 48),
+    rect(2000, 300, 260, 48),
+    rect(2440, 360, 280, 48),
+    rect(2880, 420, 240, 48),
+    rect(3300, 360, 500, 48),
+    rect(3920, 492, 150, 48),
+    rect(4690, 492, 510, 48),
+    rect(640, 292, 190, 36),
+    rect(1320, 218, 170, 36),
+    rect(1740, 210, 170, 36),
+    rect(2200, 200, 170, 36),
+    rect(2780, 204, 190, 36),
+    rect(3180, 226, 170, 36),
+    rect(4200, 350, 340, 34)
   ];
 }
 
@@ -916,6 +964,10 @@ function breakable(x, y, item = null) {
   return { x, y, w: 48, h: 48, breakable: true, item, broken: false };
 }
 
+function hiddenItemBox(x, y, item = "power") {
+  return { x, y, w: 48, h: 48, breakable: true, item, hiddenBox: true, broken: false };
+}
+
 function enemy(x, y, left, right) {
   return { x, y, w: 42, h: 42, vx: -86, vy: 0, left, right, alive: true, defeated: 0, alert: 0, trick: 0, grounded: true, jumpCooldown: 0, hp: 3, maxHp: 3, stun: 0 };
 }
@@ -969,6 +1021,14 @@ function lavaGeyser(x, phase = 0) {
   return { x, y: 492, w: 72, h: 390, phase, timer: phase, period: 4.2, active: false };
 }
 
+function lavaPool(x, y, w) {
+  return { x, y, w, h: 48 };
+}
+
+function rotatingFire(x, y, radius = 64, speed = 1.2) {
+  return { x, y, radius, speed, angle: Math.random() * Math.PI * 2, length: 58 };
+}
+
 function newState() {
   applyCourse(currentCourse);
   return {
@@ -999,6 +1059,8 @@ function newState() {
     oxygenHurtCooldown: 0,
     oxygenItems: (level.oxygenItems ?? []).map(o => ({ ...o, taken: false, respawn: 0 })),
     lavaGeysers: (level.lavaGeysers ?? []).map(g => ({ ...g })),
+    lavaPools: (level.lavaPools ?? []).map(g => ({ ...g })),
+    rotatingFires: (level.rotatingFires ?? []).map(g => ({ ...g })),
     bossHazards: [],
     stagePulse: 0,
     particles: [],
@@ -1053,6 +1115,8 @@ function applyCourse(index) {
     starItems: (course.level.starItems ?? []).map(s => ({ ...s })),
     oxygenItems: (course.level.oxygenItems ?? []).map(o => ({ ...o })),
     lavaGeysers: (course.level.lavaGeysers ?? []).map(g => ({ ...g })),
+    lavaPools: (course.level.lavaPools ?? []).map(g => ({ ...g })),
+    rotatingFires: (course.level.rotatingFires ?? []).map(g => ({ ...g })),
     flag: { ...course.level.flag }
   };
 }
@@ -1075,6 +1139,21 @@ function startGame() {
   state = newState();
   state.mode = "worldMap";
   enterWorldMap(0, true);
+  overlay.classList.add("hidden");
+  lastTime = performance.now();
+  cancelAnimationFrame(animationId);
+  animationId = requestAnimationFrame(loop);
+}
+
+function startDirectCourse(index) {
+  currentCourse = clamp(index, 0, courses.length - 1);
+  unlockedCourse = Math.max(unlockedCourse, currentCourse);
+  mapSelectedCourse = currentCourse;
+  completedCourses = new Set(Array.from({ length: currentCourse }, (_, i) => i));
+  campaignKeep = null;
+  pendingCourseStart = false;
+  state = newState();
+  state.mode = "playing";
   overlay.classList.add("hidden");
   lastTime = performance.now();
   cancelAnimationFrame(animationId);
@@ -1608,6 +1687,7 @@ function updateStageTraits(dt) {
   state.stagePulse = (state.stagePulse ?? 0) + dt * 2.2;
   if (trait === "underwater") updateOxygen(dt);
   if (trait === "marsLava") updateLavaGeysers(dt);
+  updateFinalStageHazards(dt);
   if (trait === "factoryBelt" && state.player.grounded) {
     const support = platformUnderBody(state.player);
     if (support?.conveyor) {
@@ -1616,6 +1696,20 @@ function updateStageTraits(dt) {
       const runBonus = resisting && isRunHeld(dxInput) ? 0.45 : 1;
       state.player.x = clamp(state.player.x + support.conveyor * runBonus * dt, 0, WORLD_WIDTH - state.player.w);
     }
+  }
+}
+
+function updateFinalStageHazards(dt) {
+  if (!courses[currentCourse]?.finalStage) return;
+  const p = state.player;
+  for (const pool of state.lavaPools ?? []) {
+    if (hit(p, pool)) damagePlayer(false, null, false);
+  }
+  for (const fire of state.rotatingFires ?? []) {
+    fire.angle += fire.speed * dt;
+    const fx = fire.x + Math.cos(fire.angle) * fire.radius;
+    const fy = fire.y + Math.sin(fire.angle) * fire.radius;
+    if (hit(p, rect(fx - 16, fy - 16, 32, 32))) damagePlayer(false, null, false);
   }
 }
 
@@ -3879,8 +3973,12 @@ function drawStageEnvironment() {
 }
 
 function drawStageHazards() {
-  if (currentStageTrait() !== "marsLava") return;
   ctx.save();
+  drawFinalStageHazards();
+  if (currentStageTrait() !== "marsLava") {
+    ctx.restore();
+    return;
+  }
   for (const g of state.lavaGeysers ?? []) {
     const warmup = g.timer > 2.1 && g.timer <= 2.55;
     if (!g.active && !warmup) continue;
@@ -3903,6 +4001,42 @@ function drawStageHazards() {
     }
   }
   ctx.restore();
+}
+
+function drawFinalStageHazards() {
+  if (!courses[currentCourse]?.finalStage) return;
+  for (const pool of state.lavaPools ?? []) {
+    const grad = ctx.createLinearGradient(pool.x, pool.y, pool.x, pool.y + pool.h);
+    grad.addColorStop(0, "#ff8d3d");
+    grad.addColorStop(0.45, "#ff3d3d");
+    grad.addColorStop(1, "#6b1020");
+    ctx.fillStyle = grad;
+    ctx.fillRect(pool.x, pool.y + 6, pool.w, pool.h - 6);
+    ctx.fillStyle = "rgba(255, 243, 164, 0.78)";
+    for (let x = pool.x + 12; x < pool.x + pool.w; x += 38) {
+      ctx.beginPath();
+      ctx.arc(x, pool.y + 14 + Math.sin(performance.now() / 130 + x) * 4, 7, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  for (const fire of state.rotatingFires ?? []) {
+    const fx = fire.x + Math.cos(fire.angle) * fire.radius;
+    const fy = fire.y + Math.sin(fire.angle) * fire.radius;
+    ctx.strokeStyle = "rgba(255,255,255,0.8)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(fire.x, fire.y, fire.radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.save();
+    ctx.translate(fx, fy);
+    ctx.rotate(fire.angle * 2);
+    ctx.fillStyle = "#ff6f34";
+    ctx.strokeStyle = "#fff3a4";
+    ctx.lineWidth = 3;
+    drawTinyStar(0, 0, 18);
+    ctx.stroke();
+    ctx.restore();
+  }
 }
 
 function drawBossHazards() {
@@ -5289,9 +5423,15 @@ function drawMovingPlatformGlow(p) {
 
 function drawBreakableBlock(b) {
   const grad = ctx.createLinearGradient(b.x, b.y, b.x + b.w, b.y + b.h);
-  grad.addColorStop(0, "#fff5b8");
-  grad.addColorStop(0.45, "#ffd1ed");
-  grad.addColorStop(1, "#c9f6ff");
+  if (b.hiddenBox) {
+    grad.addColorStop(0, "#9ee8ff");
+    grad.addColorStop(0.5, "#4da7ff");
+    grad.addColorStop(1, "#c8b2ff");
+  } else {
+    grad.addColorStop(0, "#fff5b8");
+    grad.addColorStop(0.45, "#ffd1ed");
+    grad.addColorStop(1, "#c9f6ff");
+  }
   ctx.fillStyle = grad;
   ctx.fillRect(b.x, b.y, b.w, b.h);
   ctx.strokeStyle = "#ffffff";
@@ -7137,6 +7277,10 @@ document.addEventListener("touchmove", event => event.preventDefault(), { passiv
 
 state = newState();
 applyLanguage();
+const debugParams = new URLSearchParams(window.location.search);
+if (debugParams.get("stage") === "6-5" || debugParams.get("stage") === "final") {
+  startDirectCourse(courses.length - 1);
+}
 updateHud();
 draw();
 lastTime = performance.now();
