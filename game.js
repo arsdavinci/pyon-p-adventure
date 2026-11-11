@@ -2213,6 +2213,7 @@ function damageEnemy(e, amount = 1) {
 
 function stunEnemy(e) {
   if (e.boss && courses[currentCourse]?.bossStage && (!state.bossIntroPlayed || state.mode === "bossIntro")) return;
+  if (!e.boss) Chat.event("stomp");
   e.stun = e.boss ? 0.35 : 2;
   e.alert = 1;
   e.vx = 0;

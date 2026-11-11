@@ -26,7 +26,7 @@
   const lastAt = {};
   let clock = 0;
 
-  const COOLDOWN = { hurt: 7, combo: 12, starGet: 2, weaponGet: 2.5, stompBoost: 25, idle: 10, death: 3, respawn: 3, stolen: 8, needKey: 14, switchUsed: 40, keyGet: 2 };
+  const COOLDOWN = { hurt: 7, combo: 12, starGet: 2, weaponGet: 2.5, stompBoost: 25, idle: 10, death: 3, respawn: 3, stolen: 6, needKey: 14, switchUsed: 40, keyGet: 2, stomp: 4, canFuse: 6 };
 
   function dom() {
     if (els) return els;
@@ -101,12 +101,21 @@
 
   const BUILDERS = {
     stageStart: stageStartLines,
-    weaponGet: name => [pick([
+    weaponGet: name => firstTime("tipWeapon") ? BUILDERS.fuseTeach() : [pick([
       ["pyon", `${name}、ゲットや！`, `Got the ${name}!`],
       ["pyon", `おっ、${name}やん。ええやん！`, `Ooh, a ${name}. Nice!`]
     ])],
     fuse: name => [["pyon", `合体成功！ ${name}になったで！`, `Fusion complete! It's a ${name} now!`]],
-    canFuse: () => [["yana", "同じ光線銃が2つあります。SELECT（Tab）の装備画面で合体できますよ。", "You have two of the same ray gun. Fuse them on the SELECT (Tab) equipment screen."]],
+    canFuse: name => [
+      ["yana", `${name}が2つそろいました。同じ光線銃を2つ合成すると、1つ上の新しい光線銃が生まれます。`, `You now have two ${name}s. Fuse two of the same ray gun to create the next, stronger one.`],
+      ["yana", "SELECT（Tabキー）で装備画面をひらいて、同じ銃どうしを重ねてください。合成をくり返すと、全部で16種類まで進化しますよ。", "Press SELECT (Tab) to open the equipment screen and drop one onto the other. Keep fusing and they evolve through 16 types in all."],
+      ["pyon", "配合みたいなもんやな。ええやん、いっちょ育てたろ！", "Like breeding, huh. Nice. Let's raise a monster of a gun!"]
+    ],
+    fuseTeach: () => [
+      ["yana", "光線銃をひろいましたね。おぼえておいてください。同じ光線銃を2つ集めると、合成して新しい光線銃を生み出せます。", "You picked up a ray gun. Remember this: collect two of the same ray gun and you can fuse them into a new one."],
+      ["pyon", "2つで1つ？ へってるやん！", "Two become one? That's fewer guns!"],
+      ["yana", "数はへりますが、強くなります。……たぶん。", "Fewer, but stronger. ...Probably."]
+    ],
     starGet: () => [pick([
       ["pyon", "スターゲット！ 残機もふえたで！", "Star get! Extra life, too!"],
       ["pyon", "きらきらや〜。もろとこ！", "So sparkly! I'll take it!"]
@@ -127,7 +136,33 @@
     sky: () => [["pyon", "うわぁ、ええ景色！ 空のルートや！", "Whoa, what a view! It's the sky route!"]],
     valley: () => [["pyon", "谷底や……。なんか出そうやな。", "The bottom of the valley... feels like something's gonna pop out."]],
     deep: () => [["pyon", "ふかっ！ 耳がキーンってなる！", "So deep! My ears are popping!"]],
-    stolen: () => [["pyon", "あっ、うちの銃！ 返してー！", "Hey, my gun! Give it back!"]],
+    stolen: () => {
+      if (firstTime("tipStolen")) {
+        return [
+          ["pyon", "ちょ、こいつ武器うばいよったで！？ どういうこと！？ 敵が主人公の武器パクるゲームある！？ 返せや！", "Hey, this guy just stole my weapon!? What is going on!? What kind of game lets enemies swipe the hero's gun!? Give it back!"],
+          ["yana", "うばわれた光線銃は、その敵を上からふむと落とします。ひろえば取りもどせますよ。", "Stomp that enemy from above and it will drop your ray gun. Pick it up to get it back."],
+          ["pyon", "ほな、ふんだるわ。……こっちが悪者みたいやな。", "Fine, stomping it is. ...Now I feel like the bad guy."]
+        ];
+      }
+      return [pick([
+        ["pyon", "また取られた！ それ、うちのやぞ！ 返せや！", "Stolen again! That's MINE! Give it back!"],
+        ["pyon", "どろぼー！ 光線銃どろぼーがおるでー！", "Thief! We've got a ray gun thief over here!"],
+        ["pyon", "なんで敵のほうが装備ととのってんねん！", "Why is the enemy better equipped than me!?"]
+      ])];
+    },
+    stomp: () => {
+      if (firstTime("tipStomp")) {
+        return [
+          ["pyon", "えっ、ふんでも倒れへんの！？ ふつう、どのゲームでも一発やろ！", "Wait, stomping doesn't beat them!? In every other game that's a one-hit KO!"],
+          ["yana", "このゲームでは、ふむと“ピヨる”だけです。ピヨっているあいだに光線銃でうってください。", "In this game, stomping only stuns them. Shoot them with your ray gun while they are dizzy."],
+          ["pyon", "ややこしい仕様やな……。開発者、出てこい！", "What a fussy rule... Developer, show yourself!"]
+        ];
+      }
+      return Math.random() < 0.25 ? [pick([
+        ["pyon", "ピヨっとるピヨっとる。今のうちや！", "Dizzy, dizzy. Now's my chance!"],
+        ["pyon", "ふむだけやと倒れへんの、まだ納得してへんからな。", "For the record, I'm still not over the stomp-doesn't-KO thing."]
+      ])] : null;
+    },
     needKey: () => [["yana", "カギが必要です。空のルートや、あやしい場所をさがしてみましょう。", "You need a key. Try the sky route, or anywhere that looks suspicious."]],
     keyGet: () => [["pyon", "カギや！ どっかに開けるもんがあるはずやで。", "A key! There's gotta be something to open with it."]],
     switchHint: () => [["yana", "★スイッチです。下からたたくか光線銃でうつと、赤と青のブロックが入れかわります。", "A star switch. Bump it from below or shoot it to swap the red and blue blocks."]],
@@ -157,6 +192,15 @@
     }
   };
 
+  // セーブデータに「もう言った」を残して、最初の1回だけの解説に使う
+  function firstTime(key) {
+    if (typeof Story === "undefined") return false;
+    if (Story.data.seen[key]) return false;
+    Story.data.seen[key] = true;
+    return true;
+  }
+  const URGENT = { stageStart: 1, map: 1, gameOver: 1, bossHalf: 1, stolen: 1, canFuse: 1 };
+
   function say(lines, urgent = false) {
     if (!lines || !lines.length) return;
     if (urgent) {
@@ -177,7 +221,8 @@
     lastAt[name] = clock;
     const builder = BUILDERS[name];
     if (!builder) return;
-    say(builder(arg), name === "stageStart" || name === "map" || name === "gameOver" || name === "bossHalf");
+    const lines = builder(arg);
+    say(lines, !!URGENT[name] || (lines && lines.length >= 3));
     idleT = Math.max(idleT, 9);
   }
 
@@ -205,8 +250,13 @@
       const boss = state.enemies.find(e => e.boss && e.alive);
       if (boss && boss.hp / Math.max(1, boss.maxHp) < 0.5) once("bossHalf", "bossHalf");
     }
-    const power = state.weaponPower;
-    if (power > 0 && (state.weaponInventory[power - 1] ?? 0) >= 2 && canFusePower(power)) once(`fuse${power}`, "canFuse");
+    for (let power = 1; power < MAX_WEAPON_POWER; power++) {
+      if ((state.weaponInventory[power - 1] ?? 0) >= 2 && canFusePower(power) && !flags[`fuse${power}`]) {
+        flags[`fuse${power}`] = true;
+        event("canFuse", weaponName(power));
+        break;
+      }
+    }
   }
 
   // ---------- 表示 ----------
