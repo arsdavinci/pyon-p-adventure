@@ -7,9 +7,9 @@
   const pick = arr => arr[(Math.random() * arr.length) | 0];
   const SPEAKERS = {
     pyon: { ja: "ぴょんぴー", en: "Pyon-P", color: "#7f67c8", initial: ["ぴ", "P"] },
-    ran: { ja: "らんぴょん", en: "Ran-Pyon", color: "#ff5f9e", initial: ["ら", "R"], img: "portraitRan" },
-    yana: { ja: "ヤナビス", en: "Yanabis", color: "#1f9cc0", initial: ["ヤ", "Y"], img: "portraitYana" },
-    luva: { ja: "ルーヴァ・セレス", en: "Luva Ceres", color: "#c98a12", initial: ["ル", "L"], img: "portraitLuva" }
+    ran: { ja: "らんぴょん", en: "Ranpyon", color: "#ff5f9e", initial: ["ら", "R"], img: "portraitRan" },
+    yana: { ja: "ヤナビス", en: "Yanabisu", color: "#e0559f", initial: ["ヤ", "Y"], img: "portraitYana" },
+    luva: { ja: "ザ・ルーヴァ・セレス", en: "Za-Luva Seles", color: "#6f6aa8", initial: ["ル", "L"], img: "portraitLuva", alt: "cardLuva" }
   };
 
   let els = null;
@@ -94,7 +94,7 @@
     return [pick([
       ["pyon", "よっしゃ、行くで！", "Alright, here we go!"],
       ["pyon", "ここも柿ピーのにおいがするで！", "I can smell kaki-pea snacks around here!"],
-      ["pyon", "らんぴょん、見ててや！", "Watch me, Ran-Pyon!"],
+      ["pyon", "らんぴょん、見ててや！", "Watch me, Ranpyon!"],
       ["pyon", "空のルートも見のがしたらあかんで。", "Don't miss the sky route up there."]
     ])];
   }
@@ -146,6 +146,12 @@
       return [["pyon", text, text]];
     },
     idle: () => {
+      if (Math.random() < 0.18) {
+        return [
+          ["pyon", "ヤナビスって『あんまり賢くないシステムやな』の頭文字らしいで。", "Apparently Yanabisu stands for You Are Not A Very Intelligent System."],
+          ["yana", "……ぜんぶ聞こえていますよ。正式名称は Y.A.N.A.V.I.S です。かっこいいでしょう。", "...I can hear all of that. My formal name is Y.A.N.A.V.I.S. Rather cool, right?"]
+        ];
+      }
       const g = pick(GAGS);
       return [["pyon", g[0], g[1]], ranReply()];
     }
@@ -212,7 +218,10 @@
     e.speaker.style.color = sp.color;
     e.avatar.dataset.speaker = cur[0];
     e.avatar.style.borderColor = sp.color;
-    const custom = sp.img && typeof Story !== "undefined" && Story.ok(Story.img[sp.img]) ? Story.img[sp.img].src : "";
+    const has = key => key && typeof Story !== "undefined" && Story.ok(Story.img[key]);
+    const custom = has(sp.img) ? Story.img[sp.img].src : has(sp.alt) ? Story.img[sp.alt].src : "";
+    e.avatar.style.backgroundPosition = custom ? "50% 14%" : "";
+    e.avatar.style.backgroundSize = custom && cur[0] === "ran" ? "200%" : "";
     if (cur[0] === "pyon") {
       e.avatar.style.backgroundImage = "";
       e.avatar.textContent = "";

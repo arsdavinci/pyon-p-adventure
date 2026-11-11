@@ -14,6 +14,7 @@
     portraitPyon: "assets/portrait-pyonpy.png",
     portraitRan: "assets/portrait-ranpyon.png",
     portraitLuva: "assets/portrait-luva.png",
+    cardLuva: "assets/portrait-luva-card.jpg",
     portraitYana: "assets/portrait-yanabis.png",
     cgCity: "assets/cg-opening-city.png",
     cgDuo: "assets/cg-opening-duo.png",
@@ -123,9 +124,9 @@
   const SPEAKERS = {
     narr: { side: null },
     pyon: { ja: "ぴょんぴー", en: "Pyon-P", color: "#7f67c8", side: "left" },
-    ran: { ja: "らんぴょん", en: "Ran-Pyon", color: "#ff5f9e", side: "right" },
-    luva: { ja: "ルーヴァ・セレス", en: "Luva Ceres", color: "#c98a12", side: "right" },
-    yana: { ja: "ナビAI ヤナビス", en: "Navi-AI Yanabis", color: "#1f9cc0", side: "right" },
+    ran: { ja: "らんぴょん", en: "Ranpyon", color: "#ff5f9e", side: "right" },
+    luva: { ja: "ザ・ルーヴァ・セレス", en: "Za-Luva Seles", color: "#6f6aa8", side: "right" },
+    yana: { ja: "ナビAI ヤナビス", en: "Navi-AI Yanabisu", color: "#e0559f", side: "right" },
     maou: { ja: "魔王", en: "Demon Lord", color: "#c0266d", side: "right" },
     mystery: { ja: "？？？", en: "???", color: "#5a2a78", side: "right" }
   };
@@ -136,14 +137,14 @@
       lines: [
         { s: "narr", bg: "city", ja: "月の内側に広がる、パステル色の街。\n月生まれ・月育ちのムーニアンたちは、今日も笑ってくらしていた。", en: "Inside the Moon lies a pastel city.\nThe Moonians who live there spend every day laughing together." },
         { s: "narr", ja: "三日月大使館のお笑いコンビ『ムーニアンズ』は、\n宇宙最大の舞台『銀河お笑いフェス』の前夜をむかえていた。", en: "The comedy duo \"Moonians\" of the Crescent Embassy were\nspending the night before the biggest show in space: the Galaxy Comedy Fest." },
-        { s: "pyon", bg: "duo", ja: "らんぴょん、あしたのネタ合わせしよか！ まずは新ギャグな。『月見バーガー、月で見たら……ただのバーガー！』", en: "Ran-Pyon, let's rehearse for tomorrow! New gag first: \"A moon-viewing burger, viewed ON the moon... is just a burger!\"" },
+        { s: "pyon", bg: "duo", ja: "らんぴょん、あしたのネタ合わせしよか！ まずは新ギャグな。『月見バーガー、月で見たら……ただのバーガー！』", en: "Ranpyon, let's rehearse for tomorrow! New gag first: \"A moon-viewing burger, viewed ON the moon... is just a burger!\"" },
         { s: "ran", ja: "…………。", en: "............" },
         { s: "pyon", ja: "えっ、ツッコミは！？ 『なんでやねん』は！？", en: "Huh? Where's the comeback!? Where's my \"No way!\"?" },
         { s: "ran", ja: "あかん……。どうツッコんだらええんか、ぜんぜん思い出されへん……。", en: "I can't... I've completely forgotten how to do a comeback..." },
         { s: "narr", bg: "dark", fx: "shake", ja: "そのとき、夜空がまっくろにそまった。\n宇宙じゅうの“笑い”が、空のかなたへ吸い上げられていく——。", en: "At that moment the night sky turned pitch black.\nAll the laughter in the universe was being sucked away into the distance..." },
         { s: "mystery", fx: "flash", ja: "フハハハ！ 宇宙の笑いは、この魔王星がぜんぶいただいた！ もうだれも、笑うことはない！", en: "Mwahaha! The Demon Star has taken ALL the laughter in the universe! No one shall ever laugh again!" },
-        { s: "luva", bg: "duo", ja: "緊急指令よ、ぴょんぴー。笑いのエネルギー『ワライスター』が6つにくだかれ、6つの星へ持ち去られたわ。", en: "Emergency orders, Pyon-P. The \"Warai Star\", the energy of laughter itself, was shattered into six pieces and carried off to six planets." },
-        { s: "luva", ja: "このままでは宇宙から笑顔が消える。もちろん、あしたのフェスも中止ね。", en: "At this rate smiles will vanish from the universe. And yes, tomorrow's Fest will be cancelled." },
+        { s: "luva", bg: "duo", ja: "緊急指令だ、ぴょんぴー。笑いのエネルギー『ワライスター』が6つにくだかれ、6つの星へ持ち去られた。", en: "Emergency orders, Pyon-P. The \"Warai Star\", the energy of laughter itself, was shattered into six pieces and carried off to six planets." },
+        { s: "luva", ja: "このままでは、宇宙から笑顔が消えてしまう。……あしたのフェスも、中止だ。", en: "At this rate smiles will vanish from the universe. And yes, tomorrow's Fest will be cancelled." },
         { s: "pyon", ja: "そんなんあかん！ うちらの夢の舞台やで！？", en: "No way! That's our dream stage!" },
         { s: "ran", ja: "ぴょんぴー……たのむ。うちの『なんでやねん』、取り返してきて。", en: "Pyon-P... please. Bring my \"No way!\" back." },
         { s: "pyon", bg: "depart", ja: "まかしとき！ 柿ピー食べたら百人力や。ほな、ちょっと宇宙すくってくるわ！", en: "Leave it to me! A handful of kaki-pea snacks and I'm unstoppable. Be right back, just gotta save the universe!" },
@@ -153,7 +154,7 @@
     world0: {
       music: "story",
       lines: [
-        { s: "yana", bg: "world0", ja: "はじめまして、ナビAIのヤナビスです。翻訳だけやなくて道案内もできますねん。……あ、関西弁がうつりました。", en: "Nice to meet you. I am Yanabis, your navigation AI. I do translation AND directions, y'know. ...Oh dear, your accent is rubbing off on me." },
+        { s: "yana", bg: "world0", ja: "翻訳酸素カプセルからこんにちは。人工知能のヤナビスです。翻訳だけやなくて道案内もできますねん。……あ、関西弁がうつりました。", en: "Hello from your translation oxygen capsule. I am Yanabisu, the AI. I do translation AND directions, y'know. ...Oh dear, your accent is rubbing off on me." },
         { s: "yana", ja: "最初のかけらは『月あめ平原』に反応があります。敵は上からふむとピヨります。そのすきに光線銃でやっつけましょう。", en: "The first shard is somewhere in Moon Candy Field. Stomp enemies from above to stun them, then finish them with your ray gun." },
         { s: "yana", ja: "光線銃は、同じものを2つ集めると合体して強くなります。SELECT（Tabキー）で装備画面をひらけますよ。", en: "Collect two of the same ray gun and they fuse into a stronger one. Press SELECT (Tab) to open the equipment screen." },
         { s: "pyon", ja: "オッケー！ ほな、いっちょ行ったろか！", en: "Got it! Alright, let's do this!" }
@@ -183,7 +184,7 @@
       lines: [
         { s: "yana", bg: "world3", ja: "星の海です。水の中では酸素がへっていきます。O2バブルでこまめに補給してください。", en: "This is the Star Ocean. Your oxygen drains underwater, so grab O2 bubbles often." },
         { s: "pyon", ja: "泳ぎは得意ちゃうけど……上下ボタンでぷかぷか行けるな！", en: "Swimming isn't my thing... but I can float around with up and down!" },
-        { s: "luva", ja: "順調ね、ぴょんぴー。フェスの楽屋は、おさえたままにしてあるわ。かならず帰ってきなさい。", en: "You're doing well, Pyon-P. I'm keeping your dressing room at the Fest reserved. Make sure you come back." },
+        { s: "luva", ja: "順調だね、ぴょんぴー。フェスの楽屋は、おさえたままにしてある。かならず帰っておいで。", en: "You're doing well, Pyon-P. I'm keeping your dressing room at the Fest reserved. Make sure you come back." },
         { s: "pyon", ja: "さすがボス！ 月見バーガーも用意しといて！", en: "You're the best, boss! Have a moon-viewing burger ready for me!" }
       ]
     },
@@ -200,7 +201,7 @@
       music: "story",
       lines: [
         { s: "yana", bg: "world5", ja: "……最後のかけらは、魔王星の城の奥です。重力が波のようにゆれています。", en: "...The last shard is deep inside the castle on the Demon Star. Gravity there pulses like a wave." },
-        { s: "luva", ja: "ここから先は、今までとはわけがちがうわ。気を引きしめて。", en: "From here on, it won't be like before. Stay sharp." },
+        { s: "luva", ja: "ここから先は、今までとはわけがちがう。気を引きしめて行きなさい。", en: "From here on, it won't be like before. Stay sharp." },
         { s: "ran", ja: "ぴょんぴー。帰ってきたら、いちばんええツッコミ入れたるからな。", en: "Pyon-P. When you get home, I'll give you the best comeback of my life." },
         { s: "pyon", ja: "それ聞いたら負けられへんな。行くで、クライマックスや！", en: "Now I really can't lose. Here we go: the grand finale!" }
       ]
@@ -222,7 +223,7 @@
         { s: "ran", aud: true, fx: "shake", ja: "なんでやねん！！ 言い方かるいわ！", en: "NO WAY!! You can't say it that casually!" },
         { s: "narr", aud: true, ja: "客席には、月あめキング、ドーム司令官、クリスタルイエティ、\nマンタクイーン、ロボットキング——そして、魔王のすがたもあった。", en: "In the audience sat the Moon Candy King, the Dome Commander, the Crystal Yeti,\nthe Manta Queen, the Robot King... and even the Demon Lord." },
         { s: "maou", aud: true, ja: "ふはは！ いいぞー！ もっとやれー！", en: "Hahaha! More! MORE!" },
-        { s: "luva", aud: true, ja: "ふふ。次は地球の大舞台ね、ふたりとも。", en: "Hehe. Next up is the big stage on Earth, you two." },
+        { s: "luva", aud: true, ja: "ふふ。次は地球の大舞台だね、ふたりとも。", en: "Hehe. Next up is the big stage on Earth, you two." },
         { s: "pyon", aud: true, ja: "よっしゃ！ 次は地球で、てっぺん獲るで！", en: "Alright! Next, we're taking the top spot on Earth!" },
         { s: "ran", aud: true, ja: "その前にネタ合わせや！", en: "Rehearsal first!" },
         { s: "narr", bg: "finale", ja: "宇宙に笑顔がもどった。\nムーニアンズの挑戦は、まだまだつづく——。", en: "Smiles returned to the universe.\nAnd the Moonians' journey has only just begun..." }
@@ -378,7 +379,7 @@
 
   const BG_FALLBACK = {
     city: { cg: "cgCity", stage: 0 },
-    duo: { cg: "cgDuo", stage: 0, tint: "rgba(120, 90, 200, 0.22)" },
+    duo: { cg: "cgDuo", alt: "cgStage", stage: 0, tint: "rgba(120, 90, 200, 0.22)" },
     dark: { cg: "cgDark", stage: 5, tint: "rgba(10, 4, 24, 0.5)" },
     depart: { cg: "cgDepart", map: true },
     laugh: { cg: "cgLaugh", stage: 5, glow: true },
@@ -394,7 +395,7 @@
     const panX = Math.sin(t * 0.12) * 18;
     ctx.fillStyle = "#1b1236";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    const cg = cfg.cg ? img[cfg.cg] : null;
+    const cg = cfg.cg && ok(img[cfg.cg]) ? img[cfg.cg] : cfg.alt ? img[cfg.alt] : null;
     if (ok(cg)) {
       coverDraw(cg, zoom, panX, 0);
       return true;
@@ -469,7 +470,7 @@
     }
   }
 
-  function drawHoloCard(initial, color, t) {
+  function drawHoloCard(initial, color, t, picture = null) {
     ctx.save();
     ctx.translate(0, -190);
     ctx.shadowColor = color;
@@ -488,23 +489,30 @@
     ctx.beginPath();
     ctx.roundRect(-120, -150, 240, 300, 24);
     ctx.clip();
-    const face = ctx.createRadialGradient(0, -20, 10, 0, -20, 110);
-    face.addColorStop(0, "#ffffff");
-    face.addColorStop(1, color);
-    ctx.fillStyle = face;
-    ctx.beginPath();
-    ctx.arc(0, -24, 88, 0, TAU);
-    ctx.fill();
-    ctx.fillStyle = "#ffffff";
-    ctx.strokeStyle = "rgba(60, 40, 110, 0.55)";
-    ctx.lineWidth = 8;
-    ctx.lineJoin = "round";
-    ctx.font = `900 96px ${FX.FONT}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.strokeText(initial, 0, -20);
-    ctx.fillText(initial, 0, -20);
-    ctx.fillStyle = "rgba(127, 103, 200, 0.12)";
+    if (ok(picture)) {
+      const s = Math.max(240 / picture.naturalWidth, 300 / picture.naturalHeight);
+      const w = picture.naturalWidth * s;
+      const h = picture.naturalHeight * s;
+      ctx.drawImage(picture, -w / 2, -150, w, h);
+    } else {
+      const face = ctx.createRadialGradient(0, -20, 10, 0, -20, 110);
+      face.addColorStop(0, "#ffffff");
+      face.addColorStop(1, color);
+      ctx.fillStyle = face;
+      ctx.beginPath();
+      ctx.arc(0, -24, 88, 0, TAU);
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.strokeStyle = "rgba(60, 40, 110, 0.55)";
+      ctx.lineWidth = 8;
+      ctx.lineJoin = "round";
+      ctx.font = `900 96px ${FX.FONT}`;
+      ctx.strokeText(initial, 0, -20);
+      ctx.fillText(initial, 0, -20);
+    }
+    ctx.fillStyle = ok(picture) ? "rgba(160, 200, 255, 0.07)" : "rgba(127, 103, 200, 0.12)";
     const off = (t * 40) % 12;
     for (let y = -150 + off; y < 150; y += 12) ctx.fillRect(-120, y, 240, 4);
     ctx.fillStyle = color;
@@ -669,17 +677,13 @@
         ctx.drawImage(FX.glowSprite("#ff3d7f"), 8, -300, 44, 30);
       }
     } else if (id === "ran") {
-      if (ok(img.portraitRan)) fit(img.portraitRan, 430);
-      else {
-        if (flip) ctx.scale(-1, 1);
-        drawHoloCard(L("ら", "R"), "#ff8db7", time);
-      }
+      if (flip) ctx.scale(-1, 1);
+      if (ok(img.portraitRan)) fit(img.portraitRan, 400);
+      else drawHoloCard(L("ら", "R"), "#ff8db7", time);
     } else if (id === "luva") {
-      if (ok(img.portraitLuva)) fit(img.portraitLuva, 430);
-      else {
-        if (flip) ctx.scale(-1, 1);
-        drawHoloCard(L("ル", "L"), "#e0b53c", time);
-      }
+      if (flip) ctx.scale(-1, 1);
+      if (ok(img.portraitLuva)) fit(img.portraitLuva, 440);
+      else drawHoloCard(L("ル", "L"), "#8f8ad0", time, img.cardLuva);
     } else if (id === "yana") {
       if (ok(img.portraitYana)) fit(img.portraitYana, 380);
       else {
@@ -704,7 +708,7 @@
     }
     const ln = cs.script.lines[Math.min(cs.i, cs.script.lines.length - 1)];
     const hasCg = drawBackground(cs.bg, cs.t);
-    if (ln.aud && !hasCg) drawAudience(cs.t);
+    if (ln.aud) drawAudience(cs.t);
     // 背景切り替えのフェード
     if (cs.bgT < 0.5) {
       ctx.fillStyle = `rgba(27, 18, 54, ${1 - cs.bgT / 0.5})`;
@@ -1142,9 +1146,9 @@
       { gap: 70 },
       { head: true, text: "CAST" },
       { text: L("ぴょんぴー", "Pyon-P") },
-      { text: L("らんぴょん", "Ran-Pyon") },
-      { text: L("ザ・ルーヴァ・セレス", "The Luva Ceres") },
-      { text: L("ナビAI ヤナビス", "Navi-AI Yanabis") },
+      { text: L("らんぴょん", "Ranpyon") },
+      { text: L("ザ・ルーヴァ・セレス", "Za-Luva Seles") },
+      { text: L("ヤナビス（Y.A.N.A.V.I.S）", "Yanabisu (Y.A.N.A.V.I.S)") },
       { gap: 40 },
       { head: true, text: L("6つの星のボスたち", "Bosses of the Six Planets") },
       ...BOSS_NAMES.map(([ja, en]) => ({ text: L(ja, en) })),
@@ -1480,18 +1484,68 @@
     return `world${course?.worldIndex ?? 0}`;
   }
 
+  // assets/bgm/<曲名>.mp3 があればそれを流し、なければ bgm.js の自動演奏を使う
+  const fileTracks = {};
+  let filePlaying = null;
+
+  function fileTrack(name) {
+    let tr = fileTracks[name];
+    if (tr) return tr;
+    const audio = new Audio();
+    audio.loop = true;
+    audio.preload = "auto";
+    tr = fileTracks[name] = { audio, ready: false, missing: false };
+    audio.addEventListener("canplaythrough", () => { tr.ready = true; }, { once: true });
+    audio.addEventListener("error", () => { tr.missing = true; }, { once: true });
+    audio.src = `assets/bgm/${name}.mp3`;
+    return tr;
+  }
+
+  function fadeFile(tr, to, stopAfter) {
+    clearInterval(tr.fade);
+    tr.fade = setInterval(() => {
+      const v = tr.audio.volume + Math.sign(to - tr.audio.volume) * 0.06;
+      if (Math.abs(to - v) <= 0.06) {
+        tr.audio.volume = to;
+        clearInterval(tr.fade);
+        if (stopAfter) tr.audio.pause();
+      } else {
+        tr.audio.volume = Math.min(1, Math.max(0, v));
+      }
+    }, 30);
+  }
+
   function syncMusic() {
     if (!window.Bgm || !audioUnlocked) return;
     const want = desiredTrack();
-    if (want !== lastWant) {
-      lastWant = want;
-      if (want) Bgm.play(want);
-      else Bgm.stop(0.4);
-    }
     const duck = state.mode === "paused" || state.mode === "inventory";
+    const tr = want ? fileTrack(want) : null;
+    const useFile = !!tr && tr.ready && !tr.missing;
+    const key = want ? `${useFile ? "file" : "synth"}:${want}` : null;
+    if (key !== lastWant) {
+      lastWant = key;
+      if (filePlaying && filePlaying !== tr) {
+        fadeFile(filePlaying, 0, true);
+        filePlaying = null;
+      }
+      if (useFile) {
+        Bgm.stop(0.3);
+        tr.audio.currentTime = 0;
+        tr.audio.volume = 0;
+        tr.audio.play().catch(() => { tr.missing = true; });
+        fadeFile(tr, duck ? 0.2 : 0.6, false);
+        filePlaying = tr;
+      } else if (want) {
+        Bgm.play(want);
+      } else {
+        Bgm.stop(0.4);
+      }
+    }
+    if (filePlaying) filePlaying.audio.muted = !soundEnabled;
     if (duck !== lastDuck) {
       lastDuck = duck;
       Bgm.duck(duck);
+      if (filePlaying) fadeFile(filePlaying, duck ? 0.2 : 0.6, false);
     }
   }
 
