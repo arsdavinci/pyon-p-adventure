@@ -1533,6 +1533,18 @@
     const newBtn = document.querySelector("#newGameButton");
     const sub = document.querySelector("#titleSub");
     const atTitle = state?.mode === "title";
+    // タイトル画面では専用ロゴを出し、文字のタイトルとサブタイトルはロゴにまかせる
+    const logo = document.querySelector(".brand-logo");
+    if (logo) {
+      logo.classList.toggle("title-logo", atTitle);
+      if (atTitle) {
+        if (!logo.src.endsWith("assets/title-logo.png")) logo.src = "assets/title-logo.png";
+        logo.alt = t("title");
+      } else if (logo.src.endsWith("assets/title-logo.png")) {
+        logo.src = language === "en" ? "assets/moonians-logo-English.png" : "assets/moonians-logo.png";
+      }
+    }
+    h1.classList.toggle("hidden", atTitle);
     if (atTitle) {
       h1.textContent = t("title");
       p.textContent = t("controls");
@@ -1545,7 +1557,7 @@
     }
     if (sub) {
       sub.textContent = L("〜 ワライスターをとりもどせ 〜", "~ Bring Back the Warai Star ~") + (data.cleared ? "  ★" : "");
-      sub.classList.toggle("hidden", !atTitle);
+      sub.classList.add("hidden");
     }
     const sound = document.querySelector("#soundButton");
     if (sound) sound.textContent = (typeof soundEnabled !== "undefined" && soundEnabled) ? "♪ ON" : "♪ OFF";

@@ -655,6 +655,16 @@ body[data-control-mode="mobile"][data-overlay-open="true"] .touch-controls {
   box-shadow: 0 4px 0 rgba(127, 103, 200, 0.6);
 }
 
+.brand-logo.title-logo {
+  width: min(72vw, 620px);
+  max-height: min(330px, 46vh);
+  filter: drop-shadow(0 10px 18px rgba(40, 24, 96, 0.4));
+}
+
+.game-title.hidden {
+  display: none;
+}
+
 .title-sub.hidden,
 .ghost-button.hidden {
   display: none;
