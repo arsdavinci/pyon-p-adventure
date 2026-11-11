@@ -1,5 +1,5 @@
 // 古いページ（前の版の index.html）がキャッシュから出てきたときは、キャッシュを消して読み直す
-if (typeof FX === "undefined" || typeof Story === "undefined" || typeof Chat === "undefined" || typeof Gimmick === "undefined" || typeof Shop === "undefined") {
+if (typeof FX === "undefined" || typeof Story === "undefined" || typeof Chat === "undefined" || typeof Gimmick === "undefined" || typeof Shop === "undefined" || typeof Handheld === "undefined") {
   (async () => {
     try {
       if (window.caches) await Promise.all((await caches.keys()).map(key => caches.delete(key)));
@@ -391,8 +391,8 @@ let lastTime = 0;
 let animationId = 0;
 let pendingCourseStart = false;
 let language = localStorage.getItem("pyonpLanguage") || "ja";
-let controlMode = localStorage.getItem("pyonpControlMode") || (matchMedia("(pointer: coarse)").matches ? "iphone" : "pc");
-if (controlMode === "mobile") controlMode = "iphone";
+// 端末は毎回自動で判定する。タイトルのボタンで切り替えたときだけ、その回のあいだ手動の選択を優先する
+let controlMode = Handheld.detect();
 
 let currentCourse = 0;
 let unlockedCourse = 0;
@@ -3200,12 +3200,14 @@ function setLanguage(nextLanguage) {
   draw();
 }
 
-function setControlMode(nextMode) {
+function setControlMode(nextMode, manual = false) {
   controlMode = nextMode === "ipad" ? "ipad" : nextMode === "pc" ? "pc" : "iphone";
-  localStorage.setItem("pyonpControlMode", controlMode);
+  if (manual) Handheld.rememberManual(controlMode);
   document.body.dataset.controlMode = controlMode === "pc" ? "pc" : "mobile";
   document.body.dataset.controlDevice = controlMode;
   controlModeButtons.forEach(button => button.classList.toggle("active", button.dataset.controlMode === controlMode));
+  Handheld.layout();
+  Chat.layout();
   updateHud();
 }
 
@@ -3230,6 +3232,7 @@ function applyLanguage() {
   setControlMode(controlMode);
   updateFullscreenButton();
   Story.refreshTitleUi();
+  Handheld.refresh();
   Chat.refresh();
 }
 
@@ -7411,6 +7414,11 @@ window.addEventListener("keydown", event => {
   unlockAudio();
   const code = normalizeInputCode(event);
   if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", "Tab", "Enter"].includes(code)) event.preventDefault();
+  handleKeyDown(code, event);
+});
+
+// キーボードと画面のボタン（タッチ）で共通の入力処理
+function handleKeyDown(code, event = { repeat: false }) {
   if (code === "KeyM" && !event.repeat) toggleSound();
   if (Story.isStoryMode(state.mode)) {
     if (!event.repeat) Story.handleKey(code);
@@ -7468,16 +7476,17 @@ window.addEventListener("keydown", event => {
     return;
   }
   keys.add(code);
-});
+}
 
-window.addEventListener("keyup", event => {
-  const code = normalizeInputCode(event);
+function handleKeyUp(code) {
   if (state.mode === "inventory" && (code === "Enter" || code === "Space") && state.inventoryGrab && !state.inventoryGrab.pointer) {
     releaseInventoryGrab();
     return;
   }
   keys.delete(code);
-});
+}
+
+window.addEventListener("keyup", event => handleKeyUp(normalizeInputCode(event)));
 startButton.addEventListener("click", () => {
   unlockAudio();
   if (state?.mode === "ended" && gameOverContinueAvailable) continueFromGameOver();
@@ -7497,7 +7506,7 @@ langEnButton?.addEventListener("click", event => {
 controlModeButtons.forEach(button => {
   button.addEventListener("click", event => {
     event.stopPropagation();
-    setControlMode(button.dataset.controlMode);
+    setControlMode(button.dataset.controlMode, true);
   });
 });
 
@@ -7931,57 +7940,15 @@ function updateInventoryGamepadFocus(now, jumpPressed, runPressed, shootPressed)
   }
 }
 
-function handleTouchStartButton() {
-  if (!overlay.classList.contains("hidden")) {
-    if (state?.mode === "ended" && gameOverContinueAvailable) continueFromGameOver();
-    else pendingCourseStart ? startCurrentCourse() : startGame();
-    return;
-  }
-  if (state.mode === "paused") {
-    resumeGame();
-    return;
-  }
-  if (state.mode === "worldMap") {
-    startMapCourse(mapSelectedCourse);
-    return;
-  }
-  if (state.mode === "playing" || state.mode === "respawning") pauseGame();
-}
-
+// 画面のボタン（handheld.js が呼ぶ）。キーボードと同じ処理に流すので、
+// 会話送り・ワールドマップ・そうび画面・よろず屋もボタンだけで操作できる
 function pressTouchControl(code) {
   unlockAudio();
-  if (code === "Select") {
-    toggleInventory();
-    return;
-  }
-  if (code === "Enter") {
-    handleTouchStartButton();
-    return;
-  }
-  if (code === "ArrowLeft") registerMoveTap(-1);
-  if (code === "ArrowRight") registerMoveTap(1);
-  if (code === "Space" || code === "ArrowUp") queueStompBoost();
-  keys.add(code);
+  handleKeyDown(code);
 }
 
 function releaseTouchControl(code) {
-  keys.delete(code);
-}
-
-for (const button of document.querySelectorAll("[data-key]")) {
-  const code = button.dataset.key;
-  const press = event => {
-    event.preventDefault();
-    pressTouchControl(code);
-  };
-  const release = event => {
-    event.preventDefault();
-    releaseTouchControl(code);
-  };
-  button.addEventListener("pointerdown", press);
-  button.addEventListener("pointerup", release);
-  button.addEventListener("pointercancel", release);
-  button.addEventListener("pointerleave", release);
+  handleKeyUp(code);
 }
 
 for (const eventName of ["contextmenu", "selectstart", "dragstart"]) {

@@ -368,6 +368,12 @@
     const hud = document.querySelector(".hud");
     const shell = document.querySelector(".shell");
     if (!panel || !hud || !shell) return;
+    if (typeof Handheld !== "undefined" && Handheld.active()) {
+      // 携帯ゲーム機レイアウトでは handheld.js がパネルの大きさを決める
+      commOn = Handheld.commOn();
+      shell.style.removeProperty("--comm-h");
+      return;
+    }
     const availW = Math.min(window.innerWidth, 1440) - 16;
     const canvasH = (availW * 9) / 16 + 8;
     const free = window.innerHeight - hud.offsetHeight - 34 - canvasH;

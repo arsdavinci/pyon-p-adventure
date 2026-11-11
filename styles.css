@@ -952,3 +952,632 @@ body[data-game-mode="movie"] .comm-panel {
   60% { transform: scale(1.12) rotate(4deg); }
   100% { transform: scale(1); }
 }
+
+/* ---------- タッチ操作（共通）：十字キーとボタンのまとまりで指の位置を受ける ---------- */
+.gb-screen {
+  display: contents;
+}
+
+.gb-guide,
+.gb-frame-art,
+.gb-controls-art,
+.gb-status,
+.dpad-cap {
+  display: none;
+}
+
+.touch-dpad,
+.touch-actions {
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.touch-button,
+.touch-action {
+  pointer-events: none;
+}
+
+.touch-button.is-pressed,
+.touch-action.is-pressed,
+.touch-small.is-pressed,
+.touch-shoulder.is-pressed {
+  transform: translateY(3px);
+  filter: brightness(1.35);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35), 0 0 14px rgba(158, 232, 255, 0.8);
+}
+
+/* ---------- 携帯ゲーム機レイアウト（スマホ・タブレットのたて持ち） ---------- */
+body[data-layout="handheld"] {
+  background: #e7dcf3;
+}
+
+body[data-layout="handheld"] .shell {
+  position: fixed;
+  inset: 0;
+  width: auto;
+  height: auto;
+  padding: 0;
+  display: block;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 30%, #f6effd 0%, #e3d6f2 60%, #d3c3ec 100%);
+}
+
+body[data-layout="handheld"] .fullscreen-button {
+  display: none;
+}
+
+body[data-layout="handheld"] .gb-screen {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  left: var(--gb-x);
+  top: var(--gb-y);
+  width: calc(898 * var(--u));
+  height: var(--gb-screen-h);
+  padding: calc(123 * var(--u)) calc(84 * var(--u)) calc(65 * var(--u)) calc(85 * var(--u));
+}
+
+body[data-layout="handheld"] .gb-screen::before {
+  content: "";
+  position: absolute;
+  inset: calc(119 * var(--u)) calc(80 * var(--u)) calc(61 * var(--u)) calc(81 * var(--u));
+  border-radius: calc(32 * var(--u));
+  background: linear-gradient(180deg, #2b2050, #171031);
+}
+
+body[data-layout="handheld"] .gb-frame-art {
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  border-style: solid;
+  border-color: transparent;
+  border-width: calc(160 * var(--u)) calc(120 * var(--u)) calc(100 * var(--u)) calc(120 * var(--u));
+  border-image: url("assets/gb-frame.webp") 160 120 100 120 stretch;
+}
+
+body[data-layout="handheld"] .game-wrap {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  width: 100%;
+  max-height: none;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+body[data-layout="handheld"] .hud {
+  position: relative;
+  z-index: 1;
+  order: 2;
+  flex: none;
+  height: calc(46 * var(--u));
+  margin: 0;
+  padding: 0 calc(16 * var(--u));
+  gap: calc(10 * var(--u));
+  align-items: center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  border: 0;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+  color: #e6dcfb;
+  font-size: calc(20 * var(--u));
+}
+
+body[data-layout="handheld"] .hud span {
+  min-width: 0;
+}
+
+body[data-layout="handheld"] .hud strong {
+  -webkit-text-stroke: 0;
+  text-shadow: none;
+  color: #ffe27a;
+}
+
+body[data-layout="handheld"] #scoreLabel {
+  display: none;
+}
+
+body[data-layout="handheld"] #lifeCount {
+  min-width: 0;
+  font-size: 1.2em;
+  letter-spacing: 1px;
+}
+
+/* 会話とそうび */
+body[data-layout="handheld"] .comm-panel {
+  position: relative;
+  z-index: 1;
+  order: 3;
+  flex: 1 1 0;
+  min-height: 0;
+  height: auto;
+  margin: 0;
+  display: none;
+  flex-direction: column;
+  gap: calc(8 * var(--u));
+  padding: calc(10 * var(--u)) calc(12 * var(--u)) calc(16 * var(--u));
+}
+
+body[data-layout="handheld"][data-comm="on"] .comm-panel {
+  display: flex;
+}
+
+body[data-layout="handheld"][data-game-mode="title"] .comm-panel,
+body[data-layout="handheld"][data-game-mode="cutscene"] .comm-panel,
+body[data-layout="handheld"][data-game-mode="credits"] .comm-panel,
+body[data-layout="handheld"][data-game-mode="movie"] .comm-panel {
+  display: none;
+}
+
+body[data-layout="handheld"] .comm-weapon,
+body[data-layout="handheld"] .comm-chat {
+  gap: calc(14 * var(--u));
+  padding: calc(8 * var(--u)) calc(14 * var(--u));
+  border-width: calc(4 * var(--u));
+  border-radius: calc(22 * var(--u));
+  box-shadow: none;
+}
+
+body[data-layout="handheld"] .comm-chat {
+  order: 1;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+body[data-layout="handheld"] .comm-weapon {
+  order: 2;
+  flex: none;
+  height: calc(92 * var(--u));
+}
+
+body[data-layout="handheld"][data-comm-size="chat"] .comm-weapon,
+body[data-layout="handheld"] .comm-buttons,
+body[data-layout="handheld"] .comm-stats {
+  display: none;
+}
+
+body[data-layout="handheld"] .comm-label {
+  padding: calc(1 * var(--u)) calc(12 * var(--u)) calc(2 * var(--u));
+  border-radius: 0 0 calc(12 * var(--u)) 0;
+  font-size: calc(15 * var(--u));
+}
+
+body[data-layout="handheld"] .comm-weapon img {
+  width: calc(96 * var(--u));
+  height: calc(70 * var(--u));
+}
+
+body[data-layout="handheld"] .comm-weapon-info {
+  gap: 0;
+  padding-top: calc(12 * var(--u));
+}
+
+body[data-layout="handheld"] .comm-weapon-title strong {
+  font-size: calc(24 * var(--u));
+}
+
+body[data-layout="handheld"] .comm-weapon-title span {
+  font-size: calc(21 * var(--u));
+}
+
+body[data-layout="handheld"] .comm-hint {
+  font-size: calc(19 * var(--u));
+}
+
+body[data-layout="handheld"] .comm-avatar {
+  width: calc(88 * var(--u));
+  border-width: calc(5 * var(--u));
+  font-size: calc(40 * var(--u));
+}
+
+body[data-layout="handheld"] .comm-bubble {
+  padding: calc(5 * var(--u)) calc(14 * var(--u));
+  border-width: calc(3 * var(--u));
+  border-radius: calc(18 * var(--u));
+  overflow: hidden;
+}
+
+body[data-layout="handheld"] .comm-bubble strong {
+  font-size: calc(20 * var(--u));
+}
+
+body[data-layout="handheld"] .comm-bubble p {
+  min-height: 0;
+  font-size: calc(25 * var(--u));
+  line-height: 1.3;
+}
+
+/* タイトルや会話シーンでは、ボタンの説明を出す */
+body[data-layout="handheld"][data-comm="on"][data-game-mode="title"] .gb-guide,
+body[data-layout="handheld"][data-comm="on"][data-game-mode="cutscene"] .gb-guide,
+body[data-layout="handheld"][data-comm="on"][data-game-mode="credits"] .gb-guide,
+body[data-layout="handheld"][data-comm="on"][data-game-mode="movie"] .gb-guide {
+  display: flex;
+}
+
+body[data-layout="handheld"] .gb-guide {
+  position: relative;
+  z-index: 1;
+  order: 3;
+  flex: 1 1 0;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  padding: calc(8 * var(--u)) calc(16 * var(--u)) calc(14 * var(--u));
+  color: #efe8ff;
+  font-size: calc(23 * var(--u));
+  font-weight: 800;
+  overflow: hidden;
+}
+
+.gb-guide-title,
+.gb-guide-story {
+  display: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: calc(8 * var(--u)) calc(22 * var(--u));
+}
+
+.gb-guide span {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(6 * var(--u));
+  white-space: nowrap;
+}
+
+body[data-game-mode="title"] .gb-guide-title,
+body[data-game-mode="cutscene"] .gb-guide-story,
+body[data-game-mode="credits"] .gb-guide-story,
+body[data-game-mode="movie"] .gb-guide-story {
+  display: flex;
+}
+
+.gb-chip {
+  display: inline-grid;
+  place-items: center;
+  min-width: calc(36 * var(--u));
+  height: calc(36 * var(--u));
+  padding: 0 calc(6 * var(--u));
+  border-radius: 999px;
+  color: #2b2050;
+  font-size: calc(21 * var(--u));
+  font-weight: 900;
+  background: #ffffff;
+}
+
+.gb-chip.a { background: #ffb3d0; }
+.gb-chip.b { background: #aaf0d0; }
+.gb-chip.x { background: #cdb6ff; }
+.gb-chip.y { background: #a9dcff; }
+.gb-chip.pill { padding: 0 calc(12 * var(--u)); font-size: calc(17 * var(--u)); }
+
+/* タイトルなどの重ね表示を小さい画面に合わせる */
+body[data-layout="handheld"] .overlay {
+  gap: calc(10 * var(--u));
+  padding: calc(14 * var(--u));
+}
+
+body[data-layout="handheld"] .control-switch,
+body[data-layout="handheld"][data-game-mode="title"] .overlay p {
+  display: none;
+}
+
+body[data-layout="handheld"] .language-switch {
+  position: absolute;
+  top: calc(12 * var(--u));
+  right: calc(12 * var(--u));
+  gap: calc(4 * var(--u));
+  padding: calc(4 * var(--u));
+  border-width: 1px;
+}
+
+body[data-layout="handheld"] .language-switch button {
+  min-width: 0;
+  padding: calc(6 * var(--u)) calc(14 * var(--u));
+  font-size: calc(19 * var(--u));
+}
+
+body[data-layout="handheld"] .brand-logo {
+  width: auto;
+  max-width: 60%;
+  max-height: calc(170 * var(--u));
+}
+
+body[data-layout="handheld"] .brand-logo.title-logo {
+  max-width: 66%;
+  max-height: calc(250 * var(--u));
+}
+
+body[data-layout="handheld"] .game-title {
+  font-size: calc(60 * var(--u));
+  -webkit-text-stroke: calc(6 * var(--u)) #8587ff;
+  text-shadow: 0 calc(4 * var(--u)) 0 #8587ff, 0 calc(7 * var(--u)) 0 #ffffff;
+}
+
+body[data-layout="handheld"] .overlay p {
+  font-size: calc(23 * var(--u));
+}
+
+body[data-layout="handheld"] .title-actions {
+  gap: calc(12 * var(--u));
+}
+
+body[data-layout="handheld"] .primary-button {
+  min-width: calc(230 * var(--u));
+  padding: calc(12 * var(--u)) calc(28 * var(--u));
+  border-width: 2px;
+  font-size: calc(30 * var(--u));
+  box-shadow: 0 calc(6 * var(--u)) 0 #c98a12;
+}
+
+body[data-layout="handheld"] .ghost-button {
+  padding: calc(9 * var(--u)) calc(16 * var(--u));
+  border-width: 1px;
+  font-size: calc(21 * var(--u));
+  box-shadow: 0 calc(4 * var(--u)) 0 rgba(40, 26, 96, 0.5);
+}
+
+/* 本体の下半分 */
+body[data-layout="handheld"] .touch-controls {
+  display: block !important;
+  position: absolute;
+  inset: auto;
+  left: var(--gb-x);
+  top: calc(var(--gb-y) + var(--gb-screen-h) - 4 * var(--u));
+  width: calc(898 * var(--u));
+  height: calc(716 * var(--u));
+  z-index: 4;
+}
+
+body[data-layout="handheld"] .gb-controls-art {
+  display: block;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: url("assets/gb-controls.webp") center / 100% 100% no-repeat;
+}
+
+body[data-layout="handheld"] .gb-status {
+  display: flex;
+  position: absolute;
+  z-index: 0;
+  left: calc(298 * var(--u));
+  top: calc(564 * var(--u));
+  width: calc(302 * var(--u));
+  height: calc(81 * var(--u));
+  align-items: center;
+  justify-content: center;
+  gap: calc(14 * var(--u));
+  border-radius: 999px;
+  background: #150f30;
+  color: #dff6ff;
+  font-size: calc(28 * var(--u));
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 calc(8 * var(--u)) rgba(120, 230, 255, 0.8);
+}
+
+.gb-battery {
+  position: relative;
+  width: calc(46 * var(--u));
+  height: calc(24 * var(--u));
+  padding: calc(3 * var(--u));
+  border: calc(3 * var(--u)) solid #9eefff;
+  border-radius: calc(6 * var(--u));
+  box-shadow: 0 0 calc(8 * var(--u)) rgba(120, 230, 255, 0.7);
+}
+
+.gb-battery[hidden] {
+  display: none;
+}
+
+.gb-battery::after {
+  content: "";
+  position: absolute;
+  right: calc(-8 * var(--u));
+  top: 25%;
+  width: calc(4 * var(--u));
+  height: 50%;
+  border-radius: 0 calc(2 * var(--u)) calc(2 * var(--u)) 0;
+  background: #9eefff;
+}
+
+.gb-battery i {
+  display: block;
+  height: 100%;
+  width: 100%;
+  border-radius: calc(2 * var(--u));
+  background: #9eefff;
+}
+
+.gb-battery.is-low i { background: #ff8db7; }
+.gb-battery.is-charging i { background: #b6ffb0; }
+
+.gb-wifi {
+  width: calc(34 * var(--u));
+  height: calc(26 * var(--u));
+  fill: none;
+  stroke: #9eefff;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 calc(5 * var(--u)) rgba(120, 230, 255, 0.8));
+}
+
+.gb-wifi circle { fill: #9eefff; stroke: none; }
+.gb-wifi.is-off { opacity: 0.3; }
+
+body[data-layout="handheld"] .touch-side,
+body[data-layout="handheld"] .touch-top-group {
+  display: contents;
+}
+
+body[data-layout="handheld"] .touch-shoulder {
+  display: none;
+}
+
+/* 十字キー */
+body[data-layout="handheld"] .touch-dpad {
+  position: absolute;
+  z-index: 2;
+  left: calc(43 * var(--u));
+  top: calc(28 * var(--u));
+  width: calc(340 * var(--u));
+  height: calc(340 * var(--u));
+}
+
+body[data-layout="handheld"] .dpad-cap {
+  display: block;
+  position: absolute;
+  left: calc(30 * var(--u));
+  top: calc(30 * var(--u));
+  width: calc(280 * var(--u));
+  height: calc(280 * var(--u));
+  background: url("assets/gb-cap-dpad.webp") center / 100% 100% no-repeat;
+  transform: perspective(calc(620 * var(--u))) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transition: transform 110ms ease-out;
+  will-change: transform;
+}
+
+body[data-layout="handheld"] .touch-dpad.is-pressed .dpad-cap {
+  transform: perspective(calc(620 * var(--u))) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(0.975);
+  transition-duration: 45ms;
+}
+
+body[data-layout="handheld"] .touch-button {
+  position: absolute;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: calc(30 * var(--u));
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.85), rgba(150, 240, 255, 0.5) 62%, rgba(150, 240, 255, 0));
+  box-shadow: 0 0 calc(26 * var(--u)) calc(7 * var(--u)) rgba(110, 235, 255, 0.8);
+  color: transparent;
+  font-size: 0;
+  opacity: 0;
+  transform: none;
+  filter: none;
+  transition: opacity 160ms ease-out;
+}
+
+body[data-layout="handheld"] .touch-button.is-pressed {
+  opacity: 1;
+  transform: none;
+  filter: none;
+  transition-duration: 30ms;
+}
+
+body[data-layout="handheld"] .touch-button.up { left: calc(121 * var(--u)); top: calc(38 * var(--u)); width: calc(99 * var(--u)); height: calc(83 * var(--u)); }
+body[data-layout="handheld"] .touch-button.down { left: calc(121 * var(--u)); top: calc(221 * var(--u)); width: calc(99 * var(--u)); height: calc(81 * var(--u)); }
+body[data-layout="handheld"] .touch-button.left { left: calc(43 * var(--u)); top: calc(121 * var(--u)); width: calc(78 * var(--u)); height: calc(100 * var(--u)); }
+body[data-layout="handheld"] .touch-button.right { left: calc(220 * var(--u)); top: calc(121 * var(--u)); width: calc(77 * var(--u)); height: calc(100 * var(--u)); }
+
+/* A / B / X / Y */
+body[data-layout="handheld"] .touch-actions {
+  position: absolute;
+  z-index: 2;
+  left: calc(472.3 * var(--u));
+  top: calc(-7 * var(--u));
+  width: calc(400 * var(--u));
+  height: calc(400 * var(--u));
+}
+
+body[data-layout="handheld"] .touch-action {
+  position: absolute;
+  inset: auto;
+  width: calc(128 * var(--u));
+  height: calc(128 * var(--u));
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  box-shadow: none;
+  color: transparent;
+  font-size: 0;
+  transform: none;
+  filter: none;
+}
+
+body[data-layout="handheld"] .touch-action.y { left: calc(136.07 * var(--u)); top: calc(30.35 * var(--u)); --glow: #6fc8ff; --cap: url("assets/gb-cap-y.webp"); }
+body[data-layout="handheld"] .touch-action.shoot { left: calc(34.32 * var(--u)); top: calc(135.75 * var(--u)); --glow: #b58cff; --cap: url("assets/gb-cap-x.webp"); }
+body[data-layout="handheld"] .touch-action.run { left: calc(237.71 * var(--u)); top: calc(135.74 * var(--u)); --glow: #5fe0aa; --cap: url("assets/gb-cap-b.webp"); }
+body[data-layout="handheld"] .touch-action.jump { left: calc(136.13 * var(--u)); top: calc(241.61 * var(--u)); --glow: #ff7fb5; --cap: url("assets/gb-cap-a.webp"); }
+
+/* ボタンの下の「くぼみ」。押すと色つきで光る */
+body[data-layout="handheld"] .touch-action::before,
+body[data-layout="handheld"] .touch-small::before {
+  content: "";
+  position: absolute;
+  inset: calc(6 * var(--u));
+  border-radius: 999px;
+  background: #241a45;
+  transition: background 160ms ease-out, box-shadow 160ms ease-out;
+}
+
+body[data-layout="handheld"] .touch-action::after,
+body[data-layout="handheld"] .touch-small::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--cap) center / 100% 100% no-repeat;
+  transition: transform 120ms ease-out, filter 120ms ease-out;
+  will-change: transform;
+}
+
+body[data-layout="handheld"] .touch-action.is-pressed::before,
+body[data-layout="handheld"] .touch-small.is-pressed::before {
+  background: var(--glow);
+  box-shadow: 0 0 calc(24 * var(--u)) calc(9 * var(--u)) var(--glow);
+  transition-duration: 30ms;
+}
+
+body[data-layout="handheld"] .touch-action.is-pressed::after {
+  transform: translateY(calc(3 * var(--u))) scale(0.93);
+  filter: brightness(1.1) saturate(1.2);
+  transition-duration: 40ms;
+}
+
+/* SELECT / START */
+body[data-layout="handheld"] .touch-small {
+  position: absolute;
+  z-index: 3;
+  top: calc(372.5 * var(--u));
+  width: calc(200 * var(--u));
+  height: calc(116 * var(--u));
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: transparent;
+  font-size: 0;
+  transform: none;
+  filter: none;
+  --glow: #c58bff;
+}
+
+body[data-layout="handheld"] .touch-small[data-key="Select"] { left: calc(247.3 * var(--u)); --cap: url("assets/gb-cap-select.webp"); }
+body[data-layout="handheld"] .touch-small[data-key="Enter"] { left: calc(449.5 * var(--u)); --cap: url("assets/gb-cap-start.webp"); }
+
+body[data-layout="handheld"] .touch-small::before {
+  inset: calc(28 * var(--u)) calc(21.5 * var(--u));
+}
+
+body[data-layout="handheld"] .touch-small::after {
+  inset: calc(14 * var(--u)) calc(8 * var(--u));
+}
+
+body[data-layout="handheld"] .touch-small.is-pressed::after {
+  transform: translateY(calc(3 * var(--u))) scale(0.95);
+  filter: brightness(1.12);
+  transition-duration: 40ms;
+}

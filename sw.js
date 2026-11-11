@@ -1,4 +1,4 @@
-const CACHE_NAME = "pyon-p-adventure-v18";
+const CACHE_NAME = "pyon-p-adventure-v19";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -10,12 +10,22 @@ const APP_SHELL = [
   "./chat.js",
   "./gimmicks.js",
   "./shop.js",
+  "./handheld.js",
   "./manifest.json",
   "./assets/moonians-logo.png",
   "./assets/moonians-logo-English.png",
   "./assets/select-ui-generated2.png?v=select-ui-generated2-v2",
   "./assets/app-icon-192.png",
-  "./assets/app-icon-512.png"
+  "./assets/app-icon-512.png",
+  "./assets/gb-frame.webp",
+  "./assets/gb-controls.webp",
+  "./assets/gb-cap-a.webp",
+  "./assets/gb-cap-b.webp",
+  "./assets/gb-cap-x.webp",
+  "./assets/gb-cap-y.webp",
+  "./assets/gb-cap-dpad.webp",
+  "./assets/gb-cap-select.webp",
+  "./assets/gb-cap-start.webp"
 ];
 
 self.addEventListener("install", event => {

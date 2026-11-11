@@ -15,35 +15,10 @@
   <body>
     <main class="shell">
       <button id="fullscreenButton" class="fullscreen-button" type="button" aria-label="Fullscreen">全画面</button>
+      <div class="gb-screen">
       <section class="game-wrap" aria-label="ぴょんぴーの大冒険 game">
         <canvas id="game" width="1280" height="720"></canvas>
         <div id="installHint" class="install-hint hidden" role="status"></div>
-        <div class="touch-controls" aria-label="Touch controls">
-          <div class="touch-side touch-side-left">
-            <div class="touch-top-group">
-              <button class="touch-shoulder" data-key="Select" type="button" aria-label="L Button">L</button>
-              <button class="touch-small" data-key="Select" type="button" aria-label="Select">SELECT</button>
-            </div>
-            <div class="touch-dpad" aria-label="Move">
-              <button class="touch-button up" data-key="ArrowUp" type="button" aria-label="Up">&uarr;</button>
-              <button class="touch-button left" data-key="ArrowLeft" type="button" aria-label="Left">&larr;</button>
-              <button class="touch-button down" data-key="ArrowDown" type="button" aria-label="Down">&darr;</button>
-              <button class="touch-button right" data-key="ArrowRight" type="button" aria-label="Right">&rarr;</button>
-            </div>
-          </div>
-          <div class="touch-side touch-side-right">
-            <div class="touch-top-group">
-              <button class="touch-shoulder" data-key="Enter" type="button" aria-label="R Button">R</button>
-              <button class="touch-small" data-key="Enter" type="button" aria-label="Start">START</button>
-            </div>
-            <div class="touch-actions" aria-label="Actions">
-              <button class="touch-action y" data-key="KeyY" type="button" aria-label="Shoot Y">Y</button>
-              <button class="touch-action shoot" data-key="KeyX" type="button" aria-label="Shoot">X</button>
-              <button class="touch-action jump" data-key="Space" type="button" aria-label="Jump">A</button>
-              <button class="touch-action run" data-key="KeyB" type="button" aria-label="Dash">B</button>
-            </div>
-          </div>
-        </div>
         <div id="overlay" class="overlay">
           <div class="language-switch" aria-label="Language">
             <button id="langJa" class="active" type="button">日本語</button>
@@ -99,7 +74,46 @@
         <span class="hp-wrap" aria-label="Lives"><strong id="lifeCount">★★★</strong></span>
         <span id="timeLabel">時間 <strong id="timeCount">120</strong></span>
       </div>
+      <div id="gbGuide" class="gb-guide" aria-hidden="true"></div>
+      <div class="gb-frame-art" aria-hidden="true"></div>
+      </div>
+      <div class="touch-controls" aria-label="Touch controls">
+        <div class="gb-status" aria-hidden="true">
+          <span id="gbBattery" class="gb-battery"><i id="gbBatteryFill"></i></span>
+          <span id="gbStatusText">--:--</span>
+          <svg id="gbWifi" class="gb-wifi" viewBox="0 0 24 18" aria-hidden="true">
+            <path d="M2 6.5a14 14 0 0 1 20 0" /><path d="M5.5 10.2a9 9 0 0 1 13 0" /><path d="M9 13.8a4.2 4.2 0 0 1 6 0" /><circle cx="12" cy="16.4" r="1.3" />
+          </svg>
+        </div>
+        <div class="gb-controls-art" aria-hidden="true"></div>
+        <div class="touch-side touch-side-left">
+          <div class="touch-top-group">
+            <button class="touch-shoulder" data-key="Select" type="button" aria-label="L Button">L</button>
+            <button class="touch-small" data-key="Select" type="button" aria-label="Select">SELECT</button>
+          </div>
+          <div class="touch-dpad" aria-label="Move">
+            <div class="dpad-cap" aria-hidden="true"></div>
+            <button class="touch-button up" data-key="ArrowUp" type="button" aria-label="Up" tabindex="-1">&uarr;</button>
+            <button class="touch-button left" data-key="ArrowLeft" type="button" aria-label="Left" tabindex="-1">&larr;</button>
+            <button class="touch-button down" data-key="ArrowDown" type="button" aria-label="Down" tabindex="-1">&darr;</button>
+            <button class="touch-button right" data-key="ArrowRight" type="button" aria-label="Right" tabindex="-1">&rarr;</button>
+          </div>
+        </div>
+        <div class="touch-side touch-side-right">
+          <div class="touch-top-group">
+            <button class="touch-shoulder" data-key="Enter" type="button" aria-label="R Button">R</button>
+            <button class="touch-small" data-key="Enter" type="button" aria-label="Start">START</button>
+          </div>
+          <div class="touch-actions" aria-label="Actions">
+            <button class="touch-action y" data-key="KeyY" type="button" aria-label="Shoot Y" tabindex="-1">Y</button>
+            <button class="touch-action shoot" data-key="KeyX" type="button" aria-label="Shoot" tabindex="-1">X</button>
+            <button class="touch-action jump" data-key="Space" type="button" aria-label="Jump" tabindex="-1">A</button>
+            <button class="touch-action run" data-key="KeyB" type="button" aria-label="Dash" tabindex="-1">B</button>
+          </div>
+        </div>
+      </div>
     </main>
+    <script src="handheld.js"></script>
     <script src="bgm.js"></script>
     <script src="fx.js"></script>
     <script src="story.js"></script>
