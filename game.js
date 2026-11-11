@@ -1249,6 +1249,30 @@ function updateCamera(dt, snap = false) {
   let targetY = camY;
   if (cy < camY + VIEW_H * 0.26) targetY = cy - VIEW_H * 0.26;
   else if (cy > camY + VIEW_H * 0.7) targetY = cy - VIEW_H * 0.7;
+  if (state.mode === "playing" && !p.swimming) {
+    // 足もとより下に地面があるときは、そこが見えるところまでカメラを下げる
+    const feet = p.y + p.h;
+    const reach = 300;
+    const x0 = p.facing > 0 ? p.x - 30 : p.x - reach;
+    const x1 = p.facing > 0 ? p.x + p.w + reach : p.x + p.w + 30;
+    let floor = -Infinity;
+    for (const s of platforms) {
+      if (s.x >= x1 || s.x + s.w <= x0) continue;
+      if (s.y > feet + 40 && s.y < feet + 620 && s.y > floor) floor = s.y;
+    }
+    let wantZoom = ZOOM;
+    if (floor > -Infinity) {
+      // 画面に入りきらないほど深いときは、少し引いて（ズームアウトして）下まで見せる
+      const span = floor + 90 - (p.y - 70);
+      if (span > VIEW_H) wantZoom = clamp(canvas.height / span, 0.92, ZOOM);
+      const viewH = canvas.height / wantZoom;
+      const need = Math.min(floor + 90 - viewH, p.y - 70);
+      if (need > targetY) targetY = need;
+    }
+    state.viewZoom = (state.viewZoom ?? ZOOM) + (wantZoom - (state.viewZoom ?? ZOOM)) * Math.min(1, dt * 4);
+    const lookDown = keys.has("ArrowDown") || keys.has("KeyS") || gamepadState.down;
+    if (lookDown && p.grounded) targetY = Math.max(targetY, Math.min(camY + 12, p.y - 60));
+  }
   targetY = clamp(targetY, minY, maxY);
   if (snap) {
     state.camera = targetX;
@@ -3845,8 +3869,9 @@ function drawGameWorld() {
   drawSky(cam);
   ctx.restore();
   ctx.save();
-  ctx.scale(ZOOM, ZOOM);
-  ctx.translate(-Math.round(cam * ZOOM) / ZOOM, -Math.round(camY * ZOOM) / ZOOM);
+  const zoom = title ? ZOOM : (state.viewZoom ?? ZOOM);
+  ctx.scale(zoom, zoom);
+  ctx.translate(-Math.round(cam * zoom) / zoom, -Math.round(camY * zoom) / zoom);
   drawMountains();
   drawStageEnvironment();
   drawPlatforms();
@@ -7383,7 +7408,7 @@ window.addEventListener("keydown", event => {
     return;
   }
   if (state.mode === "paused") {
-    if (!event.repeat && code === "Enter") {
+    if (!event.repeat && (code === "Enter" || code === "KeyP" || code === "Escape")) {
       resumeGame();
       return;
     }
@@ -7406,7 +7431,12 @@ window.addEventListener("keydown", event => {
     pauseGame();
     return;
   }
-  if (code === "Tab" || code === "Backspace" || code === "Select") {
+  if (!event.repeat && (code === "KeyP" || code === "Escape") && overlay.classList.contains("hidden")) {
+    if (state.mode === "inventory") closeInventory();
+    else if (state.mode === "playing" || state.mode === "respawning") pauseGame();
+    return;
+  }
+  if (code === "Tab" || code === "Backspace" || code === "Select" || ((code === "KeyI" || code === "KeyE") && !event.repeat && state.mode !== "inventory")) {
     toggleInventory();
     return;
   }

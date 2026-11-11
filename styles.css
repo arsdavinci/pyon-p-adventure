@@ -754,6 +754,35 @@ body[data-game-mode="movie"] .comm-panel {
   overflow: hidden;
 }
 
+.comm-buttons {
+  flex: 0 0 auto;
+  display: grid;
+  gap: 6px;
+}
+
+.comm-button {
+  min-width: 0;
+  padding: 8px 12px;
+  border: 2px solid #ffffff;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fff7b8, #ffd85a);
+  color: #5a3d9a;
+  font-size: 0.8rem;
+  font-weight: 900;
+  white-space: nowrap;
+  box-shadow: 0 3px 0 #c98a12;
+}
+
+.comm-button:active {
+  box-shadow: 0 1px 0 #c98a12;
+}
+
+.comm-button-sub {
+  background: linear-gradient(180deg, #e9fbff, #9ee8ff);
+  color: #24507a;
+  box-shadow: 0 3px 0 #38689b;
+}
+
 .comm-label {
   position: absolute;
   top: 0;

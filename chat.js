@@ -35,8 +35,26 @@
       panel: q("#commPanel"), icon: q("#commWeaponIcon"), name: q("#commWeaponName"), lv: q("#commWeaponLv"),
       hint: q("#commWeaponHint"), atk: q("#commAtk"), range: q("#commRange"), rapid: q("#commRapid"),
       label: q("#commWeaponLabel"), avatar: q("#commAvatar"), speaker: q("#commSpeaker"), text: q("#commText"),
-      labAtk: q("#commLabAtk"), labRange: q("#commLabRange"), labRapid: q("#commLabRapid")
+      labAtk: q("#commLabAtk"), labRange: q("#commLabRange"), labRapid: q("#commLabRapid"),
+      equip: q("#commEquipButton"), pause: q("#commPauseButton")
     };
+    // 押してもキー入力のフォーカスを取らないようにする
+    const bind = (button, fn) => {
+      if (!button) return;
+      button.addEventListener("pointerdown", event => event.preventDefault());
+      button.addEventListener("click", event => {
+        event.stopPropagation();
+        button.blur();
+        unlockAudio();
+        fn();
+      });
+    };
+    bind(els.equip, () => toggleInventory());
+    bind(els.pause, () => {
+      if (state.mode === "paused") resumeGame();
+      else if (state.mode === "inventory") closeInventory();
+      else pauseGame();
+    });
     return els;
   }
 
@@ -301,6 +319,9 @@
     if (!force && key === weaponKey) return;
     weaponKey = key;
     e.label.textContent = L("そうび中", "EQUIPPED");
+    const pc = typeof controlMode !== "undefined" && controlMode === "pc";
+    if (e.equip) e.equip.textContent = L("そうび・合成", "Equip / Fuse") + (pc ? " [Tab]" : "");
+    if (e.pause) e.pause.textContent = L("ポーズ", "Pause") + (pc ? " [Enter]" : "");
     e.labAtk.textContent = L("攻撃", "ATK");
     e.labRange.textContent = L("射程", "RNG");
     e.labRapid.textContent = L("連射", "RPD");
