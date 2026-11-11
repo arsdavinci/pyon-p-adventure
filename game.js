@@ -1,3 +1,17 @@
+// 古いページ（前の版の index.html）がキャッシュから出てきたときは、キャッシュを消して読み直す
+if (typeof FX === "undefined" || typeof Story === "undefined" || typeof Chat === "undefined" || typeof Gimmick === "undefined") {
+  (async () => {
+    try {
+      if (window.caches) await Promise.all((await caches.keys()).map(key => caches.delete(key)));
+      if (navigator.serviceWorker) await Promise.all((await navigator.serviceWorker.getRegistrations()).map(reg => reg.update()));
+    } catch (_) {}
+    if (!sessionStorage.getItem("pyonpShellReload")) {
+      sessionStorage.setItem("pyonpShellReload", "1");
+      location.reload();
+    }
+  })();
+  throw new Error("Old page shell was cached. Clearing the cache and reloading.");
+}
 const canvas = document.querySelector("#game");
 const ctx = canvas.getContext("2d");
 const overlay = document.querySelector("#overlay");

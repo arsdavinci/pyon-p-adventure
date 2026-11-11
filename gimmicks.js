@@ -19,7 +19,7 @@
     switchRed: "gimmick-switch-red", switchBlue: "gimmick-switch-blue",
     blockRed: "gimmick-block-red", blockBlue: "gimmick-block-blue",
     spring: "gimmick-spring", door: "gimmick-door", goal: "gimmick-goal",
-    poseHurt: "pyonpy-hurt", poseVictory: "pyonpy-victory", poseShoot: "pyonpy-shoot", poseSwim: "pyonpy-swim"
+    poseHurt: "pyonpy-hurt", poseVictory: "pyonpy-victory", poseShoot: "pyonpy-shoot", poseSwim: "pyonpy-swim", swimSheet: "pyonpy-swim-6"
   };
   const WORLD_KEYS = ["moon", "mars", "ice", "ocean", "factory", "demon"];
   for (const w of WORLD_KEYS) {
@@ -72,8 +72,72 @@
     }
   }
 
+  // 横にコマが並んだシート画像を、透明なすき間で自動的にコマ分けする
+  const sheetCache = new Map();
+  function sheetFrames(im, count) {
+    let frames = sheetCache.get(im);
+    if (frames) return frames;
+    const equal = () => Array.from({ length: count }, (_, i) => ({ x: (im.naturalWidth / count) * i, y: 0, w: im.naturalWidth / count, h: im.naturalHeight }));
+    try {
+      const c = document.createElement("canvas");
+      const scale = Math.min(1, 1200 / im.naturalWidth);
+      c.width = Math.round(im.naturalWidth * scale);
+      c.height = Math.round(im.naturalHeight * scale);
+      const g = c.getContext("2d", { willReadFrequently: true });
+      g.drawImage(im, 0, 0, c.width, c.height);
+      const data = g.getImageData(0, 0, c.width, c.height).data;
+      const solid = (x, y) => data[(y * c.width + x) * 4 + 3] > 24;
+      const runs = [];
+      let start = -1;
+      for (let x = 0; x <= c.width; x++) {
+        let any = false;
+        if (x < c.width) for (let y = 0; y < c.height; y += 2) if (solid(x, y)) { any = true; break; }
+        if (any && start < 0) start = x;
+        if (!any && start >= 0) {
+          if (x - start > c.width * 0.03) runs.push([start, x]);
+          start = -1;
+        }
+      }
+      if (runs.length !== count) frames = equal();
+      else {
+        frames = runs.map(([x0, x1]) => {
+          let top = c.height;
+          let bottom = 0;
+          for (let y = 0; y < c.height; y++) for (let x = x0; x < x1; x += 2) if (solid(x, y)) { top = Math.min(top, y); bottom = Math.max(bottom, y); break; }
+          return { x: x0 / scale, y: top / scale, w: (x1 - x0) / scale, h: (bottom - top + 1) / scale };
+        });
+      }
+    } catch (_) {
+      frames = equal();
+    }
+    sheetCache.set(im, frames);
+    return frames;
+  }
+
+  function drawSwimSheet(p, im) {
+    const frames = sheetFrames(im, 6);
+    const moving = Math.hypot(p.vx, p.vy) > 40;
+    const f = frames[Math.floor(FX.S.time * (moving ? 11 : 5)) % frames.length];
+    const maxW = Math.max(...frames.map(fr => fr.w));
+    const s = 104 / maxW;
+    const w = f.w * s;
+    const h = f.h * s;
+    const cx = p.x + p.w / 2;
+    const cy = p.y + p.h / 2;
+    ctx.save();
+    ctx.translate(cx, cy);
+    if (p.facing < 0) ctx.scale(-1, 1);
+    ctx.rotate(Math.max(-0.5, Math.min(0.5, (p.vy / 330) * 0.45)));
+    ctx.drawImage(im, f.x, f.y, f.w, f.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+  }
+
   // ぴょんぴーの追加ポーズ。該当する絵があれば描いて true を返す
   function drawPlayerPose(p) {
+    if (p.swimming && state.mode !== "stageClear" && !(p.invincible > 0.55 && sprite("poseHurt")) && sprite("swimSheet")) {
+      drawSwimSheet(p, sprite("swimSheet"));
+      return true;
+    }
     let key = null;
     if (state.mode === "stageClear") key = "poseVictory";
     else if (p.invincible > 0.55 && state.mode === "playing") key = "poseHurt";
