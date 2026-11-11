@@ -534,6 +534,56 @@ BOSS_DEFEAT_DIALOGUES[4].pyonJa = "ぴょんぴー「空回りはうちのジャ
 BOSS_DEFEAT_DIALOGUES[5].bossJa = "魔王星の夜が……朝になってしまう……！";
 BOSS_DEFEAT_DIALOGUES[5].pyonJa = "ぴょんぴー「ほな、おはようさん！大冒険、勝利の朝や！」";
 
+// 物語に合わせた台本（ボスは魔王から「ワライスターのかけら」をあずかっている）
+const BOSS_STORY_LINES = [
+  {
+    intro: ["魔王さまからあずかった『かけら』は、ふわふわ月あめ王国のたからものだよ！", "The shard the Demon Lord gave me is the treasure of my fluffy candy kingdom!"],
+    introPyon: ["それ、みんなの笑いやねん。半分こもなしで、ぜんぶ返してもらうで！", "That's everybody's laughter. No splitting it. I'm taking all of it back!"],
+    defeat: ["やられたー！ ……あれ？ なんか、おなかの底から笑えてきたよ。かけら、返すね！", "I'm beaten! ...Huh? I feel like laughing from deep in my belly. Here, take the shard back!"],
+    defeatPyon: ["おおきに！ 今度フェスやるから、月あめ持って見に来てや！", "Thanks! We've got a Fest coming up. Bring some moon candy and come watch!"]
+  },
+  {
+    intro: ["このかけらは火星ドームの動力にする。笑いなど、ネオンのこやしで十分だ！", "This shard will power my Mars dome. Laughter is nothing but fuel for neon!"],
+    introPyon: ["笑いは電気代ちゃうねん。みんなのもんや、返してもらうで！", "Laughter isn't a power bill. It belongs to everyone, so hand it over!"],
+    defeat: ["ぐぬぬ……ネオンが消えたのに、なぜか胸が明るい。これが、笑いか……。持っていけ！", "Grr... the neon is out, yet my chest feels bright. So this is laughter... Take it!"],
+    defeatPyon: ["節電もできて一石二鳥やん。司令官もフェス、見に来てや！", "Saves power too. Two birds, one stone! Come see the Fest, Commander!"]
+  },
+  {
+    intro: ["かけらは、この水晶の星でキラキラに固めておく。きみもいっしょに固めてあげる。", "I will keep the shard frozen in sparkle on this crystal planet. You can freeze along with it."],
+    introPyon: ["固まる前に、こっちが先にとかす！ かけらも、あんたの顔もな！", "I'll melt it before that happens. The shard, and that frozen face of yours!"],
+    defeat: ["きらきらに固めるつもりが、こっちの顔がゆるんじゃった……。ふふっ。かけら、どうぞ。", "I meant to freeze everything, but my own face has melted into a smile... Hehe. Here is the shard."],
+    defeatPyon: ["ええ笑顔やん！ その顔でフェス見に来てや！", "Now that's a great smile! Bring it to the Fest!"]
+  },
+  {
+    intro: ["このかけらは星の海の底にしずめたわ。あなたも泡にして、しずめてあげる。", "I have sunk the shard to the bottom of the star sea. I shall turn you to bubbles and sink you too."],
+    introPyon: ["泳ぎは得意ちゃうけど、笑いをしずめたままにはでけへん！", "I'm no swimmer, but I can't leave laughter at the bottom of the sea!"],
+    defeat: ["ぶくぶく……あら、泡といっしょに笑いがこみあげてきたわ。かけらは、あなたにあずけるわね。", "Bubble bubble... oh my, laughter is rising with the bubbles. I shall leave the shard with you."],
+    defeatPyon: ["おおきに、クイーン！ フェスの客席、いちばんええ水そう用意しとくわ！", "Thanks, Queen! I'll save you the best tank in the audience at the Fest!"]
+  },
+  {
+    intro: ["カケラハ コウジョウノ ネンリョウ。ワライ、フヨウ。ハグルマニ マキコマレナ！", "SHARD IS FACTORY FUEL. LAUGHTER: NOT REQUIRED. GET CAUGHT IN THE GEARS!"],
+    introPyon: ["笑いは不要ちゃう、必要や！ かわいいだけやなくて強いとこ、見せたるわ！", "Laughter is required, thank you! I'll show you I'm strong, not just cute!"],
+    defeat: ["ハグルマ、カラマワリ……ピピ……ワライ、インストール カンリョウ。カケラ、ヘンキャク スル。", "GEARS SPINNING FREELY... BEEP... LAUGHTER: INSTALL COMPLETE. RETURNING SHARD."],
+    defeatPyon: ["アップデートできてよかったな！ フェスも予定に入れといてや！", "Glad the update went through! Put the Fest on your schedule too!"]
+  },
+  {
+    intro: ["よくぞここまで来た。だが最後のかけらは渡さぬ。笑いなど、宇宙から消えてしまえばよいのだ！", "You have done well to come this far. But I will not give up the last shard. Laughter should vanish from the universe!"],
+    introPyon: ["消させへん。ここが終点やない、大冒険のクライマックスや！", "Not on my watch. This isn't the end. It's the grand finale!"],
+    defeat: ["ば、ばかな……。魔王星の夜が……明けていく……！", "I-impossible... The night of the Demon Star... is ending...!"],
+    defeatPyon: ["ほな、おはようさん。なあ魔王、ちょっと話、聞かせてや。", "Good morning, then. Hey, Demon Lord. Tell me your story."]
+  }
+];
+BOSS_STORY_LINES.forEach((line, i) => {
+  BOSS_DIALOGUES[i].bossJa = line.intro[0];
+  BOSS_DIALOGUES[i].bossEn = line.intro[1];
+  BOSS_DIALOGUES[i].pyonJa = line.introPyon[0];
+  BOSS_DIALOGUES[i].pyonEn = line.introPyon[1];
+  BOSS_DEFEAT_DIALOGUES[i].bossJa = line.defeat[0];
+  BOSS_DEFEAT_DIALOGUES[i].bossEn = line.defeat[1];
+  BOSS_DEFEAT_DIALOGUES[i].pyonJa = line.defeatPyon[0];
+  BOSS_DEFEAT_DIALOGUES[i].pyonEn = line.defeatPyon[1];
+});
+
 const AREA_LANDMARKS = [
   "outpost",
   "towers",
@@ -1398,6 +1448,14 @@ function beginCourse(index) {
   pendingCourseStart = false;
   overlay.classList.add("hidden");
   lastTime = performance.now();
+  if (courses[index].finalStage) {
+    updateCamera(0, true);
+    Story.playMovie("finalboss", () => {
+      state.mode = "playing";
+      announceStage();
+    });
+    return;
+  }
   announceStage();
 }
 
@@ -1676,7 +1734,7 @@ function completeBossStageAfterOutro() {
     completedCourses.add(currentCourse);
     campaignKeep = campaignSnapshotFromState();
     Story.persist();
-    Story.play("ending", () => Story.startCredits());
+    Story.play("ending", () => Story.playMovie("finale", () => Story.startCredits()));
   }
 }
 
@@ -3777,6 +3835,7 @@ function drawGameWorld() {
   drawMountains();
   drawStageEnvironment();
   drawPlatforms();
+  Gimmick.drawForeground();
   drawStageHazards();
   drawBossHazards();
   drawGun();
@@ -6865,6 +6924,7 @@ function drawPlayer() {
 function drawPlayerBody(p) {
   if (hasEquippedWeapon() && state.weaponPower >= 16) drawBackCannon(p);
   if (p.invincible > 0 && state.mode !== "respawning" && Math.floor(performance.now() / 90) % 2) return;
+  if (Gimmick.drawPlayerPose(p)) return;
   if (pyompySprite.complete && pyompySprite.naturalWidth > 0) {
     drawPlayerSprite(p);
     if (hasEquippedWeapon()) drawRayGun(p.x + p.w / 2 + p.facing * 25, p.y + 34, -p.facing, 0.7, state.weaponPower);

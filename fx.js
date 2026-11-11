@@ -847,6 +847,20 @@
     const base = f.y + f.h;
     const R = 80;
     const t = S.time;
+    const art = window.Gimmick && Gimmick.sprite("goal");
+    if (art) {
+      const h = 250;
+      const w = h * (art.naturalWidth / art.naturalHeight);
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.globalAlpha = locked ? 0.2 : 0.5 + Math.sin(t * 3) * 0.12;
+      ctx.drawImage(glowSprite("#ffd1ed"), cx - w * 0.7, base - h * 1.1, w * 1.4, h * 1.2);
+      ctx.globalCompositeOperation = "source-over";
+      ctx.globalAlpha = locked ? 0.45 : 1;
+      ctx.drawImage(art, cx - w / 2, base - h + 6 + Math.sin(t * 2.4) * 3, w, h);
+      ctx.restore();
+      return;
+    }
     ctx.save();
     // 足元の光
     ctx.globalCompositeOperation = "lighter";

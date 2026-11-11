@@ -220,8 +220,8 @@
     e.avatar.style.borderColor = sp.color;
     const has = key => key && typeof Story !== "undefined" && Story.ok(Story.img[key]);
     const custom = has(sp.img) ? Story.img[sp.img].src : has(sp.alt) ? Story.img[sp.alt].src : "";
-    e.avatar.style.backgroundPosition = custom ? "50% 14%" : "";
-    e.avatar.style.backgroundSize = custom && cur[0] === "ran" ? "200%" : "";
+    e.avatar.style.backgroundPosition = custom ? "50% 24%" : "";
+    e.avatar.style.backgroundSize = custom ? "230%" : "";
     if (cur[0] === "pyon") {
       e.avatar.style.backgroundImage = "";
       e.avatar.textContent = "";

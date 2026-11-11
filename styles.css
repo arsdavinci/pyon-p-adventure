@@ -732,7 +732,8 @@ body[data-comm="on"] .comm-panel {
 
 body[data-game-mode="title"] .comm-panel,
 body[data-game-mode="cutscene"] .comm-panel,
-body[data-game-mode="credits"] .comm-panel {
+body[data-game-mode="credits"] .comm-panel,
+body[data-game-mode="movie"] .comm-panel {
   opacity: 0;
   pointer-events: none;
 }

@@ -13,6 +13,78 @@
   const L = (ja, en) => (language === "ja" ? ja : en);
   const overlap = (a, b) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 
+  // 専用イラスト（assets/ に置けば自動で使う。なければ手描きの図形で表示）
+  const SPRITE_FILES = {
+    key: "gimmick-key", chestClosed: "gimmick-chest-closed", chestOpen: "gimmick-chest-open",
+    switchRed: "gimmick-switch-red", switchBlue: "gimmick-switch-blue",
+    blockRed: "gimmick-block-red", blockBlue: "gimmick-block-blue",
+    spring: "gimmick-spring", door: "gimmick-door", goal: "gimmick-goal",
+    poseHurt: "pyonpy-hurt", poseVictory: "pyonpy-victory", poseShoot: "pyonpy-shoot", poseSwim: "pyonpy-swim"
+  };
+  const WORLD_KEYS = ["moon", "mars", "ice", "ocean", "factory", "demon"];
+  for (const w of WORLD_KEYS) {
+    SPRITE_FILES[`fg_${w}_1`] = `fg-${w}-1`;
+    SPRITE_FILES[`fg_${w}_2`] = `fg-${w}-2`;
+  }
+  const sprites = {};
+  for (const [key, file] of Object.entries(SPRITE_FILES)) {
+    const im = new Image();
+    im.src = `assets/${file}.png`;
+    sprites[key] = im;
+  }
+  const sprite = key => {
+    const im = sprites[key];
+    return im && im.complete && im.naturalWidth > 0 ? im : null;
+  };
+  // 足もと中央を (cx, bottom) に合わせて、高さ h で描く
+  function drawStanding(im, cx, bottom, h, flip = false) {
+    const w = h * (im.naturalWidth / im.naturalHeight);
+    if (flip) {
+      ctx.save();
+      ctx.translate(cx, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(im, -w / 2, bottom - h, w, h);
+      ctx.restore();
+    } else {
+      ctx.drawImage(im, cx - w / 2, bottom - h, w, h);
+    }
+  }
+
+  function drawForeground() {
+    const world = courses[currentCourse]?.worldIndex ?? 0;
+    const a = sprite(`fg_${WORLD_KEYS[world]}_1`);
+    const b = sprite(`fg_${WORLD_KEYS[world]}_2`);
+    if (!a && !b) return;
+    const viewL = state.camera - 200;
+    const viewR = state.camera + VIEW_W + 200;
+    for (const p of platforms) {
+      if (p.sky || p.mover || p.w < 220 || p.x > viewR || p.x + p.w < viewL) continue;
+      if (!p.terrain && p.y < 430) continue;
+      const count = Math.max(1, Math.floor(p.w / 420));
+      for (let i = 0; i < count; i++) {
+        const seed = Math.floor(p.x * 0.37 + i * 53) % 7;
+        const im = (seed % 2 ? a : b) || a || b;
+        const x = p.x + 60 + ((p.w - 120) * (i + 0.5)) / count + (seed - 3) * 14;
+        ctx.globalAlpha = 0.96;
+        drawStanding(im, x, p.y + 8, 120 + seed * 9, seed > 3);
+        ctx.globalAlpha = 1;
+      }
+    }
+  }
+
+  // ぴょんぴーの追加ポーズ。該当する絵があれば描いて true を返す
+  function drawPlayerPose(p) {
+    let key = null;
+    if (state.mode === "stageClear") key = "poseVictory";
+    else if (p.invincible > 0.55 && state.mode === "playing") key = "poseHurt";
+    else if (p.swimming) key = "poseSwim";
+    else if (hasEquippedWeapon() && state.gun.cooldown > 0 && p.grounded && Math.abs(p.vx) < 60) key = "poseShoot";
+    const im = key && sprite(key);
+    if (!im) return false;
+    drawStanding(im, p.x + p.w / 2, p.y + p.h + 6, key === "poseSwim" ? 84 : 92, p.facing < 0);
+    return true;
+  }
+
   const phaseBlock = (x, y, w, h, phase) => ({ x, y, w, h, phase, broken: false });
   const switchBox = (x, y) => ({ x, y, w: 48, h: 48, switchBox: true, broken: false });
   const column = (x, y, w) => ({ x, y, w, h: CLIMB_BOTTOM - y, terrain: true });
@@ -369,6 +441,14 @@
 
   // ---------- 描画 ----------
   function tile(x, y, w, h, color, alpha, ghost) {
+    const art = sprite(color === BLUE ? "blockBlue" : "blockRed");
+    if (art) {
+      ctx.save();
+      ctx.globalAlpha = ghost ? 0.28 : alpha;
+      ctx.drawImage(art, x, y, w, h);
+      ctx.restore();
+      return;
+    }
     ctx.save();
     ctx.globalAlpha = alpha;
     if (ghost) {
@@ -435,6 +515,11 @@
     if (b.switchBox) {
       const color = state.switchOn ? BLUE : RED;
       const lift = (b.bump ?? 0) * 10;
+      const swArt = sprite(state.switchOn ? "switchBlue" : "switchRed");
+      if (swArt) {
+        ctx.drawImage(swArt, b.x - 6, b.y - 6 - lift, 60, 60);
+        return true;
+      }
       ctx.save();
       ctx.translate(b.x + 24, b.y + 24 - lift);
       ctx.globalCompositeOperation = "lighter";
@@ -461,6 +546,13 @@
       const top = Math.max(b.y, (state.cameraY ?? 0) - 40);
       const bottom = b.y + b.h;
       const t = FX.S.time;
+      const doorArt = sprite("door");
+      if (doorArt) {
+        const w = 76;
+        const h = w * (doorArt.naturalHeight / doorArt.naturalWidth);
+        for (let y = bottom - h; y + h > top; y -= h) ctx.drawImage(doorArt, b.x + b.w / 2 - w / 2, y, w, h);
+        return true;
+      }
       ctx.save();
       ctx.globalCompositeOperation = "lighter";
       ctx.globalAlpha = 0.55;
@@ -542,6 +634,14 @@
   function drawEntities() {
     const t = FX.S.time;
     for (const s of state.springs ?? []) {
+      const springArt = sprite("spring");
+      if (springArt) {
+        const k = 1 + Math.sin((s.squish ?? 0) * Math.PI) * 0.35;
+        const h = 58 * k;
+        const w = 72;
+        ctx.drawImage(springArt, s.x + s.w / 2 - w / 2, s.y + s.h - h, w, h);
+        continue;
+      }
       const sq = s.squish ?? 0;
       const top = s.y - sq * -10 - (sq > 0.5 ? (1 - sq) * 28 : sq * 28) + 0;
       const padY = s.y + (sq > 0 ? Math.sin(sq * Math.PI) * -16 : 0);
@@ -576,6 +676,11 @@
     }
     for (const c of state.chests ?? []) {
       if (c.opened) c.openT = (c.openT ?? 0) + 1 / 60;
+      const chestArt = sprite(c.opened ? "chestOpen" : "chestClosed");
+      if (chestArt) {
+        drawStanding(chestArt, c.x + c.w / 2, c.y + c.h + 4, c.opened ? 78 : 70);
+        continue;
+      }
       const lid = c.opened ? Math.min(1, (c.openT ?? 0) * 4) : 0;
       ctx.save();
       ctx.translate(c.x + c.w / 2, c.y + c.h);
@@ -629,6 +734,16 @@
     for (const k of state.keyItems ?? []) {
       if (k.taken) continue;
       const y = k.y + Math.sin(t * 4 + k.x) * 4;
+      const keyArt = sprite("key");
+      if (keyArt) {
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.globalAlpha = 0.5;
+        ctx.drawImage(FX.glowSprite("#ffd85a"), k.x - 36, y - 36, 72, 72);
+        ctx.restore();
+        ctx.drawImage(keyArt, k.x - 24, y - 24, 48, 48);
+        continue;
+      }
       ctx.save();
       ctx.globalCompositeOperation = "lighter";
       ctx.globalAlpha = 0.6 + Math.sin(t * 5) * 0.2;
@@ -667,6 +782,7 @@
 
   window.Gimmick = {
     CLIMB_BOTTOM, isClimbArea, buildClimb, finalize,
-    update, hitSwitch, drawBlock, drawEntities, drawHud, drawKeyShape, resetStage
+    update, hitSwitch, drawBlock, drawEntities, drawHud, drawKeyShape, resetStage,
+    sprite, drawForeground, drawPlayerPose
   };
 })();

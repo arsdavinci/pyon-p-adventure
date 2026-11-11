@@ -16,6 +16,12 @@
     portraitLuva: "assets/portrait-luva.png",
     cardLuva: "assets/portrait-luva-card.jpg",
     portraitYana: "assets/portrait-yanabis.png",
+    portraitRan_smile: "assets/portrait-ranpyon-smile.png",
+    portraitRan_surprise: "assets/portrait-ranpyon-surprise.png",
+    portraitRan_trouble: "assets/portrait-ranpyon-trouble.png",
+    portraitYana_smile: "assets/portrait-yanabis-smile.png",
+    portraitYana_surprise: "assets/portrait-yanabis-surprise.png",
+    portraitYana_trouble: "assets/portrait-yanabis-trouble.png",
     cgCity: "assets/cg-opening-city.png",
     cgDuo: "assets/cg-opening-duo.png",
     cgDark: "assets/cg-opening-dark.png",
@@ -126,7 +132,7 @@
     pyon: { ja: "ぴょんぴー", en: "Pyon-P", color: "#7f67c8", side: "left" },
     ran: { ja: "らんぴょん", en: "Ranpyon", color: "#ff5f9e", side: "right" },
     luva: { ja: "ザ・ルーヴァ・セレス", en: "Za-Luva Seles", color: "#6f6aa8", side: "right" },
-    yana: { ja: "ナビAI ヤナビス", en: "Navi-AI Yanabisu", color: "#e0559f", side: "right" },
+    yana: { ja: "ヤナビス", en: "Yanabisu", color: "#e0559f", side: "right" },
     maou: { ja: "魔王", en: "Demon Lord", color: "#c0266d", side: "right" },
     mystery: { ja: "？？？", en: "???", color: "#5a2a78", side: "right" }
   };
@@ -136,16 +142,17 @@
       music: "story",
       lines: [
         { s: "narr", bg: "city", ja: "月の内側に広がる、パステル色の街。\n月生まれ・月育ちのムーニアンたちは、今日も笑ってくらしていた。", en: "Inside the Moon lies a pastel city.\nThe Moonians who live there spend every day laughing together." },
-        { s: "narr", ja: "三日月大使館のお笑いコンビ『ムーニアンズ』は、\n宇宙最大の舞台『銀河お笑いフェス』の前夜をむかえていた。", en: "The comedy duo \"Moonians\" of the Crescent Embassy were\nspending the night before the biggest show in space: the Galaxy Comedy Fest." },
-        { s: "pyon", bg: "duo", ja: "らんぴょん、あしたのネタ合わせしよか！ まずは新ギャグな。『月見バーガー、月で見たら……ただのバーガー！』", en: "Ranpyon, let's rehearse for tomorrow! New gag first: \"A moon-viewing burger, viewed ON the moon... is just a burger!\"" },
+        { s: "narr", ja: "三日月大使館のお笑いコンビ『ムーニアンズ』は、\n宇宙最大の舞台『銀河お笑いフェス』を、3日後にひかえていた。", en: "The comedy duo \"Moonians\" of the Crescent Embassy were\nthree days away from the biggest show in space: the Galaxy Comedy Fest." },
+        { s: "pyon", bg: "duo", ja: "らんぴょん、フェスのネタ合わせしよか！ まずは新ギャグな。『月見バーガー、月で見たら……ただのバーガー！』", en: "Ranpyon, let's rehearse for the Fest! New gag first: \"A moon-viewing burger, viewed ON the moon... is just a burger!\"" },
         { s: "ran", ja: "…………。", en: "............" },
         { s: "pyon", ja: "えっ、ツッコミは！？ 『なんでやねん』は！？", en: "Huh? Where's the comeback!? Where's my \"No way!\"?" },
         { s: "ran", ja: "あかん……。どうツッコんだらええんか、ぜんぜん思い出されへん……。", en: "I can't... I've completely forgotten how to do a comeback..." },
         { s: "narr", bg: "dark", fx: "shake", ja: "そのとき、夜空がまっくろにそまった。\n宇宙じゅうの“笑い”が、空のかなたへ吸い上げられていく——。", en: "At that moment the night sky turned pitch black.\nAll the laughter in the universe was being sucked away into the distance..." },
         { s: "mystery", fx: "flash", ja: "フハハハ！ 宇宙の笑いは、この魔王星がぜんぶいただいた！ もうだれも、笑うことはない！", en: "Mwahaha! The Demon Star has taken ALL the laughter in the universe! No one shall ever laugh again!" },
-        { s: "luva", bg: "duo", ja: "緊急指令だ、ぴょんぴー。笑いのエネルギー『ワライスター』が6つにくだかれ、6つの星へ持ち去られた。", en: "Emergency orders, Pyon-P. The \"Warai Star\", the energy of laughter itself, was shattered into six pieces and carried off to six planets." },
-        { s: "luva", ja: "このままでは、宇宙から笑顔が消えてしまう。……あしたのフェスも、中止だ。", en: "At this rate smiles will vanish from the universe. And yes, tomorrow's Fest will be cancelled." },
-        { s: "pyon", ja: "そんなんあかん！ うちらの夢の舞台やで！？", en: "No way! That's our dream stage!" },
+        { s: "luva", bg: "duo", ja: "緊急指令だ、ぴょんぴー。笑いのエネルギー『ワライスター』が6つにくだかれ、魔王の手下たちが6つの星へ持ち去った。", en: "Emergency orders, Pyon-P. The \"Warai Star\", the energy of laughter itself, was shattered into six pieces, and the Demon Lord's followers carried them off to six planets." },
+        { s: "luva", ja: "かけらがもどらなければ、宇宙から笑顔が消えてしまう。……だれも笑えないままでは、3日後のフェスも開けない。", en: "Unless the shards return, smiles will vanish from the universe. ...And if no one can laugh, the Fest three days from now cannot be held." },
+        { s: "luva", ja: "らんぴょんは笑いをうばわれて動けない。翻訳酸素カプセルのヤナビスが案内する。行けるのは、きみだけだ。", en: "Ranpyon has lost his laughter and cannot go. Yanabisu, in your translation oxygen capsule, will guide you. You are the only one who can do this." },
+        { s: "pyon", ja: "なんでうちだけ平気なんやろ……まあええわ！ うちらの夢の舞台、つぶさせへんで！", en: "Why am I the only one who's fine... eh, whatever! Nobody's wrecking our dream stage!" },
         { s: "ran", ja: "ぴょんぴー……たのむ。うちの『なんでやねん』、取り返してきて。", en: "Pyon-P... please. Bring my \"No way!\" back." },
         { s: "pyon", bg: "depart", ja: "まかしとき！ 柿ピー食べたら百人力や。ほな、ちょっと宇宙すくってくるわ！", en: "Leave it to me! A handful of kaki-pea snacks and I'm unstoppable. Be right back, just gotta save the universe!" },
         { s: "narr", ja: "こうして、ぴょんぴーの大冒険がはじまった。", en: "And so, Pyon-P's great adventure began." }
@@ -201,7 +208,7 @@
       music: "story",
       lines: [
         { s: "yana", bg: "world5", ja: "……最後のかけらは、魔王星の城の奥です。重力が波のようにゆれています。", en: "...The last shard is deep inside the castle on the Demon Star. Gravity there pulses like a wave." },
-        { s: "luva", ja: "ここから先は、今までとはわけがちがう。気を引きしめて行きなさい。", en: "From here on, it won't be like before. Stay sharp." },
+        { s: "luva", ja: "フェスは、あしただ。ここから先は今までとはわけがちがう。気を引きしめて行きなさい。", en: "The Fest is tomorrow. From here on, it won't be like before. Stay sharp." },
         { s: "ran", ja: "ぴょんぴー。帰ってきたら、いちばんええツッコミ入れたるからな。", en: "Pyon-P. When you get home, I'll give you the best comeback of my life." },
         { s: "pyon", ja: "それ聞いたら負けられへんな。行くで、クライマックスや！", en: "Now I really can't lose. Here we go: the grand finale!" }
       ]
@@ -215,18 +222,23 @@
         { s: "maou", ja: "……昔、わしも芸人を目指しておった。だが何をやってもスベりつづけ……だれも笑ってくれなんだ。", en: "...Long ago, I too dreamed of being a comedian. But every joke I told bombed... Not one person laughed." },
         { s: "maou", ja: "だから決めたのだ。だれも笑わぬ宇宙なら、わしもスベらずにすむ、と。", en: "So I decided: in a universe where no one laughs, I can never bomb again." },
         { s: "pyon", ja: "スベるんがこわいんは、うちもいっしょや。でもな、スベった話は、あとでいちばんウケんねん！", en: "I'm scared of bombing too. But you know what? The stories about bombing get the biggest laughs later!" },
+        { s: "yana", ja: "解析完了です。ぴょんぴーさんだけ笑いをうばわれなかった理由は……スベっても自分で笑っているから、でした。", en: "Analysis complete. The reason only Pyon-P kept his laughter is... he laughs at his own jokes even when they bomb." },
+        { s: "pyon", ja: "それ、ほめてる！？ ……まあええわ。魔王、あんたも自分で笑ってみ。", en: "Is that a compliment!? ...Eh, fine. Demon Lord, try laughing at yourself for once." },
         { s: "pyon", ja: "ほな聞いて。『魔王星の夜が明けたら……まおう（もう）朝やん！』", en: "So listen up. \"When night ends on the Demon Star... it's a brand new DEMON-ing!\"" },
         { s: "maou", fx: "shake", ja: "…………ぷっ。ふ、ふはは！ ふははははは！ く、くだらん！ くだらなすぎる！！", en: "............Pfft. Heh, ha ha! HAHAHAHA! That's... that's so dumb! SO dumb!!" },
         { s: "narr", fx: "flash", ja: "魔王が笑ったしゅんかん、\nワライスターの光が、宇宙じゅうに降りそそいだ。", en: "The moment the Demon Lord laughed,\nthe light of the Warai Star rained down across the universe." },
-        { s: "narr", bg: "stage", music: "ending", ja: "そして——『銀河お笑いフェス』当日。", en: "And then... the day of the Galaxy Comedy Fest." },
+        { s: "maou", ja: "……すまなかった。笑いは、みなに返そう。わしは、どうつぐなえばよい。", en: "...I am sorry. I will return the laughter to everyone. How can I make amends?" },
+        { s: "pyon", ja: "ほな、あしたのフェス見に来て。いちばん前の席で、いちばんでかい声で笑うこと。それでチャラや！", en: "Then come to the Fest tomorrow. Front row, loudest laugh in the house. Do that and we're even!" },
+        { s: "narr", bg: "stage", music: "ending", ja: "そして、次の日。\n『銀河お笑いフェス』は、予定どおり幕をあけた。", en: "And the next day,\nthe Galaxy Comedy Fest opened right on schedule." },
         { s: "pyon", aud: true, ja: "どうもー！ ムーニアンズです！ いやー、きのうちょっと宇宙すくってきましてね。", en: "Hello, hello! We're the Moonians! So, funny story: I kinda saved the universe yesterday." },
         { s: "ran", aud: true, fx: "shake", ja: "なんでやねん！！ 言い方かるいわ！", en: "NO WAY!! You can't say it that casually!" },
-        { s: "narr", aud: true, ja: "客席には、月あめキング、ドーム司令官、クリスタルイエティ、\nマンタクイーン、ロボットキング——そして、魔王のすがたもあった。", en: "In the audience sat the Moon Candy King, the Dome Commander, the Crystal Yeti,\nthe Manta Queen, the Robot King... and even the Demon Lord." },
+        { s: "narr", aud: true, ja: "客席には、約束どおり、月あめキング、ドーム司令官、クリスタルイエティ、\nマンタクイーン、ロボットキング——そして、いちばん前に魔王のすがたがあった。", en: "In the audience, just as promised, sat the Moon Candy King, the Dome Commander, the Crystal Yeti,\nthe Manta Queen, the Robot King... and in the very front row, the Demon Lord." },
         { s: "maou", aud: true, ja: "ふはは！ いいぞー！ もっとやれー！", en: "Hahaha! More! MORE!" },
         { s: "luva", aud: true, ja: "ふふ。次は地球の大舞台だね、ふたりとも。", en: "Hehe. Next up is the big stage on Earth, you two." },
         { s: "pyon", aud: true, ja: "よっしゃ！ 次は地球で、てっぺん獲るで！", en: "Alright! Next, we're taking the top spot on Earth!" },
         { s: "ran", aud: true, ja: "その前にネタ合わせや！", en: "Rehearsal first!" },
-        { s: "narr", bg: "finale", ja: "宇宙に笑顔がもどった。\nムーニアンズの挑戦は、まだまだつづく——。", en: "Smiles returned to the universe.\nAnd the Moonians' journey has only just begun..." }
+        { s: "narr", bg: "finale", ja: "宇宙に笑顔がもどった。\n魔王は次の年、フェスの新人コーナーに出て、ちゃんとスベって、ちゃんと笑われたそうだ。", en: "Smiles returned to the universe.\nThe next year, the Demon Lord entered the Fest's newcomer slot, bombed properly, and was laughed with properly." },
+        { s: "narr", ja: "ムーニアンズの挑戦は、まだまだつづく——。", en: "And the Moonians' journey has only just begun..." }
       ]
     }
   };
@@ -252,7 +264,57 @@
     return c;
   }
 
-  function play(id, onEnd) {
+  // ---------- ムービー（assets/video/<名前>.mp4 があれば流す。なければ何もしないで先へ） ----------
+  const MOVIE_BEFORE = { opening: "opening", ending: "ending" };
+  let movie = null;
+
+  function playMovie(id, onEnd) {
+    const prev = state.mode;
+    state.mode = "movie";
+    const wrap = document.querySelector(".game-wrap");
+    const v = document.createElement("video");
+    const hint = document.createElement("div");
+    let started = false;
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      try { v.pause(); } catch (_) {}
+      v.remove();
+      hint.remove();
+      movie = null;
+      if (state.mode === "movie") state.mode = prev;
+      lastTime = performance.now();
+      if (onEnd) onEnd();
+    };
+    const timer = setTimeout(() => { if (!started) finish(); }, 2500);
+    v.playsInline = true;
+    v.preload = "auto";
+    v.muted = typeof soundEnabled !== "undefined" && !soundEnabled;
+    v.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#120a2a;z-index:5;";
+    hint.textContent = L("タップ / Esc でスキップ", "Tap / Esc to skip");
+    hint.style.cssText = "position:absolute;left:14px;top:12px;z-index:6;padding:6px 14px;border-radius:99px;background:rgba(18,10,42,.55);color:#fff;font:800 13px system-ui;pointer-events:none;";
+    v.addEventListener("error", finish);
+    v.addEventListener("ended", finish);
+    v.addEventListener("click", finish);
+    v.addEventListener("canplay", () => {
+      if (done || started) return;
+      started = true;
+      wrap.appendChild(v);
+      wrap.appendChild(hint);
+      v.play().catch(finish);
+    });
+    movie = { finish };
+    v.src = `assets/video/${id}.mp4`;
+    v.load();
+  }
+
+  function play(id, onEnd, afterMovie = false) {
+    if (!afterMovie && MOVIE_BEFORE[id]) {
+      playMovie(MOVIE_BEFORE[id], () => play(id, onEnd, true));
+      return;
+    }
     const script = SCRIPTS[id];
     if (!script) {
       if (onEnd) onEnd();
@@ -290,6 +352,7 @@
     if (sp.side) {
       const slot = cs.slots[sp.side];
       if (!slot || slot.id !== ln.s) cs.slots[sp.side] = { id: ln.s, appear: 0 };
+      cs.slots[sp.side].face = ln.face || guessFace(ln);
       cs.active = sp.side;
     } else {
       cs.active = null;
@@ -648,7 +711,21 @@
     return yanabisIconUrl;
   }
 
-  function drawPortrait(id, cx, baseY, active, appear, flip) {
+  // セリフから表情をえらぶ（台本で face を指定していればそちらを優先）
+  function guessFace(ln) {
+    const text = ln.ja || "";
+    if (/！？|えっ|あれ？/.test(text)) return "surprise";
+    if (/……。$|あかん|出てこ|…………/.test(text)) return "trouble";
+    if (/！/.test(text)) return "smile";
+    return null;
+  }
+
+  function faceImage(base, face) {
+    const alt = face ? img[`${base}_${face}`] : null;
+    return ok(alt) ? alt : img[base];
+  }
+
+  function drawPortrait(id, cx, baseY, active, appear, flip, face = null) {
     ctx.save();
     const bob = active ? Math.sin(time * 5) * 4 : 0;
     ctx.translate(cx, baseY + (1 - ease(appear)) * 70 + bob);
@@ -678,18 +755,16 @@
       }
     } else if (id === "ran") {
       if (flip) ctx.scale(-1, 1);
-      if (ok(img.portraitRan)) fit(img.portraitRan, 400);
+      if (ok(img.portraitRan)) fit(faceImage("portraitRan", face), 540);
       else drawHoloCard(L("ら", "R"), "#ff8db7", time);
     } else if (id === "luva") {
       if (flip) ctx.scale(-1, 1);
-      if (ok(img.portraitLuva)) fit(img.portraitLuva, 440);
+      if (ok(img.portraitLuva)) fit(img.portraitLuva, 560);
       else drawHoloCard(L("ル", "L"), "#8f8ad0", time, img.cardLuva);
     } else if (id === "yana") {
-      if (ok(img.portraitYana)) fit(img.portraitYana, 380);
-      else {
-        if (flip) ctx.scale(-1, 1);
-        drawYanabis(ctx, time);
-      }
+      if (flip) ctx.scale(-1, 1);
+      if (ok(img.portraitYana)) fit(faceImage("portraitYana", face), 470);
+      else drawYanabis(ctx, time);
     }
     ctx.restore();
   }
@@ -734,8 +809,8 @@
     if (!hasCg || !narr) {
       const left = cs.slots.left;
       const right = cs.slots.right;
-      if (left && !(narr && hasCg)) drawPortrait(left.id, 236, boxY + 44, cs.active === "left", left.appear * (narr ? 0.7 : 1), false);
-      if (right && !(narr && hasCg)) drawPortrait(right.id, W - 236, boxY + 44, cs.active === "right", right.appear * (narr ? 0.7 : 1), true);
+      if (left && !(narr && hasCg)) drawPortrait(left.id, 236, boxY + 44, cs.active === "left", left.appear * (narr ? 0.7 : 1), false, left.face);
+      if (right && !(narr && hasCg)) drawPortrait(right.id, W - 236, boxY + 44, cs.active === "right", right.appear * (narr ? 0.7 : 1), true, right.face);
     }
 
     // テキストボックス
@@ -1329,11 +1404,15 @@
   }
 
   // ---------- 入力 ----------
-  const STORY_MODES = { cutscene: true, stageClear: true, credits: true, bossDeath: true };
+  const STORY_MODES = { cutscene: true, stageClear: true, credits: true, bossDeath: true, movie: true };
   const CONFIRM = ["Enter", "Space", "KeyX", "KeyY", "KeyJ", "KeyZ"];
 
   function handleKey(code) {
     const mode = state.mode;
+    if (mode === "movie") {
+      if (movie && (code === "Escape" || CONFIRM.includes(code))) movie.finish();
+      return true;
+    }
     if (mode === "cutscene") {
       if (code === "Escape") {
         if (!FX.transitioning()) finish();
@@ -1353,6 +1432,10 @@
 
   function handlePointer(x, y) {
     const mode = state.mode;
+    if (mode === "movie") {
+      if (movie) movie.finish();
+      return true;
+    }
     if (mode === "cutscene") {
       const r = skipRect();
       if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) {
@@ -1475,7 +1558,7 @@
     if (m === "worldMap") return "map";
     if (m === "cutscene") return cs?.music || "story";
     if (m === "credits") return cr?.done ? null : "credits";
-    if (m === "stageClear" || m === "bossDeath" || m === "ended") return null;
+    if (m === "stageClear" || m === "bossDeath" || m === "ended" || m === "movie") return null;
     const course = courses[currentCourse];
     if (course?.bossStage && state.bossIntroPlayed) {
       if (state.enemies.some(e => e.boss && e.alive)) return course.finalStage ? "finalBoss" : "boss";
@@ -1554,7 +1637,7 @@
     img, ok,
     worldName, bossName,
     persist, hasSave, resetSave, applyToGame, shardCount, starTotals,
-    play, update, handleKey, handlePointer,
+    play, playMovie, update, handleKey, handlePointer,
     isStoryMode: mode => !!STORY_MODES[mode],
     drawCutscene, drawStageClear, drawCredits, drawWaraiStar,
     beginStageClear, stageClearWarp, startCredits,
