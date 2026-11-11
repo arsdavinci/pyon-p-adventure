@@ -47,6 +47,12 @@ const STOMP_LATE_BOOST_WINDOW = 0.14;
 const WEAPON_ASSET_VERSION = "weapon-cutout-v4";
 const SELECT_UI_ASSET_VERSION = "select-ui-generated2-v2";
 const BACKGROUND_ASSET_VERSION = "mirrored-bg-v1";
+const ZOOM = 4 / 3;
+const VIEW_W = canvas.width / ZOOM;
+const VIEW_H = canvas.height / ZOOM;
+const GROUND_Y = 492;
+let soundEnabled = localStorage.getItem("pyonpSound") !== "off";
+let audioMaster = null;
 const WEAPON_DROP_RATES = [
   { power: 1, chance: 0.8 },
   { power: 2, chance: 0.1 },
@@ -600,6 +606,8 @@ function makeCourse(worldIndex, areaIndex) {
   }
   if (finalStage) platforms = buildFinalBossCoursePlatforms();
   if (trait === "underwater") platforms.length = 0;
+  const climb = !bossStage && trait !== "underwater" && Gimmick.isClimbArea(worldIndex, areaIndex) ? Gimmick.buildClimb(worldIndex, areaIndex) : null;
+  if (climb) platforms = climb.platforms;
 
   const blocks = [];
   for (let i = 0; i < (finalStage || trait === "underwater" ? 0 : 9); i++) {
@@ -680,7 +688,7 @@ function makeCourse(worldIndex, areaIndex) {
     rotatingFire(3300, 260, 58, -1.55)
   ] : [];
 
-  return {
+  return Gimmick.finalize({
     theme: STAGE_THEMES[worldIndex],
     worldIndex,
     areaIndex,
@@ -688,11 +696,13 @@ function makeCourse(worldIndex, areaIndex) {
     bossStage,
     finalStage,
     difficulty,
+    climbStage: !!climb,
+    climbMeta: climb?.meta ?? null,
     platforms,
     blocks,
     level: { enemies, coins, starItems, oxygenItems, lavaGeysers, lavaPools, rotatingFires, flag: rect(5060, 252, 28, 240) },
     gun: { x: 330 + areaIndex * 70, y: 430 }
-  };
+  });
 }
 
 function icePlatform(x, y, w, h = 48, ramp = null) {
@@ -896,7 +906,7 @@ function buildFactoryCoursePlatforms(difficulty, areaIndex, bossStage) {
 }
 
 function placeEnemiesOnPlatforms(enemies, platforms) {
-  const ground = platforms.filter(p => p.w >= 150 && p.y >= 380);
+  const ground = platforms.filter(p => p.w >= 150 && (p.y >= 380 || p.terrain));
   for (const e of enemies) {
     const center = e.x + e.w / 2;
     const match = ground.find(p => center >= p.x + 24 && center <= p.x + p.w - 24) ??
@@ -960,6 +970,7 @@ courses[0] = {
   },
   gun: { x: 1030, y: 430 }
 };
+Gimmick.finalize(courses[0]);
 
 for (let i = 1; i < stageAreaCount(0); i++) {
   courses[i] = {
@@ -1044,9 +1055,21 @@ function rotatingFire(x, y, radius = 64, speed = 1.2) {
 
 function newState() {
   applyCourse(currentCourse);
+  FX.resetStage();
+  Gimmick.resetStage();
   return {
     mode: "playing",
     camera: 0,
+    cameraY: cameraYMax(),
+    keys: 0,
+    keyItems: (level.keys ?? []).map(k => ({ ...k, taken: false })),
+    springs: (level.springs ?? []).map(s => ({ ...s, squish: 0 })),
+    chests: (level.chests ?? []).map(c => ({ ...c, opened: false })),
+    switchOn: false,
+    switchCooldown: 0,
+    bossDeathTimer: 0,
+    bossDeathTick: 0,
+    bossDeathBoss: null,
     time: 120,
     score: 0,
     coinTotal: 0,
@@ -1121,8 +1144,11 @@ function newState() {
 function applyCourse(index) {
   const course = courses[index];
   platforms = course.platforms.map(p => ({ ...p }));
-  blocks = course.blocks.map(b => ({ ...b, broken: false }));
+  blocks = course.blocks.map(b => ({ ...b, broken: b.phase === 1 }));
   level = {
+    keys: (course.level.keys ?? []).map(k => ({ ...k })),
+    springs: (course.level.springs ?? []).map(s => ({ ...s })),
+    chests: (course.level.chests ?? []).map(c => ({ ...c })),
     enemies: course.level.enemies.map(e => ({ ...e })),
     coins: (course.level.coins ?? []).map(c => ({ ...c })),
     starItems: (course.level.starItems ?? []).map(s => ({ ...s })),
@@ -1134,6 +1160,73 @@ function applyCourse(index) {
   };
 }
 
+function worldTop() {
+  return courses[currentCourse]?.top ?? 0;
+}
+
+function worldBottom() {
+  return courses[currentCourse]?.bottom ?? canvas.height;
+}
+
+function cameraYMax() {
+  const course = courses[currentCourse];
+  const bottom = course?.bottom ?? canvas.height;
+  return bottom - VIEW_H - (course?.trait === "underwater" ? 0 : 70);
+}
+
+function updateCamera(dt, snap = false) {
+  const p = state.player;
+  const lead = state.mode === "playing" ? p.facing * 34 : 0;
+  const targetX = clamp(p.x + p.w / 2 - VIEW_W * 0.36 + lead, 0, WORLD_WIDTH - VIEW_W);
+  const maxY = cameraYMax();
+  const minY = Math.min(worldTop(), maxY);
+  const camY = state.cameraY ?? maxY;
+  const cy = p.y + p.h / 2;
+  let targetY = camY;
+  if (cy < camY + VIEW_H * 0.26) targetY = cy - VIEW_H * 0.26;
+  else if (cy > camY + VIEW_H * 0.7) targetY = cy - VIEW_H * 0.7;
+  targetY = clamp(targetY, minY, maxY);
+  if (snap) {
+    state.camera = targetX;
+    state.cameraY = clamp(cy - VIEW_H * 0.66, minY, maxY);
+    return;
+  }
+  state.camera += (targetX - state.camera) * Math.min(1, dt * 7);
+  state.cameraY = camY + (targetY - camY) * Math.min(1, dt * 6);
+}
+
+function announceStage() {
+  const course = courses[currentCourse];
+  const p = state.player;
+  updateCamera(0, true);
+  const tag = course.finalStage ? "  FINAL" : course.bossStage ? "  BOSS" : "";
+  FX.showCard(Story.worldName(course.worldIndex), `STAGE ${stageLabel()}${tag}`, { accent: course.theme?.accent });
+  if (!FX.transitioning()) FX.startTransition({ type: "iris", half: true, dur: 1.1 });
+  if (FX.S.transition) {
+    FX.S.transition.x = (p.x + p.w / 2 - state.camera) * ZOOM;
+    FX.S.transition.y = (p.y + p.h / 2 - state.cameraY) * ZOOM;
+  }
+  Chat.event("stageStart");
+}
+
+function maybePlayWorldIntro(worldIndex) {
+  const id = `world${worldIndex}`;
+  if (Story.seen(id)) return false;
+  Story.play(id, () => {
+    state.mode = "worldMap";
+    lastTime = performance.now();
+    Chat.event("map");
+  });
+  return true;
+}
+
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  localStorage.setItem("pyonpSound", soundEnabled ? "on" : "off");
+  if (audioMaster && audioCtx) audioMaster.gain.setTargetAtTime(soundEnabled ? 1 : 0, audioCtx.currentTime, 0.04);
+  Story.refreshTitleUi();
+}
+
 function currentStageTrait() {
   return courses[currentCourse]?.trait ?? STAGE_TRAITS[courses[currentCourse]?.worldIndex ?? 0] ?? "moonFloat";
 }
@@ -1142,20 +1235,42 @@ function isUnderwaterStage() {
   return currentStageTrait() === "underwater";
 }
 
-function startGame() {
-  currentCourse = 0;
-  unlockedCourse = 0;
-  mapSelectedCourse = 0;
-  completedCourses = new Set();
-  campaignKeep = null;
-  pendingCourseStart = false;
-  state = newState();
-  state.mode = "worldMap";
-  enterWorldMap(0, true);
-  overlay.classList.add("hidden");
-  lastTime = performance.now();
-  cancelAnimationFrame(animationId);
-  animationId = requestAnimationFrame(loop);
+function startGame(fresh = false) {
+  if (FX.transitioning()) return;
+  const resume = !fresh && Story.hasSave();
+  playSfx("confirm");
+  FX.startTransition({
+    type: "fade",
+    dur: 0.9,
+    onMid: () => {
+      pendingCourseStart = false;
+      gameOverContinueAvailable = false;
+      gameOverContinueCost = 0;
+      overlay.classList.add("hidden");
+      if (resume) {
+        Story.applyToGame();
+        currentCourse = unlockedCourse;
+        mapSelectedCourse = unlockedCourse;
+        state = newState();
+        enterWorldMap(unlockedCourse, true);
+        maybePlayWorldIntro(courses[unlockedCourse].worldIndex);
+      } else {
+        Story.resetSave();
+        currentCourse = 0;
+        unlockedCourse = 0;
+        mapSelectedCourse = 0;
+        completedCourses = new Set();
+        campaignKeep = null;
+        state = newState();
+        Story.play("opening", () => {
+          enterWorldMap(0, true);
+          maybePlayWorldIntro(0);
+        });
+      }
+      Story.refreshTitleUi();
+      lastTime = performance.now();
+    }
+  });
 }
 
 function startDirectCourse(index) {
@@ -1169,8 +1284,7 @@ function startDirectCourse(index) {
   state.mode = "playing";
   overlay.classList.add("hidden");
   lastTime = performance.now();
-  cancelAnimationFrame(animationId);
-  animationId = requestAnimationFrame(loop);
+  announceStage();
 }
 
 function startCurrentCourse() {
@@ -1209,6 +1323,7 @@ function continueFromGameOver() {
   updateHud();
   playSfx("respawn", state.player.x + state.player.w / 2);
   lastTime = performance.now();
+  announceStage();
   return true;
 }
 
@@ -1255,13 +1370,27 @@ function enterWorldMap(selectedIndex = currentCourse, firstOpen = false, fromWor
   mapInputLockTimer = firstOpen ? 0.5 : 0.35;
   const point = MAP_NODE_POINTS[mapSelectedCourse] ?? MAP_NODE_POINTS[0];
   if (firstOpen) mapCamera = { x: point.x, y: point.y };
+  Story.persist();
+  Chat.event("map");
   updateHud();
 }
 
 function startMapCourse(index = mapSelectedCourse) {
   if (state?.mode === "worldMap" && mapInputLockTimer > 0) return;
-  currentCourse = clamp(index, 0, unlockedCourse);
-  mapSelectedCourse = currentCourse;
+  if (FX.transitioning()) return;
+  const target = clamp(index, 0, unlockedCourse);
+  if (state?.mode !== "worldMap") {
+    beginCourse(target);
+    return;
+  }
+  const node = mapPointToCanvas(target);
+  playSfx("confirm");
+  FX.startTransition({ type: "iris", dur: 1.0, x: node.x, y: node.y, onMid: () => beginCourse(target) });
+}
+
+function beginCourse(index) {
+  currentCourse = index;
+  mapSelectedCourse = index;
   const snapshot = campaignKeep;
   state = newState();
   restoreCampaignSnapshot(snapshot);
@@ -1269,6 +1398,7 @@ function startMapCourse(index = mapSelectedCourse) {
   pendingCourseStart = false;
   overlay.classList.add("hidden");
   lastTime = performance.now();
+  announceStage();
 }
 
 function moveMapSelection(dir) {
@@ -1349,14 +1479,30 @@ function choosePauseOption() {
 }
 
 function loop(now) {
-  const dt = Math.min((now - lastTime) / 1000, 0.032);
+  const raw = clamp((now - lastTime) / 1000, 0, 0.032);
   lastTime = now;
-  update(dt);
+  const dt = FX.frame(raw);
+  Story.update(raw);
+  Chat.update(raw);
+  if (dt > 0) update(dt);
+  Story.syncMusic();
   draw();
   animationId = requestAnimationFrame(loop);
 }
 
 function update(dt) {
+  if (state.mode === "title") {
+    updateGamepad();
+    updateHud();
+    return;
+  }
+  if (Story.isStoryMode(state.mode)) {
+    updateGamepad();
+    if (state.mode === "bossDeath") updateBossDeath(dt);
+    updateParticles(dt);
+    updateHud();
+    return;
+  }
   if (!overlay.classList.contains("hidden") && (state.mode === "playing" || state.mode === "ended" || pendingCourseStart)) {
     updateGamepad();
     updateHud();
@@ -1426,6 +1572,8 @@ function update(dt) {
   }
   updateMovingPlatforms(dt);
   updatePlayer(dt);
+  FX.trackPlayer(state.player, dt);
+  Gimmick.update(dt);
   updateStageTraits(dt);
   updateGun(dt);
   updateItems(dt);
@@ -1446,7 +1594,7 @@ function maybeStartBossIntro() {
   const boss = state.enemies.find(e => e.boss && e.alive);
   if (!boss) return false;
   const p = state.player;
-  if (p.x + p.w < boss.x - 620) return false;
+  if (p.x + p.w < boss.x - 500) return false;
   state.mode = "bossIntro";
   state.bossIntroPlayed = true;
   state.bossIntroTimer = 0;
@@ -1467,7 +1615,7 @@ function updateBossIntro(dt) {
   const boss = state.enemies.find(e => e.id === state.bossIntroBossId && e.alive) ?? state.enemies.find(e => e.boss && e.alive);
   if (boss) {
     boss.attackAnim = Math.max(boss.attackAnim ?? 0, 0.12);
-    const targetCamera = clamp(boss.x - 610, 0, WORLD_WIDTH - canvas.width);
+    const targetCamera = clamp(boss.x + boss.w / 2 - VIEW_W * 0.64, 0, WORLD_WIDTH - VIEW_W);
     state.camera += (targetCamera - state.camera) * Math.min(1, dt * 2.7);
   }
 }
@@ -1521,14 +1669,61 @@ function completeBossStageAfterOutro() {
   state.bossIntroTimer = 0;
   state.bossIntroStep = 0;
   state.bossOutroBoss = null;
-  playSfx("stageClear", state.player.x + state.player.w / 2);
   if (currentCourse < courses.length - 1) {
-    nextCourse();
+    Story.beginStageClear({ boss: true });
   } else {
-    state.score += Math.ceil(state.time / 3);
+    state.score += Math.ceil(state.time / 3) + 1000;
     completedCourses.add(currentCourse);
     campaignKeep = campaignSnapshotFromState();
-    endGame(t("allClear"), t("replay"), kakipiRank());
+    Story.persist();
+    Story.play("ending", () => Story.startCredits());
+  }
+}
+
+function beginBossDeath(boss) {
+  state.mode = "bossDeath";
+  state.bossDeathTimer = boss.finalBoss ? 3.3 : 2.3;
+  state.bossDeathTick = 0;
+  state.bossDeathBoss = boss;
+  state.beams = [];
+  state.bossHazards = [];
+  boss.hurtAnim = 9;
+  state.player.vx = 0;
+  FX.hitStop(0.22);
+  FX.slowMo(0.7, 0.3);
+  FX.flash("#ffffff", 0.7, 0.35);
+  FX.shake(0.8);
+  playSfx("bossDown", boss.x + boss.w / 2);
+}
+
+function updateBossDeath(dt) {
+  const boss = state.bossDeathBoss;
+  if (!boss) {
+    state.mode = "playing";
+    return;
+  }
+  const p = state.player;
+  p.vy += GRAVITY * dt;
+  p.vx = 0;
+  if (!isUnderwaterStage()) moveAndCollide(p, dt);
+  state.bossDeathTimer -= dt;
+  state.bossDeathTick -= dt;
+  boss.defeated = 0.42;
+  const cx = boss.x + boss.w / 2;
+  const cy = boss.y + boss.h / 2;
+  if (state.bossDeathTick <= 0) {
+    state.bossDeathTick = 0.13;
+    FX.explosion(cx + (Math.random() - 0.5) * boss.w * 1.5, cy + (Math.random() - 0.5) * boss.h * 1.4, 60 + Math.random() * 50);
+    FX.shake(0.22);
+    playSfx("explosion", cx);
+  }
+  if (state.bossDeathTimer <= 0) {
+    FX.bossFinale(cx, cy);
+    playSfx("bossDown", cx);
+    boss.defeated = 0;
+    boss.hurtAnim = 0;
+    state.bossDeathBoss = null;
+    startBossOutro(boss);
   }
 }
 
@@ -1539,8 +1734,8 @@ function updateDeathFall(dt) {
   p.y += p.vy * dt;
   p.x += p.vx * dt;
   p.grounded = false;
-  state.camera = clamp(p.x - 330, 0, WORLD_WIDTH - canvas.width);
-  if (p.y > canvas.height + 180 || state.deathTimer <= 0) {
+  updateCamera(dt);
+  if (p.y > worldBottom() + 180 || state.deathTimer <= 0) {
     if (state.lives <= 0) {
       endGame("Game Over", t("replay"), null, { allowContinue: true });
     } else {
@@ -1563,18 +1758,24 @@ function updateMoonRespawn(dt) {
   const dy = (down ? 1 : 0) - (up ? 1 : 0);
   const len = Math.hypot(dx, dy) || 1;
   p.x = clamp(p.x + dx / len * speed * dt, 36, WORLD_WIDTH - p.w - 36);
-  p.y = clamp(p.y + dy / len * speed * dt, 42, 430);
+  p.y = clamp(p.y + dy / len * speed * dt, worldTop() + 42, worldBottom() - 290);
   p.vx = dx / len * speed;
   p.vy = dy / len * speed;
   p.facing = dx < 0 ? -1 : dx > 0 ? 1 : p.facing;
   p.grounded = false;
   p.invincible = state.respawnTimer;
   p.onCrescent = true;
-  state.camera = clamp(p.x - 330, 0, WORLD_WIDTH - canvas.width);
+  updateCamera(dt);
   if (state.respawnTimer <= 0) {
     p.vy = 0;
     p.onCrescent = false;
-    p.invincible = 0;
+    p.invincible = 1.2;
+    for (let guard = 0; guard < 12; guard++) {
+      const inside = platforms.concat(blocks.filter(b => !b.broken)).find(s => hit(p, s));
+      if (!inside) break;
+      p.y = inside.y - p.h - 1;
+    }
+    FX.respawnSparkle(p.x + p.w / 2, p.y + p.h / 2);
     state.mode = "playing";
     lastTime = performance.now();
   }
@@ -1609,11 +1810,21 @@ function updatePlayer(dt) {
   }
   if (!movingLeft && !movingRight) p.vx *= slippery ? 0.985 : FRICTION;
 
-  if (wantsJump && p.grounded) {
+  p.coyote = p.grounded ? 0.1 : Math.max(0, (p.coyote ?? 0) - dt);
+  if (wantsJump && (p.grounded || p.coyote > 0)) {
     spawnJumpSmoke(p.x + p.w / 2, p.y + p.h);
+    FX.jump(p.x + p.w / 2, p.y + p.h);
+    playSfx("jump", p.x);
     p.vy = trait === "moonFloat" ? -990 : -900;
     p.grounded = false;
+    p.coyote = 0;
+    p.jumpHeld = true;
   }
+  if (p.jumpHeld && !wantsJump && p.vy < -320) {
+    p.vy *= 0.5;
+    p.jumpHeld = false;
+  }
+  if (p.vy >= 0) p.jumpHeld = false;
 
   if (wantsShoot && hasEquippedWeapon() && state.gun.cooldown <= 0) {
     shootBeam("player", p.x + p.w / 2 + p.facing * 24, p.y + 28, p.facing);
@@ -1627,8 +1838,8 @@ function updatePlayer(dt) {
 
   moveAndCollide(p, dt);
 
-  if (p.y > canvas.height + 100) damagePlayer(true);
-  state.camera = clamp(p.x - 330, 0, WORLD_WIDTH - canvas.width);
+  if (p.y > worldBottom() + 100) damagePlayer(true);
+  updateCamera(dt);
 }
 
 function updateSwimmingPlayer(dt) {
@@ -1663,10 +1874,10 @@ function updateSwimmingPlayer(dt) {
 
   p.invincible = Math.max(0, p.invincible - dt);
   p.x = clamp(p.x + p.vx * dt, 0, WORLD_WIDTH - p.w);
-  p.y = clamp(p.y + p.vy * dt, 58, canvas.height - p.h - 42);
+  p.y = clamp(p.y + p.vy * dt, 58, worldBottom() - p.h - 42);
   p.grounded = false;
   p.swimming = true;
-  state.camera = clamp(p.x - 330, 0, WORLD_WIDTH - canvas.width);
+  updateCamera(dt);
 }
 
 function isRunHeld(dxInput = 0) {
@@ -1784,7 +1995,7 @@ function updateLavaGeysers(dt) {
     g.timer = ((g.timer ?? 0) + dt) % g.period;
     g.active = g.timer > 2.55 && g.timer < 3.35;
     if (!g.active) continue;
-    const jet = { x: g.x, y: canvas.height - g.h, w: g.w, h: g.h };
+    const jet = { x: g.x, y: (g.baseY ?? canvas.height) - g.h, w: g.w, h: g.h };
     if (hit(p, jet)) damagePlayer(false, null, false);
   }
 }
@@ -1804,6 +2015,9 @@ function applyStompBounce(enemySource, boosted = false) {
   p.grounded = false;
   state.stompBoostTimer = 0;
   state.stompLateBoostTimer = boosted ? 0 : STOMP_LATE_BOOST_WINDOW;
+  p.jumpHeld = false;
+  FX.stomp(p.x + p.w / 2, p.y + p.h, boosted);
+  if (boosted) Chat.event("stompBoost");
   spawnJumpSmoke(p.x + p.w / 2, p.y + p.h);
   playSfx(boosted ? "stompBoost" : "enemyHit", p.x + p.w / 2);
 }
@@ -1829,6 +2043,7 @@ function moveAndCollide(body, dt) {
     if (body.vy < 0) {
       body.y = s.y + s.h;
       if (s.breakable) breakBlock(s);
+      if (s.switchBox) Gimmick.hitSwitch(s);
     }
     body.vy = 0;
   }
@@ -1869,7 +2084,7 @@ function updateEnemies(dt) {
     }
     if (e.boss && courses[currentCourse]?.bossStage && state.bossIntroPlayed) {
       updateBossAttackPattern(e, dt);
-    } else if ((state.gun.holder === e.id || e.weaponPower) && e.gunCooldown <= 0) {
+    } else if ((state.gun.holder === e.id || e.weaponPower) && e.gunCooldown <= 0 && enemyCanSeePlayer(e)) {
       const dir = state.player.x + state.player.w / 2 < e.x + e.w / 2 ? -1 : 1;
       shootBeam(e.id, e.x + e.w / 2 + dir * 22, e.y + 22, dir);
       e.attackAnim = e.boss ? 0.42 : 0.28;
@@ -1888,6 +2103,13 @@ function updateEnemies(dt) {
   }
 }
 
+function enemyCanSeePlayer(e) {
+  // 画面の外からは撃ってこない（ズームしたカメラでも理不尽にならないように）
+  const p = state.player;
+  if (e.boss) return true;
+  return e.x + e.w > state.camera - 20 && e.x < state.camera + VIEW_W + 20 && Math.abs((e.y + e.h / 2) - (p.y + p.h / 2)) < 420;
+}
+
 function damageEnemy(e, amount = 1) {
   if (!e.alive) return;
   if (e.boss && courses[currentCourse]?.bossStage && (!state.bossIntroPlayed || state.mode === "bossIntro")) return;
@@ -1897,6 +2119,7 @@ function damageEnemy(e, amount = 1) {
   e.stun = e.boss ? 0.22 : 2;
   e.vx = 0;
   spawnBlockPoof(e.x + e.w / 2, e.y + e.h / 2);
+  FX.enemyHurt(e, amount);
   if (e.hp > 0) {
     playSfx("enemyHit", e.x + e.w / 2);
     return;
@@ -1907,8 +2130,13 @@ function damageEnemy(e, amount = 1) {
   if (e.weaponPower) spawnWeaponDrop(e.x + e.w / 2, e.y + 8, e.weaponPower);
   e.weaponPower = 0;
   dropGunFromEnemy(e);
-  state.score += e.boss ? 50 : 5;
-  if (e.boss && courses[currentCourse]?.bossStage) startBossOutro(e);
+  state.score += e.boss ? 500 : 5;
+  if (e.boss && courses[currentCourse]?.bossStage) {
+    beginBossDeath(e);
+    return;
+  }
+  state.score += FX.enemyDefeat(e);
+  if (FX.S.combo === 3) Chat.event("combo");
 }
 
 function stunEnemy(e) {
@@ -1934,7 +2162,7 @@ function updateEnemyMovement(e, dt) {
   const playerCenter = p.x + p.w / 2;
   const dx = playerCenter - enemyCenter;
   const distance = Math.abs(dx);
-  const seesPlayer = distance < 1050;
+  const seesPlayer = distance < 640;
   const hasGun = state.gun.holder === e.id || e.weaponPower;
 
   e.alert = seesPlayer || hasGun ? Math.min(1, e.alert + dt * 2.8) : Math.max(0, e.alert - dt * 0.9);
@@ -2004,7 +2232,7 @@ function updateSwimmingEnemy(e, dt, idle = false) {
   const dx = p.x + p.w / 2 - (e.x + e.w / 2);
   const dy = p.y + p.h / 2 - (e.y + e.h / 2);
   const distance = Math.hypot(dx, dy) || 1;
-  const seesPlayer = distance < 1050;
+  const seesPlayer = distance < 640;
   const hasGun = state.gun.holder === e.id || e.weaponPower;
   e.alert = seesPlayer || hasGun ? Math.min(1, e.alert + dt * 2.4) : Math.max(0, e.alert - dt * 0.7);
   const speed = idle ? 60 : e.boss ? 230 : hasGun ? 190 : 165;
@@ -2020,7 +2248,7 @@ function updateSwimmingEnemy(e, dt, idle = false) {
   e.vx = clamp(e.vx * 0.986, -speed, speed);
   e.vy = clamp(e.vy * 0.986, -speed * 0.75, speed * 0.75);
   e.x = clamp(e.x + e.vx * dt, e.boss ? e.left : 0, (e.boss ? e.right : WORLD_WIDTH) - e.w);
-  e.y = clamp(e.y + e.vy * dt, 72, canvas.height - e.h - 48);
+  e.y = clamp(e.y + e.vy * dt, 72, worldBottom() - e.h - 48);
   e.grounded = false;
   syncEnemyFacing(e);
 }
@@ -2094,8 +2322,8 @@ function fireBossPattern(boss, pattern) {
       const side = i - (pattern.count - 1) / 2;
       state.bossHazards.push({
         type: "fall",
-        x: clamp(pattern.targetX + side * spacing, state.camera + 90, state.camera + canvas.width - 90),
-        y: -90 - i * 28,
+        x: clamp(pattern.targetX + side * spacing, state.camera + 70, state.camera + VIEW_W - 70),
+        y: (state.cameraY ?? 0) - 90 - i * 28,
         r: 24,
         telegraph: 0.72,
         life: 3.2,
@@ -2141,11 +2369,15 @@ function updateBossHazards(dt) {
       }
     } else if (h.type === "eruption") {
       h.active -= dt;
-      const hitbox = rect(h.x - h.w / 2, canvas.height - h.h, h.w, h.h);
+      const hitbox = rect(h.x - h.w / 2, eruptionBaseY() - h.h, h.w, h.h);
       if (h.active > 0 && hit(hitbox, p)) damagePlayer(false, state.enemies.find(e => e.id === h.owner));
     }
   }
-  state.bossHazards = (state.bossHazards ?? []).filter(h => h.life > 0 && h.y < canvas.height + 120);
+  state.bossHazards = (state.bossHazards ?? []).filter(h => h.life > 0 && h.y < worldBottom() + 120);
+}
+
+function eruptionBaseY() {
+  return isUnderwaterStage() ? worldBottom() : GROUND_Y + 48;
 }
 
 function respawnBoss(e) {
@@ -2329,6 +2561,21 @@ function getAudioContext() {
   return audioCtx;
 }
 
+function audioOut() {
+  const ctxAudio = getAudioContext();
+  if (!ctxAudio) return null;
+  if (!audioMaster) {
+    audioMaster = ctxAudio.createGain();
+    audioMaster.gain.value = soundEnabled ? 1 : 0;
+    const comp = ctxAudio.createDynamicsCompressor();
+    comp.threshold.value = -14;
+    comp.ratio.value = 6;
+    audioMaster.connect(comp);
+    comp.connect(ctxAudio.destination);
+  }
+  return audioMaster;
+}
+
 function unlockAudio() {
   const ctxAudio = getAudioContext();
   if (!ctxAudio || audioUnlocked) return;
@@ -2359,9 +2606,9 @@ function playTone({ start = 0, freq = 440, endFreq = freq, duration = 0.12, type
   vol.gain.exponentialRampToValueAtTime(0.0001, now + duration);
   if (stereo) {
     stereo.pan.setValueAtTime(pan, now);
-    osc.connect(vol).connect(stereo).connect(ctxAudio.destination);
+    osc.connect(vol).connect(stereo).connect(audioOut());
   } else {
-    osc.connect(vol).connect(ctxAudio.destination);
+    osc.connect(vol).connect(audioOut());
   }
   osc.start(now);
   osc.stop(now + duration + 0.03);
@@ -2383,13 +2630,13 @@ function playNoise({ duration = 0.12, gain = 0.05, filter = 1400, start = 0 }) {
   const vol = ctxAudio.createGain();
   vol.gain.setValueAtTime(gain, now);
   vol.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-  source.connect(filt).connect(vol).connect(ctxAudio.destination);
+  source.connect(filt).connect(vol).connect(audioOut());
   source.start(now);
 }
 
 function playSfx(name, x = state?.player?.x ?? 0) {
   const now = performance.now();
-  const minGap = name === "laser" ? 45 : name === "enemyHit" ? 70 : 100;
+  const minGap = name === "laser" ? 45 : name === "text" ? 34 : name === "enemyHit" || name === "explosion" ? 70 : 100;
   if ((lastSfxAt[name] ?? 0) + minGap > now) return;
   lastSfxAt[name] = now;
   const pan = clamp(((x - (state?.camera ?? 0)) / canvas.width) * 2 - 1, -0.8, 0.8);
@@ -2441,6 +2688,45 @@ function playSfx(name, x = state?.player?.x ?? 0) {
   } else if (name === "equip") {
     playTone({ freq: 420, endFreq: 840, duration: 0.11, type: "triangle", gain: 0.045, pan });
     playTone({ start: 0.055, freq: 980, endFreq: 1380, duration: 0.12, type: "sine", gain: 0.04, pan });
+  } else if (name === "jump") {
+    playTone({ freq: 380, endFreq: 760, duration: 0.13, type: "sine", gain: 0.04, pan });
+  } else if (name === "land") {
+    playNoise({ duration: 0.07, gain: 0.03, filter: 420 });
+  } else if (name === "confirm") {
+    playTone({ freq: 660, endFreq: 660, duration: 0.07, type: "triangle", gain: 0.045, pan: 0 });
+    playTone({ start: 0.06, freq: 990, endFreq: 990, duration: 0.1, type: "triangle", gain: 0.042, pan: 0 });
+  } else if (name === "text") {
+    playTone({ freq: 880, endFreq: 820, duration: 0.03, type: "triangle", gain: 0.014, pan: 0 });
+  } else if (name === "whoosh") {
+    playNoise({ duration: 0.34, gain: 0.03, filter: 900 });
+    playTone({ freq: 240, endFreq: 720, duration: 0.3, type: "sine", gain: 0.02, pan: 0 });
+  } else if (name === "combo") {
+    playTone({ freq: 880, endFreq: 1320, duration: 0.08, type: "square", gain: 0.03, pan });
+    playTone({ start: 0.06, freq: 1320, endFreq: 1760, duration: 0.1, type: "triangle", gain: 0.035, pan });
+  } else if (name === "explosion") {
+    playNoise({ duration: 0.3, gain: 0.07, filter: 520 });
+    playTone({ freq: 160, endFreq: 48, duration: 0.28, type: "sawtooth", gain: 0.05, pan });
+  } else if (name === "bossDown") {
+    playNoise({ duration: 0.9, gain: 0.09, filter: 380 });
+    playTone({ freq: 220, endFreq: 36, duration: 0.9, type: "sawtooth", gain: 0.07, pan });
+    playTone({ start: 0.05, freq: 880, endFreq: 1760, duration: 0.5, type: "sine", gain: 0.04, pan });
+  } else if (name === "break") {
+    playNoise({ duration: 0.1, gain: 0.04, filter: 1500 });
+    playTone({ freq: 300, endFreq: 150, duration: 0.09, type: "square", gain: 0.03, pan });
+  } else if (name === "keyGet" || name === "unlock") {
+    playTone({ freq: 1046, endFreq: 1046, duration: 0.09, type: "triangle", gain: 0.05, pan });
+    playTone({ start: 0.08, freq: 1318, endFreq: 1318, duration: 0.09, type: "triangle", gain: 0.05, pan });
+    playTone({ start: 0.16, freq: 1568, endFreq: 2093, duration: 0.22, type: "sine", gain: 0.05, pan });
+    if (name === "unlock") playNoise({ start: 0.02, duration: 0.2, gain: 0.03, filter: 3000 });
+  } else if (name === "locked") {
+    playTone({ freq: 196, endFreq: 185, duration: 0.09, type: "square", gain: 0.04, pan });
+    playTone({ start: 0.11, freq: 185, endFreq: 165, duration: 0.14, type: "square", gain: 0.04, pan });
+  } else if (name === "switch") {
+    playTone({ freq: 520, endFreq: 1040, duration: 0.08, type: "square", gain: 0.04, pan });
+    playTone({ start: 0.07, freq: 780, endFreq: 1560, duration: 0.12, type: "triangle", gain: 0.045, pan });
+  } else if (name === "spring") {
+    playTone({ freq: 220, endFreq: 1320, duration: 0.24, type: "sine", gain: 0.06, pan });
+    playTone({ start: 0.02, freq: 330, endFreq: 1760, duration: 0.2, type: "triangle", gain: 0.03, pan });
   }
 }
 
@@ -2449,6 +2735,7 @@ function shootBeam(owner, x, y, dir) {
   const stage = owner === "player" ? weaponStage() : enemyWeaponStage(owner);
   const beamSpeed = owner === "player" ? stage.speed : stage.speed * 0.5;
   playSfx("laser", x);
+  if (owner === "player") FX.muzzle(x, y, dir, stage.colors);
   if (stage.pattern === "homing") {
     shootHomingMissiles(owner, x, y, dir, stage);
     return;
@@ -2596,6 +2883,8 @@ function addWeaponStock(power = 1) {
     state.gun.holder = "inventory";
   }
   spawnBlockPoof(state.player.x + state.player.w / 2, state.player.y + 18);
+  FX.weaponGet(state.player.x + state.player.w / 2, state.player.y + 10, `${weaponName(powerValue)} Lv${powerValue}`, false);
+  Chat.event("weaponGet", weaponName(powerValue));
   return true;
 }
 
@@ -2726,6 +3015,10 @@ function fuseInventoryItems(fromIndex, toIndex) {
   ensureInventorySelectionVisible();
   spawnBlockPoof(state.player.x + state.player.w / 2, state.player.y - 10);
   state.score += 25 * nextPower;
+  playSfx("powerUp", state.player.x);
+  FX.flash("#ffd1ed", 0.3, 0.3);
+  FX.firework(canvas.width / 2, canvas.height / 2 - 40, FX.PASTEL);
+  Chat.event("fuse", weaponName(nextPower));
 }
 
 function showItemFullPrompt() {
@@ -2828,6 +3121,8 @@ function applyLanguage() {
   langEnButton?.classList.toggle("active", language === "en");
   setControlMode(controlMode);
   updateFullscreenButton();
+  Story.refreshTitleUi();
+  Chat.refresh();
 }
 
 let installHintTimer = 0;
@@ -2904,7 +3199,14 @@ function updateBeams(dt) {
     if (b.distance >= b.range) b.life = 0;
     const beamRect = rect(b.x, b.y, b.w, b.h);
     if (b.owner === "player") {
+      FX.beamTrail(b);
       for (const block of blocks) {
+        if (block.switchBox && hit(beamRect, block)) {
+          Gimmick.hitSwitch(block);
+          FX.hit(b.x + b.w / 2, b.y + b.h / 2, b.colors);
+          b.life = 0;
+          break;
+        }
         if (!block.breakable || block.broken || !hit(beamRect, block)) continue;
         breakBlock(block);
         b.life = 0;
@@ -2928,9 +3230,9 @@ function updateBeams(dt) {
   state.beams = state.beams.filter(b => (
     b.life > 0 &&
     b.x > state.camera - 260 &&
-    b.x < state.camera + canvas.width + 260 &&
-    b.y > -220 &&
-    b.y < canvas.height + 220
+    b.x < state.camera + VIEW_W + 260 &&
+    b.y > (state.cameraY ?? 0) - 260 &&
+    b.y < (state.cameraY ?? 0) + VIEW_H + 260
   ));
 }
 
@@ -2974,6 +3276,8 @@ function breakBlock(block) {
   if (!block.breakable || block.broken) return;
   block.broken = true;
   spawnBlockPoof(block.x + block.w / 2, block.y + block.h / 2);
+  FX.blockBreak(block.x + block.w / 2, block.y + block.h / 2);
+  playSfx("break", block.x);
   if (block.item) spawnItem(block.x + block.w / 2, block.y - 12, block.item);
 }
 
@@ -3064,7 +3368,12 @@ function updateItems(dt) {
       }
     }
     if (hit(state.player, item)) {
-      if (item.type === "hp") state.lives = Math.min(MAX_LIVES, state.lives + 1);
+      if (item.type === "hp") {
+        state.lives = Math.min(MAX_LIVES, state.lives + 1);
+        state.hp = MAX_HP;
+        playSfx("snackStar", item.x);
+        FX.starGet(item.x + item.w / 2, item.y + item.h / 2);
+      }
       if (item.type === "power" && !addWeaponStock(item.weaponPower ?? 1)) {
         item.vy = -260;
         item.vx = pusherAwayFromPlayer(item);
@@ -3072,7 +3381,7 @@ function updateItems(dt) {
       }
       item.life = 0;
     }
-    if (item.y > canvas.height + 80) item.life = 0;
+    if (item.y > worldBottom() + 80) item.life = 0;
   }
   state.items = state.items.filter(item => item.life > 0);
 }
@@ -3104,6 +3413,7 @@ function collectCoins() {
       else state.kakiTotal += 1;
       state.score += 10;
       playSfx("pickup", c.x);
+      FX.coin(c.x, c.y);
     }
   }
 }
@@ -3120,6 +3430,8 @@ function collectStarItems() {
       state.lives = Math.min(MAX_LIVES, state.lives + 1);
       playSfx("snackStar", s.x);
       spawnStarBurst(s.x, s.y);
+      FX.starGet(s.x, s.y);
+      Chat.event("starGet");
     }
   }
 }
@@ -3138,6 +3450,7 @@ function collectOxygenItems() {
       state.score += 15;
       playSfx("pickup", o.x);
       spawnBubbleBurst(o.x, o.y);
+      FX.oxygen(o.x, o.y);
     }
   }
 }
@@ -3253,6 +3566,7 @@ function damagePlayer(fell = false, sourceEnemy = null, canStealWeapon = false) 
       if (enemyPower > 0) spawnWeaponDrop(sourceEnemy.x + sourceEnemy.w / 2, sourceEnemy.y + 8, enemyPower);
       sourceEnemy.weaponPower = removeEquippedWeaponForSteal();
       state.gun.holder = sourceEnemy.id;
+      Chat.event("stolen");
       sourceEnemy.gunCooldown = sourceEnemy.boss ? 0.2 : 0.5;
     }
   }
@@ -3263,8 +3577,11 @@ function damagePlayer(fell = false, sourceEnemy = null, canStealWeapon = false) 
     const minHpAfterHit = state.hp > 1 ? 1 : 0;
     state.hp = Math.max(minHpAfterHit, state.hp - hitDamage);
   }
+  FX.resetCombo();
   if (state.hp > 0) {
     playSfx("playerDamage", p.x + p.w / 2);
+    FX.playerHurt(p.x + p.w / 2, p.y + p.h / 2);
+    Chat.event("hurt");
     p.invincible = 1.35;
     p.vx = sourceEnemy ? (p.x < sourceEnemy.x ? -260 : 260) : -p.facing * 220;
     p.vy = -360;
@@ -3296,6 +3613,8 @@ function startDeathFall() {
   p.vx = 0;
   p.vy = -720;
   spawnBlockPoof(p.x + p.w / 2, p.y + p.h / 2);
+  FX.playerDeath(p.x + p.w / 2, p.y + p.h / 2);
+  Chat.event("death");
 }
 
 function startMoonRespawn() {
@@ -3309,29 +3628,28 @@ function startMoonRespawn() {
   state.respawnStartY = -170;
   state.respawnTargetY = 260;
   p.x = Math.max(72, state.camera + 120);
-  p.y = 120;
+  p.y = clamp((state.cameraY ?? 0) + 110, worldTop() + 42, worldBottom() - 290);
   p.vx = 0;
   p.vy = 0;
   p.facing = 1;
   p.grounded = false;
   p.invincible = state.respawnDuration;
   p.onCrescent = true;
-  spawnJumpSmoke(p.x + p.w / 2, 36);
+  spawnJumpSmoke(p.x + p.w / 2, p.y - 60);
+  FX.respawnSparkle(p.x + p.w / 2, p.y);
+  Chat.event("respawn");
+}
+
+function goalLocked() {
+  return !!courses[currentCourse]?.bossStage && state.enemies.some(e => e.boss && e.alive);
 }
 
 function checkGoal() {
-  const bossAlive = state.enemies.some(e => e.boss && e.alive);
-  if (currentCourse === courses.length - 1 && bossAlive) return;
-  if (hit(state.player, level.flag)) {
-    playSfx("stageClear", state.player.x + state.player.w / 2);
-    if (currentCourse < courses.length - 1) {
-      nextCourse();
-    } else {
-      state.score += Math.ceil(state.time / 3);
-      completedCourses.add(currentCourse);
-      campaignKeep = campaignSnapshotFromState();
-      endGame(t("allClear"), t("replay"), kakipiRank());
-    }
+  if (courses[currentCourse]?.bossStage) return;
+  const f = level.flag;
+  if (hit(state.player, rect(f.x - 46, f.y + 30, f.w + 92, f.h - 30))) {
+    Chat.event("stageClear");
+    Story.beginStageClear({ boss: false });
   }
 }
 
@@ -3339,7 +3657,6 @@ function nextCourse() {
   const oldWorld = courses[currentCourse]?.worldIndex ?? 0;
   const clearedCourse = currentCourse;
   completedCourses.add(currentCourse);
-  state.score += Math.ceil(state.time / 5);
   campaignKeep = campaignSnapshotFromState();
   unlockedCourse = Math.max(unlockedCourse, Math.min(currentCourse + 1, courses.length - 1));
   const newWorld = courses[unlockedCourse]?.worldIndex ?? oldWorld;
@@ -3349,6 +3666,7 @@ function nextCourse() {
   enterWorldMap(unlockedCourse, false, newWorld !== oldWorld ? oldWorld : null);
   overlay.classList.add("hidden");
   lastTime = performance.now();
+  if (newWorld !== oldWorld) maybePlayWorldIntro(newWorld);
 }
 
 function endGame(title, label, message = null, options = {}) {
@@ -3363,8 +3681,14 @@ function endGame(title, label, message = null, options = {}) {
     : `Continue needs ${gameOverContinueCost} Kaki and ${gameOverContinueCost} Peanuts`;
   overlay.querySelector("h1").textContent = title;
   overlay.querySelector("p").textContent = message || `${t("kaki")} ${state.kakiTotal}  ${t("pea")} ${state.peaTotal}  ${t("score")} ${state.score}${options.allowContinue ? `  /  ${gameOverContinueAvailable ? continueText : shortageText}` : ""}`;
-  startButton.textContent = gameOverContinueAvailable ? (language === "ja" ? "このステージから復活" : "Continue") : label;
+  startButton.textContent = gameOverContinueAvailable ? (language === "ja" ? "このステージから復活" : "Continue") : (language === "ja" ? "マップにもどる" : "Back to Map");
   overlay.classList.remove("hidden");
+  Story.refreshTitleUi();
+  if (window.Bgm) {
+    Bgm.stop(0.2);
+    Bgm.jingle("gameOver");
+  }
+  Chat.event("gameOver");
 }
 
 function kakipiRank() {
@@ -3398,15 +3722,58 @@ function updateHud() {
 }
 
 function draw() {
-  if (state.mode === "worldMap") {
-    drawWorldMapScreen();
-    return;
+  const mode = state.mode;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  FX.applyShake();
+  const inGame = mode !== "worldMap" && mode !== "cutscene" && mode !== "credits" && !(mode === "title" && Story.drawTitleKey());
+  if (mode === "worldMap") drawWorldMapScreen();
+  else if (mode === "cutscene") Story.drawCutscene();
+  else if (mode === "credits") Story.drawCredits();
+  else if (inGame) drawGameWorld();
+  ctx.restore();
+  FX.drawScreen();
+  if (inGame && mode !== "title") {
+    if (mode !== "stageClear") {
+      drawStageBadge();
+      Gimmick.drawHud();
+      drawHpMeter();
+      drawOxygenMeter();
+      drawBossHpMeter();
+    }
+    if (mode === "bossIntro" || mode === "bossOutro") drawBossIntroOverlay();
+    if (mode === "stageClear") Story.drawStageClear();
+    if (mode === "paused") drawPauseScreen();
+    if (state.itemFullPrompt > 0) drawItemFullPrompt();
+    if (mode === "inventory") drawInventoryScreen();
+  }
+  Chat.drawToast();
+  FX.drawFlashes();
+  FX.drawTransition();
+}
+
+function drawGameWorld() {
+  const title = state.mode === "title";
+  if (title) {
+    const span = WORLD_WIDTH - VIEW_W;
+    const tt = (performance.now() / 1000 * 46) % (span * 2);
+    state.camera = tt < span ? tt : span * 2 - tt;
+    state.cameraY = cameraYMax();
   }
   const cam = state.camera;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawSky(cam);
+  const camY = state.cameraY ?? cameraYMax();
+  const rest = cameraYMax();
   ctx.save();
-  ctx.translate(-Math.floor(cam), 0);
+  const lift = clamp((rest - camY) * 0.05, -34, 34);
+  ctx.translate(canvas.width / 2, canvas.height / 2 + lift);
+  ctx.scale(1.1, 1.1);
+  ctx.translate(-canvas.width / 2, -canvas.height / 2);
+  drawSky(cam);
+  ctx.restore();
+  ctx.save();
+  ctx.scale(ZOOM, ZOOM);
+  ctx.translate(-Math.round(cam * ZOOM) / ZOOM, -Math.round(camY * ZOOM) / ZOOM);
   drawMountains();
   drawStageEnvironment();
   drawPlatforms();
@@ -3414,21 +3781,15 @@ function draw() {
   drawBossHazards();
   drawGun();
   drawItems();
+  Gimmick.drawEntities();
   drawParticles();
   drawCoins(performance.now() / 1000);
   drawFlag();
   drawBeams();
   drawEnemies();
-  drawPlayer();
+  if (!title) drawPlayer();
+  FX.drawWorld();
   ctx.restore();
-  drawStageBadge();
-  drawHpMeter();
-  drawOxygenMeter();
-  drawBossHpMeter();
-  if (state.mode === "bossIntro" || state.mode === "bossOutro") drawBossIntroOverlay();
-  if (state.mode === "paused") drawPauseScreen();
-  if (state.itemFullPrompt > 0) drawItemFullPrompt();
-  if (state.mode === "inventory") drawInventoryScreen();
 }
 
 function pauseButtonRects() {
@@ -3690,6 +4051,7 @@ function drawWorldMapScreen() {
       ctx.stroke();
     }
     ctx.restore();
+    Story.drawMapNodeStars(i, p);
   }
 
   const walkerPoint = currentMapWalkerPoint();
@@ -3718,6 +4080,7 @@ function drawWorldMapScreen() {
   }
   ctx.restore();
 
+  Story.drawMapHud();
   drawWorldMapPanel();
 }
 
@@ -3737,7 +4100,7 @@ function drawWorldMapPanel() {
   ctx.font = "900 24px Segoe UI, system-ui, sans-serif";
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
-  ctx.fillText(`${stageLabel(mapSelectedCourse)}  ${course.bossStage ? t("boss") : ""}`, 58, canvas.height - 92);
+  ctx.fillText(`${stageLabel(mapSelectedCourse)}  ${Story.worldName(world)}${course.bossStage ? `  ${t("boss")}` : course.climbStage ? (language === "ja" ? "  のぼりステージ" : "  Climb") : ""}`, 58, canvas.height - 92);
   ctx.fillStyle = "#4d4773";
   ctx.font = "800 17px Segoe UI, system-ui, sans-serif";
   ctx.fillText(line, 58, canvas.height - 60);
@@ -3754,55 +4117,89 @@ function drawBossIntroOverlay() {
     : state.enemies.find(e => e.id === state.bossIntroBossId && e.alive) ?? state.enemies.find(e => e.boss && e.alive);
   if (!boss) return;
   const timer = state.bossIntroTimer ?? 0;
-  const kind = state.mode === "bossOutro" ? (state.bossOutroKind ?? 0) : (boss.bossKind ?? 0);
-  const lines = state.mode === "bossOutro"
+  const outro = state.mode === "bossOutro";
+  const kind = outro ? (state.bossOutroKind ?? 0) : (boss.bossKind ?? 0);
+  const lines = outro
     ? (BOSS_DEFEAT_DIALOGUES[kind] ?? BOSS_DEFEAT_DIALOGUES[0])
     : (BOSS_DIALOGUES[kind] ?? BOSS_DIALOGUES[0]);
-  const bossText = language === "ja" ? lines.bossJa : lines.bossEn;
-  const pyonText = language === "ja" ? lines.pyonJa : lines.pyonEn;
   const showingPyon = (state.bossIntroStep ?? 0) === 1;
-  const text = showingPyon ? pyonText : bossText;
-  const speaker = showingPyon ? "PYON-P" : boss.finalBoss ? "FINAL BOSS" : "BOSS";
+  const raw = showingPyon ? (language === "ja" ? lines.pyonJa : lines.pyonEn) : (language === "ja" ? lines.bossJa : lines.bossEn);
+  const text = raw.replace(/^ぴょんぴー「/, "").replace(/」$/, "").replace(/^Pyon-P: /, "");
+  const accent = showingPyon ? "#7f67c8" : boss.finalBoss ? "#c0266d" : "#ff5f9e";
+  const speaker = showingPyon ? (language === "ja" ? "ぴょんぴー" : "Pyon-P") : Story.bossName(kind);
+  const W = canvas.width;
+  const H = canvas.height;
+  const fade = clamp(timer / 0.35, 0, 1);
+  const slide = 1 - Math.pow(1 - fade, 3);
 
   ctx.save();
-  const fade = clamp(timer / 0.45, 0, 1);
   ctx.globalAlpha = fade;
-  ctx.fillStyle = "rgba(18, 10, 42, 0.48)";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = "rgba(12, 7, 30, 0.88)";
-  ctx.fillRect(0, 0, canvas.width, 78);
-  ctx.fillRect(0, canvas.height - 178, canvas.width, 178);
+  ctx.fillStyle = "rgba(18, 10, 42, 0.42)";
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "#120a2a";
+  ctx.fillRect(0, 0, W, 64 * slide);
+  ctx.fillRect(0, H - 30 * slide, W, 30);
 
-  if (showingPyon) drawPyonpyBust(132, canvas.height - 80, 2.65);
-  else drawBossBust(boss, canvas.width - 150, canvas.height - 62, kind);
+  // 見出し
+  const banner = outro ? (language === "ja" ? "ボスをたおした！" : "BOSS DEFEATED!") : boss.finalBoss ? "FINAL BOSS" : `BOSS  ${Story.bossName(kind)}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.lineJoin = "round";
+  ctx.font = "900 30px " + FX.FONT;
+  ctx.lineWidth = 7;
+  ctx.strokeStyle = boss.finalBoss ? "#c0266d" : "#7f67c8";
+  ctx.fillStyle = "#fff3a4";
+  ctx.strokeText(banner, W / 2, 33 * slide);
+  ctx.fillText(banner, W / 2, 33 * slide);
 
-  ctx.fillStyle = "rgba(255, 245, 252, 0.96)";
-  ctx.strokeStyle = boss.finalBoss ? "#ff3d7f" : "#c8b2ff";
-  ctx.lineWidth = 4;
+  const boxW = W - 500;
+  const boxH = 150;
+  const boxX = 236;
+  const boxY = H - boxH - 46;
+  const bob = Math.sin(performance.now() / 160) * 4;
+  ctx.globalAlpha = fade * (showingPyon ? 1 : 0.5);
+  drawPyonpyBust(122, boxY + 118 + (showingPyon ? bob : 0), 2.65);
+  ctx.globalAlpha = fade * (showingPyon ? 0.5 : 1);
+  drawBossBust(boss, W - 136, boxY + 116 + (showingPyon ? 0 : bob), kind);
+  ctx.globalAlpha = fade;
+
+  ctx.fillStyle = "rgba(255, 248, 253, 0.97)";
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 5;
   ctx.beginPath();
-  ctx.roundRect(202, canvas.height - 146, 536, 108, 8);
+  ctx.roundRect(boxX, boxY, boxW, boxH, 22);
   ctx.fill();
   ctx.stroke();
-  ctx.fillStyle = showingPyon ? "#7f67c8" : boss.finalBoss ? "#ff3d7f" : "#8b6ac9";
-  ctx.font = "900 16px Segoe UI, system-ui, sans-serif";
+  ctx.font = "900 21px " + FX.FONT;
+  const nameW = ctx.measureText(speaker).width + 46;
+  const nameX = showingPyon ? boxX + 26 : boxX + boxW - nameW - 26;
+  ctx.fillStyle = accent;
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.roundRect(nameX, boxY - 22, nameW, 42, 21);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#ffffff";
+  ctx.fillText(speaker, nameX + nameW / 2, boxY);
+
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
-  ctx.fillText(speaker, 228, canvas.height - 128);
   ctx.fillStyle = "#3f355d";
-  ctx.font = "900 22px Segoe UI, system-ui, sans-serif";
-  wrapText(text, 228, canvas.height - 98, 486, 28);
-  ctx.fillStyle = "rgba(127, 103, 200, 0.78)";
-  ctx.font = "900 13px Segoe UI, system-ui, sans-serif";
-  ctx.textAlign = "right";
-  ctx.fillText(language === "ja" ? "ボタンで次へ" : "Press a button", 710, canvas.height - 54);
-
-  ctx.fillStyle = "#fff3a4";
-  ctx.strokeStyle = "#7f67c8";
-  ctx.lineWidth = 5;
-  ctx.font = "900 26px Segoe UI, system-ui, sans-serif";
-  ctx.textAlign = "center";
-  ctx.strokeText(boss.finalBoss ? "FINAL BOSS" : `BOSS ${stageLabel()}`, canvas.width / 2, 24);
-  ctx.fillText(boss.finalBoss ? "FINAL BOSS" : `BOSS ${stageLabel()}`, canvas.width / 2, 24);
+  ctx.font = "800 27px " + FX.FONT;
+  const shown = Math.floor(timer * (language === "ja" ? 36 : 64));
+  wrapText([...text].slice(0, shown).join(""), boxX + 40, boxY + 38, boxW - 80, 38);
+  if (shown >= [...text].length) {
+    ctx.fillStyle = accent;
+    const ax = boxX + boxW - 40;
+    const ay = boxY + boxH - 30 + Math.sin(performance.now() / 140) * 4;
+    ctx.beginPath();
+    ctx.moveTo(ax - 11, ay - 7);
+    ctx.lineTo(ax + 11, ay - 7);
+    ctx.lineTo(ax, ay + 9);
+    ctx.closePath();
+    ctx.fill();
+  }
   ctx.restore();
 }
 
@@ -3859,7 +4256,7 @@ function drawBossBust(boss, cx, cy, kind) {
 }
 
 function drawHpMeter() {
-  const x = canvas.width - 250;
+  const x = canvas.width - 366;
   const y = 18;
   const w = 220;
   const h = 44;
@@ -3903,7 +4300,7 @@ function drawHpMeter() {
 
 function drawOxygenMeter() {
   if (!isUnderwaterStage()) return;
-  const x = canvas.width - 250;
+  const x = canvas.width - 366;
   const y = 70;
   const w = 220;
   const h = 38;
@@ -3980,12 +4377,12 @@ function drawStageEnvironment() {
   const trait = currentStageTrait();
   if (trait === "underwater") {
     ctx.save();
-    const grad = ctx.createLinearGradient(0, 20, 0, canvas.height);
+    const grad = ctx.createLinearGradient(0, 20, 0, worldBottom());
     grad.addColorStop(0, "rgba(106, 246, 215, 0.22)");
-    grad.addColorStop(0.55, "rgba(0, 95, 120, 0.26)");
-    grad.addColorStop(1, "rgba(2, 35, 63, 0.32)");
+    grad.addColorStop(0.45, "rgba(0, 95, 120, 0.3)");
+    grad.addColorStop(1, "rgba(2, 22, 52, 0.62)");
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, WORLD_WIDTH, canvas.height);
+    ctx.fillRect(0, 0, WORLD_WIDTH, worldBottom());
     ctx.strokeStyle = "rgba(191, 248, 255, 0.38)";
     ctx.lineWidth = 3;
     for (let x = -80; x < WORLD_WIDTH + 120; x += 180) {
@@ -4010,7 +4407,7 @@ function drawStageHazards() {
     if (!g.active && !warmup) continue;
     const alpha = g.active ? 0.86 : 0.34;
     const x = g.x;
-    const y = canvas.height - g.h;
+    const y = (g.baseY ?? canvas.height) - g.h;
     const grad = ctx.createLinearGradient(x, y, x + g.w, y);
     grad.addColorStop(0, `rgba(255, 243, 164, ${alpha * 0.25})`);
     grad.addColorStop(0.45, `rgba(255, 111, 82, ${alpha})`);
@@ -4083,7 +4480,7 @@ function drawBossHazards() {
     if (h.type === "fall") {
       const warning = h.telegraph > 0;
       const x = h.x;
-      const y = warning ? 92 : h.y;
+      const y = warning ? (state.cameraY ?? 0) + 56 : h.y;
       const pulse = 1 + Math.sin(performance.now() / 95) * 0.08;
       ctx.globalAlpha = warning ? 0.62 : 0.92;
       ctx.strokeStyle = warning ? "#ff8db7" : "#fff3a4";
@@ -4100,13 +4497,14 @@ function drawBossHazards() {
     } else if (h.type === "eruption") {
       const warning = h.telegraph > 0;
       const x = h.x - h.w / 2;
-      const y = canvas.height - h.h;
+      const baseY = eruptionBaseY();
+      const y = baseY - h.h;
       ctx.globalAlpha = warning ? 0.64 : 0.9;
       ctx.fillStyle = warning ? "rgba(255, 141, 183, 0.18)" : "rgba(255, 111, 82, 0.82)";
       ctx.strokeStyle = warning ? "#ff8db7" : "#fff3a4";
       ctx.lineWidth = warning ? 4 : 2;
       ctx.beginPath();
-      ctx.roundRect(x, warning ? canvas.height - 42 : y, h.w, warning ? 28 : h.h, 20);
+      ctx.roundRect(x, warning ? baseY - 76 : y, h.w, warning ? 28 : h.h + 200, 20);
       ctx.fill();
       ctx.stroke();
       if (!warning) {
@@ -4148,7 +4546,7 @@ function drawItemFullPrompt() {
 }
 
 function drawStageBadge() {
-  const label = `${stageLabel()}${currentCourse === courses.length - 1 ? ` ${t("final")}` : courses[currentCourse]?.areaIndex === 4 ? ` ${t("boss")}` : ""}`;
+  const label = `${stageLabel()}${currentCourse === courses.length - 1 ? ` ${t("final")}` : courses[currentCourse]?.bossStage ? ` ${t("boss")}` : ""}`;
   const owner = hasEquippedWeapon() ? "" : state.gun.holder !== null && state.gun.holder !== "inventory" ? t("stolen") : t("noGun");
   const weaponLabel = hasEquippedWeapon() ? `${weaponName()} Lv${state.weaponPower}` : `${t("unequipped")}${owner}`;
   const inventoryLabel = `${t("stock")} ${weaponInventoryLabel()}`;
@@ -4423,6 +4821,23 @@ function inventoryTopMenuButtonRects() {
   ];
 }
 
+function inventoryWorldMapConfirmButtonRects() {
+  const r = { x: 420, y: 240, w: 440, h: 190 };
+  return [
+    { x: r.x + 86, y: r.y + 112, w: 112, h: 46 },
+    { x: r.x + 246, y: r.y + 112, w: 112, h: 46 }
+  ];
+}
+
+function fusionPromptButtonRects() {
+  const x = canvas.width / 2 - 270;
+  const y = canvas.height / 2 - 56;
+  return [
+    { x: canvas.width / 2 - 140, y: y + 54, w: 130, h: 48 },
+    { x: canvas.width / 2 + 14, y: y + 54, w: 130, h: 48 }
+  ];
+}
+
 function resetInventoryFocus() {
   if (!state) return;
   state.inventoryFocusArea = "itemList";
@@ -4609,8 +5024,9 @@ function drawInventoryWorldMapConfirm() {
   ctx.textBaseline = "top";
   ctx.fillText("ワールドマップに戻りますか？", r.x + r.w / 2, r.y + 36);
   const labels = ["はい", "いいえ"];
+  const rects = inventoryWorldMapConfirmButtonRects();
   for (let i = 0; i < labels.length; i++) {
-    const b = { x: r.x + 86 + i * 160, y: r.y + 112, w: 112, h: 46 };
+    const b = rects[i];
     const selected = (state.inventoryConfirmChoice ?? 0) === i;
     ctx.fillStyle = selected ? "#fff3a4" : "#ffffff";
     ctx.strokeStyle = selected ? "#ff5f9e" : "#c8b2ff";
@@ -5031,6 +5447,7 @@ function drawFusionPrompt() {
   const prompt = state.fusionPrompt;
   const x = canvas.width / 2 - 270;
   const y = canvas.height / 2 - 56;
+  const buttons = fusionPromptButtonRects();
   ctx.save();
   ctx.fillStyle = "rgba(30, 24, 52, 0.78)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -5045,11 +5462,21 @@ function drawFusionPrompt() {
   ctx.font = "900 23px Georgia, serif";
   ctx.textAlign = "center";
   ctx.fillText(`${weaponName(prompt.power)}${t("fuseQuestion")}`, canvas.width / 2, y + 36);
+  const labels = ["Yes", "No"];
   ctx.font = "900 28px Georgia, serif";
-  ctx.fillStyle = prompt.choice === 0 ? "#ff8db7" : "#4d4773";
-  ctx.fillText("Yes", canvas.width / 2 - 75, y + 80);
-  ctx.fillStyle = prompt.choice === 1 ? "#ff8db7" : "#4d4773";
-  ctx.fillText("No", canvas.width / 2 + 80, y + 80);
+  for (let i = 0; i < buttons.length; i++) {
+    const b = buttons[i];
+    const selected = prompt.choice === i;
+    ctx.fillStyle = selected ? "#fff3a4" : "#ffffff";
+    ctx.strokeStyle = selected ? "#ff8db7" : "#c8b2ff";
+    ctx.lineWidth = selected ? 4 : 2;
+    ctx.beginPath();
+    ctx.roundRect(b.x, b.y, b.w, b.h, 8);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = selected ? "#ff5f9e" : "#4d4773";
+    ctx.fillText(labels[i], b.x + b.w / 2, b.y + 32);
+  }
   ctx.restore();
 }
 
@@ -5385,6 +5812,8 @@ function drawPastelRibbon(cam) {
 }
 
 function drawMountains() {
+  const course = courses[currentCourse];
+  if (course?.trait === "underwater" || course?.climbStage) return;
   const theme = courses[currentCourse]?.theme;
   ctx.fillStyle = theme ? `${theme.ground[1]}88` : "rgba(178, 178, 234, 0.55)";
   for (let x = -220; x < WORLD_WIDTH + 400; x += 520) {
@@ -5406,17 +5835,75 @@ function drawMountains() {
 
 function drawPlatforms() {
   const theme = courses[currentCourse]?.theme;
+  const viewL = state.camera - 60;
+  const viewR = state.camera + VIEW_W + 60;
   for (const p of platforms) {
+    if (p.x > viewR || p.x + p.w < viewL) continue;
+    if (p.terrain) {
+      drawTerrainBody(p, theme);
+      drawMoonRock({ x: p.x, y: p.y, w: p.w, h: 48 }, theme?.ground[0] ?? "#f4e9cc", theme?.ground[1] ?? "#cfc7d6");
+      continue;
+    }
     drawMoonRock(p, theme?.ground[0] ?? "#f4e9cc", theme?.ground[1] ?? "#cfc7d6");
     if (p.iceRamp) drawIceSlopeMarks(p);
     if (p.conveyor) drawConveyorSurface(p);
     if (p.mover) drawMovingPlatformGlow(p);
   }
   for (const b of blocks) {
+    if (b.x > viewR || b.x + b.w < viewL) continue;
+    if (Gimmick.drawBlock(b)) continue;
     if (b.broken) continue;
     if (b.breakable) drawBreakableBlock(b);
     else drawMoonRock(b, theme?.ground[1] ?? "#d8d3ff", theme?.accent ?? "#aaa7d8");
   }
+}
+
+function drawTerrainBody(p, theme) {
+  const top = Math.max(p.y + 30, (state.cameraY ?? 0) - 20);
+  const bottom = Math.min(p.y + p.h, (state.cameraY ?? 0) + VIEW_H + 20);
+  if (bottom <= top) return;
+  const light = theme?.ground[0] ?? "#f4e9cc";
+  const dark = theme?.ground[1] ?? "#cfc7d6";
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(p.x, top, p.w, bottom - top);
+  ctx.clip();
+  const grad = ctx.createLinearGradient(0, p.y, 0, p.y + 560);
+  grad.addColorStop(0, light);
+  grad.addColorStop(0.5, dark);
+  grad.addColorStop(1, dark);
+  ctx.fillStyle = grad;
+  ctx.fillRect(p.x, top, p.w, bottom - top);
+  const shade = ctx.createLinearGradient(0, p.y + 30, 0, p.y + 760);
+  shade.addColorStop(0, "rgba(72, 48, 140, 0.1)");
+  shade.addColorStop(1, "rgba(40, 22, 96, 0.55)");
+  ctx.fillStyle = shade;
+  ctx.fillRect(p.x, top, p.w, bottom - top);
+  // 地層のすじ・小石
+  const first = Math.max(0, Math.floor((top - p.y - 70) / 62));
+  for (let i = first; p.y + 70 + i * 62 < bottom; i++) {
+    const y = p.y + 70 + i * 62;
+    const seed = (p.x * 13 + i * 71) % 97;
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.14)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(p.x, y + (seed % 9) - 4);
+    ctx.quadraticCurveTo(p.x + p.w / 2, y + ((seed * 3) % 17) - 8, p.x + p.w, y + ((seed * 5) % 9) - 4);
+    ctx.stroke();
+    ctx.fillStyle = i % 2 ? "rgba(255, 255, 255, 0.16)" : "rgba(40, 22, 96, 0.14)";
+    ctx.beginPath();
+    ctx.ellipse(p.x + 18 + ((seed * 7) % Math.max(20, p.w - 36)), y + 26, 13 + (seed % 9), 6 + (seed % 4), 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.2)";
+    ctx.beginPath();
+    ctx.arc(p.x + 12 + ((seed * 11) % Math.max(20, p.w - 24)), y + 44, 3 + (seed % 3), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = "rgba(30, 16, 80, 0.2)";
+  ctx.fillRect(p.x, top, 6, bottom - top);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.18)";
+  ctx.fillRect(p.x + p.w - 4, top, 4, bottom - top);
+  ctx.restore();
 }
 
 function drawIceSlopeMarks(p) {
@@ -5690,13 +6177,8 @@ function drawPeanut() {
 }
 
 function drawFlag() {
-  const f = level.flag;
-  ctx.fillStyle = "#2f3238";
-  ctx.fillRect(f.x, f.y, f.w, f.h);
-  ctx.fillStyle = "#e85d4f";
-  ctx.fillRect(f.x + f.w, f.y + 10, 104, 58);
-  ctx.fillStyle = "#f8f4df";
-  ctx.fillRect(f.x + f.w + 16, f.y + 26, 50, 10);
+  if (courses[currentCourse]?.finalStage) return;
+  FX.drawGoal(level.flag, goalLocked());
 }
 
 function drawGun() {
@@ -5720,6 +6202,7 @@ function drawBeams() {
       ctx.restore();
       continue;
     }
+    FX.beamGlow(b);
     const grad = ctx.createLinearGradient(-b.w / 2, 0, b.w / 2, 0);
     const colors = b.colors || WEAPON_STAGES[0].colors;
     grad.addColorStop(0, colors[0]);
@@ -6361,6 +6844,25 @@ function drawPlayer() {
     drawCrescentRespawnSprite(p);
     return;
   }
+  const warp = state.mode === "stageClear" ? Story.stageClearWarp() : 1;
+  if (warp <= 0.02) return;
+  const spriteReady = pyompySprite.complete && pyompySprite.naturalWidth > 0;
+  if (spriteReady && state.mode === "playing") FX.drawGhosts(p, drawPlayerSprite);
+  ctx.save();
+  FX.playerTransform(p);
+  if (warp < 1) {
+    const cx = p.x + p.w / 2;
+    const cy = p.y + p.h / 2;
+    ctx.translate(cx, cy);
+    ctx.rotate((1 - warp) * 9);
+    ctx.scale(warp, warp);
+    ctx.translate(-cx, -cy);
+  }
+  drawPlayerBody(p);
+  ctx.restore();
+}
+
+function drawPlayerBody(p) {
   if (hasEquippedWeapon() && state.weaponPower >= 16) drawBackCannon(p);
   if (p.invincible > 0 && state.mode !== "respawning" && Math.floor(performance.now() / 90) % 2) return;
   if (pyompySprite.complete && pyompySprite.naturalWidth > 0) {
@@ -6698,6 +7200,21 @@ function updateGamepad() {
     return;
   }
 
+  if (Story.isStoryMode(state.mode)) {
+    if ((jumpPressed && !gamepadState.jumpLatch) || (shootPressed && !gamepadState.shootLatch)) Story.handleKey("Space");
+    if (startPressed && !gamepadState.startLatch) Story.handleKey("Escape");
+    gamepadState.leftLatch = gamepadState.left;
+    gamepadState.rightLatch = gamepadState.right;
+    gamepadState.upLatch = gamepadState.up;
+    gamepadState.downLatch = gamepadState.down;
+    gamepadState.runLatch = runPressed;
+    gamepadState.selectLatch = selectPressed;
+    gamepadState.startLatch = startPressed;
+    gamepadState.jumpLatch = jumpPressed;
+    gamepadState.shootLatch = shootPressed;
+    return;
+  }
+
   if (state.mode === "bossIntro" || state.mode === "bossOutro") {
     if ((jumpPressed && !gamepadState.jumpLatch) || (shootPressed && !gamepadState.shootLatch) || (startPressed && !gamepadState.startLatch)) advanceBossIntro();
     gamepadState.leftLatch = gamepadState.left;
@@ -6777,6 +7294,12 @@ window.addEventListener("keydown", event => {
   unlockAudio();
   const code = normalizeInputCode(event);
   if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", "Tab", "Enter"].includes(code)) event.preventDefault();
+  if (code === "KeyM" && !event.repeat) toggleSound();
+  if (Story.isStoryMode(state.mode)) {
+    if (!event.repeat) Story.handleKey(code);
+    return;
+  }
+  if (FX.transitioning() && (state.mode === "worldMap" || state.mode === "title" || state.mode === "ended")) return;
   if (!event.repeat && (code === "ArrowLeft" || code === "KeyA")) registerMoveTap(-1);
   if (!event.repeat && (code === "ArrowRight" || code === "KeyD")) registerMoveTap(1);
   if (!event.repeat && (code === "Space" || code === "ArrowUp" || code === "KeyW")) queueStompBoost();
@@ -6868,6 +7391,16 @@ window.addEventListener("resize", updateFullscreenButton);
 canvas.addEventListener("pointerdown", event => {
   unlockAudio();
   const pos = canvasPoint(event);
+  if (Story.isStoryMode(state.mode)) {
+    Story.handlePointer(pos.x, pos.y);
+    event.preventDefault();
+    return;
+  }
+  if (state.mode === "bossIntro" || state.mode === "bossOutro") {
+    advanceBossIntro();
+    event.preventDefault();
+    return;
+  }
   if (state.mode === "paused") {
     const rects = pauseButtonRects();
     const hitIndex = rects.findIndex(r => pos.x >= r.x && pos.x <= r.x + r.w && pos.y >= r.y && pos.y <= r.y + r.h);
@@ -6893,7 +7426,15 @@ canvas.addEventListener("pointerdown", event => {
     return;
   }
   if (state.mode === "inventory") {
+    if (handleInventoryWorldMapConfirmPointer(pos.x, pos.y)) {
+      event.preventDefault();
+      return;
+    }
     if (handleFusionPromptPointer(pos.x, pos.y)) return;
+    if (handleInventoryTopMenuPointer(pos.x, pos.y)) {
+      event.preventDefault();
+      return;
+    }
     const sortButton = inventorySortButtonRect();
     if (pos.x >= sortButton.x && pos.x <= sortButton.x + sortButton.w && pos.y >= sortButton.y && pos.y <= sortButton.y + sortButton.h) {
       runInventorySort();
@@ -7324,11 +7865,33 @@ document.addEventListener("touchstart", unlockAudio, { passive: true });
 document.addEventListener("touchmove", event => event.preventDefault(), { passive: false });
 
 state = newState();
+state.mode = "title";
 applyLanguage();
 const debugParams = new URLSearchParams(window.location.search);
-if (debugParams.get("stage") === "6-5" || debugParams.get("stage") === "final") {
+if (debugParams.get("stage") === "final") {
   startDirectCourse(courses.length - 1);
+} else if (/^\d-\d$/.test(debugParams.get("stage") ?? "")) {
+  const [dw, da] = debugParams.get("stage").split("-").map(Number);
+  startDirectCourse((STAGE_START_INDICES[dw - 1] ?? 0) + da - 1);
 }
+document.querySelector("#newGameButton")?.addEventListener("click", event => {
+  event.stopPropagation();
+  unlockAudio();
+  const button = event.currentTarget;
+  if (button.dataset.armed) {
+    startGame(true);
+    return;
+  }
+  button.dataset.armed = "1";
+  button.textContent = language === "ja" ? "セーブを消してはじめる？" : "Erase save and start?";
+});
+document.querySelector("#soundButton")?.addEventListener("click", event => {
+  event.stopPropagation();
+  unlockAudio();
+  toggleSound();
+});
+Story.refreshTitleUi();
+Chat.layout();
 updateHud();
 draw();
 lastTime = performance.now();

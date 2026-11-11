@@ -1,9 +1,14 @@
-const CACHE_NAME = "pyon-p-adventure-v13";
+const CACHE_NAME = "pyon-p-adventure-v14";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./game.js",
+  "./bgm.js",
+  "./fx.js",
+  "./story.js",
+  "./chat.js",
+  "./gimmicks.js",
   "./manifest.json",
   "./assets/moonians-logo.png",
   "./assets/moonians-logo-English.png",
@@ -33,7 +38,7 @@ self.addEventListener("fetch", event => {
   if (request.method !== "GET") return;
   const url = new URL(request.url);
 
-  if (url.origin === location.origin && (url.pathname.endsWith("/game.js") || url.pathname.endsWith("/styles.css"))) {
+  if (url.origin === location.origin && (url.pathname.endsWith(".js") || url.pathname.endsWith(".css") || url.pathname.endsWith(".html") || url.pathname.endsWith("/"))) {
     event.respondWith(
       fetch(request).then(response => {
         const copy = response.clone();
