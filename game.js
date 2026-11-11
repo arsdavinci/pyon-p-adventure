@@ -1,5 +1,5 @@
 // 古いページ（前の版の index.html）がキャッシュから出てきたときは、キャッシュを消して読み直す
-if (typeof FX === "undefined" || typeof Story === "undefined" || typeof Chat === "undefined" || typeof Gimmick === "undefined") {
+if (typeof FX === "undefined" || typeof Story === "undefined" || typeof Chat === "undefined" || typeof Gimmick === "undefined" || typeof Shop === "undefined") {
   (async () => {
     try {
       if (window.caches) await Promise.all((await caches.keys()).map(key => caches.delete(key)));
@@ -1125,7 +1125,7 @@ function newState() {
     mode: "playing",
     camera: 0,
     cameraY: cameraYMax(),
-    keys: 0,
+    keys: Shop.has("key") ? 1 : 0,
     keyItems: (level.keys ?? []).map(k => ({ ...k, taken: false })),
     springs: (level.springs ?? []).map(s => ({ ...s, squish: 0 })),
     chests: (level.chests ?? []).map(c => ({ ...c, opened: false })),
@@ -1906,6 +1906,16 @@ function updatePlayer(dt) {
   }
   if (!movingLeft && !movingRight) p.vx *= slippery ? 0.985 : FRICTION;
 
+  if (p.grounded) p.airJumped = false;
+  if (wantsJump && !p.jumpWas && !p.grounded && (p.coyote ?? 0) <= 0 && !p.airJumped && Shop.has("double")) {
+    p.vy = trait === "moonFloat" ? -880 : -800;
+    p.airJumped = true;
+    p.jumpHeld = true;
+    playSfx("jump", p.x);
+    FX.jump(p.x + p.w / 2, p.y + p.h);
+    FX.radial(p.x + p.w / 2, p.y + p.h, 8, { type: "star", speed: [80, 220], life: [0.3, 0.5], r: [4, 7], colors: FX.GOLD, spin: 8, vy: 60 });
+  }
+  p.jumpWas = wantsJump;
   p.coyote = p.grounded ? 0.1 : Math.max(0, (p.coyote ?? 0) - dt);
   if (wantsJump && (p.grounded || p.coyote > 0)) {
     spawnJumpSmoke(p.x + p.w / 2, p.y + p.h);
@@ -2192,6 +2202,7 @@ function updateEnemies(dt) {
     const stomp = p.vy > 120 && p.y + p.h - e.y < 24;
     if (stomp) {
       stunEnemy(e);
+      if (!e.boss && Shop.has("boots")) damageEnemy(e, 3);
       applyStompBounce(e, (state.stompBoostTimer ?? 0) > 0);
     } else {
       damagePlayer(false, e, true);
@@ -3501,8 +3512,9 @@ function collectCoins() {
   const p = state.player;
   for (const c of state.coinItems) {
     if (c.taken) continue;
-    const nearX = p.x < c.x + c.r && p.x + p.w > c.x - c.r;
-    const nearY = p.y < c.y + c.r && p.y + p.h > c.y - c.r;
+    const reach = c.r + (Shop.has("magnet") ? 96 : 0);
+    const nearX = p.x < c.x + reach && p.x + p.w > c.x - reach;
+    const nearY = p.y < c.y + reach && p.y + p.h > c.y - reach;
     if (nearX && nearY) {
       c.taken = true;
       state.coinTotal += 1;
@@ -3656,7 +3668,7 @@ function damagePlayer(fell = false, sourceEnemy = null, canStealWeapon = false) 
   const p = state.player;
   if (state.mode === "dying" || state.mode === "respawning") return;
   if (!fell && p.invincible > 0) return;
-  if (!fell && canStealWeapon && sourceEnemy && sourceEnemy.alive && hasEquippedWeapon()) {
+  if (!fell && canStealWeapon && sourceEnemy && sourceEnemy.alive && hasEquippedWeapon() && !Shop.has("strap")) {
     const playerPower = state.weaponPower;
     const enemyPower = sourceEnemy.weaponPower ?? 0;
     if (enemyPower === 0 || playerPower > enemyPower || (sourceEnemy.boss && playerPower >= enemyPower)) {
@@ -3679,7 +3691,7 @@ function damagePlayer(fell = false, sourceEnemy = null, canStealWeapon = false) 
     playSfx("playerDamage", p.x + p.w / 2);
     FX.playerHurt(p.x + p.w / 2, p.y + p.h / 2);
     Chat.event("hurt");
-    p.invincible = 1.35;
+    p.invincible = Shop.has("cushion") ? 2.7 : 1.35;
     p.vx = sourceEnemy ? (p.x < sourceEnemy.x ? -260 : 260) : -p.facing * 220;
     p.vy = -360;
     return;
@@ -3824,10 +3836,11 @@ function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.save();
   FX.applyShake();
-  const inGame = mode !== "worldMap" && mode !== "cutscene" && mode !== "credits" && !(mode === "title" && Story.drawTitleKey());
+  const inGame = mode !== "worldMap" && mode !== "cutscene" && mode !== "credits" && mode !== "shop" && !(mode === "title" && Story.drawTitleKey());
   if (mode === "worldMap") drawWorldMapScreen();
   else if (mode === "cutscene") Story.drawCutscene();
   else if (mode === "credits") Story.drawCredits();
+  else if (mode === "shop") Shop.draw();
   else if (inGame) drawGameWorld();
   ctx.restore();
   FX.drawScreen();
@@ -4180,6 +4193,7 @@ function drawWorldMapScreen() {
   ctx.restore();
 
   Story.drawMapHud();
+  Shop.drawMapButton();
   drawWorldMapPanel();
 }
 
@@ -7302,7 +7316,9 @@ function updateGamepad() {
 
   if (Story.isStoryMode(state.mode)) {
     if ((jumpPressed && !gamepadState.jumpLatch) || (shootPressed && !gamepadState.shootLatch)) Story.handleKey("Space");
-    if (startPressed && !gamepadState.startLatch) Story.handleKey("Escape");
+    if ((startPressed && !gamepadState.startLatch) || (selectPressed && !gamepadState.selectLatch) || (runPressed && !gamepadState.runLatch && state.mode === "shop")) Story.handleKey("Escape");
+    if (gamepadState.up && !gamepadState.upLatch) Story.handleKey("ArrowUp");
+    if (gamepadState.down && !gamepadState.downLatch) Story.handleKey("ArrowDown");
     gamepadState.leftLatch = gamepadState.left;
     gamepadState.rightLatch = gamepadState.right;
     gamepadState.upLatch = gamepadState.up;
@@ -7337,6 +7353,7 @@ function updateGamepad() {
       moveMapSelection(moveDir);
       gamepadState.inventoryMoveDelay = now + (freshMove ? 230 : 125);
     }
+    if (selectPressed && !gamepadState.selectLatch) Shop.open();
     if ((jumpPressed && !gamepadState.jumpLatch) || (shootPressed && !gamepadState.shootLatch) || (startPressed && !gamepadState.startLatch)) startMapCourse(mapSelectedCourse);
     gamepadState.leftLatch = gamepadState.left;
     gamepadState.rightLatch = gamepadState.right;
@@ -7420,6 +7437,7 @@ window.addEventListener("keydown", event => {
     return;
   }
   if (state.mode === "worldMap") {
+    if (!event.repeat && (code === "Tab" || code === "Select" || code === "KeyI" || code === "KeyE")) Shop.open();
     if (code === "ArrowLeft" || code === "KeyA") moveMapSelection(-1);
     if (code === "ArrowRight" || code === "KeyD") moveMapSelection(1);
     if (code === "ArrowUp" || code === "KeyW") moveMapSelection(-1);
@@ -7517,6 +7535,10 @@ canvas.addEventListener("pointerdown", event => {
     return;
   }
   if (state.mode === "worldMap") {
+    if (Shop.mapPointer(pos.x, pos.y)) {
+      event.preventDefault();
+      return;
+    }
     const courseIndex = mapCourseAt(pos.x, pos.y);
     if (courseIndex >= 0) {
       if (courseIndex === mapSelectedCourse) startMapCourse(courseIndex);

@@ -1,4 +1,4 @@
-const CACHE_NAME = "pyon-p-adventure-v16";
+const CACHE_NAME = "pyon-p-adventure-v17";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -9,6 +9,7 @@ const APP_SHELL = [
   "./story.js",
   "./chat.js",
   "./gimmicks.js",
+  "./shop.js",
   "./manifest.json",
   "./assets/moonians-logo.png",
   "./assets/moonians-logo-English.png",

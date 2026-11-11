@@ -1404,7 +1404,7 @@
   }
 
   // ---------- 入力 ----------
-  const STORY_MODES = { cutscene: true, stageClear: true, credits: true, bossDeath: true, movie: true };
+  const STORY_MODES = { cutscene: true, stageClear: true, credits: true, bossDeath: true, movie: true, shop: true };
   const CONFIRM = ["Enter", "Space", "KeyX", "KeyY", "KeyJ", "KeyZ"];
 
   function handleKey(code) {
@@ -1413,6 +1413,7 @@
       if (movie && (code === "Escape" || CONFIRM.includes(code))) movie.finish();
       return true;
     }
+    if (mode === "shop") return Shop.handleKey(code);
     if (mode === "cutscene") {
       if (code === "Escape") {
         if (!FX.transitioning()) finish();
@@ -1436,6 +1437,7 @@
       if (movie) movie.finish();
       return true;
     }
+    if (mode === "shop") return Shop.handlePointer(x, y);
     if (mode === "cutscene") {
       const r = skipRect();
       if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) {
@@ -1460,6 +1462,7 @@
     if (mode === "cutscene") updateCutscene(dt);
     else if (mode === "stageClear") updateStageClear(dt);
     else if (mode === "credits") updateCredits(dt);
+    else if (mode === "shop") Shop.update(dt);
   }
 
   // ---------- ワールドマップの追加表示 ----------
@@ -1555,7 +1558,7 @@
   function desiredTrack() {
     const m = state.mode;
     if (m === "title") return "title";
-    if (m === "worldMap") return "map";
+    if (m === "worldMap" || m === "shop") return "map";
     if (m === "cutscene") return cs?.music || "story";
     if (m === "credits") return cr?.done ? null : "credits";
     if (m === "stageClear" || m === "bossDeath" || m === "ended" || m === "movie") return null;

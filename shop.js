@@ -1,0 +1,398 @@
+// shop.js — よろず屋「つきのわ」：集めた柿ピーで便利アイテムを買う
+// game.js より前に読み込む。game.js のグローバルは呼び出し時に参照する。
+(() => {
+  "use strict";
+
+  const L = (ja, en) => (language === "ja" ? ja : en);
+  const UNLOCK_COURSE = 2; // 1-1 と 1-2 をクリアすると開店
+
+  // price は「柿の種と ピーナッツを それぞれ何個」か
+  const ITEMS = [
+    { id: "burger", price: 10, repeat: true, color: "#ffb86b", mark: "🍔",
+      ja: ["月見バーガー", "その場でライフとHPが全回復。何度でも買える。"],
+      en: ["Moon Burger", "Fully restores lives and HP right now. Buy as often as you like."] },
+    { id: "cushion", price: 40, color: "#ffd1ed", mark: "☁",
+      ja: ["ふわふわクッション", "ダメージを受けたあとの無敵時間が2倍になる。"],
+      en: ["Fluffy Cushion", "Doubles your invincibility time after taking a hit."] },
+    { id: "magnet", price: 60, color: "#9ee8ff", mark: "U",
+      ja: ["柿ピーじしゃく", "近くの柿の種とピーナッツが勝手に集まってくる。"],
+      en: ["Snack Magnet", "Nearby kaki seeds and peanuts fly to you on their own."] },
+    { id: "strap", price: 80, color: "#c8b2ff", mark: "∞",
+      ja: ["ぜったいはなさんストラップ", "敵に光線銃をうばわれなくなる。"],
+      en: ["Never-Let-Go Strap", "Enemies can no longer steal your ray gun."] },
+    { id: "key", price: 100, color: "#ffd85a", mark: "♪",
+      ja: ["あいかぎ", "どのステージも、カギを1本持った状態で始まる。"],
+      en: ["Spare Key", "Start every stage already holding one key."] },
+    { id: "boots", price: 150, color: "#ff8db7", mark: "▼",
+      ja: ["ふつうのゲームのくつ", "ふむだけで敵を倒せる。そう、ふつうのゲームみたいに。"],
+      en: ["Normal-Game Boots", "Stomping actually beats enemies. You know, like in a normal game."] },
+    { id: "double", price: 250, color: "#d9ffd6", mark: "✦",
+      ja: ["2段ジャンプシューズ", "空中でもう1回ジャンプできる。空ルートもらくらく。"],
+      en: ["Double-Jump Shoes", "Jump once more in mid-air. Sky routes become a breeze."] },
+    { id: "statue", price: 999, color: "#fff3a4", mark: "★",
+      ja: ["黄金の柿ピー像", "とくに効果はない。でも、すごい。"],
+      en: ["Golden Kaki-Pea Statue", "Does nothing in particular. But it is magnificent."] }
+  ];
+
+  const art = {};
+  const load = (key, file) => {
+    const im = new Image();
+    im.src = `assets/${file}.png`;
+    art[key] = im;
+  };
+  load("keeper", "shop-keeper");
+  load("bg", "shop-bg");
+  for (const it of ITEMS) load(it.id, `shop-item-${it.id}`);
+  const ok = im => im && im.complete && im.naturalWidth > 0;
+
+  let sel = 0;
+  let t = 0;
+  let line = null;
+  let lineT = 0;
+
+  const owned = () => {
+    const d = Story.data;
+    if (!d.shop || typeof d.shop !== "object") d.shop = {};
+    return d.shop;
+  };
+  const has = id => typeof Story !== "undefined" && !!owned()[id];
+  const unlocked = () => unlockedCourse >= UNLOCK_COURSE;
+
+  function wallet() {
+    if (!campaignKeep) campaignKeep = campaignSnapshotFromState();
+    return campaignKeep;
+  }
+  const pairs = () => Math.min(wallet().kakiTotal ?? 0, wallet().peaTotal ?? 0);
+
+  function say(ja, en) {
+    line = [ja, en];
+    lineT = 0;
+  }
+
+  function open() {
+    if (!unlocked() || state.mode !== "worldMap" || FX.transitioning()) return;
+    playSfx("confirm");
+    FX.startTransition({
+      type: "fade", dur: 0.6,
+      onMid: () => {
+        state.mode = "shop";
+        sel = 0;
+        const first = !Story.data.seen.shopVisit;
+        Story.data.seen.shopVisit = true;
+        say(first
+          ? "まいど〜！ よろず屋『つきのわ』へようこそ。柿の種とピーナッツ、同じ数ずつでお代をいただくで。"
+          : "まいど〜！ 今日はなに買うてく？",
+        first
+          ? "Welcome to Tsukinowa General Store! I take payment in kaki seeds and peanuts, the same number of each."
+          : "Welcome back! What'll it be today?");
+      }
+    });
+  }
+
+  function close() {
+    if (FX.transitioning()) return;
+    playSfx("equip");
+    Story.persist();
+    FX.startTransition({ type: "fade", dur: 0.6, onMid: () => { state.mode = "worldMap"; lastTime = performance.now(); } });
+  }
+
+  function buy() {
+    const it = ITEMS[sel];
+    const w = wallet();
+    if (!it.repeat && has(it.id)) {
+      playSfx("locked");
+      say("それはもう持ってるで。だいじに使いや。", "You already own that one. Take good care of it.");
+      return;
+    }
+    if (pairs() < it.price) {
+      playSfx("locked");
+      const lack = it.price - pairs();
+      say(it.id === "statue" ? "それは夢の品や。こつこつ集めて、いつか買いに来てな。" : `あと ${lack} 個ずつ足りへんな。ためてまた来てや。`,
+        it.id === "statue" ? "That one is a dream item. Keep saving and come back someday." : `You're ${lack} short of each. Save up and come back.`);
+      return;
+    }
+    w.kakiTotal -= it.price;
+    w.peaTotal -= it.price;
+    state.kakiTotal = w.kakiTotal;
+    state.peaTotal = w.peaTotal;
+    if (it.id === "burger") {
+      w.lives = MAX_LIVES;
+      w.hp = MAX_HP;
+      state.lives = MAX_LIVES;
+      state.hp = MAX_HP;
+      say("月見バーガーおまち！ 元気まんたんやな。", "One Moon Burger, coming up! You're good as new.");
+    } else {
+      owned()[it.id] = true;
+      say(it.id === "statue" ? "……ほんまに買うたん！？ うちの店の家宝やで。大事にしてや！" : it.id === "boots" ? "これで、ふつうのゲームみたいに遊べるで。" : "おおきに！ ええ買いもんしたな。",
+        it.id === "statue" ? "...You actually bought it!? That was the shop's treasure. Take care of it!" : it.id === "boots" ? "Now you can play it like a normal game." : "Thank you kindly! A fine purchase.");
+    }
+    playSfx("powerUp");
+    FX.firework(canvas.width * 0.7, 250, FX.GOLD);
+    FX.flash("#fff3a4", 0.25, 0.25);
+    Story.persist();
+  }
+
+  function rowRect(i) {
+    return { x: 520, y: 96 + i * 66, w: 716, h: 58 };
+  }
+  const backRect = () => ({ x: 34, y: 20, w: 170, h: 46 });
+
+  function handleKey(code) {
+    if (code === "ArrowUp" || code === "KeyW") {
+      sel = (sel + ITEMS.length - 1) % ITEMS.length;
+      playSfx("equip");
+    } else if (code === "ArrowDown" || code === "KeyS") {
+      sel = (sel + 1) % ITEMS.length;
+      playSfx("equip");
+    } else if (["Enter", "Space", "KeyX", "KeyJ", "KeyY"].includes(code)) buy();
+    else if (["Escape", "Tab", "Backspace", "KeyB", "Select"].includes(code)) close();
+    return true;
+  }
+
+  function handlePointer(x, y) {
+    const b = backRect();
+    if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
+      close();
+      return true;
+    }
+    for (let i = 0; i < ITEMS.length; i++) {
+      const r = rowRect(i);
+      if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) {
+        if (sel === i) buy();
+        else {
+          sel = i;
+          playSfx("equip");
+        }
+        return true;
+      }
+    }
+    return true;
+  }
+
+  function update(dt) {
+    t += dt;
+    lineT += dt;
+  }
+
+  function drawKeeper(cx, base) {
+    const bob = Math.sin(t * 2.4) * 5;
+    if (ok(art.keeper)) {
+      const h = 400;
+      const w = h * (art.keeper.naturalWidth / art.keeper.naturalHeight);
+      ctx.drawImage(art.keeper, cx - w / 2, base - h + bob, w, h);
+      return;
+    }
+    // 仮の店主：おもちみたいな月うさぎの商人
+    ctx.save();
+    ctx.translate(cx, base - 150 + bob);
+    ctx.fillStyle = "#fffaf0";
+    ctx.strokeStyle = "#c8b2ff";
+    ctx.lineWidth = 6;
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(s * 46, -150, 24, 62, s * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 130, 120, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#4d4773";
+    ctx.beginPath();
+    ctx.arc(-40, -20, 9, 0, Math.PI * 2);
+    ctx.arc(40, -20, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#ffd85a";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(40, -20, 22, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = "#4d4773";
+    ctx.lineWidth = 5;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.arc(0, 8, 22, 0.15 * Math.PI, 0.85 * Math.PI);
+    ctx.stroke();
+    ctx.fillStyle = "#ff8db7";
+    ctx.beginPath();
+    ctx.roundRect(-70, 70, 140, 34, 12);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawIcon(it, x, y, size) {
+    if (ok(art[it.id])) {
+      ctx.drawImage(art[it.id], x - size / 2, y - size / 2, size, size);
+      return;
+    }
+    ctx.save();
+    ctx.fillStyle = it.color;
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(x, y, size * 0.44, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#5a3d9a";
+    ctx.font = `900 ${Math.round(size * 0.44)}px ${FX.FONT}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(it.mark, x, y + 2);
+    ctx.restore();
+  }
+
+  function draw() {
+    const W = canvas.width;
+    const H = canvas.height;
+    if (ok(art.bg)) {
+      const s = Math.max(W / art.bg.naturalWidth, H / art.bg.naturalHeight);
+      ctx.drawImage(art.bg, (W - art.bg.naturalWidth * s) / 2, (H - art.bg.naturalHeight * s) / 2, art.bg.naturalWidth * s, art.bg.naturalHeight * s);
+      ctx.fillStyle = "rgba(40, 24, 90, 0.28)";
+      ctx.fillRect(0, 0, W, H);
+    } else {
+      const g = ctx.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, "#6f5bb8");
+      g.addColorStop(0.6, "#b49ae6");
+      g.addColorStop(1, "#ffd9ec");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = "rgba(255, 255, 255, 0.14)";
+      for (let i = 0; i < 6; i++) ctx.fillRect(0, 150 + i * 90, 500, 10);
+    }
+    ctx.save();
+    ctx.textBaseline = "middle";
+    ctx.lineJoin = "round";
+
+    // もどる
+    const b = backRect();
+    ctx.fillStyle = "rgba(255,255,255,0.9)";
+    ctx.strokeStyle = "#c8b2ff";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.roundRect(b.x, b.y, b.w, b.h, 23);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#7f67c8";
+    ctx.font = `900 18px ${FX.FONT}`;
+    ctx.textAlign = "center";
+    ctx.fillText(L("◀ マップへ (Esc)", "◀ Map (Esc)"), b.x + b.w / 2, b.y + b.h / 2 + 1);
+
+    // 看板と さいふ
+    ctx.font = `900 34px ${FX.FONT}`;
+    ctx.lineWidth = 8;
+    ctx.strokeStyle = "#7f67c8";
+    ctx.fillStyle = "#fff3a4";
+    ctx.textAlign = "left";
+    ctx.strokeText(L("よろず屋 つきのわ", "Tsukinowa General Store"), 230, 44);
+    ctx.fillText(L("よろず屋 つきのわ", "Tsukinowa General Store"), 230, 44);
+    const w = wallet();
+    ctx.fillStyle = "rgba(255, 248, 253, 0.95)";
+    ctx.strokeStyle = "#ffd85a";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.roundRect(W - 420, 20, 386, 52, 16);
+    ctx.fill();
+    ctx.stroke();
+    ctx.font = `900 20px ${FX.FONT}`;
+    ctx.fillStyle = "#d46c2f";
+    ctx.fillText(`${L("柿の種", "Kaki")} ${w.kakiTotal ?? 0}`, W - 400, 47);
+    ctx.fillStyle = "#a8742a";
+    ctx.fillText(`${L("ピーナッツ", "Peanuts")} ${w.peaTotal ?? 0}`, W - 250, 47);
+
+    drawKeeper(250, H - 150);
+
+    // 商品リスト
+    ITEMS.forEach((it, i) => {
+      const r = rowRect(i);
+      const active = i === sel;
+      const got = !it.repeat && has(it.id);
+      const afford = pairs() >= it.price;
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = active ? "#fffbe0" : "rgba(255, 248, 253, 0.9)";
+      ctx.strokeStyle = active ? "#ff8db7" : "#c8b2ff";
+      ctx.lineWidth = active ? 5 : 2;
+      ctx.beginPath();
+      ctx.roundRect(r.x - (active ? 8 : 0), r.y, r.w + (active ? 8 : 0), r.h, 14);
+      ctx.fill();
+      ctx.stroke();
+      drawIcon(it, r.x + 34, r.y + r.h / 2, 48);
+      const txt = language === "ja" ? it.ja : it.en;
+      ctx.textAlign = "left";
+      ctx.font = `900 21px ${FX.FONT}`;
+      ctx.fillStyle = got ? "#9a8fc0" : "#4d4773";
+      ctx.fillText(txt[0], r.x + 70, r.y + 20);
+      ctx.font = `700 14px ${FX.FONT}`;
+      ctx.fillStyle = "#8b82b3";
+      ctx.fillText(txt[1], r.x + 70, r.y + 43);
+      ctx.textAlign = "right";
+      ctx.font = `900 22px ${FX.FONT}`;
+      if (got) {
+        ctx.fillStyle = "#61c989";
+        ctx.fillText(L("もってる ✓", "Owned ✓"), r.x + r.w - 18, r.y + r.h / 2);
+      } else {
+        ctx.fillStyle = afford ? "#d98a2b" : "#c0266d";
+        ctx.fillText(`${L("各", "each")} ${it.price}`, r.x + r.w - 18, r.y + r.h / 2);
+      }
+    });
+
+    // 店主のセリフ
+    if (line) {
+      const text = L(line[0], line[1]);
+      const shown = [...text].slice(0, Math.floor(lineT * (language === "ja" ? 40 : 70))).join("");
+      ctx.fillStyle = "rgba(255, 248, 253, 0.97)";
+      ctx.strokeStyle = "#ff8db7";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.roundRect(34, H - 132, 462, 104, 18);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#ff5f9e";
+      ctx.font = `900 16px ${FX.FONT}`;
+      ctx.textAlign = "left";
+      ctx.fillText(L("店主 モチまる", "Mochimaru the shopkeeper"), 54, H - 112);
+      ctx.fillStyle = "#3f355d";
+      ctx.font = `800 18px ${FX.FONT}`;
+      ctx.textBaseline = "top";
+      wrapText(shown, 54, H - 96, 424, 25);
+      ctx.textBaseline = "middle";
+    }
+    ctx.fillStyle = "#ffffff";
+    ctx.font = `800 15px ${FX.FONT}`;
+    ctx.textAlign = "right";
+    ctx.fillText(L("↑↓ えらぶ ／ 決定で買う ／ Esc でもどる", "Up/Down: choose  /  Confirm: buy  /  Esc: back"), W - 44, H - 18);
+    ctx.restore();
+  }
+
+  // ワールドマップ上のショップボタン
+  const mapButton = () => ({ x: canvas.width - 262, y: 80, w: 228, h: 48 });
+  function drawMapButton() {
+    if (!unlocked()) return;
+    const r = mapButton();
+    ctx.save();
+    ctx.fillStyle = "rgba(255, 251, 224, 0.95)";
+    ctx.strokeStyle = "#ffd85a";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.roundRect(r.x, r.y + Math.sin(FX.S.time * 3) * 2, r.w, r.h, 24);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#d98a2b";
+    ctx.font = `900 19px ${FX.FONT}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const pc = typeof controlMode !== "undefined" && controlMode === "pc";
+    ctx.fillText(L("よろず屋", "Shop") + (pc ? " [Tab]" : " (SELECT)"), r.x + r.w / 2, r.y + r.h / 2 + 1);
+    ctx.restore();
+  }
+  function mapPointer(x, y) {
+    const r = mapButton();
+    if (unlocked() && x >= r.x && x <= r.x + r.w && y >= r.y - 4 && y <= r.y + r.h + 4) {
+      open();
+      return true;
+    }
+    return false;
+  }
+
+  window.Shop = { ITEMS, has, unlocked, open, close, update, draw, handleKey, handlePointer, drawMapButton, mapPointer };
+})();

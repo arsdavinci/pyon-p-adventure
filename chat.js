@@ -49,7 +49,11 @@
         fn();
       });
     };
-    bind(els.equip, () => toggleInventory());
+    bind(els.equip, () => {
+      if (state.mode === "worldMap") Shop.open();
+      else if (state.mode === "shop") Shop.close();
+      else toggleInventory();
+    });
     bind(els.pause, () => {
       if (state.mode === "paused") resumeGame();
       else if (state.mode === "inventory") closeInventory();
@@ -196,6 +200,12 @@
       const w = courses[mapSelectedCourse]?.worldIndex ?? 0;
       const line = (MAP_STAGE_MESSAGES[language] ?? MAP_STAGE_MESSAGES.ja)[w] ?? "";
       const text = line.replace(/^ぴょんぴー「|」$|^Pyon-P: "|"$/g, "");
+      if (typeof Shop !== "undefined" && Shop.unlocked() && firstTime("tipShop")) {
+        return [
+          ["yana", "マップに『よろず屋 つきのわ』が開店しました。集めた柿の種とピーナッツで、便利な道具が買えますよ。", "The Tsukinowa General Store has opened on the map. Spend your kaki seeds and peanuts on handy gear."],
+          ["pyon", "2段ジャンプシューズ……たっか！ いつか買うたる！", "Double-Jump Shoes... so expensive! I'll buy them someday!"]
+        ];
+      }
       return [["pyon", text, text]];
     },
     idle: () => {
@@ -315,12 +325,14 @@
     const equipped = hasEquippedWeapon();
     const power = equipped ? state.weaponPower : 0;
     const stock = power ? (state.weaponInventory[power - 1] ?? 0) : 0;
-    const key = `${power}:${stock}:${language}:${state.gun?.holder}`;
+    const key = `${power}:${stock}:${language}:${state.gun?.holder}:${state.mode === "worldMap" || state.mode === "shop"}:${typeof Shop !== "undefined" && Shop.unlocked()}`;
     if (!force && key === weaponKey) return;
     weaponKey = key;
     e.label.textContent = L("そうび中", "EQUIPPED");
     const pc = typeof controlMode !== "undefined" && controlMode === "pc";
-    if (e.equip) e.equip.textContent = L("そうび・合成", "Equip / Fuse") + (pc ? " [Tab]" : "");
+    const onMap = state.mode === "worldMap" || state.mode === "shop";
+    if (e.equip) e.equip.textContent = (onMap ? L("よろず屋", "Shop") : L("そうび・合成", "Equip / Fuse")) + (pc ? " [Tab]" : "");
+    if (e.equip) e.equip.style.visibility = onMap && !Shop.unlocked() ? "hidden" : "visible";
     if (e.pause) e.pause.textContent = L("ポーズ", "Pause") + (pc ? " [Enter]" : "");
     e.labAtk.textContent = L("攻撃", "ATK");
     e.labRange.textContent = L("射程", "RNG");
