@@ -540,8 +540,7 @@
     ctx.font = `900 19px ${FX.FONT}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    const pc = typeof controlMode !== "undefined" && controlMode === "pc";
-    ctx.fillText(L("よろず屋", "Shop") + (pc ? " [Tab]" : " (SELECT)"), r.x + r.w / 2, r.y + r.h / 2 + 1);
+    ctx.fillText(L("よろず屋", "Shop"), r.x + r.w / 2, r.y + r.h / 2 + 1); // SELECT はそうび画面。お店はここをタップか、地図のお店で A
     ctx.restore();
   }
   function mapPointer(x, y) {

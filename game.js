@@ -2549,7 +2549,12 @@ function returnToWorldMapFromInventory() {
 }
 
 function openInventory() {
-  if (!state || (state.mode !== "playing" && state.mode !== "respawning")) return;
+  if (!state || (state.mode !== "playing" && state.mode !== "respawning" && state.mode !== "worldMap")) return;
+  if (state.mode === "worldMap") {
+    if (FX.transitioning() || mapInputLockTimer > 0) return;
+    // マップでは、今の持ち物（次のステージに持っていくもの）を開く
+    if (campaignKeep) restoreCampaignSnapshot(campaignKeep);
+  }
   state.inventoryReturnMode = state.mode;
   state.mode = "inventory";
   const equippedSlot = inventorySlots().findIndex(slot => slot?.power === state.weaponPower);
@@ -2578,15 +2583,22 @@ function closeInventory() {
     state.fighterTransformPending = false;
     state.fighterTransformUntil = performance.now() + 1600;
   }
-  state.mode = state.inventoryReturnMode === "respawning" ? "respawning" : "playing";
+  const back = state.inventoryReturnMode;
+  state.mode = back === "respawning" ? "respawning" : back === "worldMap" ? "worldMap" : "playing";
   state.inventoryReturnMode = null;
+  if (back === "worldMap") {
+    // マップで変えたそうびは、次のステージにそのまま持っていく
+    campaignKeep = campaignSnapshotFromState();
+    Story.persist();
+    updateHud();
+  }
   lastTime = performance.now();
   playSfx("cancel");
 }
 
 function toggleInventory() {
   if (!state) return;
-  if (state.mode === "playing") openInventory();
+  if (state.mode === "playing" || state.mode === "worldMap") openInventory();
   else if (state.mode === "inventory") closeInventory();
 }
 
@@ -5974,10 +5986,12 @@ function draw() {
   FX.applyShake();
   // 動画の読みこみ中・再生中は、うしろのステージを見せない（暗い画面で待つ）
   const inGame = mode !== "worldMap" && mode !== "cutscene" && mode !== "credits" && mode !== "shop" && mode !== "movie" && !(mode === "title" && Story.drawTitleKey());
+  // マップから開いたそうび画面は、うしろにマップを見せる
+  const mapInventory = mode === "inventory" && state.inventoryReturnMode === "worldMap";
   if (mode === "movie") {
     ctx.fillStyle = "#120a2a";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-  } else if (mode === "worldMap") drawWorldMapScreen();
+  } else if (mode === "worldMap" || mapInventory) drawWorldMapScreen();
   else if (mode === "cutscene") Story.drawCutscene();
   else if (mode === "credits") Story.drawCredits();
   else if (mode === "shop") Shop.draw();
@@ -5985,7 +5999,7 @@ function draw() {
   ctx.restore();
   FX.drawScreen();
   if (inGame && mode !== "title") {
-    if (mode !== "stageClear") {
+    if (mode !== "stageClear" && !mapInventory) {
       drawStageBadge();
       Gimmick.drawHud();
       drawHpMeter();
@@ -11088,7 +11102,8 @@ function updateGamepad() {
       mapMove(moveName);
       gamepadState.inventoryMoveDelay = now + (freshMove ? 230 : 125);
     }
-    if (selectPressed && !gamepadState.selectLatch) Shop.open();
+    // マップでも SELECT でそうび画面（お店は、地図のお店のところで A）
+    if (selectPressed && !gamepadState.selectLatch) openInventory();
     if ((jumpPressed && !gamepadState.jumpLatch) || (shootPressed && !gamepadState.shootLatch) || (startPressed && !gamepadState.startLatch)) confirmMapSelection();
     gamepadState.leftLatch = gamepadState.left;
     gamepadState.rightLatch = gamepadState.right;
@@ -11180,7 +11195,7 @@ function handleKeyDown(code, event = { repeat: false }) {
     return;
   }
   if (state.mode === "worldMap") {
-    if (!event.repeat && (code === "Tab" || code === "Select" || code === "KeyI" || code === "KeyE")) Shop.open();
+    if (!event.repeat && (code === "Tab" || code === "Select" || code === "KeyI" || code === "KeyE")) openInventory();
     if (code === "ArrowLeft" || code === "KeyA") mapMove("left");
     if (code === "ArrowRight" || code === "KeyD") mapMove("right");
     if (code === "ArrowUp" || code === "KeyW") mapMove("up");
