@@ -21,6 +21,14 @@ html {
   touch-action: none;
 }
 
+/* iPhone のホーム画面アプリでは、ページの高さがステータスバーのぶんだけ短くなり、
+   下にすき間ができる。そのぶんページをのばして、画面の下はしまで使えるようにする */
+@media (display-mode: standalone) {
+  html {
+    min-height: calc(100% + env(safe-area-inset-top));
+  }
+}
+
 body {
   margin: 0;
   height: 100vh;

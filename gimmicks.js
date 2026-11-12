@@ -19,8 +19,53 @@
     switchRed: "gimmick-switch-red", switchBlue: "gimmick-switch-blue",
     blockRed: "gimmick-block-red", blockBlue: "gimmick-block-blue",
     spring: "gimmick-spring", door: "gimmick-door", goal: "gimmick-goal",
-    poseHurt: "pyonpy-hurt", poseVictory: "pyonpy-victory", poseShoot: "pyonpy-shoot", poseSwim: "pyonpy-swim", swimSheet: "pyonpy-swim-6"
+    poseHurt: "pyonpy-hurt", poseVictory: "pyonpy-victory", poseShoot: "pyonpy-shoot", poseSwim: "pyonpy-swim", swimSheet: "pyonpy-swim-6",
+    poseShootUp: "pyonpy-shoot-up", poseShootUpFwd: "pyonpy-shoot-upfwd", poseShootDownFwd: "pyonpy-shoot-downfwd",
+    poseAirShoot: "pyonpy-air-shoot", poseAirShootUp: "pyonpy-air-shoot-up", poseAirShootUpFwd: "pyonpy-air-shoot-upfwd",
+    poseAirShootDownFwd: "pyonpy-air-shoot-downfwd", poseAirShootDown: "pyonpy-air-shoot-down"
   };
+
+  // ねらう向きごとのポーズ。h = 絵（正方形）を描く大きさ、center = 絵の中で体の基準になる点、
+  // hand = 絵の中のにぎりこぶしの位置（どちらも 0〜1。右向きの絵で測った値）
+  const AIM_POSES = {
+    ground: {
+      fwd: { key: "poseShoot", h: 92, center: [0.5, 1], hand: [0.82, 0.5] },
+      up: { key: "poseShootUp", h: 92, center: [0.5, 1], hand: [0.64, 0.15] },
+      upfwd: { key: "poseShootUpFwd", h: 92, center: [0.5, 1], hand: [0.83, 0.32] },
+      downfwd: { key: "poseShootDownFwd", h: 92, center: [0.5, 1], hand: [0.79, 0.78] }
+    },
+    air: {
+      fwd: { key: "poseAirShoot", h: 107, center: [0.47, 0.53], hand: [0.8, 0.47] },
+      up: { key: "poseAirShootUp", h: 110, center: [0.5, 0.53], hand: [0.63, 0.17] },
+      upfwd: { key: "poseAirShootUpFwd", h: 99, center: [0.48, 0.5], hand: [0.82, 0.32] },
+      downfwd: { key: "poseAirShootDownFwd", h: 99, center: [0.47, 0.52], hand: [0.78, 0.66] },
+      down: { key: "poseAirShootDown", h: 103, center: [0.5, 0.5], hand: [0.53, 0.87] }
+    }
+  };
+
+  function aimPoseFor(p) {
+    if (!hasEquippedWeapon() || p.swimming) return null;
+    const sin = Math.sin(p.aim ?? 0);
+    const dir = sin < -0.9 ? "up" : sin < -0.3 ? "upfwd" : sin > 0.9 ? "down" : sin > 0.3 ? "downfwd" : "fwd";
+    const active = state.gun.cooldown > 0 || dir !== "fwd";
+    if (!active) return null;
+    if (p.grounded) return Math.abs(p.vx) < 60 ? AIM_POSES.ground[dir] ?? null : null;
+    return AIM_POSES.air[dir] ?? null;
+  }
+
+  // ポーズの絵を描いて、銃を持たせる手の位置を返す
+  function drawAimPose(p, pose, im) {
+    const f = p.facing < 0 ? -1 : 1;
+    const cx = p.x + p.w / 2;
+    const cy = pose.center[1] === 1 ? p.y + p.h + 6 : p.y + p.h * 0.5;
+    const h = pose.h;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(f, 1);
+    ctx.drawImage(im, -pose.center[0] * h, -pose.center[1] * h, h, h);
+    ctx.restore();
+    return { x: cx + f * (pose.hand[0] - pose.center[0]) * h, y: cy + (pose.hand[1] - pose.center[1]) * h };
+  }
   const WORLD_KEYS = ["moon", "mars", "ice", "ocean", "factory", "demon"];
   for (const w of WORLD_KEYS) {
     SPRITE_FILES[`fg_${w}_1`] = `fg-${w}-1`;
@@ -142,11 +187,15 @@
     if (state.mode === "stageClear") key = "poseVictory";
     else if (p.invincible > 0.55 && state.mode === "playing") key = "poseHurt";
     else if (p.swimming) key = "poseSwim";
-    else if (hasEquippedWeapon() && state.gun.cooldown > 0 && p.grounded && Math.abs(p.vx) < 60 && Math.abs(Math.sin(p.aim ?? 0)) < 0.2) key = "poseShoot";
+    if (!key && state.mode !== "respawning") {
+      const pose = aimPoseFor(p);
+      const poseIm = pose && sprite(pose.key);
+      if (poseIm) return { key: pose.key, gun: drawAimPose(p, pose, poseIm) };
+    }
     const im = key && sprite(key);
     if (!im) return false;
     drawStanding(im, p.x + p.w / 2, p.y + p.h + 6, key === "poseSwim" ? 84 : 92, p.facing < 0);
-    return key;
+    return { key, gun: null };
   }
 
   const phaseBlock = (x, y, w, h, phase) => ({ x, y, w, h, phase, broken: false });

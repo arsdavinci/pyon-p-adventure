@@ -46,7 +46,7 @@ const MAX_WEAPON_POWER = 16;
 const WEAPON_ATTRIBUTE_SIZE = 8;
 const MAX_INVENTORY_ITEMS = 27;
 const VISIBLE_INVENTORY_ITEMS = 15;
-const INVENTORY_FOCUS_AREAS = ["topMenu", "itemList", "sortButton"];
+const INVENTORY_FOCUS_AREAS = ["topMenu", "itemList"];
 const INVENTORY_FOCUS_MODES = {
   AREA_SELECT: "areaSelect",
   INSIDE_TOP_MENU: "insideTopMenu",
@@ -5011,20 +5011,329 @@ function wrapInventoryText(text, x, y, maxWidth, lineHeight) {
   if (line) ctx.fillText(line, x, lineY);
 }
 
+// そうび画面の素材（あれば使う。なくてもプログラムで描く）
+const uiArt = {};
+for (const [key, file] of Object.entries({
+  bg: "ui-select-bg", panel: "ui-panel", slot: "ui-slot", slotSel: "ui-slot-selected",
+  button: "ui-button", buttonSel: "ui-button-selected",
+  iconBack: "ui-icon-back", iconSort: "ui-icon-sort", iconMap: "ui-icon-map", iconSave: "ui-icon-save"
+})) {
+  const im = new Image();
+  im.src = `assets/${file}.png`;
+  uiArt[key] = im;
+}
+const uiReady = im => !!im && im.complete && im.naturalWidth > 0;
+
+// 四すみを保ったまま枠の画像を引きのばす
+function drawNineSlice(img, r, srcCorner = 96, corner = 36) {
+  const sw = img.naturalWidth;
+  const sh = img.naturalHeight;
+  const sx = [0, srcCorner, sw - srcCorner];
+  const sy = [0, srcCorner, sh - srcCorner];
+  const swid = [srcCorner, sw - srcCorner * 2, srcCorner];
+  const shei = [srcCorner, sh - srcCorner * 2, srcCorner];
+  const dx = [r.x, r.x + corner, r.x + r.w - corner];
+  const dy = [r.y, r.y + corner, r.y + r.h - corner];
+  const dwid = [corner, r.w - corner * 2, corner];
+  const dhei = [corner, r.h - corner * 2, corner];
+  for (let iy = 0; iy < 3; iy++) {
+    for (let ix = 0; ix < 3; ix++) ctx.drawImage(img, sx[ix], sy[iy], swid[ix], shei[iy], dx[ix], dy[iy], dwid[ix], dhei[iy]);
+  }
+}
+
+function drawUiPanel(r) {
+  if (uiReady(uiArt.panel)) {
+    drawNineSlice(uiArt.panel, r);
+    return;
+  }
+  ctx.save();
+  const g = ctx.createLinearGradient(r.x, r.y, r.x + r.w, r.y + r.h);
+  g.addColorStop(0, "rgba(250, 244, 255, 0.9)");
+  g.addColorStop(1, "rgba(228, 246, 255, 0.9)");
+  ctx.fillStyle = g;
+  ctx.strokeStyle = "#8edce8";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.roundRect(r.x, r.y, r.w, r.h, 20);
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(255, 141, 183, 0.6)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(r.x + 7, r.y + 7, r.w - 14, r.h - 14, 15);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// 画像がないときの、かんたんなアイコン
+function drawUiIconFallback(index, cx, cy, color) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = 6;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  if (index === 0) {
+    ctx.beginPath();
+    ctx.moveTo(18, 14);
+    ctx.lineTo(18, -4);
+    ctx.lineTo(-14, -4);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-4, -18);
+    ctx.lineTo(-20, -4);
+    ctx.lineTo(-4, 10);
+    ctx.stroke();
+  } else if (index === 1) {
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(-20, -14 + i * 14);
+      ctx.lineTo(-20 + 40 - i * 12, -14 + i * 14);
+      ctx.stroke();
+    }
+  } else if (index === 2) {
+    ctx.beginPath();
+    ctx.arc(0, 0, 13, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 25, 8, -0.4, 0, Math.PI * 2);
+    ctx.stroke();
+  } else {
+    ctx.beginPath();
+    ctx.roundRect(-17, -21, 34, 42, 6);
+    ctx.stroke();
+    ctx.fillRect(-9, -21, 18, 13);
+    ctx.fillRect(-10, 4, 20, 10);
+  }
+  ctx.restore();
+}
+
+function drawInventoryTopBar() {
+  const mode = state.inventoryFocusMode ?? INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST;
+  const buttons = inventoryTopMenuButtonRects();
+  const ja = language === "ja";
+  const labels = ja ? ["もどる", "せいとん", "マップ", "セーブ"] : ["Back", "Sort", "Map", "Save"];
+  const icons = [uiArt.iconBack, uiArt.iconSort, uiArt.iconMap, uiArt.iconSave];
+  const colors = ["#3fb9d2", "#8f7be0", "#ff7fb0", "#e0a020"];
+  const t = performance.now() / 1000;
+  for (let i = 0; i < buttons.length; i++) {
+    const r = buttons[i];
+    const on = mode === INVENTORY_FOCUS_MODES.INSIDE_TOP_MENU && state.inventoryTopMenuIndex === i;
+    ctx.save();
+    const art = on ? uiArt.buttonSel : uiArt.button;
+    if (uiReady(art)) {
+      ctx.drawImage(art, r.x, r.y, r.w, r.h);
+    } else {
+      if (on) {
+        ctx.shadowColor = "#ffd85a";
+        ctx.shadowBlur = 16 + Math.sin(t * 6) * 6;
+      }
+      ctx.fillStyle = on ? "#fff3a4" : "rgba(255, 255, 255, 0.86)";
+      ctx.strokeStyle = on ? "#ff8db7" : "#c8b2ff";
+      ctx.lineWidth = on ? 6 : 3;
+      ctx.beginPath();
+      ctx.roundRect(r.x + 3, r.y + 3, r.w - 6, r.h - 6, 22);
+      ctx.fill();
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+    if (uiReady(icons[i])) ctx.drawImage(icons[i], r.x + 16, r.y + 14, 64, 64);
+    else drawUiIconFallback(i, r.x + 48, r.y + 46, colors[i]);
+    ctx.fillStyle = "#4d4773";
+    ctx.font = `900 ${ja ? 32 : 30}px ${FX.FONT}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(labels[i], r.x + 88 + (r.w - 100) / 2, r.y + r.h / 2 + 2);
+    ctx.restore();
+  }
+
+  // 右上：のこりライフとページ
+  ctx.save();
+  for (let i = 0; i < MAX_LIVES; i++) {
+    ctx.save();
+    ctx.translate(1094 + i * 44, 34);
+    ctx.fillStyle = i < state.lives ? "#ffd85a" : "rgba(215, 200, 255, 0.6)";
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 3;
+    drawFivePointStar(0, 0, 17);
+    ctx.stroke();
+    ctx.restore();
+  }
+  const info = inventoryPageInfo();
+  const pages = inventoryPageButtonRects();
+  const arrows = ["◀", "▶"];
+  for (let i = 0; i < 2; i++) {
+    const r = pages[i];
+    const usable = i === 0 ? (state.inventoryScroll ?? 0) > 0 : info.currentPage < info.totalPages;
+    ctx.globalAlpha = usable ? 1 : 0.4;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.88)";
+    ctx.strokeStyle = "#8edce8";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.roundRect(r.x, r.y, r.w, r.h, 14);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#7f67c8";
+    ctx.font = `900 24px ${FX.FONT}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(arrows[i], r.x + r.w / 2, r.y + r.h / 2 + 1);
+  }
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = "#ffffff";
+  ctx.strokeStyle = "rgba(68, 54, 132, 0.9)";
+  ctx.lineWidth = 5;
+  ctx.font = `900 28px ${FX.FONT}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const pageText = `${info.currentPage} / ${info.totalPages}`;
+  ctx.strokeText(pageText, 1138, 85);
+  ctx.fillText(pageText, 1138, 85);
+  ctx.restore();
+}
+
+function drawBigStatBar(label, value, max, x, y, width) {
+  const ratio = clamp(value / max, 0, 1);
+  ctx.fillStyle = "#4d4773";
+  ctx.font = `900 24px ${FX.FONT}`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(label, x, y + 12);
+  ctx.textAlign = "right";
+  ctx.fillStyle = "#ff5f9e";
+  ctx.fillText(String(value), x + width, y + 12);
+  ctx.fillStyle = "#ded2ff";
+  ctx.beginPath();
+  ctx.roundRect(x, y + 30, width, 14, 7);
+  ctx.fill();
+  const g = ctx.createLinearGradient(x, 0, x + width, 0);
+  g.addColorStop(0, "#7fd6ea");
+  g.addColorStop(1, "#ff8db7");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.roundRect(x, y + 30, Math.max(14, width * ratio), 14, 7);
+  ctx.fill();
+}
+
+function drawInventoryWeaponCard() {
+  const r = { x: 20, y: 118, w: 410, h: 474 };
+  drawUiPanel(r);
+  const slot = inventorySlots()[state.inventorySelection];
+  const ja = language === "ja";
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  if (!slot) {
+    ctx.fillStyle = "#9a8fc4";
+    ctx.font = `900 30px ${FX.FONT}`;
+    ctx.fillText(ja ? "からっぽ" : "Empty", r.x + r.w / 2, r.y + r.h / 2 - 20);
+    ctx.font = `800 22px ${FX.FONT}`;
+    ctx.fillText(ja ? "武器のあるマスをえらんでね" : "Pick a slot with a ray gun", r.x + r.w / 2, r.y + r.h / 2 + 24);
+    ctx.restore();
+    return;
+  }
+  const power = slot.power;
+  const stage = weaponStage(power);
+  const nextPower = nextFusionPower(power);
+  const cx = r.x + r.w / 2;
+  drawWeaponIcon(cx, r.y + 74, power, 2.1, 1);
+  ctx.fillStyle = "#5a3d9a";
+  let nameSize = 34;
+  ctx.font = `900 ${nameSize}px ${FX.FONT}`;
+  while (nameSize > 22 && ctx.measureText(weaponName(power)).width > r.w - 48) {
+    nameSize -= 2;
+    ctx.font = `900 ${nameSize}px ${FX.FONT}`;
+  }
+  ctx.fillText(weaponName(power), cx, r.y + 158);
+  ctx.fillStyle = "#ff5f9e";
+  ctx.font = `900 28px ${FX.FONT}`;
+  ctx.fillText(`Lv ${power}`, cx, r.y + 198);
+
+  const bx = r.x + 34;
+  const bw = r.w - 68;
+  drawBigStatBar(t("atk"), stage.damage, 16, bx, r.y + 224, bw);
+  drawBigStatBar(t("range"), stage.range, 2400, bx, r.y + 280, bw);
+  drawBigStatBar(t("rapid"), Math.round((1 / stage.cooldown) * 10), 80, bx, r.y + 336, bw);
+
+  // 合成すると何になるか
+  ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+  ctx.strokeStyle = "#d6c8ff";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(r.x + 24, r.y + 396, r.w - 48, 60, 16);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#7f67c8";
+  ctx.font = `900 21px ${FX.FONT}`;
+  if (nextPower) {
+    ctx.textAlign = "left";
+    ctx.fillText(ja ? "2つ合成 →" : "Fuse 2 →", r.x + 40, r.y + 427);
+    drawWeaponIcon(r.x + 190, r.y + 426, nextPower, 0.62, 1);
+    let nextName = weaponName(nextPower);
+    ctx.font = `900 19px ${FX.FONT}`;
+    while (nextName.length > 3 && ctx.measureText(nextName).width > r.w - 256) nextName = nextName.slice(0, -2) + "…";
+    ctx.fillText(nextName, r.x + 228, r.y + 427);
+  } else {
+    ctx.textAlign = "center";
+    ctx.fillText(t("finalEvolution"), cx, r.y + 427);
+  }
+  ctx.restore();
+}
+
+function drawInventoryCommentBar() {
+  const r = { x: 20, y: 604, w: 1240, h: 102 };
+  drawUiPanel(r);
+  const slot = inventorySlots()[state.inventorySelection];
+  const raw = inventoryFocusComment(slot?.power);
+  const text = raw.replace(/^ぴょんぴー「/, "").replace(/」$/, "");
+  ctx.save();
+  ctx.fillStyle = "#7f67c8";
+  ctx.beginPath();
+  ctx.roundRect(r.x + 22, r.y + 16, 150, 34, 17);
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `900 22px ${FX.FONT}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(language === "ja" ? "ぴょんぴー" : "Pyon-P", r.x + 97, r.y + 34);
+  ctx.fillStyle = "#4d4773";
+  ctx.font = `900 26px ${FX.FONT}`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  wrapText(text, r.x + 190, r.y + 16, r.w - 214, 36);
+  ctx.restore();
+}
+
 function drawInventoryScreen() {
   ctx.save();
-  if (selectUiImage.complete && selectUiImage.naturalWidth > 0) {
-    ctx.drawImage(selectUiImage, 0, 0, canvas.width, canvas.height);
+  if (uiReady(uiArt.bg)) {
+    ctx.drawImage(uiArt.bg, 0, 0, canvas.width, canvas.height);
   } else {
-    ctx.fillStyle = "rgba(64, 55, 118, 0.7)";
+    const g = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    g.addColorStop(0, "#b9a8f0");
+    g.addColorStop(0.55, "#a9c8f4");
+    g.addColorStop(1, "#bfe9f0");
+    ctx.fillStyle = g;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // うっすらした格子（ハイテクな感じ）
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.16)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let x = 0; x <= canvas.width; x += 40) { ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); }
+    for (let y = 0; y <= canvas.height; y += 40) { ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); }
+    ctx.stroke();
   }
-  drawInventoryDynamicText();
-  drawItemCaseOverlay();
-  drawSelectedWeaponPreview();
+  drawInventoryTopBar();
+  drawInventoryWeaponCard();
+  for (const slot of inventorySlotRects()) drawInventorySlot(slot);
+  drawInventoryCommentBar();
+  drawInventoryMessage();
   drawGamepadInventoryGhost();
   if (state.inventoryGrab) drawDraggedInventoryItem();
-  if (state.fusionPrompt) drawFusionPrompt();
+  if (state.inventoryConfirmWorldMap) drawInventoryDialogScaled(drawInventoryWorldMapConfirm);
+  if (state.fusionPrompt) drawInventoryDialogScaled(drawFusionPrompt);
   ctx.restore();
   if (state.saveMenu) drawSaveMenu();
 }
@@ -5145,7 +5454,8 @@ function drawInventoryPageInfo() {
 }
 
 function inventorySortButtonRect() {
-  return { x: 1190, y: 118, w: 74, h: 70 };
+  // せいとんは上のメニューの2つめのボタンになった（昔の惑星ボタンは画面の外へ）
+  return { x: -100, y: -100, w: 0, h: 0 };
 }
 
 function inventoryTopMenuAreaRect() {
@@ -5157,12 +5467,69 @@ function inventoryItemListAreaRect() {
 }
 
 function inventoryTopMenuButtonRects() {
-  return [
-    { x: 50, y: 54, w: 118, h: 64 },
-    { x: 184, y: 54, w: 118, h: 64 },
-    { x: 318, y: 54, w: 118, h: 64 },
-    { x: 452, y: 54, w: 118, h: 64 }
-  ];
+  return [0, 1, 2, 3].map(i => ({ x: 20 + i * 248, y: 14, w: 236, h: 92 }));
+}
+
+function inventoryPageButtonRects() {
+  return [{ x: 1016, y: 60, w: 64, h: 48 }, { x: 1196, y: 60, w: 64, h: 48 }];
+}
+
+function changeInventoryPage(dir) {
+  const before = state.inventoryScroll ?? 0;
+  state.inventoryScroll = clamp(before + dir * VISIBLE_INVENTORY_ITEMS, 0, MAX_INVENTORY_ITEMS - VISIBLE_INVENTORY_ITEMS);
+  clampInventoryScroll();
+  state.inventorySelection = clamp(state.inventorySelection, state.inventoryScroll, state.inventoryScroll + VISIBLE_INVENTORY_ITEMS - 1);
+  playSfx(state.inventoryScroll === before ? "locked" : "cursor");
+}
+
+// 小さい確認ウインドウ（合成・マップにもどる）を大きく見せる倍率
+const INVENTORY_DIALOG_SCALE = 1.7;
+function inventoryDialogPoint(x, y) {
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  return { x: cx + (x - cx) / INVENTORY_DIALOG_SCALE, y: cy + (y - cy) / INVENTORY_DIALOG_SCALE };
+}
+
+function drawInventoryDialogScaled(drawFn) {
+  ctx.save();
+  ctx.fillStyle = "rgba(30, 20, 70, 0.6)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.translate(canvas.width / 2, canvas.height / 2);
+  ctx.scale(INVENTORY_DIALOG_SCALE, INVENTORY_DIALOG_SCALE);
+  ctx.translate(-canvas.width / 2, -canvas.height / 2);
+  drawFn();
+  ctx.restore();
+}
+
+function handleInventoryWorldMapConfirmPointer(x, y) {
+  if (!state.inventoryConfirmWorldMap) return false;
+  const pt = inventoryDialogPoint(x, y);
+  const rects = inventoryWorldMapConfirmButtonRects();
+  for (let i = 0; i < rects.length; i++) {
+    const b = rects[i];
+    if (pt.x >= b.x && pt.x <= b.x + b.w && pt.y >= b.y && pt.y <= b.y + b.h) {
+      handleInventoryWorldMapConfirm(i === 0);
+      return true;
+    }
+  }
+  return true;
+}
+
+function handleInventoryTopMenuPointer(x, y) {
+  const inside = r => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+  const buttons = inventoryTopMenuButtonRects();
+  for (let i = 0; i < buttons.length; i++) {
+    if (!inside(buttons[i])) continue;
+    state.inventoryGrab = null;
+    state.inventoryFocusMode = INVENTORY_FOCUS_MODES.INSIDE_TOP_MENU;
+    state.inventoryTopMenuIndex = i;
+    activateInventoryTopMenuButton();
+    return true;
+  }
+  const pages = inventoryPageButtonRects();
+  if (inside(pages[0])) { changeInventoryPage(-1); return true; }
+  if (inside(pages[1])) { changeInventoryPage(1); return true; }
+  return false;
 }
 
 function inventoryWorldMapConfirmButtonRects() {
@@ -5185,10 +5552,28 @@ function fusionPromptButtonRects() {
 function resetInventoryFocus() {
   if (!state) return;
   state.inventoryFocusArea = "itemList";
-  state.inventoryFocusMode = INVENTORY_FOCUS_MODES.AREA_SELECT;
+  state.inventoryFocusMode = INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST;
   state.inventoryTopMenuIndex = 0;
   state.inventoryConfirmWorldMap = false;
   state.inventoryConfirmChoice = 0;
+}
+
+// もちものの一番上の段で上を押すと、上のメニューへ
+function inventoryFocusTopMenu() {
+  state.inventoryFocusMode = INVENTORY_FOCUS_MODES.INSIDE_TOP_MENU;
+  state.inventoryFocusArea = "topMenu";
+  state.inventoryTopMenuIndex = clamp((state.inventorySelection - (state.inventoryScroll ?? 0)) % 5, 0, 3);
+  playSfx("cursor");
+}
+
+function inventoryFocusItemList() {
+  state.inventoryFocusMode = INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST;
+  state.inventoryFocusArea = "itemList";
+  playSfx("cursor");
+}
+
+function inventoryAtTopRow() {
+  return state.inventorySelection - (state.inventoryScroll ?? 0) < 5 && (state.inventoryScroll ?? 0) === 0 && !state.inventoryGrab;
 }
 
 function moveInventoryFocusArea(dir) {
@@ -5213,9 +5598,19 @@ function enterInventoryFocusedArea() {
 }
 
 function leaveInventoryInnerFocus() {
-  state.inventoryGrab = null;
-  state.inventoryFocusMode = INVENTORY_FOCUS_MODES.AREA_SELECT;
-  playSfx("cancel");
+  // つかんでいたら、まずはなす。メニューにいたらもちものへ。もちものにいたら画面をとじる
+  if (state.inventoryGrab) {
+    state.inventoryGrab = null;
+    playSfx("cancel");
+    return;
+  }
+  if (state.inventoryFocusMode === INVENTORY_FOCUS_MODES.INSIDE_TOP_MENU) {
+    state.inventoryFocusMode = INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST;
+    state.inventoryFocusArea = "itemList";
+    playSfx("cancel");
+    return;
+  }
+  closeInventory();
 }
 
 function activateInventoryTopMenuButton() {
@@ -5234,9 +5629,7 @@ function activateInventoryTopMenuButton() {
     openSaveMenu();
     return;
   }
-  state.inventoryMessage = performance.now() + 1000;
-  state.inventoryMessageLabel = "未定ボタンです";
-  playSfx("decide");
+  runInventorySort();
 }
 
 // ---------- セーブ・ロード（そうび画面の4つめのボタン。3つまで記録できる） ----------
@@ -5671,8 +6064,6 @@ function drawTopMenuNumberBadge(r, number, active) {
 
 function drawInventoryWorldMapConfirm() {
   ctx.save();
-  ctx.fillStyle = "rgba(35, 25, 75, 0.48)";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
   const r = { x: 420, y: 240, w: 440, h: 190 };
   ctx.fillStyle = "rgba(255, 250, 255, 0.96)";
   ctx.strokeStyle = "#ff8db7";
@@ -5713,14 +6104,14 @@ function drawInventoryMessage() {
   ctx.strokeStyle = "#fff3a4";
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.roundRect(928, 158, 230, 34, 8);
+  ctx.roundRect(646, 124, 400, 56, 16);
   ctx.fill();
   ctx.stroke();
   ctx.fillStyle = "#ffffff";
-  ctx.font = "900 14px Segoe UI, system-ui, sans-serif";
+  ctx.font = `900 26px ${FX.FONT}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(state.inventoryMessageLabel || t("sorted"), 1043, 175);
+  ctx.fillText(state.inventoryMessageLabel || t("sorted"), 846, 153);
   ctx.restore();
 }
 
@@ -5860,11 +6251,11 @@ function drawItemCase(x, y, w, h) {
 function inventorySlotRects() {
   const slots = inventorySlots();
   const rects = [];
-  const startX = 760;
-  const startY = 195;
-  const size = 88;
-  const gapX = 10;
-  const gapY = 10;
+  const startX = 446;
+  const startY = 118;
+  const size = 150;
+  const gapX = 13;
+  const gapY = 12;
   clampInventoryScroll();
   for (let i = 0; i < VISIBLE_INVENTORY_ITEMS; i++) {
     const col = i % 5;
@@ -5877,43 +6268,68 @@ function inventorySlotRects() {
 }
 
 function drawInventorySlot(slot) {
+  const inList = (state.inventoryFocusMode ?? INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST) === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST;
   const selected = state.inventorySelection === slot.index;
   const grabbed = state.inventoryGrab?.from === slot.index;
-  const equipped = !slot.empty && state.weaponPower === slot.power;
+  // 同じ武器がいくつあっても「そうび中」の札は最初の1つだけに出す
+  const equipped = !slot.empty && hasEquippedWeapon() && state.weaponPower === slot.power &&
+    inventorySlots().findIndex(item => item?.power === state.weaponPower) === slot.index;
+  const t = performance.now() / 1000;
   ctx.save();
   ctx.globalAlpha = grabbed ? 0.35 : 1;
-  ctx.fillStyle = selected ? "rgba(255, 243, 164, 0.35)" : "rgba(52, 36, 161, 0.12)";
-  ctx.strokeStyle = equipped ? "#ff8db7" : selected ? "#fff3a4" : "rgba(142, 220, 232, 0.72)";
-  ctx.lineWidth = equipped ? 4 : selected ? 3 : 2;
-  ctx.beginPath();
-  ctx.roundRect(slot.x, slot.y, slot.w, slot.h, 4);
-  ctx.fill();
-  ctx.stroke();
+  const art = selected && inList ? uiArt.slotSel : uiArt.slot;
+  if (uiReady(art)) {
+    ctx.drawImage(art, slot.x, slot.y, slot.w, slot.h);
+  } else {
+    if (selected && inList) {
+      ctx.shadowColor = "#ffd85a";
+      ctx.shadowBlur = 16 + Math.sin(t * 6) * 6;
+    }
+    ctx.fillStyle = selected ? "rgba(255, 249, 214, 0.92)" : slot.empty ? "rgba(255, 255, 255, 0.34)" : "rgba(255, 255, 255, 0.74)";
+    ctx.strokeStyle = selected ? (inList ? "#ff8db7" : "#ffd85a") : "rgba(142, 220, 232, 0.9)";
+    ctx.lineWidth = selected ? 6 : 3;
+    ctx.beginPath();
+    ctx.roundRect(slot.x + 3, slot.y + 3, slot.w - 6, slot.h - 6, 18);
+    ctx.fill();
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
   if (slot.empty) {
-    ctx.fillStyle = "rgba(255,255,255,0.22)";
-    ctx.font = "900 14px Segoe UI, system-ui, sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("EMPTY", slot.x + slot.w / 2, slot.y + 43);
     ctx.restore();
     return;
   }
-  ctx.save();
-  ctx.translate(slot.x + slot.w / 2, slot.y + 44);
-  drawWeaponIcon(0, 0, slot.power, 1.08, 1);
-  ctx.restore();
+  drawWeaponIcon(slot.x + slot.w / 2, slot.y + slot.h / 2 - (equipped ? 10 : 2), slot.power, 1.7, 1);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  // レベル
+  ctx.fillStyle = "#7f67c8";
+  ctx.font = `900 22px ${FX.FONT}`;
+  ctx.textAlign = "left";
+  ctx.fillText(`Lv${slot.power}`, slot.x + 14, slot.y + 24);
+  // 同じ武器の数
   const count = state.weaponInventory[slot.power - 1] ?? 0;
   if (count > 1) {
-    ctx.fillStyle = "#fff3a4";
-    ctx.strokeStyle = "#7f67c8";
-    ctx.lineWidth = 2;
+    ctx.fillStyle = "#ffd85a";
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.roundRect(slot.x + slot.w - 34, slot.y + 8, 28, 20, 7);
+    ctx.roundRect(slot.x + slot.w - 62, slot.y + 8, 54, 34, 14);
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = "#4d4773";
-    ctx.font = "900 12px Segoe UI, system-ui, sans-serif";
+    ctx.fillStyle = "#5a3d9a";
+    ctx.font = `900 24px ${FX.FONT}`;
     ctx.textAlign = "center";
-    ctx.fillText(`x${count}`, slot.x + slot.w - 20, slot.y + 13);
+    ctx.fillText(`×${count}`, slot.x + slot.w - 35, slot.y + 26);
+  }
+  if (equipped) {
+    ctx.fillStyle = "#ff8db7";
+    ctx.beginPath();
+    ctx.roundRect(slot.x + 16, slot.y + slot.h - 40, slot.w - 32, 30, 15);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = `900 20px ${FX.FONT}`;
+    ctx.textAlign = "center";
+    ctx.fillText(language === "ja" ? "そうび中" : "EQUIPPED", slot.x + slot.w / 2, slot.y + slot.h - 24);
   }
   ctx.restore();
 }
@@ -5939,6 +6355,9 @@ function drawDraggedInventoryItem() {
   const target = inventorySlotRects().find(s => s.index === state.inventorySelection);
   const canFuseHere = !drag.pointer && target && !target.empty && target.index !== drag.from && target.power === drag.power && canFusePower(target.power);
   ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(1.6, 1.6);
+  ctx.translate(-cx, -cy);
   // 下に落ちる影
   ctx.fillStyle = "rgba(40, 26, 96, 0.28)";
   ctx.beginPath();
@@ -5986,7 +6405,7 @@ function drawGamepadInventoryGhost() {
   ctx.save();
   ctx.globalAlpha = 0.28;
   ctx.translate(slot.x + slot.w / 2, slot.y + slot.h / 2);
-  drawWeaponIcon(0, 0, grab.power, 0.98, 1);
+  drawWeaponIcon(0, 0, grab.power, 1.7, 1);
   ctx.restore();
 }
 
@@ -6072,14 +6491,18 @@ function inventoryFocusComment(power = state.weaponPower) {
   if (mode === INVENTORY_FOCUS_MODES.INSIDE_TOP_MENU) {
     const messages = [
       "ぴょんぴー「ここはゲーム画面に戻るボタンだよ。冒険に戻ろう！」",
-      "ぴょんぴー「ここはまだ準備中のボタンだよ。今は押しても何も起きないよ！」",
+      "ぴょんぴー「せいとんボタンだよ。もちものを前からきれいにならべなおすよ！」",
       "ぴょんぴー「ここはワールドマップに戻るボタンだよ。押す前に確認するね！」",
       "ぴょんぴー「ここはセーブとロードだよ。ファイルは3つまで記録できるよ！」"
     ];
     return messages[state.inventoryTopMenuIndex ?? 0] ?? messages[0];
   }
   if (mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST && power) {
+    if (state.inventoryGrab) return "ぴょんぴー「同じ武器の上ではなすと合成、からっぽのマスではなすと移動、その場ではなすとそうびだよ！」";
     return pyonpyWeaponComment(power);
+  }
+  if (mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST) {
+    return "ぴょんぴー「Aで武器をつかめるよ。一番上で↑をおすとメニュー、Bでとじるよ！」";
   }
   if (area === "topMenu") {
     return "ぴょんぴー「上のメニューだよ。Aで入ると、ゲームに戻るボタンやマップに戻るボタンを選べるよ！」";
@@ -6156,8 +6579,6 @@ function drawFusionPrompt() {
   const y = canvas.height / 2 - 56;
   const buttons = fusionPromptButtonRects();
   ctx.save();
-  ctx.fillStyle = "rgba(30, 24, 52, 0.78)";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "#fffaf0";
   ctx.strokeStyle = "#c8b2ff";
   ctx.lineWidth = 4;
@@ -7645,16 +8066,24 @@ function drawPlayerBody(p) {
   if (p.invincible > 0 && state.mode !== "respawning" && Math.floor(performance.now() / 90) % 2) return;
   const pose = Gimmick.drawPlayerPose(p);
   if (pose) {
-    // 撃つポーズの絵には銃が描かれていないので、のばした手に銃を持たせる
-    if (pose === "poseShoot" && hasEquippedWeapon()) {
-      const f = p.facing || 1;
-      drawRayGun(p.x + p.w / 2 + f * 34, p.y + 14, -f, 0.7, state.weaponPower);
-    }
+    // ポーズの絵には銃が描かれていないので、にぎった手に、ねらう向きで銃を持たせる
+    if (pose.gun && hasEquippedWeapon()) drawGunInHand(p, pose.gun.x, pose.gun.y);
     return;
   }
   if (pyompySprite.complete && pyompySprite.naturalWidth > 0) drawPlayerSprite(p);
   else drawPlayerFallback(p);
   if (hasEquippedWeapon()) drawAimedGun(p);
+}
+
+function drawGunInHand(p, x, y) {
+  const f = p.facing || 1;
+  const a = p.aim ?? (f < 0 ? Math.PI : 0);
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(f, 1);
+  ctx.rotate(clampAngle(f > 0 ? a : Math.PI - a));
+  drawRayGun(9, -3, -1, 0.7, state.weaponPower);
+  ctx.restore();
 }
 
 // ねらっている向きに銃を回して持たせる（8方向）
@@ -8322,7 +8751,6 @@ canvas.addEventListener("pointerdown", event => {
       event.preventDefault();
       return;
     }
-    if (pos.x < 150 && pos.y < 110) closeInventory();
     return;
   }
   if (state.mode === "playing" && pos.x < 360 && pos.y < 112) openInventory();
@@ -8505,14 +8933,15 @@ function confirmFusionPrompt() {
 
 function handleFusionPromptPointer(x, y) {
   if (!state.fusionPrompt) return false;
-  if (x >= 340 && x <= 470 && y >= 430 && y <= 476) {
+  const pt = inventoryDialogPoint(x, y);
+  const rects = fusionPromptButtonRects();
+  const inside = b => pt.x >= b.x && pt.x <= b.x + b.w && pt.y >= b.y && pt.y <= b.y + b.h;
+  if (inside(rects[0])) {
     state.fusionPrompt.choice = 0;
     confirmFusionPrompt();
-    return true;
-  }
-  if (x >= 515 && x <= 620 && y >= 430 && y <= 476) {
+  } else if (inside(rects[1])) {
     state.fusionPrompt = null;
-    return true;
+    playSfx("cancel");
   }
   return true;
 }
@@ -8600,6 +9029,10 @@ function handleInventoryKeyboardFocus(code, repeat = false) {
       activateInventoryTopMenuButton();
       return true;
     }
+    if (!repeat && (code === "ArrowDown" || code === "KeyS")) {
+      inventoryFocusItemList();
+      return true;
+    }
     if (!repeat && (code === "Escape" || code === "KeyB")) {
       leaveInventoryInnerFocus();
       return true;
@@ -8610,7 +9043,11 @@ function handleInventoryKeyboardFocus(code, repeat = false) {
   if (mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST) {
     if (code === "ArrowLeft" || code === "KeyA") moveInventorySelection(-1);
     if (code === "ArrowRight" || code === "KeyD") moveInventorySelection(1);
-    if (code === "ArrowUp" || code === "KeyW") moveInventorySelection(-5);
+    if (code === "ArrowUp" || code === "KeyW") {
+      if (inventoryAtTopRow()) {
+        if (!repeat) inventoryFocusTopMenu();
+      } else moveInventorySelection(-5);
+    }
     if (code === "ArrowDown" || code === "KeyS") moveInventorySelection(5);
     if (!repeat && (code === "Enter" || code === "Space" || code === "KeyZ")) startInventoryGrab(false);
     if (!repeat && code === "KeyE") equipSelectedInventorySlot();
@@ -8673,6 +9110,7 @@ function updateInventoryGamepadFocus(now, jumpPressed, runPressed, shootPressed)
       playSfx("cursor");
       gamepadState.inventoryMoveDelay = now + (freshMove ? 230 : 140);
     }
+    if (gamepadState.down && !gamepadState.downLatch) inventoryFocusItemList();
     if (jumpPressed && !gamepadState.jumpLatch) activateInventoryTopMenuButton();
     if (runPressed && !gamepadState.runLatch) leaveInventoryInnerFocus();
     return;
@@ -8684,7 +9122,9 @@ function updateInventoryGamepadFocus(now, jumpPressed, runPressed, shootPressed)
     if (!moveDir) {
       gamepadState.inventoryMoveDelay = 0;
     } else if (freshMove || now >= gamepadState.inventoryMoveDelay) {
-      moveInventorySelection(moveDir);
+      if (moveDir === -5 && inventoryAtTopRow()) {
+        if (freshMove) inventoryFocusTopMenu();
+      } else moveInventorySelection(moveDir);
       gamepadState.inventoryMoveDelay = now + (freshMove ? 230 : 115);
     }
     if (jumpPressed && !gamepadState.jumpLatch) startInventoryGrab(true);
