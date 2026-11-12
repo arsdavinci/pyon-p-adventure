@@ -3593,10 +3593,27 @@ function syncWeaponInventoryFromItems() {
   }
 }
 
+// せいとん後のならび：月（Lv1→8）、星（Lv1→8）、ロボット・戦闘機の順。
+// 入りきるときは、種類ごとに新しい段から始めて見やすくする
+function sortedInventoryLayout(items = state.inventoryItems) {
+  const list = items.filter(Boolean).sort((a, b) => a - b);
+  const groups = [
+    list.filter(p => weaponAttribute(p) === "moon"),
+    list.filter(p => weaponAttribute(p) === "star"),
+    list.filter(p => weaponAttribute(p) === "mech")
+  ].filter(g => g.length);
+  const rowed = [];
+  groups.forEach((g, i) => {
+    if (i > 0) while (rowed.length % 5) rowed.push(null);
+    rowed.push(...g);
+  });
+  const out = rowed.length <= MAX_INVENTORY_ITEMS ? rowed : list;
+  return [...out, ...Array(MAX_INVENTORY_ITEMS - out.length).fill(null)];
+}
+
 function compactInventoryItems() {
   ensureInventoryItems();
-  const items = state.inventoryItems.filter(Boolean);
-  state.inventoryItems = [...items, ...Array(MAX_INVENTORY_ITEMS - items.length).fill(null)];
+  state.inventoryItems = sortedInventoryLayout();
   syncWeaponInventoryFromItems();
   state.inventoryScroll = 0;
   state.inventorySelection = Math.min(firstInventoryIndexByPower(state.weaponPower), MAX_INVENTORY_ITEMS - 1);
@@ -3610,7 +3627,7 @@ function compactInventoryItems() {
 function runInventorySort() {
   ensureInventoryItems();
   const items = state.inventoryItems.filter(Boolean);
-  const compacted = [...items, ...Array(MAX_INVENTORY_ITEMS - items.length).fill(null)];
+  const compacted = sortedInventoryLayout();
   const alreadyCompact = state.inventoryItems.every((item, index) => item === compacted[index]);
   if (items.length === 0) {
     state.inventorySortToastLabel = "整理するものなし";
