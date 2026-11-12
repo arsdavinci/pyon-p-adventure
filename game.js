@@ -873,7 +873,7 @@ function makeCourse(worldIndex, areaIndex, layout = areaIndex, seed = null) {
     level: {
       enemies, coins: chunk ? chunk.coins : coins, starItems: chunkStuff ? chunkStuff.stars : starItems,
       oxygenItems, seaGates, lavaGeysers, lavaPools, rotatingFires, spikes: chunk ? chunk.spikes : [],
-      lowBars: chunk ? chunk.lowBars : [], rails: chunk ? chunk.rails : [],
+      lowBars: chunk ? chunk.lowBars : [], rails: chunk ? chunk.rails : [], crawlSpots: chunk ? chunk.crawlSpots : [],
       doorSpots: chunk ? chunk.doorSpots : [], flag: chunk ? rect(3760, 252, 28, 240) : rect(5060, 252, 28, 240)
     },
     gun: { x: Math.min(520, 330 + areaIndex * 70), y: 430 }
@@ -1103,6 +1103,7 @@ function seededRandom(seed) {
   };
 }
 
+const CRAWL_GAP = 42; // ほふく前進のすき間（ふせると30、立つと54）
 const CHUNK_KINDS = ["pits", "stairs", "spikeField", "pillars", "tunnel", "islands", "valley", "tower", "mover", "shelf", "flat", "cliff"];
 const HIGH_Y = 240; // 地面のいちばん高いところ
 
@@ -1114,7 +1115,7 @@ function buildChunkCourse({ seed, difficulty, trait, endX = 4860, worldEnd = WOR
   const ice = trait === "iceSlide";
   const factory = trait === "factoryBelt";
   const BOTTOM = canvas.height;
-  const out = { platforms: [], blocks: [], coins: [], enemySpots: [], rewardSpots: [], spikes: [], pitXs: [], keySpots: [], doorSpots: [], lowBars: [], rails: [] };
+  const out = { platforms: [], blocks: [], coins: [], enemySpots: [], rewardSpots: [], spikes: [], pitXs: [], keySpots: [], doorSpots: [], lowBars: [], rails: [], crawlSpots: [] };
   const P = out.platforms;
   let coinNo = 0;
   const addCoin = (x, y) => out.coins.push(coin(x, y, coinNo++ % 2 ? "pea" : "kaki"));
@@ -1344,6 +1345,16 @@ function buildChunkCourse({ seed, difficulty, trait, endX = 4860, worldEnd = WOR
       out.enemySpots.push({ x: x + 220, y: gy, left: x + 120, right: x + 310, armed: true });
       x += 320;
     },
+    // ほふく前進でしか通れない、低いすき間（上は高いかべなので、とびこえられない）
+    crawlway() {
+      const len = Math.round(between(360, 520));
+      ground(x, gy, len + 160);
+      const sx = x + 80;
+      P.push(rect(sx, gy - CRAWL_GAP - 1400, len, 1400));
+      for (let c = 0; c < Math.floor(len / 80); c++) addCoin(sx + 40 + c * 80, gy - 16);
+      out.crawlSpots.push({ x: sx, y: gy, w: len });
+      x += len + 160;
+    },
     // ひと息つける平地（アイテムブロック）
     flat() {
       const len = between(480, 600);
@@ -1363,11 +1374,13 @@ function buildChunkCourse({ seed, difficulty, trait, endX = 4860, worldEnd = WOR
     [order[i], order[j]] = [order[j], order[i]];
   }
   if (factory) order.splice(Math.floor(rnd() * order.length), 0, "mover");
+  // どのステージにも、ほふく前進でくぐる場所をひとつ（はじめのほうに置くので、はみ出して消えない）
+  order.splice(Math.floor(rnd() * 2), 0, "crawlway");
   // メカのワールドは、はじめのほうにトロッコ
   if (factory && kinds === CHUNK_KINDS) order.splice(Math.floor(rnd() * 2), 0, "cart");
   // 旗の前に、地面へもどる階段と平地が入るように、区間はここまでにおさめる（はみ出したらやり直し）
   const limit = endX - 360;
-  const lists = ["platforms", "blocks", "coins", "enemySpots", "rewardSpots", "spikes", "pitXs", "keySpots", "doorSpots", "lowBars", "rails"];
+  const lists = ["platforms", "blocks", "coins", "enemySpots", "rewardSpots", "spikes", "pitXs", "keySpots", "doorSpots", "lowBars", "rails", "crawlSpots"];
   let n = 0;
   let misses = 0;
   while (x < limit - 380 && misses < order.length) {
@@ -1406,11 +1419,17 @@ function chunkCourseContent(c, worldIndex, difficulty, enemyCount) {
     foe.enemyKind = worldIndex;
     enemies.push(foe);
   }
-  const rewards = c.rewardSpots.slice().sort((a, b) => a.x - b.x);
+  // ★の場所：ごほうびの場所から3つ。たりないときは、敵の立つ地面の上（かべの中に入らない）
+  const rewards = c.rewardSpots.slice();
+  for (const s of c.enemySpots.slice().sort((a, b) => a.x - b.x)) {
+    if (rewards.length >= 3) break;
+    rewards.push({ x: (s.left + s.right) / 2, y: s.y - 80 });
+  }
+  rewards.sort((a, b) => a.x - b.x);
   const stars = [];
   for (let i = 0; i < 3; i++) {
     const r = rewards[Math.floor(((i + 0.5) * rewards.length) / 3)];
-    stars.push(r ? starItem(r.x, r.y) : starItem(900 + i * 1400, 380));
+    stars.push(r ? starItem(r.x, r.y) : starItem(400 + i * 60, GROUND_Y - 80));
   }
   return { enemies, stars };
 }
@@ -1421,7 +1440,8 @@ function makeCaveArea(base, worldIndex, areaIndex, difficulty, seed) {
   const c = buildChunkCourse({ seed, difficulty, trait: base.trait, endX: caveEnd - 300, worldEnd: caveEnd,
     kinds: ["pits", "stairs", "spikeField", "pillars", "tunnel", "valley", "shelf", "flat", "spikeField"] });
   const P = c.platforms;
-  const ceilY = Math.min(...P.map(p => p.y)) - 170;
+  // 天井の高さは、ふつうの地形から決める（ほふく前進のかべのような、高い岩はのぞく）
+  const ceilY = Math.min(...P.filter(p => p.h < 1000).map(p => p.y)) - 170;
   P.push(rect(-80, ceilY - 400, caveEnd + 160, 400));
   P.push(rect(-80, ceilY - 400, 80, canvas.height - ceilY + 448));
   P.push(rect(caveEnd, ceilY - 400, 2800, canvas.height - ceilY + 448));
@@ -1436,9 +1456,12 @@ function makeCaveArea(base, worldIndex, areaIndex, difficulty, seed) {
     if (floor < Infinity && h > 40 && !busy) P.push(rect(x, ceilY, 120, h));
   }
   const { enemies } = chunkCourseContent(c, worldIndex, difficulty, Math.min(10, 4 + Math.floor(difficulty / 2)));
-  const key = c.keySpots[Math.floor(c.keySpots.length / 2)] ?? c.rewardSpots[0] ?? { x: 1600, y: 300 };
-  const surfaceAt = x => Math.min(...P.filter(p => p.y > ceilY && x > p.x && x < p.x + p.w).map(p => p.y));
-  const fx = caveEnd - 700;
+  const surfaceAt = x => Math.min(...P.filter(p => p.y > ceilY && p.h < 1000 && x > p.x && x < p.x + p.w).map(p => p.y));
+  const underCrawl = x => c.crawlSpots.some(s => x > s.x - 60 && x < s.x + s.w + 60);
+  const openX = from => { let x = from; while (underCrawl(x) && x < caveEnd - 300) x += 120; return x; };
+  const kx = openX(1600);
+  const key = c.keySpots[Math.floor(c.keySpots.length / 2)] ?? c.rewardSpots[0] ?? { x: kx, y: surfaceAt(kx) - 110 };
+  const fx = openX(caveEnd - 700);
   const star = c.rewardSpots.find(r => Math.abs(r.x - key.x) > 300) ?? c.rewardSpots.find(r => r !== key) ?? { x: fx, y: surfaceAt(fx) - 70 };
   const doorX = caveEnd - 200;
   const area = {
@@ -1448,7 +1471,7 @@ function makeCaveArea(base, worldIndex, areaIndex, difficulty, seed) {
   area.level = {
     enemies, coins: c.coins, starItems: [starItem(star.x, star.y)],
     oxygenItems: [], seaGates: [], lavaGeysers: [], lavaPools: [], rotatingFires: [],
-    keys: [key], springs: [], chests: [], spikes: c.spikes,
+    keys: [key], springs: [], chests: [], spikes: c.spikes, crawlSpots: c.crawlSpots,
     flag: rect(doorX + 10, GROUND_Y - 240, 28, 240), doors: []
   };
   return area;
@@ -1786,24 +1809,29 @@ function makeWindingArea(base, worldIndex, difficulty, seed) {
   const addCoin = (x, y) => coins.push(coin(x, y, coinNo++ % 2 ? "pea" : "kaki"));
   const H = Math.round(between(250, 290)); // 通路の高さ
   const n = 8 + Math.floor(rnd() * 3) + Math.min(3, Math.floor(difficulty / 10));
+  // ほふく前進でくぐる、天井の低い区間（入口と出口は同じ高さの床）
+  const crawlIdx = 2 + Math.floor(rnd() * (n - 5));
+  const crawlSpots = [];
   let x = 0;
   let fy = GROUND_Y;
   let minCeil = Infinity;
   const segs = [];
   for (let i = 0; i < n; i++) {
-    const len = i === 0 ? 460 : i === n - 1 ? 420 : Math.round(between(260, 520));
+    const low = i === crawlIdx;
+    const len = i === 0 ? 460 : i === n - 1 ? 420 : low ? Math.round(between(320, 440)) : Math.round(between(260, 520));
     if (i > 0) {
       // 多くは上り。ときどき下りや平らも（くねくね）
-      const dy = pick([-120, -110, -90, -70, 0, 80, 100]);
+      const dy = low || i === crawlIdx + 1 ? 0 : pick([-120, -110, -90, -70, 0, 80, 100]);
       fy = clamp(fy + dy, -900, GROUND_Y);
     }
-    const cy = fy - H;
+    const cy = low ? fy - CRAWL_GAP : fy - H;
+    if (low) crawlSpots.push({ x, y: fy, w: len });
     minCeil = Math.min(minCeil, cy);
     segs.push({ x, len, fy, cy });
     x += len;
   }
   segs.forEach((s, i) => {
-    const pit = i > 0 && i < n - 1 && s.len >= 400 && rnd() < 0.35;
+    const pit = i > 0 && i < n - 1 && i !== crawlIdx && s.len >= 400 && rnd() < 0.35;
     if (pit) {
       // とげの穴（落ちてもジャンプで出られる深さ）
       const px = s.x + s.len / 2 - 70;
@@ -1817,6 +1845,10 @@ function makeWindingArea(base, worldIndex, difficulty, seed) {
     }
     // 天井（上までつまった岩）
     platforms.push(rect(s.x, s.cy - 1400, s.len, 1400));
+    if (i === crawlIdx) {
+      for (let c = 0; c < Math.floor(s.len / 80); c++) addCoin(s.x + 40 + c * 80, s.fy - 16);
+      return;
+    }
     if (i === 0 || i === n - 1 || pit) return;
     const mid = s.x + s.len / 2;
     const kind = Math.floor(rnd() * 5);
@@ -1851,7 +1883,7 @@ function makeWindingArea(base, worldIndex, difficulty, seed) {
     top: minCeil - 160, bottom: BOTTOM, platforms, blocks, gun: { x: 300, y: 430 }
   };
   area.level = {
-    ...emptyLevelBits(), enemies, coins, starItems: stars, keys: [], spikes,
+    ...emptyLevelBits(), enemies, coins, starItems: stars, keys: [], spikes, crawlSpots,
     flag: rect(end - 160, last.fy - 240, 28, 240), doors: []
   };
   return area;
@@ -2003,9 +2035,21 @@ function buildStageAreas(index) {
   // 寄り道の扉は、平らで安全な地面に
   const safe = (first.level.doorSpots ?? []).filter(d => d.x > 800 && d.x < 3900)
     .sort((a, b) => Math.abs(a.x - 2300) - Math.abs(b.x - 2300))[0];
-  const spot = safe ? { x: safe.x - 40, y: safe.y, w: DOOR_W + 80 } : groundUnder(first, 2300) ?? groundUnder(first, 1900) ?? groundUnder(first, 2800);
+  const crawls = first.level.crawlSpots ?? [];
+  // 予備：広くて、上に何もない地面
+  const wideGround = x => first.platforms
+    .filter(p => p.w >= 200 && !p.mover && !p.conveyor && p.y >= 300 && p.h < 1000 && x > p.x + 40 && x + DOOR_W < p.x + p.w - 40)
+    .sort((a, b) => a.y - b.y)[0];
+  const doorFits = x => {
+    const g = wideGround(x);
+    if (!g || crawls.some(s => x + DOOR_W > s.x - 40 && x < s.x + s.w + 40)) return false;
+    const r = { x, y: g.y - DOOR_H, w: DOOR_W, h: DOOR_H - 2 };
+    return !first.platforms.some(q => q !== g && hit(r, q));
+  };
+  const freeX = [2300, 1900, 2800, 1500, 3200, 1200].find(doorFits);
+  const spot = safe ? { x: safe.x - 40, y: safe.y, w: DOOR_W + 80 } : freeX ? wideGround(freeX) : null;
   if (spot && !first.climbStage) {
-    const dx = clamp(2300, spot.x + 40, spot.x + spot.w - 40 - DOOR_W);
+    const dx = clamp(safe ? safe.x : freeX, spot.x + 40, spot.x + spot.w - 40 - DOOR_W);
     const room = makeBonusRoom(index, index, { area: 0, x: dx });
     room.areas = areas;
     room.areaNo = areas.length;
@@ -2417,6 +2461,7 @@ function applyCourse(index) {
     doors: (course.level.doors ?? []).map(d => ({ ...d, lockedOriginally: !!d.locked })),
     spikes: (course.level.spikes ?? []).map(sp => ({ ...sp })),
     lowBars: (course.level.lowBars ?? []).map(b => ({ ...b })),
+    crawlSpots: (course.level.crawlSpots ?? []).map(c => ({ ...c })),
     rails: (course.level.rails ?? []).map(r => ({ ...r })),
     flag: { ...course.level.flag }
   };
@@ -2945,6 +2990,7 @@ function update(dt) {
   updateDoors();
   updateSpikes();
   updateLowBars();
+  updateCrawlHint();
   checkGoal();
   updateHud();
 }
@@ -3619,6 +3665,27 @@ function resetCarts() {
 }
 
 // 頭の上の低いはり：立っていると当たる。しゃがめば下をくぐれる
+// ほふく前進のすき間の前で立っていたら、「↓でふせてくぐろう」と教える
+function updateCrawlHint() {
+  const p = state.player;
+  if (p.crouch || !p.grounded) return;
+  for (const c of level.crawlSpots ?? []) {
+    const atMouth = (p.x + p.w >= c.x - 24 && p.x + p.w <= c.x + 6) || (p.x <= c.x + c.w + 24 && p.x >= c.x + c.w - 6);
+    if (!atMouth || Math.abs(p.y + p.h - c.y) > 6) continue;
+    if ((state.crawlHintCool ?? 0) > performance.now()) return;
+    state.crawlHintCool = performance.now() + 3500;
+    FX.floater(p.x + p.w / 2, p.y - 24, language === "ja" ? "↓でふせて くぐろう！" : "Duck with ↓ to crawl through!", { color: "#ffffff", stroke: "#7f67c8", size: 22, life: 1.6 });
+    let told = false;
+    try { told = localStorage.getItem("pyonpCrawlTip") === "1"; localStorage.setItem("pyonpCrawlTip", "1"); } catch (_) {}
+    if (!told) {
+      Chat.say([
+        ["pyon", "せまっ！ 立ったままじゃ通れんじょ。↓でふせて、ほふく前進じゃ！", "So tight! Can't get through standing. Duck with ↓ and crawl!"]
+      ], true);
+    }
+    return;
+  }
+}
+
 function updateLowBars() {
   const p = state.player;
   for (const b of level.lowBars ?? []) {

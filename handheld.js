@@ -250,8 +250,8 @@
       const ay = Math.abs(dy);
       // 左右を広めに、ななめはせまめに（うっかりジャンプを減らす）
       if (ax >= ay * 0.6) dirs.add(dx < 0 ? "ArrowLeft" : "ArrowRight");
-      // 下ななめは広めに（↘↙でほふく前進しやすく）。上ななめは今までどおりせまめ
-      if (dy > 0 ? ay >= ax * 0.55 : ay >= ax) dirs.add(dy < 0 ? "ArrowUp" : "ArrowDown");
+      // 下は、はっきり下をおしたときだけ（横に進むつもりで下にふれて、ふせてしまわないように）
+      if (dy > 0 ? ay >= ax * 1.3 : ay >= ax) dirs.add(dy < 0 ? "ArrowUp" : "ArrowDown");
       return dirs;
     };
 
