@@ -3217,6 +3217,33 @@ function weaponRank(power = state?.weaponPower ?? 1) {
   return ((value - 1) % WEAPON_ATTRIBUTE_SIZE) + 1;
 }
 
+// 月の武器は 🌙、星の武器は ⭐。レベルは月・星それぞれ 1〜8 で数える
+function weaponLevelLabel(power = state?.weaponPower ?? 1, space = false) {
+  return `${weaponAttribute(power) === "moon" ? "🌙" : "⭐"}Lv${space ? " " : ""}${weaponRank(power)}`;
+}
+
+function drawWeaponMark(x, y, size, power) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.lineWidth = Math.max(2, size * 0.14);
+  ctx.strokeStyle = "#ffffff";
+  if (weaponAttribute(power) === "moon") {
+    ctx.fillStyle = "#ffd85a";
+    ctx.beginPath();
+    ctx.arc(0, 0, size * 0.5, 0.25 * Math.PI, 1.75 * Math.PI);
+    ctx.arc(size * 0.24, 0, size * 0.4, 1.68 * Math.PI, 0.32 * Math.PI, true);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fill();
+  } else {
+    ctx.fillStyle = "#ff7fb0";
+    drawFivePointStar(0, 0, size * 0.55);
+    ctx.stroke();
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
 function nextFusionPower(power) {
   const value = clamp(Math.floor(power), 1, MAX_WEAPON_POWER);
   if (weaponRank(value) >= WEAPON_ATTRIBUTE_SIZE) return null;
@@ -3231,13 +3258,18 @@ function randomWeaponDropPower() {
   const totalSnacks = state ? state.kakiTotal + state.peaTotal : 0;
   const balance = totalSnacks > 0 ? 1 - Math.abs(state.kakiTotal - state.peaTotal) / totalSnacks : 0;
   const difficulty = courses[currentCourse]?.difficulty ?? 1;
-  const cap = clamp(3 + Math.floor(difficulty / 2), 5, MAX_WEAPON_POWER);
+  // まず月か星かを決める。星の武器は 1-4 から出はじめ、先のステージほど出やすい
+  // （前は月の続きとして数えていたので、星の武器はほとんど出なかった）
+  const star = difficulty >= 4 && Math.random() < (difficulty >= 9 ? 0.4 : 0.25);
+  const cap = star
+    ? clamp(1 + Math.floor((difficulty - 4) / 3), 1, WEAPON_ATTRIBUTE_SIZE)
+    : clamp(3 + Math.floor(difficulty / 2), 5, WEAPON_ATTRIBUTE_SIZE);
   const weights = Array.from({ length: cap }, (_, i) => {
-    const power = i + 1;
-    const curve = Math.max(0.03, 1.15 - power * 0.13);
-    const unlock = power <= 5 ? 1 : Math.max(0.08, (difficulty - power + 6) / 14);
+    const rank = i + 1;
+    const curve = Math.max(0.03, 1.15 - rank * 0.13);
+    const unlock = rank <= 5 ? 1 : Math.max(0.08, (difficulty - rank + 6) / 14);
     const snackBonus = 1 + balance * 0.24 + totalSnacks * 0.001;
-    return { power, weight: curve * unlock * snackBonus };
+    return { power: star ? WEAPON_ATTRIBUTE_SIZE + rank : rank, weight: curve * unlock * snackBonus };
   });
   const total = weights.reduce((sum, item) => sum + item.weight, 0);
   let roll = Math.random() * total;
@@ -3276,7 +3308,7 @@ function addWeaponStock(power = 1) {
     state.gun.holder = "inventory";
   }
   spawnBlockPoof(state.player.x + state.player.w / 2, state.player.y + 18);
-  FX.weaponGet(state.player.x + state.player.w / 2, state.player.y + 10, `${weaponName(powerValue)} Lv${powerValue}`, false);
+  FX.weaponGet(state.player.x + state.player.w / 2, state.player.y + 10, `${weaponName(powerValue)} ${weaponLevelLabel(powerValue)}`, false);
   Chat.event("weaponGet", weaponName(powerValue));
   return true;
 }
@@ -3451,7 +3483,7 @@ function previewWeaponPowerAfterPickup(power = 1) {
 
 function weaponInventoryLabel() {
   return state.weaponInventory
-    .map((count, index) => count > 0 ? `Lv${index + 1}x${count}` : null)
+    .map((count, index) => count > 0 ? `${weaponLevelLabel(index + 1)}x${count}` : null)
     .filter(Boolean)
     .join(" ");
 }
@@ -5301,7 +5333,7 @@ function drawItemFullPrompt() {
 function drawStageBadge() {
   const label = `${stageLabel()}${currentCourse === courses.length - 1 ? ` ${t("final")}` : courses[currentCourse]?.bossStage ? ` ${t("boss")}` : ""}`;
   const owner = hasEquippedWeapon() ? "" : state.gun.holder !== null && state.gun.holder !== "inventory" ? t("stolen") : t("noGun");
-  const weaponLabel = hasEquippedWeapon() ? `${weaponName()} Lv${state.weaponPower}` : `${t("unequipped")}${owner}`;
+  const weaponLabel = hasEquippedWeapon() ? `${weaponName()} ${weaponLevelLabel(state.weaponPower)}` : `${t("unequipped")}${owner}`;
   const inventoryLabel = `${t("stock")} ${weaponInventoryLabel()}`;
   ctx.save();
   ctx.font = "800 24px Segoe UI, system-ui, sans-serif";
@@ -5649,7 +5681,7 @@ function drawInventoryWeaponCard() {
   const stage = weaponStage(power);
   const nextPower = nextFusionPower(power);
   const cx = r.x + r.w / 2;
-  drawWeaponIcon(cx, r.y + 74 + extra * 0.2, power, 2.1 + extra / 400, 1);
+  drawWeaponIcon(cx, r.y + 74 + extra * 0.2, power, weaponIconFitScale(power, r.w - 150, 2.1 + extra / 400), 1);
   ctx.translate(0, extra * 0.45);
   ctx.fillStyle = "#5a3d9a";
   let nameSize = 34;
@@ -5661,7 +5693,8 @@ function drawInventoryWeaponCard() {
   ctx.fillText(weaponName(power), cx, r.y + 158);
   ctx.fillStyle = "#ff5f9e";
   ctx.font = `900 28px ${FX.FONT}`;
-  ctx.fillText(`Lv ${power}`, cx, r.y + 198);
+  drawWeaponMark(cx - 52, r.y + 197, 30, power);
+  ctx.fillText(`Lv ${weaponRank(power)}`, cx + 14, r.y + 198);
 
   const bx = r.x + 34;
   const bw = r.w - 68;
@@ -5699,7 +5732,7 @@ function drawInventoryCommentBar() {
   const r = { x: 20, y: 604, w: 1240, h: 102 };
   drawUiPanel(r);
   const slot = inventorySlots()[state.inventorySelection];
-  const raw = inventoryFocusComment(slot?.power);
+  const raw = inventoryFocusComment(slot?.power ?? null);
   const text = raw.replace(/^ぴょんぴー「/, "").replace(/」$/, "");
   ctx.save();
   ctx.fillStyle = "#7f67c8";
@@ -6734,14 +6767,15 @@ function drawInventorySlot(slot) {
     ctx.restore();
     return;
   }
-  drawWeaponIcon(slot.x + slot.w / 2, slot.y + slot.h / 2 - (equipped ? 10 : 2), slot.power, 1.7, 1);
+  drawWeaponIcon(slot.x + slot.w / 2, slot.y + slot.h / 2 - (equipped ? 10 : 2), slot.power, weaponIconFitScale(slot.power, slot.w - 20, 1.7), 1);
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   // レベル
   ctx.fillStyle = "#7f67c8";
   ctx.font = `900 22px ${FX.FONT}`;
   ctx.textAlign = "left";
-  ctx.fillText(`Lv${slot.power}`, slot.x + 14, slot.y + 24);
+  drawWeaponMark(slot.x + 24, slot.y + 24, 24, slot.power);
+  ctx.fillText(`Lv${weaponRank(slot.power)}`, slot.x + 40, slot.y + 25);
   // 同じ武器の数
   const count = state.weaponInventory[slot.power - 1] ?? 0;
   if (count > 1) {
@@ -7626,7 +7660,7 @@ function drawItems() {
       ctx.lineWidth = 3;
       ctx.font = "bold 14px system-ui";
       ctx.textAlign = "center";
-      const label = nextPower > state.weaponPower ? `合体` : `Lv${dropPower}`;
+      const label = nextPower > state.weaponPower ? `合体` : weaponLevelLabel(dropPower);
       ctx.strokeText(label, item.x + item.w / 2 + 14, item.y + 4);
       ctx.fillText(label, item.x + item.w / 2 + 14, item.y + 4);
     }
@@ -7859,6 +7893,13 @@ function drawRayGun(x, y, dir = 1, scale = 1, power = 1) {
   else if (stageIndex === 4) drawMoonianNova(colors);
   else drawExperimentalGun(colors, stageIndex);
   ctx.restore();
+}
+
+// 武器の絵が maxWidth におさまる倍率（強い武器ほど絵が大きいので、マスからはみ出さないようにする）
+function weaponIconFitScale(power, maxWidth, wanted) {
+  const index = clamp(Math.floor(power), 1, MAX_WEAPON_POWER) - 1;
+  const baseW = [58, 70, 82, 76, 92][index] ?? Math.min(150, 86 + index * 4);
+  return Math.min(wanted, maxWidth / baseW);
 }
 
 function drawWeaponIcon(x, y, power = 1, scale = 1, dir = 1) {

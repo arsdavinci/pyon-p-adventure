@@ -392,7 +392,7 @@
     if (src && e.icon.getAttribute("src") !== src) e.icon.src = src;
     e.icon.style.visibility = "visible";
     e.name.textContent = weaponName(power);
-    e.lv.textContent = `Lv${power}`;
+    e.lv.textContent = weaponLevelLabel(power);
     e.atk.style.width = `${Math.max(8, (st.damage / 16) * 100)}%`;
     e.range.style.width = `${Math.max(8, (st.range / 2320) * 100)}%`;
     e.rapid.style.width = `${Math.max(8, ((0.46 - st.cooldown) / 0.33) * 100)}%`;
@@ -434,7 +434,7 @@
     // そうび画面では、えらんでいるものの説明を会話の欄に出す
     if (state.mode === "inventory" && commOn) {
       const slot = inventorySlots()[state.inventorySelection];
-      const text = inventoryFocusComment(slot?.power).replace(/^ぴょんぴー「/, "").replace(/」$/, "");
+      const text = inventoryFocusComment(slot?.power ?? null).replace(/^ぴょんぴー「/, "").replace(/」$/, "");
       if (text !== invText) {
         invText = text;
         const e = dom();
