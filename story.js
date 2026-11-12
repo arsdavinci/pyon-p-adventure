@@ -396,6 +396,7 @@
     } else {
       cs.active = null;
     }
+    if (typeof Voice !== "undefined") Voice.play(cs.id, ln.ja);
     if (ln.fx === "shake") FX.shake(0.7);
     if (ln.fx === "flash") {
       FX.flash("#ffffff", 0.8, 0.6);
@@ -406,6 +407,7 @@
   function finish() {
     if (!cs || cs.ending) return;
     cs.ending = true;
+    if (typeof Voice !== "undefined") Voice.stop();
     data.seen[cs.id] = true;
     persist();
     const fn = cs.onEnd;

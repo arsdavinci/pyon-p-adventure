@@ -467,6 +467,7 @@
     }
     if (!cur && queue.length) {
       cur = queue.shift();
+      if (typeof Voice !== "undefined") Voice.play("chat", cur[1]);
       shown = 0;
       hold = 0;
       renderedCount = -1;
