@@ -3588,8 +3588,21 @@ function updateBeams(dt) {
     const beamRect = upright
       ? rect(b.x + b.w / 2 - b.h / 2, b.y + b.h / 2 - b.w / 2, b.h, b.w)
       : rect(b.x, b.y, b.w, b.h);
+    b.hitRect = beamRect;
     if (b.owner === "player") {
       FX.beamTrail(b);
+      // 敵の弾とぶつかったら、おたがいに消える（撃って防げる）
+      for (const other of state.beams) {
+        if (other.owner === "player" || other.life <= 0 || !other.hitRect || !hit(beamRect, other.hitRect)) continue;
+        other.life = 0;
+        FX.hit((b.x + other.x) / 2 + b.w / 2, (b.y + other.y) / 2 + b.h / 2, b.colors);
+        playSfx("break", b.x);
+        if (b.explosion) explodeMissile(b.x + b.w / 2, b.y + b.h / 2, b);
+        if (b.pierce > 0 && !b.explosion) b.pierce -= 1;
+        else b.life = 0;
+        break;
+      }
+      if (b.life <= 0) continue;
       for (const block of blocks) {
         if (block.switchBox && hit(beamRect, block)) {
           Gimmick.hitSwitch(block);
@@ -3603,6 +3616,13 @@ function updateBeams(dt) {
         break;
       }
       if (b.life <= 0) continue;
+      if (beamHitsWall(beamRect)) {
+        // 弾はかべや地面を通りぬけない
+        if (b.explosion) explodeMissile(b.x + b.w / 2, b.y + b.h / 2, b);
+        else FX.hit(b.x + b.w / 2, b.y + b.h / 2, b.colors);
+        b.life = 0;
+        continue;
+      }
       for (const e of state.enemies) {
         if (!e.alive || !hit(beamRect, e)) continue;
         if (b.explosion) explodeMissile(b.x + b.w / 2, b.y + b.h / 2, b);
@@ -3615,6 +3635,10 @@ function updateBeams(dt) {
       const source = state.enemies.find(e => e.id === b.owner);
       damagePlayer(false, source);
       b.life = 0;
+    } else if (!b.bossOrb && beamHitsWall(beamRect)) {
+      // 敵の弾も、かべや地面で止まる（ボスの大きな弾だけは別）
+      FX.hit(b.x + b.w / 2, b.y + b.h / 2, b.colors);
+      b.life = 0;
     }
   }
   state.beams = state.beams.filter(b => (
@@ -3624,6 +3648,12 @@ function updateBeams(dt) {
     b.y > (state.cameraY ?? 0) - 260 &&
     b.y < (state.cameraY ?? 0) + VIEW_H + 260
   ));
+}
+
+function beamHitsWall(r) {
+  for (const s of platforms) if (hit(r, s)) return true;
+  for (const block of blocks) if (!block.broken && hit(r, block)) return true;
+  return false;
 }
 
 function updateHomingMissile(b, dt) {
