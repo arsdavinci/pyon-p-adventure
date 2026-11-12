@@ -1183,21 +1183,164 @@ function makeBonusRoom(stageIndex, roomNo, returnTo) {
   return room;
 }
 
+// ---------- 入りくんだエリア（のぼったり、おりたり、はり地獄） ----------
+// 何階もある建物の中を、はしの穴からのぼっていく。床にはトゲ、トゲの上には小さな足場。
+// カギはトゲ地獄の上にあって、出口の扉はカギがないと開かない
+const MAZE_W = 2600;
+const MAZE_FLOOR_H = 240;
+
+function makeMazeArea(base, worldIndex, areaIndex, difficulty) {
+  const seed = worldIndex * 7 + areaIndex * 3;
+  const floors = clamp(4 + Math.floor(difficulty / 14), 4, 6);
+  const floorY = k => GROUND_Y - MAZE_FLOOR_H * k;
+  const topY = floorY(floors);
+  const platforms = [];
+  const spikes = [];
+  const coins = [];
+  const enemies = [];
+  const blocks = [];
+  // 外のかべ・天井・一番下の床
+  platforms.push(rect(-80, topY - 400, 80, GROUND_Y + 448 - topY), rect(MAZE_W, topY - 400, 2800, GROUND_Y + 448 - topY));
+  platforms.push(rect(0, topY - 40, MAZE_W, 40));
+  platforms.push(rect(0, GROUND_Y, MAZE_W, 48));
+  const GAP = 280;
+  for (let k = 1; k < floors; k++) {
+    const y = floorY(k);
+    // 奇数の階は右はしに穴、偶数の階は左はしに穴（ジグザグにのぼる）
+    const gapRight = k % 2 === 1;
+    platforms.push(gapRight ? rect(0, y, MAZE_W - GAP, 40) : rect(GAP, y, MAZE_W - GAP, 40));
+    // 穴の下に、のぼるための足場
+    // 足場はかべぎわに（横からとび乗って、そこから上の階へ）
+    const sx = gapRight ? MAZE_W - 120 : 0;
+    platforms.push(rect(sx, y + 122, 120, 26));
+  }
+  let keySpot = null;
+  for (let k = 0; k < floors; k++) {
+    const y = floorY(k);
+    const dir = k % 2 === 0 ? 1 : -1; // この階を進む向き
+    const from = dir > 0 ? 360 : MAZE_W - 360;
+    // トゲ：階ごとに2〜3か所。1か所は広い「はり地獄」で、上の小さな足場をわたる
+    const spots = 3;
+    const pitAt = (k + seed) % spots;
+    for (let i = 0; i < spots; i++) {
+      const cx = from + dir * (360 + i * 560 + ((seed + k * 3 + i) % 3) * 40);
+      if (cx < 380 || cx > MAZE_W - 380) continue;
+      if (i === pitAt && k > 0) {
+        const w = 420 + Math.min(180, difficulty * 6);
+        spikes.push({ x: cx - w / 2, y: y - 22, w, h: 22 });
+        // 足場は近めに、たくさん（走らなくても、ひとつずつとび移れる間かく）
+        const steps = Math.max(3, Math.round(w / 150));
+        for (let j = 0; j < steps; j++) {
+          const px = cx - w / 2 + (w / steps) * (j + 0.5) - 55;
+          platforms.push(rect(px, y - 74 - (j % 2) * 14, 110, 22));
+          coins.push(coin(px + 55, y - 122 - (j % 2) * 14, j % 2 ? "pea" : "kaki"));
+        }
+        if (!keySpot && k >= 1) keySpot = { x: cx, y: y - 150 };
+      } else {
+        const w = 110 + ((seed + i) % 2) * 30;
+        spikes.push({ x: cx - w / 2, y: y - 22, w, h: 22 });
+        coins.push(coin(cx, y - 110, (i + k) % 2 ? "pea" : "kaki"));
+      }
+    }
+    // 敵
+    const count = 1 + (difficulty > 8 ? 1 : 0);
+    for (let i = 0; i < count; i++) {
+      const ex = dir > 0 ? 820 + i * 900 + ((seed + k) % 4) * 60 : MAZE_W - 820 - i * 900 - ((seed + k) % 4) * 60;
+      const power = Math.min(8, Math.max(2, Math.floor((difficulty + i) / 4)));
+      const foe = (i + k + seed) % 3 === 0 ? armedEnemy(ex, y - 48, ex - 200, ex + 200, power) : enemy(ex, y - 48, ex - 200, ex + 200);
+      foe.enemyKind = worldIndex;
+      if (!spikes.some(sp => ex + 42 > sp.x - 30 && ex < sp.x + sp.w + 30 && sp.y === y - 22)) enemies.push(foe);
+    }
+    if (k % 2 === 1) blocks.push(breakable(MAZE_W / 2 - 24 + (k - 2) * 90, y - 150, k === 1 ? "hp" : "power"));
+  }
+  if (!keySpot) keySpot = { x: MAZE_W / 2, y: floorY(1) - 150 };
+  const topFloor = floors - 1;
+  const exitRight = topFloor % 2 === 0;
+  const doorX = exitRight ? MAZE_W - 170 : 100;
+  const area = {
+    ...base,
+    climbStage: false,
+    climbMeta: null,
+    puzzle: null,
+    isMaze: true,
+    top: topY - 200,
+    bottom: canvas.height,
+    platforms,
+    blocks,
+    gun: { x: 300, y: 430 }
+  };
+  area.level = {
+    enemies, coins,
+    starItems: [starItem(exitRight ? 300 : MAZE_W - 300, floorY(topFloor) - 70)],
+    oxygenItems: [], seaGates: [], lavaGeysers: [], lavaPools: [], rotatingFires: [],
+    keys: [keySpot], springs: [], chests: [], spikes,
+    flag: rect(doorX + 10, floorY(topFloor) - 240, 28, 240),
+    doors: []
+  };
+  return area;
+}
+
+function updateSpikes() {
+  const p = state.player;
+  for (const sp of level.spikes ?? []) {
+    if (p.x + p.w > sp.x + 6 && p.x < sp.x + sp.w - 6 && p.y + p.h > sp.y + 6 && p.y < sp.y + sp.h) {
+      damagePlayer(false, null, false);
+      // はね上げて、トゲの上にい続けないようにする
+      if (p.vy >= 0) p.vy = -520;
+      return;
+    }
+  }
+}
+
+function drawSpikes() {
+  for (const sp of level.spikes ?? []) {
+    if (sp.x + sp.w < state.camera - 60 || sp.x > state.camera + VIEW_W + 60) continue;
+    const n = Math.max(2, Math.round(sp.w / 22));
+    const tw = sp.w / n;
+    ctx.save();
+    ctx.fillStyle = "#5a3d9a";
+    ctx.fillRect(sp.x, sp.y + sp.h - 5, sp.w, 5);
+    for (let i = 0; i < n; i++) {
+      const x = sp.x + i * tw;
+      const g = ctx.createLinearGradient(0, sp.y, 0, sp.y + sp.h);
+      g.addColorStop(0, "#ffffff");
+      g.addColorStop(0.5, "#ff8db7");
+      g.addColorStop(1, "#c0266d");
+      ctx.fillStyle = g;
+      ctx.strokeStyle = "#7a1846";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(x + 1, sp.y + sp.h - 3);
+      ctx.lineTo(x + tw / 2, sp.y);
+      ctx.lineTo(x + tw - 1, sp.y + sp.h - 3);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
 function buildStageAreas(index) {
   const base = courses[index];
   const { worldIndex, areaIndex } = courseIndexToWorldArea(index);
-  const layouts = [null, (areaIndex + 1) % 4 + (areaIndex === 1 ? 0 : 4), (areaIndex + 3) % 4 + 8];
+  const normalCount = stageAreaCount(worldIndex) - 1; // ボス以外のステージ数
+  const underwater = base.trait === "underwater";
+  const other = n => (areaIndex + n) % normalCount;
   const areas = [base];
-  for (let k = 1; k < 3; k++) {
-    areas.push({ ...makeCourse(worldIndex, areaIndex, layouts[k]), theme: base.theme, gun: base.gun });
-  }
+  // 2つめ：入りくんだエリア（海のワールドは泳ぐので、別の海のエリア）
+  areas.push(underwater
+    ? { ...makeCourse(worldIndex, other(1)), theme: base.theme, gun: base.gun }
+    : makeMazeArea(base, worldIndex, areaIndex, base.difficulty ?? 1));
+  // 3つめ：同じワールドの別の地形
+  areas.push({ ...makeCourse(worldIndex, other(2)), theme: base.theme, gun: base.gun });
   areas.forEach((area, n) => {
     area.areas = areas;
     area.areaNo = n;
     const lv = area.level;
     lv.chests = []; // カギは宝箱ではなく扉に使う
     // ★は各エリアに1つずつ（ステージ全体で3つ）
-    lv.starItems = (lv.starItems ?? []).filter((_, i) => i === n);
+    if (!area.isMaze) lv.starItems = (lv.starItems ?? []).filter((_, i) => i === n);
     lv.doors = lv.doors ?? [];
     if (n < areas.length - 1) {
       const f = lv.flag;
@@ -1220,7 +1363,10 @@ function buildStageAreas(index) {
   courses[index] = areas[0];
 }
 
-for (let i = 0; i < stageAreaCount(0) - 1; i++) buildStageAreas(i);
+// ぜんぶのワールドの、ボス以外のステージをエリア分けする
+for (let i = 0; i < courses.length; i++) {
+  if (!courses[i].bossStage && !courses[i].finalStage) buildStageAreas(i);
+}
 
 // ステージ全体の★の数（エリアに分かれていても合計で数える）
 function courseStarTotal(index) {
@@ -1314,7 +1460,7 @@ function updateDoors() {
     const up = keys.has("ArrowUp") || keys.has("KeyW") || gamepadState.up;
     // 扉から出てきた直後は、↑をいったんはなすまで入れない（すぐもどってしまわないように）
     if (state.doorHold) continue;
-    if (!up || !p.grounded) continue;
+    if (!up || !(p.grounded || p.swimming)) continue;
     if (d.locked) {
       if ((state.keys ?? 0) > 0) {
         state.keys -= 1;
@@ -1580,6 +1726,7 @@ function applyCourse(index) {
     lavaPools: (course.level.lavaPools ?? []).map(g => ({ ...g })),
     rotatingFires: (course.level.rotatingFires ?? []).map(g => ({ ...g })),
     doors: (course.level.doors ?? []).map(d => ({ ...d, lockedOriginally: !!d.locked })),
+    spikes: (course.level.spikes ?? []).map(sp => ({ ...sp })),
     flag: { ...course.level.flag }
   };
 }
@@ -1861,7 +2008,7 @@ function beginCourse(index) {
   state = newState();
   restoreCampaignSnapshot(snapshot);
   // エリアが何個もあるステージは、時間を長めにする
-  if (courses[index].areas) state.time = 300;
+  if (courses[index].areas) state.time = 400;
   state.mode = "playing";
   pendingCourseStart = false;
   overlay.classList.add("hidden");
@@ -2081,6 +2228,7 @@ function update(dt) {
   collectStarItems();
   collectOxygenItems();
   updateDoors();
+  updateSpikes();
   checkGoal();
   updateHud();
 }
@@ -2702,7 +2850,7 @@ const BOLT_W = 70;
 
 function updateLightning(dt) {
   const course = courses[currentCourse];
-  if (course?.bossStage) return;
+  if (course?.bossStage || course?.isMaze || course?.isRoom) return;
   const p = state.player;
   state.boltTimer = (state.boltTimer ?? 2.2) - dt;
   if (state.boltTimer <= 0) {
@@ -5122,6 +5270,7 @@ function drawGameWorld() {
   drawPlatforms();
   Gimmick.drawForeground();
   drawStageHazards();
+  drawSpikes();
   drawDoors();
   drawBossArenaWalls();
   drawBossHazards();
