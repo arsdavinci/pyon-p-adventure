@@ -6606,12 +6606,13 @@ function drawWorldMapScreen() {
     y: layoutForWalker.y + walkerPoint.y * layoutForWalker.scale
   };
   ctx.save();
-  ctx.translate(p.x, p.y - 28 * MAP_UI + Math.sin(performance.now() / 140) * 3);
+  // 足もとが、ステージの丸の上に少しかぶるくらい（大きめに見せる）
+  ctx.translate(p.x, p.y - 12 * MAP_UI + Math.sin(performance.now() / 140) * 3);
   ctx.scale(MAP_UI, MAP_UI);
   const walking = mapWalkTimer > 0 || (mapShopT > 0 && mapShopT < 1);
   if (pyompyRun.complete && pyompyRun.naturalWidth > 0 && walking) {
     const frame = PYOMPY_RUN_FRAMES[Math.floor(performance.now() / 90) % PYOMPY_RUN_FRAMES.length];
-    const h = 46;
+    const h = 84;
     const w = h * (frame.w / frame.h);
     const dir = mapWalkTimer > 0
       ? ((MAP_NODE_POINTS[mapWalkTo]?.x ?? walkerPoint.x) >= (MAP_NODE_POINTS[mapWalkFrom]?.x ?? walkerPoint.x) ? 1 : -1)
@@ -6619,9 +6620,10 @@ function drawWorldMapScreen() {
     ctx.scale(dir, 1);
     ctx.drawImage(pyompyRun, frame.x, frame.y, frame.w, frame.h, -w / 2, -h, w, h);
   } else if (pyompyJump.complete && pyompyJump.naturalWidth > 0) {
-    const h = 48;
+    // この絵は下に約19%の余白があるので、その分さげて足をそろえる
+    const h = 108;
     const w = h * (pyompyJump.naturalWidth / pyompyJump.naturalHeight);
-    ctx.drawImage(pyompyJump, -w / 2, -h, w, h);
+    ctx.drawImage(pyompyJump, -w / 2, -h + h * 0.19, w, h);
   } else {
     ctx.scale(0.62, 0.62);
     drawPlayerFallback({ x: -18, y: -50 });
