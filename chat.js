@@ -132,7 +132,7 @@
         ["yana", "氷はすべります。はやめにブレーキをかけましょう。", "Ice is slippery. Start braking early."],
         ["yana", "岩のかべは、すき間を泳いで通ります。動く門は、先が赤く光ったらとじる合図。はさまれないように、開いているうちに通りぬけてください。", "Swim through the gaps in the rock walls. A moving gate glows red before it shuts, so slip through while it is open or you will be crushed."],
         ["yana", "ベルトコンベアは向きに注意。動く床はタイミングを見て。", "Mind the conveyor direction, and time your jumps onto moving platforms."],
-        ["yana", "重力がゆれています。ジャンプの高さが変わりますよ。", "Gravity is pulsing here. Your jump height will change."]
+        ["yana", "重力がゆれています。それに、雷が落ちてきます。空から光がさしこんだら、そこから急いではなれてください。", "Gravity is pulsing here, and lightning strikes. When light shines down from the sky, get out of it fast."]
       ][w - 1]];
     }
     return [pick([

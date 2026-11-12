@@ -2177,6 +2177,7 @@ function updateStageTraits(dt) {
     state.seaClock = (state.seaClock ?? 0) + dt;
   }
   if (trait === "marsLava") updateLavaGeysers(dt);
+  if (trait === "demonPulse") updateLightning(dt);
   updateFinalStageHazards(dt);
   if (trait === "factoryBelt" && state.player.grounded) {
     const support = platformUnderBody(state.player);
@@ -2264,6 +2265,97 @@ const ROCK_RISE = 0.7; // 舞い上がる時間
 const ROCK_WARN = 1.3; // 影が出てから地面に落ちるまで
 const ROCK_FALL = 0.5; // そのうち、実際に石が見えて落ちてくる時間
 const ROCK_SIZE = 46;
+
+// ---------- 魔王星：雷 ----------
+// 空から光がさしこんで（前ぶれ 1.1秒）、そのあと雷が落ちる。光の柱の中にいるとダメージ
+const BOLT_WARN = 1.1;
+const BOLT_STRIKE = 0.3;
+const BOLT_W = 70;
+
+function updateLightning(dt) {
+  const course = courses[currentCourse];
+  if (course?.bossStage) return;
+  const p = state.player;
+  state.boltTimer = (state.boltTimer ?? 2.2) - dt;
+  if (state.boltTimer <= 0) {
+    const area = course?.areaIndex ?? 0;
+    state.boltTimer = Math.max(1.2, 2.6 - area * 0.2) + Math.random() * 0.8;
+    state.bolts ??= [];
+    const px = p.x + p.w / 2;
+    // 1本はプレイヤーの近く、先のステージではもう1本ふやす
+    const count = area >= 3 ? 2 : 1;
+    for (let i = 0; i < count; i++) {
+      const offset = i === 0 ? (Math.random() - 0.5) * 160 + p.vx * 0.5 : (Math.random() < 0.5 ? -1 : 1) * (200 + Math.random() * 220);
+      const x = clamp(px + offset, 40, WORLD_WIDTH - 40);
+      state.bolts.push({ x, t: -i * 0.25, landY: lavaRockLandingY(x) ?? worldBottom(), seed: Math.random() * 1000 });
+    }
+  }
+  for (const b of state.bolts ?? []) {
+    b.t += dt;
+    const striking = b.t >= BOLT_WARN && b.t < BOLT_WARN + BOLT_STRIKE;
+    if (striking && !b.flashed) {
+      b.flashed = true;
+      playSfx("explosion", b.x);
+      FX.shake(0.22);
+      FX.flash("#fff7c2", 0.25, 0.15);
+    }
+    if (striking) {
+      const top = (state.cameraY ?? 0) - 40;
+      const r = { x: b.x - BOLT_W / 2 + 10, y: top, w: BOLT_W - 20, h: b.landY - top };
+      if (hit(p, r)) damagePlayer(false, null, false);
+    }
+  }
+  state.bolts = (state.bolts ?? []).filter(b => b.t < BOLT_WARN + BOLT_STRIKE + 0.25);
+}
+
+function drawLightning() {
+  const now = performance.now() / 1000;
+  const top = (state.cameraY ?? 0) - 40;
+  for (const b of state.bolts ?? []) {
+    if (b.t < 0) continue;
+    ctx.save();
+    if (b.t < BOLT_WARN) {
+      // 前ぶれ：空からうすい光がさしこみ、だんだん強く、速く点めつする
+      const k = b.t / BOLT_WARN;
+      const blink = 0.65 + Math.sin(now * (8 + k * 30)) * 0.35;
+      const g = ctx.createLinearGradient(0, top, 0, b.landY);
+      g.addColorStop(0, `rgba(255, 247, 194, ${(0.15 + k * 0.4) * blink})`);
+      g.addColorStop(1, `rgba(200, 178, 255, ${(0.05 + k * 0.25) * blink})`);
+      ctx.fillStyle = g;
+      const w = BOLT_W * (0.5 + k * 0.5);
+      ctx.fillRect(b.x - w / 2, top, w, b.landY - top);
+      // 地面の光る輪
+      ctx.strokeStyle = `rgba(255, 230, 120, ${0.4 + k * 0.6})`;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(b.x, b.landY + 2, 18 + k * 22, 6 + k * 6, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (b.t < BOLT_WARN + BOLT_STRIKE) {
+      // 雷：ジグザグの光
+      ctx.shadowColor = "#fff3a4";
+      ctx.shadowBlur = 26;
+      for (const [width, color] of [[16, "rgba(200, 178, 255, 0.9)"], [7, "#fffbe0"]]) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.lineJoin = "round";
+        ctx.beginPath();
+        ctx.moveTo(b.x, top);
+        const steps = 9;
+        for (let i = 1; i <= steps; i++) {
+          const y = top + ((b.landY - top) * i) / steps;
+          const jitter = i === steps ? 0 : Math.sin(b.seed + i * 2.7 + now * 30) * 22;
+          ctx.lineTo(b.x + jitter, y);
+        }
+        ctx.stroke();
+      }
+      ctx.fillStyle = "rgba(255, 251, 224, 0.9)";
+      ctx.beginPath();
+      ctx.ellipse(b.x, b.landY, 46, 12, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+}
 
 function updateLavaGeysers(dt) {
   const p = state.player;
@@ -5280,6 +5372,7 @@ function drawStageHazards() {
   ctx.save();
   drawFinalStageHazards();
   drawSeaGates();
+  drawLightning();
   if (currentStageTrait() !== "marsLava") {
     ctx.restore();
     return;
