@@ -972,7 +972,7 @@ function buildVariedCoursePlatforms(worldIndex, areaIndex, difficulty, bossStage
     rect(2380, 370, 300, 48),
     rect(2860, 492, 420, 48),
     rect(3460, 430, 300, 48),
-    rect(3940, 492, finalStage ? 1260 : 1120, 48),
+    rect(3940, 492, 1260, 48),
     rect(1220, 306, 170, 34),
     rect(2260, 292, 190, 34),
     rect(3360, 304, 190, 34)
@@ -2063,6 +2063,151 @@ function buildStageAreas(index) {
 for (let i = 0; i < courses.length; i++) {
   if (!courses[i].bossStage && !courses[i].finalStage) buildStageAreas(i);
 }
+
+// ---------- 置いた物のおかしな場所を直す（全エリア・読みこみ時に1回） ----------
+// ・O2バブル／★／カギ／コイン／敵が、かべ・岩の門の中にある → 外へずらす（ずらせないコインは消す）
+// ・アイテムブロックが、かべにうまっている・下に立てる地面がない・高すぎる → とどく場所へ動かす（だめなら消す）
+const BLOCK_REACH_MIN = 60;  // ブロックの下に立てる高さ（ぴょんぴーは 54）
+const BLOCK_REACH_MAX = 190; // ジャンプで下からたたける高さ
+
+function areaSolids(area) {
+  return area.platforms.filter(p => !p.mover && !p.cart).concat((area.blocks ?? []).filter(b => !b.breakable && b.phase === undefined && !b.switchBox));
+}
+
+function pointInRects(x, y, rects, pad = 2) {
+  return rects.some(p => x > p.x + pad && x < p.x + p.w - pad && y > p.y + pad && y < p.y + p.h - pad);
+}
+
+function rectHitsAny(r, rects, except = null) {
+  return rects.some(p => p !== except && r.x < p.x + p.w && r.x + r.w > p.x && r.y < p.y + p.h && r.y + r.h > p.y);
+}
+
+// x のまっすぐ下で、y より下にある一番上の地面
+function surfaceBelow(area, x, y) {
+  let best = null;
+  for (const p of area.platforms) {
+    if (p.mover || x < p.x + 4 || x > p.x + p.w - 4 || p.y < y) continue;
+    if (best === null || p.y < best) best = p.y;
+  }
+  return best;
+}
+
+// 岩の門の柱の中（すき間の外）か
+function inSeaGate(area, x, y, r = 30) {
+  const top = 58;
+  const bottom = (area.bottom ?? canvas.height) - 42;
+  for (const g of area.level.seaGates ?? []) {
+    if (x + r < g.x - 10 || x - r > g.x + g.w + 10) continue;
+    const gapY = top + 110 + g.frac * (bottom - top - 220);
+    const half = g.moving ? 0 : g.gapH / 2 - r; // 動く門は閉じるので、柱の列にはおかない
+    if (Math.abs(y - gapY) > half) return g;
+  }
+  return null;
+}
+
+function moveOutOfGates(area, obj, r = 30) {
+  for (let i = 0; i < 6; i++) {
+    const g = inSeaGate(area, obj.x, obj.y, r);
+    if (!g) return true;
+    obj.x = obj.x < g.x + g.w / 2 ? g.x - r - 40 : g.x + g.w + r + 40;
+  }
+  return !inSeaGate(area, obj.x, obj.y, r);
+}
+
+// 点がかべの中なら、近くの空いている場所（下に地面がある高さ）をさがす
+function freeSpotNear(area, solids, x, y) {
+  for (const dx of [0, 40, -40, 90, -90, 150, -150, 220, -220, 320, -320]) {
+    for (let dy = 0; dy <= 420; dy += 30) {
+      for (const sy of [y - dy, y + dy]) {
+        if (pointInRects(x + dx, sy, solids, -6)) continue;
+        const s = surfaceBelow(area, x + dx, sy);
+        if (s !== null && s - sy <= 260 && s - sy >= 30) return { x: x + dx, y: sy };
+      }
+    }
+  }
+  return null;
+}
+
+const sanitizeStats = { moved: 0, removedCoins: 0, enemy: 0, blocksMoved: 0, blocksRemoved: 0 };
+
+function sanitizeArea(area) {
+  const lv = area.level;
+  if (!lv) return;
+  const solids = areaSolids(area);
+  const underwater = area.trait === "underwater";
+  const fixPoint = (o, r) => {
+    if (underwater) {
+      if (inSeaGate(area, o.x, o.y, r)) sanitizeStats.moved++;
+      return moveOutOfGates(area, o, r);
+    }
+    if (!pointInRects(o.x, o.y, solids, -4)) return true;
+    sanitizeStats.moved++;
+    const spot = freeSpotNear(area, solids, o.x, o.y);
+    if (!spot) return false;
+    o.x = spot.x;
+    o.y = spot.y;
+    return true;
+  };
+  for (const o of lv.oxygenItems ?? []) fixPoint(o, 26);
+  for (const s of lv.starItems ?? []) fixPoint(s, 22);
+  for (const k of lv.keys ?? []) if (k) fixPoint(k, 22);
+  const coinsBefore = (lv.coins ?? []).length;
+  lv.coins = (lv.coins ?? []).filter(c => (underwater ? moveOutOfGates(area, c, 16) : !pointInRects(c.x, c.y, solids, -2)));
+  sanitizeStats.removedCoins += coinsBefore - lv.coins.length;
+  lv.enemies = (lv.enemies ?? []).filter(e => {
+    if (e.boss) return true;
+    if (underwater) {
+      // 敵は左上が x,y なので、まん中で調べて動かす
+      const c = { x: e.x + e.w / 2, y: e.y + e.h / 2 };
+      if (inSeaGate(area, c.x, c.y, 26)) { sanitizeStats.enemy++; moveOutOfGates(area, c, 26); e.x = c.x - e.w / 2; }
+      return true;
+    }
+    return !rectHitsAny({ x: e.x + 4, y: e.y + 4, w: e.w - 8, h: e.h - 8 }, solids);
+  });
+  // アイテムブロック
+  if (!underwater && area.blocks) {
+    const keep = [];
+    for (const b of area.blocks) {
+      if (!b.breakable) { keep.push(b); continue; }
+      const others = solids.concat(keep.filter(k => k.breakable));
+      const ok = r => {
+        if (rectHitsAny(r, others)) return false;
+        const s = surfaceBelow(area, r.x + r.w / 2, r.y + r.h);
+        if (s === null) return false;
+        const gap = s - (r.y + r.h);
+        if (gap < BLOCK_REACH_MIN || gap > BLOCK_REACH_MAX) return false;
+        // ブロックの真下に、ぴょんぴーが立てるすき間がある
+        return !rectHitsAny({ x: r.x + 6, y: r.y + r.h + 2, w: r.w - 12, h: gap - 4 }, solids);
+      };
+      if (ok(b)) { keep.push(b); continue; }
+      let placed = null;
+      for (const dx of [0, 50, -50, 110, -110, 180, -180, 260, -260, 360, -360]) {
+        const cx = b.x + dx + b.w / 2;
+        const s = surfaceBelow(area, cx, b.y - 200);
+        const tries = s === null ? [] : [s - 110 - b.h, s - 150 - b.h, s - 80 - b.h];
+        for (const ny of tries) {
+          const r = { ...b, x: b.x + dx, y: ny };
+          if (ok(r)) { placed = r; break; }
+        }
+        if (placed) break;
+      }
+      if (placed) { keep.push(placed); sanitizeStats.blocksMoved++; } else sanitizeStats.blocksRemoved++;
+    }
+    area.blocks = keep;
+  }
+}
+
+function sanitizeAllAreas() {
+  const seen = new Set();
+  for (const c of courses) {
+    for (const a of c.areas ?? [c]) {
+      if (!a || seen.has(a)) continue;
+      seen.add(a);
+      sanitizeArea(a);
+    }
+  }
+}
+sanitizeAllAreas();
 
 // ステージ全体の★の数（エリアに分かれていても合計で数える）
 function courseStarTotal(index) {
