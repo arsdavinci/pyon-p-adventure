@@ -5341,16 +5341,15 @@ function drawStageBadge() {
   const label = `${stageLabel()}${currentCourse === courses.length - 1 ? ` ${t("final")}` : courses[currentCourse]?.bossStage ? ` ${t("boss")}` : ""}`;
   const owner = hasEquippedWeapon() ? "" : state.gun.holder !== null && state.gun.holder !== "inventory" ? t("stolen") : t("noGun");
   const weaponLabel = hasEquippedWeapon() ? `${weaponName()} ${weaponLevelLabel(state.weaponPower)}` : `${t("unequipped")}${owner}`;
-  const inventoryLabel = `${t("stock")} ${weaponInventoryLabel()}`;
   ctx.save();
   ctx.font = "800 24px Segoe UI, system-ui, sans-serif";
   ctx.textBaseline = "top";
-  const width = Math.max(ctx.measureText(label).width + 28, ctx.measureText(weaponLabel).width + 28, ctx.measureText(inventoryLabel).width + 28);
+  const width = Math.max(ctx.measureText(label).width + 28, ctx.measureText(weaponLabel).width + 28);
   ctx.fillStyle = "rgba(255, 255, 255, 0.76)";
   ctx.strokeStyle = "rgba(139, 106, 201, 0.72)";
   ctx.lineWidth = 3;
   ctx.beginPath();
-  ctx.roundRect(14, 14, width, 86, 8);
+  ctx.roundRect(14, 14, width, 68, 8);
   ctx.fill();
   ctx.stroke();
   ctx.fillStyle = "#ffd85a";
@@ -5363,10 +5362,6 @@ function drawStageBadge() {
   ctx.fillStyle = "#9ee8ff";
   ctx.strokeText(weaponLabel, 28, 52);
   ctx.fillText(weaponLabel, 28, 52);
-  ctx.font = "800 13px Segoe UI, system-ui, sans-serif";
-  ctx.fillStyle = "#ff8db7";
-  ctx.strokeText(inventoryLabel, 28, 72);
-  ctx.fillText(inventoryLabel, 28, 72);
   ctx.restore();
 }
 

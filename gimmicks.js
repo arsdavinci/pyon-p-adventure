@@ -875,17 +875,17 @@
     ctx.strokeStyle = "rgba(139, 106, 201, 0.72)";
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.roundRect(14, 108, 96, 40, 8);
+    ctx.roundRect(14, 90, 96, 40, 8);
     ctx.fill();
     ctx.stroke();
     ctx.globalAlpha = n ? 1 : 0.4;
-    drawKeyShape(40, 128, 1);
+    drawKeyShape(40, 110, 1);
     ctx.globalAlpha = 1;
     ctx.fillStyle = n ? "#d98a2b" : "#9a8fc0";
     ctx.font = `900 20px ${FX.FONT}`;
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.fillText(`× ${n}`, 66, 129);
+    ctx.fillText(`× ${n}`, 66, 111);
     ctx.restore();
   }
 
