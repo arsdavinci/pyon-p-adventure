@@ -44,9 +44,15 @@ const MAX_OXYGEN = 100;
 const STAGE_TRAITS = ["moonFloat", "marsLava", "iceSlide", "underwater", "factoryBelt", "demonPulse"];
 const SEA_GATE_PERIOD = 4.0;
 const SEA_GATE_W = 84;
-const MAX_WEAPON_POWER = 17;
-// 17番目はロボット「ムーニアン・メカ」。🌙Lv8 と ⭐Lv8 を合体させると手に入る
+const MAX_WEAPON_POWER = 26;
+// 17〜25 はロボット「ムーニアン・メカ」Lv1〜9。🌙Lv8 と ⭐Lv8 を合体させると Lv1 ができる。
+// ロボットどうしを合体させると、ロボットの数だけレベルが上がる（Lv3 + Lv2 → Lv5）。
+// ロボット10台ぶん（Lv10）になると、空を飛べる戦闘機「ムーニアン・ファイター」(26) になる
 const MECH_POWER = 17;
+const MECH_TOP = 25;
+const FIGHTER_POWER = 26;
+const isMechPower = power => power >= MECH_POWER && power <= MECH_TOP;
+const isRideable = power => power >= MECH_POWER;
 const MOON_TOP = 8;
 const STAR_TOP = 16;
 const WEAPON_ATTRIBUTE_SIZE = 8;
@@ -97,7 +103,16 @@ const WEAPON_NAMES_JA = [
   "コスモクラウン",
   "スーパーノヴァ360",
   "ステラガーディアンキャノン",
-  "ムーニアン・メカ"
+  "ムーニアン・メカ",
+  "ムーニアン・メカ Lv2",
+  "ムーニアン・メカ Lv3",
+  "ムーニアン・メカ Lv4",
+  "ムーニアン・メカ Lv5",
+  "ムーニアン・メカ Lv6",
+  "ムーニアン・メカ Lv7",
+  "ムーニアン・メカ Lv8",
+  "ムーニアン・メカ Lv9",
+  "ムーニアン・ファイター"
 ];
 const WEAPON_STAGES = [
   { name: "weapon-moon-01-moon-popper", count: 1, damage: 1, range: 220, speed: 560, width: 24, height: 7, spread: 0, cooldown: 0.42, pattern: "forward", colors: ["#fff3a4","#bff8ff","#ff9bd4"] },
@@ -116,7 +131,16 @@ const WEAPON_STAGES = [
   { name: "weapon-star-06-cosmo-crown", count: 15, damage: 14, range: 2040, speed: 1700, width: 80, height: 17, spread: 0, cooldown: 0.15, pattern: "crown", colors: ["#fff3a4","#ff8db7","#ffffff"] },
   { name: "weapon-star-07-supernova-360", count: 18, damage: 15, range: 2180, speed: 1780, width: 84, height: 18, spread: 0, cooldown: 0.14, pattern: "radial", pierce: 2, colors: ["#ffffff","#fff3a4","#ff3d7f"] },
   { name: "weapon-star-08-stellar-guardian-cannon", count: 20, damage: 16, range: 2320, speed: 1860, width: 88, height: 19, spread: 0, cooldown: 0.13, pattern: "homing", explosion: 140, colors: ["#ffffff","#9ee8ff","#ff3d7f"] },
-  { name: "Moonian Mecha", count: 24, damage: 24, range: 2600, speed: 2000, width: 92, height: 22, spread: 0, cooldown: 0.12, pattern: "homing", explosion: 170, colors: ["#ffffff","#ff8db7","#9ee8ff"] }
+  { name: "Moonian Mecha", count: 26, damage: 27, range: 2660, speed: 2020, width: 92, height: 22, spread: 0, cooldown: 0.116, pattern: "homing", explosion: 175, colors: ["#ffffff","#ff8db7","#9ee8ff"] },
+  { name: "Moonian Mecha Lv2", count: 28, damage: 30, range: 2720, speed: 2040, width: 92, height: 22, spread: 0, cooldown: 0.112, pattern: "homing", explosion: 180, colors: ["#ffffff","#ff8db7","#9ee8ff"] },
+  { name: "Moonian Mecha Lv3", count: 30, damage: 33, range: 2780, speed: 2060, width: 92, height: 22, spread: 0, cooldown: 0.108, pattern: "homing", explosion: 185, colors: ["#ffffff","#ff8db7","#9ee8ff"] },
+  { name: "Moonian Mecha Lv4", count: 32, damage: 36, range: 2840, speed: 2080, width: 92, height: 22, spread: 0, cooldown: 0.104, pattern: "homing", explosion: 190, colors: ["#ffffff","#ff8db7","#9ee8ff"] },
+  { name: "Moonian Mecha Lv5", count: 34, damage: 39, range: 2900, speed: 2100, width: 92, height: 22, spread: 0, cooldown: 0.1, pattern: "homing", explosion: 195, colors: ["#ffffff","#ff8db7","#9ee8ff"] },
+  { name: "Moonian Mecha Lv6", count: 36, damage: 42, range: 2960, speed: 2120, width: 92, height: 22, spread: 0, cooldown: 0.096, pattern: "homing", explosion: 200, colors: ["#ffffff","#ff8db7","#9ee8ff"] },
+  { name: "Moonian Mecha Lv7", count: 38, damage: 45, range: 3020, speed: 2140, width: 92, height: 22, spread: 0, cooldown: 0.092, pattern: "homing", explosion: 205, colors: ["#ffffff","#ff8db7","#9ee8ff"] },
+  { name: "Moonian Mecha Lv8", count: 40, damage: 48, range: 3080, speed: 2160, width: 92, height: 22, spread: 0, cooldown: 0.088, pattern: "homing", explosion: 210, colors: ["#ffffff","#ff8db7","#9ee8ff"] },
+  { name: "Moonian Mecha Lv9", count: 42, damage: 51, range: 3140, speed: 2180, width: 92, height: 22, spread: 0, cooldown: 0.084, pattern: "homing", explosion: 215, colors: ["#ffffff","#ff8db7","#9ee8ff"] },
+  { name: "Moonian Fighter", count: 40, damage: 60, range: 3200, speed: 2400, width: 96, height: 22, spread: 0, cooldown: 0.08, pattern: "homing", explosion: 220, colors: ["#ffffff","#9ee8ff","#ffd85a"] }
 ];
 const TEXT = {
   ja: {
@@ -347,7 +371,16 @@ const weaponIcons = [
   "assets/weapon-star-06-cosmo-crown.png",
   "assets/weapon-star-07-supernova-360.png",
   "assets/weapon-star-08-stellar-guardian-cannon.png",
-  "assets/weapon-mech-icon.png"
+  "assets/weapon-mech-icon.png",
+  "assets/weapon-mech-icon.png",
+  "assets/weapon-mech-icon.png",
+  "assets/weapon-mech-icon.png",
+  "assets/weapon-mech-icon.png",
+  "assets/weapon-mech-icon.png",
+  "assets/weapon-mech-icon.png",
+  "assets/weapon-mech-icon.png",
+  "assets/weapon-mech-icon.png",
+  "assets/weapon-fighter-icon.png"
 ].map(src => {
   const img = new Image();
   img.src = `${src}?v=${WEAPON_ASSET_VERSION}`;
@@ -1599,6 +1632,7 @@ function closeInventory() {
   state.fusionPrompt = null;
   state.inventoryConfirmWorldMap = false;
   state.saveMenu = null;
+  state.deletePrompt = null;
   state.mode = state.inventoryReturnMode === "respawning" ? "respawning" : "playing";
   state.inventoryReturnMode = null;
   lastTime = performance.now();
@@ -1951,6 +1985,11 @@ function updatePlayer(dt) {
     updateSwimmingPlayer(dt);
     return;
   }
+  if (hasEquippedWeapon() && state.weaponPower === FIGHTER_POWER) {
+    updateFlyingPlayer(dt);
+    return;
+  }
+  p.flying = false;
   p.swimming = false;
   const movingLeft = keys.has("ArrowLeft") || keys.has("KeyA") || gamepadState.left;
   const movingRight = keys.has("ArrowRight") || keys.has("KeyD") || gamepadState.right;
@@ -2059,6 +2098,40 @@ function updateSwimmingPlayer(dt) {
   resolveSeaGates(p);
   p.grounded = false;
   p.swimming = true;
+  updateCamera(dt);
+}
+
+// 戦闘機：十字キーで上下左右に自由に飛ぶ（A でも上へ）。重力なし
+function updateFlyingPlayer(dt) {
+  const p = state.player;
+  p.swimming = false;
+  p.flying = true;
+  const left = keys.has("ArrowLeft") || keys.has("KeyA") || gamepadState.left;
+  const right = keys.has("ArrowRight") || keys.has("KeyD") || gamepadState.right;
+  const up = keys.has("ArrowUp") || keys.has("KeyW") || keys.has("Space") || gamepadState.up || gamepadState.jump;
+  const down = keys.has("ArrowDown") || keys.has("KeyS") || gamepadState.down;
+  const dx = (right ? 1 : 0) - (left ? 1 : 0);
+  const dy = (down ? 1 : 0) - (up ? 1 : 0);
+  const len = Math.hypot(dx, dy) || 1;
+  const fast = isRunHeld(dx) || isDoubleTapRunActive(dx);
+  const speed = fast ? 520 : 380;
+  p.vx += ((dx / len) * speed - p.vx) * Math.min(1, dt * 7);
+  p.vy += ((dy / len) * speed - p.vy) * Math.min(1, dt * 7);
+  if (dx) p.facing = dx;
+  p.aim = p.facing < 0 ? Math.PI : 0;
+  const wantsShoot = keys.has("KeyX") || keys.has("KeyY") || keys.has("KeyJ") || gamepadState.shoot;
+  if (wantsShoot && state.gun.cooldown <= 0) {
+    const m = playerMuzzle(p);
+    shootBeam("player", m.x, m.y, p.facing, p.aim);
+    state.gun.cooldown = weaponStage().cooldown;
+  }
+  p.invincible = Math.max(0, p.invincible - dt);
+  moveAndCollide(p, dt);
+  const top = (state.cameraY ?? 0) + 20;
+  const floor = worldBottom() - p.h - 10;
+  if (p.y < top) { p.y = top; p.vy = Math.max(0, p.vy); }
+  if (p.y > floor) { p.y = floor; p.vy = Math.min(0, p.vy); }
+  p.grounded = false;
   updateCamera(dt);
 }
 
@@ -3127,7 +3200,8 @@ function playerShoulder(p) {
 }
 
 function playerMuzzle(p) {
-  if (state.weaponPower === MECH_POWER && hasEquippedWeapon()) {
+  if (isRideable(state.weaponPower) && hasEquippedWeapon()) {
+    if (state.weaponPower === FIGHTER_POWER) return { x: p.x + p.w / 2 + (p.facing || 1) * 60, y: p.y + p.h / 2 };
     return { x: p.x + p.w / 2 + (p.facing || 1) * 30, y: p.y + p.h - 150 };
   }
   const s = playerShoulder(p);
@@ -3226,18 +3300,20 @@ function weaponStage(power = state.weaponPower) {
 
 function weaponAttribute(power = state?.weaponPower ?? 1) {
   const value = clamp(Math.floor(power), 1, MAX_WEAPON_POWER);
-  if (value === MECH_POWER) return "mech";
+  if (value >= MECH_POWER) return "mech";
   return value <= WEAPON_ATTRIBUTE_SIZE ? "moon" : "star";
 }
 
 function weaponRank(power = state?.weaponPower ?? 1) {
   const value = clamp(Math.floor(power), 1, MAX_WEAPON_POWER);
+  if (value >= MECH_POWER) return value - MECH_POWER + 1;
   return ((value - 1) % WEAPON_ATTRIBUTE_SIZE) + 1;
 }
 
 // 月の武器は 🌙、星の武器は ⭐。レベルは月・星それぞれ 1〜8 で数える
 function weaponLevelLabel(power = state?.weaponPower ?? 1, space = false) {
-  if (Math.floor(power) === MECH_POWER) return "🤖MAX";
+  if (Math.floor(power) === FIGHTER_POWER) return "✈MAX";
+  if (isMechPower(Math.floor(power))) return `🤖Lv${space ? " " : ""}${Math.floor(power) - MECH_POWER + 1}`;
   return `${weaponAttribute(power) === "moon" ? "🌙" : "⭐"}Lv${space ? " " : ""}${weaponRank(power)}`;
 }
 
@@ -3245,13 +3321,14 @@ function weaponLevelLabel(power = state?.weaponPower ?? 1, space = false) {
 function fusionResult(a, b) {
   if (!a || !b) return null;
   if ((a === MOON_TOP && b === STAR_TOP) || (a === STAR_TOP && b === MOON_TOP)) return MECH_POWER;
+  if (isMechPower(a) && isMechPower(b)) return Math.min(FIGHTER_POWER, MECH_POWER - 1 + (a - MECH_POWER + 1) + (b - MECH_POWER + 1));
   if (a === b) return nextFusionPower(a);
   return null;
 }
 
 
 function drawWeaponMark(x, y, size, power) {
-  if (Math.floor(power) === MECH_POWER) {
+  if (Math.floor(power) >= MECH_POWER) {
     drawWeaponMark(x - size * 0.3, y, size * 0.75, 1);
     drawWeaponMark(x + size * 0.35, y, size * 0.75, 16);
     return;
@@ -3279,13 +3356,13 @@ function drawWeaponMark(x, y, size, power) {
 
 function nextFusionPower(power) {
   const value = clamp(Math.floor(power), 1, MAX_WEAPON_POWER);
-  if (value === MECH_POWER) return null;
+  if (value >= MECH_POWER) return null;
   if (weaponRank(value) >= WEAPON_ATTRIBUTE_SIZE) return null;
   return value + 1;
 }
 
 function canFusePower(power) {
-  return nextFusionPower(power) !== null || power === MOON_TOP || power === STAR_TOP;
+  return nextFusionPower(power) !== null || power === MOON_TOP || power === STAR_TOP || isMechPower(power);
 }
 
 function randomWeaponDropPower() {
@@ -3478,9 +3555,9 @@ function fuseInventoryItems(fromIndex, toIndex) {
   FX.flash("#ffd1ed", 0.3, 0.3);
   FX.firework(canvas.width / 2, canvas.height / 2 - 40, FX.PASTEL);
   Chat.event("fuse", weaponName(nextPower));
-  if (nextPower === MECH_POWER) {
-    // ロボット完成：そのまま乗りこむ
-    equipWeapon(MECH_POWER - 1);
+  if (isRideable(nextPower)) {
+    // ロボット完成（または戦闘機に進化）：そのまま乗りこむ
+    equipWeapon(nextPower - 1);
     FX.flash("#ffffff", 0.6, 0.5);
     FX.shake(0.4);
   }
@@ -4215,7 +4292,7 @@ function damagePlayer(fell = false, sourceEnemy = null, canStealWeapon = false) 
   const p = state.player;
   if (state.mode === "dying" || state.mode === "respawning") return;
   if (!fell && p.invincible > 0) return;
-  if (!fell && canStealWeapon && sourceEnemy && sourceEnemy.alive && hasEquippedWeapon() && !Shop.has("strap") && state.weaponPower !== MECH_POWER) {
+  if (!fell && canStealWeapon && sourceEnemy && sourceEnemy.alive && hasEquippedWeapon() && !Shop.has("strap") && !isRideable(state.weaponPower)) {
     const playerPower = state.weaponPower;
     const enemyPower = sourceEnemy.weaponPower ?? 0;
     if (enemyPower === 0 || playerPower > enemyPower || (sourceEnemy.boss && playerPower >= enemyPower)) {
@@ -5816,6 +5893,7 @@ function drawInventoryScreen() {
   drawGamepadInventoryGhost();
   if (state.inventoryGrab) drawDraggedInventoryItem();
   if (state.inventoryConfirmWorldMap) drawInventoryDialogScaled(drawInventoryWorldMapConfirm);
+  if (state.deletePrompt) drawInventoryDialogScaled(drawDeletePrompt);
   if (state.fusionPrompt) drawInventoryDialogScaled(drawFusionPrompt);
   ctx.restore();
   if (state.saveMenu) drawSaveMenu();
@@ -6571,6 +6649,101 @@ function drawTopMenuNumberBadge(r, number, active) {
   ctx.restore();
 }
 
+// ---------- いらない武器をすてる（もちもので X） ----------
+function openDeletePrompt() {
+  const slot = inventorySlots()[state.inventorySelection];
+  if (!slot || state.inventoryGrab) {
+    playSfx("locked");
+    return;
+  }
+  const lastEquipped = hasEquippedWeapon() && slot.power === state.weaponPower && (state.weaponInventory[slot.power - 1] ?? 0) <= 1;
+  if (lastEquipped) {
+    playSfx("locked");
+    state.inventoryMessage = performance.now() + 1600;
+    state.inventoryMessageLabel = language === "ja" ? "そうび中なのですてられない" : "Can't discard: equipped";
+    return;
+  }
+  state.deletePrompt = { index: state.inventorySelection, power: slot.power, choice: 1 };
+  playSfx("decide");
+}
+
+function answerDeletePrompt(yes) {
+  const prompt = state.deletePrompt;
+  state.deletePrompt = null;
+  if (!yes || !prompt) {
+    playSfx("cancel");
+    return;
+  }
+  state.inventoryItems[prompt.index] = null;
+  syncWeaponInventoryFromItems();
+  if (state.weaponPower > 0 && !state.weaponInventory[state.weaponPower - 1]) {
+    state.weaponPower = 0;
+    state.gun.holder = "inventory";
+  }
+  playSfx("break");
+  state.inventoryMessage = performance.now() + 1400;
+  state.inventoryMessageLabel = language === "ja" ? `${weaponName(prompt.power)}をすてた` : `Discarded ${weaponName(prompt.power)}`;
+}
+
+function handleDeletePromptKey(code) {
+  if (code === "ArrowLeft" || code === "ArrowRight" || code === "KeyA" || code === "KeyD") {
+    state.deletePrompt.choice = 1 - state.deletePrompt.choice;
+    playSfx("cursor");
+  } else if (code === "Enter" || code === "Space" || code === "KeyZ") answerDeletePrompt(state.deletePrompt.choice === 0);
+  else if (code === "Escape" || code === "KeyB") answerDeletePrompt(false);
+  return true;
+}
+
+function handleDeletePromptPointer(x, y) {
+  const pt = inventoryDialogPoint(x, y);
+  const rects = inventoryWorldMapConfirmButtonRects();
+  for (let i = 0; i < rects.length; i++) {
+    const b = rects[i];
+    if (pt.x >= b.x && pt.x <= b.x + b.w && pt.y >= b.y && pt.y <= b.y + b.h) {
+      answerDeletePrompt(i === 0);
+      return;
+    }
+  }
+}
+
+function drawDeletePrompt() {
+  const prompt = state.deletePrompt;
+  ctx.save();
+  const r = { x: 420, y: 240, w: 440, h: 190 };
+  ctx.fillStyle = "rgba(255, 250, 255, 0.96)";
+  ctx.strokeStyle = "#ff3d5a";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.roundRect(r.x, r.y, r.w, r.h, 8);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#4d4773";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.font = "900 20px Segoe UI, system-ui, sans-serif";
+  ctx.fillText(`${weaponName(prompt.power)} ${weaponLevelLabel(prompt.power)}`, r.x + r.w / 2, r.y + 26);
+  ctx.font = "900 22px Segoe UI, system-ui, sans-serif";
+  ctx.fillStyle = "#ff3d5a";
+  ctx.fillText(language === "ja" ? "この武器をすてますか？" : "Discard this weapon?", r.x + r.w / 2, r.y + 62);
+  const labels = language === "ja" ? ["はい", "いいえ"] : ["Yes", "No"];
+  const rects = inventoryWorldMapConfirmButtonRects();
+  for (let i = 0; i < labels.length; i++) {
+    const b = rects[i];
+    const selected = prompt.choice === i;
+    ctx.fillStyle = selected ? "#fff3a4" : "#ffffff";
+    ctx.strokeStyle = selected ? "#ff5f9e" : "#c8b2ff";
+    ctx.lineWidth = selected ? 4 : 2;
+    ctx.beginPath();
+    ctx.roundRect(b.x, b.y, b.w, b.h, 8);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#4d4773";
+    ctx.font = "900 18px Segoe UI, system-ui, sans-serif";
+    ctx.fillText(labels[i], b.x + b.w / 2, b.y + 12);
+  }
+  ctx.restore();
+}
+
 function drawInventoryWorldMapConfirm() {
   ctx.save();
   const r = { x: 420, y: 240, w: 440, h: 190 };
@@ -7051,7 +7224,7 @@ function inventoryFocusComment(power = state.weaponPower) {
     return pyonpyWeaponComment(power);
   }
   if (mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST) {
-    return "ぴょんぴー「Aで武器をつかめるよ。一番上で↑をおすとメニュー、Bでとじるよ！」";
+    return "ぴょんぴー「Aで武器をつかめるよ。Xでいらない武器をすてる、一番上で↑をおすとメニュー、Bでとじるよ！」";
   }
   if (area === "topMenu") {
     return "ぴょんぴー「上のメニューだよ。Aで入ると、ゲームに戻るボタンやマップに戻るボタンを選べるよ！」";
@@ -7138,8 +7311,12 @@ function drawFusionPrompt() {
   ctx.fillStyle = "#4d4773";
   ctx.font = "900 23px Georgia, serif";
   ctx.textAlign = "center";
-  const toMech = Number.isInteger(prompt.to) && fusionResult(state.inventoryItems[prompt.from], state.inventoryItems[prompt.to]) === MECH_POWER;
-  ctx.fillText(toMech ? (language === "ja" ? "ロボットに合体しますか？" : "Combine into the Mecha?") : `${weaponName(prompt.power)}${t("fuseQuestion")}`, canvas.width / 2, y + 36);
+  const result = Number.isInteger(prompt.to) ? fusionResult(state.inventoryItems[prompt.from], state.inventoryItems[prompt.to]) : null;
+  const question = result === FIGHTER_POWER ? (language === "ja" ? "戦闘機に進化しますか？" : "Evolve into the Fighter?")
+    : result === MECH_POWER ? (language === "ja" ? "ロボットに合体しますか？" : "Combine into the Mecha?")
+    : isMechPower(result) ? (language === "ja" ? `ロボットを合体して ${weaponLevelLabel(result)} にしますか？` : `Merge into ${weaponLevelLabel(result)}?`)
+    : `${weaponName(prompt.power)}${t("fuseQuestion")}`;
+  ctx.fillText(question, canvas.width / 2, y + 36);
   const labels = ["Yes", "No"];
   ctx.font = "900 28px Georgia, serif";
   for (let i = 0; i < buttons.length; i++) {
@@ -8619,9 +8796,10 @@ function drawPlayer() {
 }
 
 function drawPlayerBody(p) {
-  if (hasEquippedWeapon() && state.weaponPower === MECH_POWER) {
+  if (hasEquippedWeapon() && isRideable(state.weaponPower)) {
     if (p.invincible > 0 && state.mode !== "respawning" && Math.floor(performance.now() / 90) % 2) return;
-    drawMech(p);
+    if (state.weaponPower === FIGHTER_POWER) drawFighter(p);
+    else drawMech(p);
     return;
   }
   if (hasEquippedWeapon() && state.weaponPower >= 16) drawBackCannon(p);
@@ -8674,6 +8852,117 @@ function drawMech(p) {
     drawMechPlaceholder(t, walking, grounded, shooting);
   }
   ctx.restore();
+}
+
+// ---------- 戦闘機「ムーニアン・ファイター」 ----------
+const fighterArt = {};
+for (const key of ["fly", "shoot"]) {
+  const im = new Image();
+  im.src = `assets/fighter-${key}.png`;
+  fighterArt[key] = im;
+}
+
+function drawFighter(p) {
+  const f = p.facing || 1;
+  const t = performance.now() / 1000;
+  const cx = p.x + p.w / 2;
+  const cy = p.y + p.h / 2 + Math.sin(t * 4) * 3;
+  const tilt = clamp((p.vy ?? 0) / 900, -0.25, 0.25);
+  const art = state.gun.cooldown > 0 ? fighterArt.shoot : fighterArt.fly;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(f, 1);
+  ctx.rotate(tilt);
+  // エンジンの炎
+  const flame = 26 + Math.random() * 14;
+  const g = ctx.createLinearGradient(-60, 0, -60 - flame, 0);
+  g.addColorStop(0, "rgba(255, 243, 164, 0.95)");
+  g.addColorStop(1, "rgba(255, 120, 180, 0)");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(-58, -10);
+  ctx.lineTo(-60 - flame, 0);
+  ctx.lineTo(-58, 10);
+  ctx.closePath();
+  ctx.fill();
+  if (art && art.complete && art.naturalWidth > 0) {
+    const w = 190;
+    const h = w * (art.naturalHeight / art.naturalWidth);
+    ctx.drawImage(art, -w / 2, -h / 2, w, h);
+  } else {
+    drawFighterPlaceholder();
+  }
+  ctx.restore();
+}
+
+// 仮の戦闘機（画像がとどくまで）
+function drawFighterPlaceholder() {
+  const stroke = "#5a3d9a";
+  ctx.lineJoin = "round";
+  ctx.lineWidth = 3;
+  // つばさ
+  ctx.fillStyle = "#b7e9f2";
+  ctx.strokeStyle = stroke;
+  ctx.beginPath();
+  ctx.moveTo(-10, -6);
+  ctx.lineTo(-40, -46);
+  ctx.lineTo(-20, -46);
+  ctx.lineTo(20, -6);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(-10, 8);
+  ctx.lineTo(-40, 44);
+  ctx.lineTo(-20, 44);
+  ctx.lineTo(20, 8);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  // 機体
+  const body = ctx.createLinearGradient(-60, -20, 60, 20);
+  body.addColorStop(0, "#d9cbff");
+  body.addColorStop(1, "#a68ef0");
+  ctx.fillStyle = body;
+  ctx.beginPath();
+  ctx.moveTo(-60, -14);
+  ctx.quadraticCurveTo(30, -24, 70, 0);
+  ctx.quadraticCurveTo(30, 24, -60, 14);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = "#fff3a4";
+  ctx.beginPath();
+  ctx.moveTo(-50, 0);
+  ctx.lineTo(50, 0);
+  ctx.stroke();
+  // うさ耳のしっぽ翼
+  ctx.fillStyle = "#ffd1ed";
+  ctx.strokeStyle = stroke;
+  ctx.beginPath();
+  ctx.ellipse(-48, -24, 6, 16, -0.4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  // コックピットとぴょんぴー
+  ctx.fillStyle = "rgba(200, 245, 255, 0.85)";
+  ctx.strokeStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.ellipse(18, -12, 20, 13, 0, Math.PI, 0);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#fffaf0";
+  ctx.beginPath();
+  ctx.arc(18, -14, 8, 0, Math.PI * 2);
+  ctx.fill();
+  // ミサイル
+  ctx.fillStyle = "#ff8db7";
+  ctx.strokeStyle = stroke;
+  ctx.beginPath();
+  ctx.roundRect(-10, 16, 40, 9, 4);
+  ctx.fill();
+  ctx.stroke();
+  drawWeaponMark(-28, 0, 12, 1);
+  drawWeaponMark(-12, 0, 12, 16);
 }
 
 // 仮のロボット（画像がとどくまで）
@@ -9459,6 +9748,11 @@ canvas.addEventListener("pointerdown", event => {
       event.preventDefault();
       return;
     }
+    if (state.deletePrompt) {
+      handleDeletePromptPointer(pos.x, pos.y);
+      event.preventDefault();
+      return;
+    }
     if (handleInventoryWorldMapConfirmPointer(pos.x, pos.y)) {
       event.preventDefault();
       return;
@@ -9691,6 +9985,7 @@ function inventoryFreshMove() {
 
 function handleInventoryKeyboardFocus(code, repeat = false) {
   if (state.saveMenu) return handleSaveMenuKey(code, repeat);
+  if (state.deletePrompt) return repeat ? true : handleDeletePromptKey(code);
   if (state.inventoryConfirmWorldMap) {
     if (code === "ArrowLeft" || code === "ArrowRight" || code === "KeyA" || code === "KeyD") {
       state.inventoryConfirmChoice = 1 - (state.inventoryConfirmChoice ?? 0);
@@ -9783,7 +10078,7 @@ function handleInventoryKeyboardFocus(code, repeat = false) {
     if (code === "ArrowDown" || code === "KeyS") moveInventorySelection(5);
     if (!repeat && (code === "Enter" || code === "Space" || code === "KeyZ")) startInventoryGrab(false);
     if (!repeat && code === "KeyE") equipSelectedInventorySlot();
-    if (!repeat && (code === "KeyX" || code === "KeyY" || code === "KeyC")) runInventorySort();
+    if (!repeat && (code === "KeyX" || code === "KeyY" || code === "KeyC" || code === "Delete")) openDeletePrompt();
     if (!repeat && (code === "Escape" || code === "KeyB")) leaveInventoryInnerFocus();
     return true;
   }
@@ -9791,6 +10086,12 @@ function handleInventoryKeyboardFocus(code, repeat = false) {
 }
 
 function updateInventoryGamepadFocus(now, jumpPressed, runPressed, shootPressed) {
+  if (state.deletePrompt) {
+    if ((gamepadState.left || gamepadState.right) && !(gamepadState.leftLatch || gamepadState.rightLatch)) handleDeletePromptKey("ArrowLeft");
+    if (jumpPressed && !gamepadState.jumpLatch) handleDeletePromptKey("Space");
+    if (runPressed && !gamepadState.runLatch) handleDeletePromptKey("Escape");
+    return;
+  }
   if (state.saveMenu) {
     if (gamepadState.left && !gamepadState.leftLatch) handleSaveMenuKey("ArrowLeft");
     if (gamepadState.right && !gamepadState.rightLatch) handleSaveMenuKey("ArrowRight");
@@ -9861,7 +10162,7 @@ function updateInventoryGamepadFocus(now, jumpPressed, runPressed, shootPressed)
     }
     if (jumpPressed && !gamepadState.jumpLatch) startInventoryGrab(true);
     if (!jumpPressed && gamepadState.jumpLatch && state.inventoryGrab?.gamepad) releaseInventoryGrab();
-    if (shootPressed && !gamepadState.shootLatch) runInventorySort();
+    if (shootPressed && !gamepadState.shootLatch) openDeletePrompt();
     if (runPressed && !gamepadState.runLatch) leaveInventoryInnerFocus();
     updateGamepadInventoryGrabPosition();
   }

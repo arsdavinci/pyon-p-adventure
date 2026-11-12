@@ -146,7 +146,7 @@
   const tabRect = i => ({ x: 520 + i * 230, y: 84, w: 220, h: 48 });
 
   // 1つ売ったときにもらえる数（月は Lv×3、星は Lv×6）
-  const sellPrice = power => power === MECH_POWER ? 200 : weaponRank(power) * (weaponAttribute(power) === "star" ? 6 : 3);
+  const sellPrice = power => power === FIGHTER_POWER ? 3000 : power >= MECH_POWER ? 200 * (power - MECH_POWER + 1) : weaponRank(power) * (weaponAttribute(power) === "star" ? 6 : 3);
 
   // 売れる武器の一覧（もっている武器を種類ごとにまとめる）
   function sellList() {
