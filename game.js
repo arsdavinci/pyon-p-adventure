@@ -7331,7 +7331,7 @@ function inventoryFocusComment(power = state.weaponPower) {
     return pyonpyWeaponComment(power);
   }
   if (mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST) {
-    return "ぴょんぴー「Aで武器をつかめるよ。Xでいらない武器をすてる、一番上で↑をおすとメニュー、Bでとじるよ！」";
+    return "ぴょんぴー「Aで武器をつかめるよ。Xでいらない武器をすてる、Yでせいとん、一番上で↑をおすとメニュー、Bでとじるよ！」";
   }
   if (area === "topMenu") {
     return "ぴょんぴー「上のメニューだよ。Aで入ると、ゲームに戻るボタンやマップに戻るボタンを選べるよ！」";
@@ -10235,7 +10235,9 @@ function handleInventoryKeyboardFocus(code, repeat = false) {
     if (code === "ArrowDown" || code === "KeyS") moveInventorySelection(5);
     if (!repeat && (code === "Enter" || code === "Space" || code === "KeyZ")) startInventoryGrab(false);
     if (!repeat && code === "KeyE") equipSelectedInventorySlot();
-    if (!repeat && (code === "KeyX" || code === "KeyY" || code === "KeyC" || code === "Delete")) openDeletePrompt();
+    // X（C / Delete）＝すてる、Y＝せいとん
+    if (!repeat && (code === "KeyX" || code === "KeyC" || code === "Delete")) openDeletePrompt();
+    if (!repeat && code === "KeyY") runInventorySort();
     if (!repeat && (code === "Escape" || code === "KeyB")) leaveInventoryInnerFocus();
     return true;
   }
@@ -10319,7 +10321,12 @@ function updateInventoryGamepadFocus(now, jumpPressed, runPressed, shootPressed)
     }
     if (jumpPressed && !gamepadState.jumpLatch) startInventoryGrab(true);
     if (!jumpPressed && gamepadState.jumpLatch && state.inventoryGrab?.gamepad) releaseInventoryGrab();
-    if (shootPressed && !gamepadState.shootLatch) openDeletePrompt();
+    if (shootPressed && !gamepadState.shootLatch) {
+      // ゲームパッド：X（ボタン2）＝すてる、Y（ボタン3）＝せいとん
+      const pad = Array.from(navigator.getGamepads ? navigator.getGamepads() : []).find(Boolean);
+      if (pad?.buttons[3]?.pressed) runInventorySort();
+      else openDeletePrompt();
+    }
     if (runPressed && !gamepadState.runLatch) leaveInventoryInnerFocus();
     updateGamepadInventoryGrabPosition();
   }
