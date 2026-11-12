@@ -16,11 +16,11 @@
   };
   const CROP_MAX = SRC.CROP_TOP + SRC.CROP_BOTTOM;
   const FIXED = SRC.HOLE_T + (SRC.HOLE_W * 9) / 16 + SRC.HUD + SRC.HOLE_B + SRC.CTRL_H - SRC.OVERLAP;
-  const BLEED = 1.07; // 本体の外側のふちを少しだけ画面の外に出して、画面を大きく見せる
-  const COMM_MIN = 128; // 会話だけ出せる高さ
-  const COMM_FULL = 272; // 会話＋そうび中の武器を出せる高さ
-  const COMM_TARGET = 300;
-  const COMM_MAX = 380;
+  const BLEED = 1.16; // 本体の外側のふちを画面の外に出して、ゲーム画面を大きく見せる（画面のまわりの枠は残る）
+  const COMM_MIN = 120; // 会話だけ出せる高さ
+  const COMM_FULL = 236; // 会話＋そうび中の武器を出せる高さ
+  const COMM_TARGET = 200;
+  const COMM_MAX = 250;
 
   const shell = document.querySelector(".shell");
   const controls = document.querySelector(".touch-controls");
@@ -84,7 +84,11 @@
     if (!shell) return;
     const safe = safeArea();
     const availW = window.innerWidth - safe.l - safe.r;
-    const availH = window.innerHeight - safe.t - safe.b;
+    // 本体の上のかざりはステータスバーの下、下のかざりはホームバーの下に入ってもよい
+    const uGuess = (availW * BLEED) / SRC.W;
+    const underTop = Math.min(safe.t, (SRC.HOLE_T - 30) * uGuess);
+    const underBottom = Math.min(safe.b, 40 * uGuess);
+    const availH = window.innerHeight - safe.t - safe.b + underTop + underBottom;
     const mobile = document.body.dataset.controlMode === "mobile";
     isActive = mobile && availH > availW * 1.05;
     document.body.dataset.layout = isActive ? "handheld" : "classic";
@@ -127,7 +131,7 @@
     const visible = total - crop * u;
     const cropTop = crop * (SRC.CROP_TOP / CROP_MAX);
     const x = safe.l + (availW - SRC.W * u) / 2;
-    const y = safe.t + (availH - visible) / 2 - cropTop * u;
+    const y = safe.t - underTop + Math.max(0, availH - visible) / 2 - cropTop * u;
     const screenH = (SRC.HOLE_T + (SRC.HOLE_W * 9) / 16 + SRC.HUD + comm + SRC.HOLE_B) * u;
     shell.style.setProperty("--u", `${u}px`);
     shell.style.setProperty("--gb-x", `${x}px`);

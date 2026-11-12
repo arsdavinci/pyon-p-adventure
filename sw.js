@@ -1,4 +1,4 @@
-const CACHE_NAME = "pyon-p-adventure-v21";
+const CACHE_NAME = "pyon-p-adventure-v22";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -17,7 +17,9 @@ const APP_SHELL = [
   "./assets/select-ui-generated2.png?v=select-ui-generated2-v2",
   "./assets/app-icon-192.png",
   "./assets/app-icon-512.png",
-  "./assets/gb-frame.webp",
+  "./assets/gb-frame-top.webp",
+  "./assets/gb-frame-mid.webp",
+  "./assets/gb-frame-bot.webp",
   "./assets/gb-controls.webp",
   "./assets/gb-cap-a.webp",
   "./assets/gb-cap-b.webp",

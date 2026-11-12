@@ -1025,16 +1025,17 @@ body[data-layout="handheld"] .gb-screen::before {
   background: linear-gradient(180deg, #2b2050, #171031);
 }
 
+/* 画面の枠：上・まん中（たてにのばす）・下の3枚で描く */
 body[data-layout="handheld"] .gb-frame-art {
   display: block;
   position: absolute;
   inset: 0;
   z-index: 5;
   pointer-events: none;
-  border-style: solid;
-  border-color: transparent;
-  border-width: calc(160 * var(--u)) calc(120 * var(--u)) calc(100 * var(--u)) calc(120 * var(--u));
-  border-image: url("assets/gb-frame.webp") 160 120 100 120 stretch;
+  background:
+    url("assets/gb-frame-top.webp") top center / 100% calc(160 * var(--u)) no-repeat,
+    url("assets/gb-frame-bot.webp") bottom center / 100% calc(100 * var(--u)) no-repeat,
+    url("assets/gb-frame-mid.webp") center / 100% calc(100% - 258 * var(--u)) no-repeat;
 }
 
 body[data-layout="handheld"] .game-wrap {
@@ -1600,8 +1601,8 @@ body[data-layout="handheld"] .gb-story {
   flex-direction: column;
   justify-content: center;
   gap: calc(6 * var(--u));
-  margin: calc(14 * var(--u)) calc(14 * var(--u)) calc(18 * var(--u));
-  padding: calc(16 * var(--u)) calc(26 * var(--u)) calc(22 * var(--u));
+  margin: calc(8 * var(--u)) calc(10 * var(--u)) calc(12 * var(--u));
+  padding: calc(8 * var(--u)) calc(24 * var(--u)) calc(14 * var(--u));
   border: calc(5 * var(--u)) solid var(--speaker);
   border-radius: calc(24 * var(--u));
   background: rgba(255, 248, 253, 0.97);
@@ -1644,8 +1645,8 @@ body[data-layout="handheld"] .gb-story.is-narration #gbStoryName {
 
 body[data-layout="handheld"] #gbStoryText {
   margin: 0;
-  min-height: 2.7em;
-  font-size: calc(30 * var(--u));
+  min-height: 0;
+  font-size: calc(28 * var(--u));
   font-weight: 800;
   line-height: 1.38;
   text-shadow: none;
