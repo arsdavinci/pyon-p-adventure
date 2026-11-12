@@ -1264,6 +1264,8 @@ function makeMazeArea(base, worldIndex, areaIndex, difficulty) {
     puzzle: null,
     isMaze: true,
     top: topY - 200,
+    // 天井の下の面。三日月タクシーもここより上には行かない（屋根の上に出ると下りられなくなる）
+    ceilingY: topY,
     bottom: canvas.height,
     platforms,
     blocks,
@@ -2235,6 +2237,7 @@ function update(dt) {
   }
   updateMovingPlatforms(dt);
   updatePlayer(dt);
+  rescueAboveCeiling();
   if (state.arena) {
     const pl = state.player;
     if (pl.x < state.arena.left + 4) { pl.x = state.arena.left + 4; pl.vx = Math.max(0, pl.vx); }
@@ -2532,6 +2535,22 @@ function updateDeathFall(dt) {
   }
 }
 
+// 三日月タクシーで行ける一番上。天井のあるエリアでは、天井の下まで
+function respawnMinY() {
+  const ceiling = courses[currentCourse]?.ceilingY;
+  return ceiling != null ? ceiling + 12 : worldTop() + 42;
+}
+
+// 天井より上（屋根の上）に出てしまったら、天井のすぐ下にもどす（つみ防止）
+function rescueAboveCeiling() {
+  const ceiling = courses[currentCourse]?.ceilingY;
+  const p = state.player;
+  if (ceiling == null || p.y + p.h > ceiling - 30) return;
+  p.y = ceiling + 12;
+  p.vy = 0;
+  FX.respawnSparkle(p.x + p.w / 2, p.y + p.h / 2);
+}
+
 function updateMoonRespawn(dt) {
   const p = state.player;
   const duration = state.respawnDuration ?? 3;
@@ -2546,7 +2565,7 @@ function updateMoonRespawn(dt) {
   const dy = (down ? 1 : 0) - (up ? 1 : 0);
   const len = Math.hypot(dx, dy) || 1;
   p.x = clamp(p.x + dx / len * speed * dt, 36, WORLD_WIDTH - p.w - 36);
-  p.y = clamp(p.y + dy / len * speed * dt, worldTop() + 42, worldBottom() - 290);
+  p.y = clamp(p.y + dy / len * speed * dt, respawnMinY(), worldBottom() - 290);
   p.vx = dx / len * speed;
   p.vy = dy / len * speed;
   p.facing = dx < 0 ? -1 : dx > 0 ? 1 : p.facing;
@@ -5225,7 +5244,7 @@ function startMoonRespawn() {
   state.respawnStartY = -170;
   state.respawnTargetY = 260;
   p.x = Math.max(72, state.camera + 120);
-  p.y = clamp((state.cameraY ?? 0) + 110, worldTop() + 42, worldBottom() - 290);
+  p.y = clamp((state.cameraY ?? 0) + 110, respawnMinY(), worldBottom() - 290);
   p.vx = 0;
   p.vy = 0;
   p.facing = 1;
