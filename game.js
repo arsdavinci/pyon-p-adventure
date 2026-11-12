@@ -6746,7 +6746,16 @@ function saveMenuAnswer(yes) {
     return;
   }
   if (kind === "save") saveToSlot(menu.sel);
+  else if (kind === "delete") deleteSaveSlot(menu.sel);
   else loadFromSlot(menu.sel);
+}
+
+function deleteSaveSlot(index) {
+  const menu = state.saveMenu;
+  menu.slots[index] = null;
+  try { localStorage.setItem(SAVE_SLOT_KEY, JSON.stringify(menu.slots)); } catch (_) {}
+  playSfx("break");
+  saveMenuNote(saveText(`ファイル${index + 1}を消したよ。`, `Deleted File ${index + 1}.`));
 }
 
 function handleSaveMenuKey(code, repeat = false) {
@@ -6782,6 +6791,13 @@ function handleSaveMenuKey(code, repeat = false) {
   } else if (ok) {
     if (menu.onClose) closeSaveMenu();
     else saveMenuConfirmSelected();
+  } else if ((code === "KeyX" || code === "KeyC" || code === "Delete") && !menu.onClose) {
+    // X：選んでいるファイルを消す（確認あり）
+    if (menu.slots[menu.sel]) {
+      menu.confirm = "delete";
+      menu.choice = 1;
+      playSfx("decide");
+    } else playSfx("locked");
   } else if (back) closeSaveMenu();
   return true;
 }
@@ -6954,8 +6970,8 @@ function drawSaveMenu() {
   ctx.fillStyle = showNote ? "#ff5f9e" : "#7f67c8";
   const pc = typeof controlMode !== "undefined" && controlMode === "pc";
   const help = pc
-    ? saveText("←→ セーブ/ロード　↑↓ ファイル　Space 決定　Esc とじる", "←→ Save/Load   ↑↓ File   Space: OK   Esc: Close")
-    : saveText("←→ セーブ/ロード　↑↓ ファイル　A 決定　B とじる", "←→ Save/Load   ↑↓ File   A: OK   B: Close");
+    ? saveText("←→ セーブ/ロード　↑↓ ファイル　Space 決定　X 消す　Esc とじる", "←→ Save/Load  ↑↓ File  Space: OK  X: Delete  Esc: Close")
+    : saveText("←→ セーブ/ロード　↑↓ ファイル　A 決定　X 消す　B とじる", "←→ Save/Load  ↑↓ File  A: OK  X: Delete  B: Close");
   ctx.fillText(showNote ? menu.note : help, win.x + win.w / 2, win.y + win.h - 34);
 
   // 確認
@@ -6966,7 +6982,9 @@ function drawSaveMenu() {
     panel(box, "rgba(255, 250, 255, 0.98)", "#ff8db7", 5, 22);
     ctx.fillStyle = "#4d4773";
     ctx.font = font(28);
-    const q = menu.confirm === "save"
+    const q = menu.confirm === "delete"
+      ? [saveText(`ファイル${menu.sel + 1}を消す？`, `Delete File ${menu.sel + 1}?`), saveText("消した記録は、もどせないよ。", "This can't be undone.")]
+      : menu.confirm === "save"
       ? [saveText(`ファイル${menu.sel + 1}に上書きセーブする？`, `Overwrite File ${menu.sel + 1}?`), saveText("前の記録は消えるよ。", "The old record will be lost.")]
       : [saveText(`ファイル${menu.sel + 1}をロードする？`, `Load File ${menu.sel + 1}?`), saveText("今の進みぐあいは、ロードした記録に入れかわるよ。", "Your current progress will be replaced.")];
     ctx.fillText(q[0], box.x + box.w / 2, box.y + 76);
@@ -9914,6 +9932,7 @@ function updateGamepad() {
     if (gamepadState.up && !gamepadState.upLatch) handleSaveMenuKey("ArrowUp");
     if (gamepadState.down && !gamepadState.downLatch) handleSaveMenuKey("ArrowDown");
     if (jumpPressed && !gamepadState.jumpLatch) handleSaveMenuKey("Space");
+    if (shootPressed && !gamepadState.shootLatch) handleSaveMenuKey("KeyX");
     if (runPressed && !gamepadState.runLatch) handleSaveMenuKey("Escape");
     gamepadState.leftLatch = gamepadState.left;
     gamepadState.rightLatch = gamepadState.right;
@@ -9921,6 +9940,7 @@ function updateGamepad() {
     gamepadState.downLatch = gamepadState.down;
     gamepadState.runLatch = runPressed;
     gamepadState.jumpLatch = jumpPressed;
+    gamepadState.shootLatch = shootPressed;
     return;
   } else if (!overlay.classList.contains("hidden")) {
     const anyStartPressed = jumpPressed || shootPressed || runPressed || startPressed || selectPressed;
@@ -10602,6 +10622,7 @@ function updateInventoryGamepadFocus(now, jumpPressed, runPressed, shootPressed)
     if (gamepadState.up && !gamepadState.upLatch) handleSaveMenuKey("ArrowUp");
     if (gamepadState.down && !gamepadState.downLatch) handleSaveMenuKey("ArrowDown");
     if (jumpPressed && !gamepadState.jumpLatch) handleSaveMenuKey("Space");
+    if (shootPressed && !gamepadState.shootLatch) handleSaveMenuKey("KeyX");
     if (runPressed && !gamepadState.runLatch) handleSaveMenuKey("Escape");
     return;
   }
@@ -10708,19 +10729,8 @@ if (debugParams.get("stage") === "final") {
 document.querySelector("#newGameButton")?.addEventListener("click", event => {
   event.stopPropagation();
   unlockAudio();
-  const button = event.currentTarget;
-  if (button.dataset.armed) {
-    startGame(true);
-    return;
-  }
-  button.dataset.armed = "1";
-  if (Story.data.cleared) {
-    button.textContent = language === "ja" ? "武器を持ったまま はじめから？" : "Start over with your weapons?";
-    playSfx("decide");
-    return;
-  }
-  playSfx("decide");
-  button.textContent = language === "ja" ? "セーブを消してはじめる？" : "Erase save and start?";
+  // セーブファイル（3つ）は消さずに、そのまま最初からはじめる。ファイルを消したいときはセーブ画面の X で
+  startGame(true);
 });
 document.querySelector("#soundButton")?.addEventListener("click", event => {
   event.stopPropagation();
