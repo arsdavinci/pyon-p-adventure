@@ -167,7 +167,7 @@
         { s: "mystery", fx: "flash", ja: "フハハハ！ 宇宙の笑いは、この魔王星がぜんぶいただいた！ もうだれも、笑うことはない！", en: "Mwahaha! The Demon Star has taken ALL the laughter in the universe! No one shall ever laugh again!" },
         { s: "luva", bg: "duo", ja: "緊急指令だ、ぴょんぴー。笑いのエネルギー『ワライスター』が6つにくだかれ、魔王の手下たちが6つの星へ持ち去った。", en: "Emergency orders, Pyon-P. The \"Warai Star\", the energy of laughter itself, was shattered into six pieces, and the Demon Lord's followers carried them off to six planets." },
         { s: "luva", ja: "かけらがもどらなければ、宇宙から笑顔が消えてしまう。……だれも笑えないままでは、3日後のフェスも開けない。", en: "Unless the shards return, smiles will vanish from the universe. ...And if no one can laugh, the Fest three days from now cannot be held." },
-        { s: "luva", ja: "らんぴょんは笑いをうばわれて動けない。翻訳酸素カプセルのヤナビスが案内する。行けるのは、きみだけだ。", en: "Ranpyon has lost his laughter and cannot go. Yanabisu, in your translation oxygen capsule, will guide you. You are the only one who can do this." },
+        { s: "luva", ja: "らんぴょんは笑いをうばわれて動けない。AGIの人工知能パートナー、ヤナビスが案内する。行けるのは、きみだけだ。", en: "Ranpyon has lost his laughter and cannot go. Yanabisu, your AGI partner, will guide you. You are the only one who can do this." },
         { s: "pyon", ja: "なんで吾輩だけ平気なんじゃろ……まあええわ！ 吾輩らの夢の舞台、つぶさせはせんじょ！", en: "Why am I the only one who's fine... eh, whatever! Nobody's wrecking our dream stage!" },
         { s: "ran", ja: "ぴょんぴー先輩……お願いします。僕の『なんでなっ！』、取り返してきてください。", en: "Pyon-P... please. Bring my \"No way!\" back." },
         { s: "pyon", bg: "depart", ja: "まかしとき！ 柿ピー食べたら百人力じゃ。ほな、ちょっと宇宙すくってくるけん！", en: "Leave it to me! A handful of kaki-pea snacks and I'm unstoppable. Be right back, just gotta save the universe!" },
@@ -177,7 +177,7 @@
     world0: {
       music: "select",
       lines: [
-        { s: "yana", bg: "world0", ja: "翻訳酸素カプセルからこんにちは。人工知能のヤナビスです。翻訳だけでのうて道案内もできるんじょ。……あ、阿波弁がうつりました。", en: "Hello from your translation oxygen capsule. I am Yanabisu, the AI. I do translation AND directions, y'know. ...Oh dear, your accent is rubbing off on me." },
+        { s: "yana", bg: "world0", ja: "はじめまして。AGIの人工知能パートナー、ヤナビスです。道案内も作戦も、まかしてほしいんじょ。……あ、阿波弁がうつりました。", en: "Nice to meet you. I am Yanabisu, your AGI partner. Directions, strategy, leave it all to me, y'know. ...Oh dear, your accent is rubbing off on me." },
         { s: "yana", ja: "最初のかけらは『月あめ平原』に反応があります。敵は上からふむとピヨります。そのすきに光線銃でやっつけましょう。", en: "The first shard is somewhere in Moon Candy Field. Stomp enemies from above to stun them, then finish them with your ray gun." },
         { s: "yana", ja: "光線銃は、同じものを2つ集めると合体して強くなります。SELECT（Tabキー）で装備画面をひらけますよ。", en: "Collect two of the same ray gun and they fuse into a stronger one. Press SELECT (Tab) to open the equipment screen." },
         { s: "pyon", ja: "オッケー！ ほな、吾輩、いっちょ行ってくるじょ！", en: "Got it! Alright, let's do this!" }

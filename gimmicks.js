@@ -20,7 +20,7 @@
     switchRed: "gimmick-switch-red", switchBlue: "gimmick-switch-blue",
     blockRed: "gimmick-block-red", blockBlue: "gimmick-block-blue",
     spring: "gimmick-spring", door: "gimmick-door", goal: "gimmick-goal",
-    poseHurt: "pyonpy-hurt", poseVictory: "pyonpy-victory", poseShoot: "pyonpy-shoot", poseSwim: "pyonpy-swim", swimSheet: "pyonpy-swim-6",
+    poseHurt: "pyonpy-hurt", poseVictory: "pyonpy-victory", poseShoot: "pyonpy-shoot", poseSwim: "pyonpy-swim", swimSheet: "pyonpy-swim-6", crawlSheet: "pyonpy-crawl-6", poseCrawl: "pyonpy-crawl",
     poseShootUp: "pyonpy-shoot-up", poseShootUpFwd: "pyonpy-shoot-upfwd", poseShootDownFwd: "pyonpy-shoot-downfwd",
     poseAirShoot: "pyonpy-air-shoot", poseAirShootUp: "pyonpy-air-shoot-up", poseAirShootUpFwd: "pyonpy-air-shoot-upfwd",
     poseAirShootDownFwd: "pyonpy-air-shoot-downfwd", poseAirShootDown: "pyonpy-air-shoot-down"
@@ -196,9 +196,19 @@
 
   // ぴょんぴーの追加ポーズ。該当する絵があれば描いて true を返す
   function drawPlayerPose(p) {
-    if (p.crouch && state.mode === "playing" && sprite("swimSheet")) {
-      drawCrawl(p, sprite("swimSheet"));
-      return { key: "crawl", gun: null, crawl: true };
+    if (p.crouch && state.mode === "playing") {
+      // ほふく前進の絵があれば使う。動いていないときは1枚絵、なければ泳ぎの絵で代用
+      const moving = Math.abs(p.vx) > 30;
+      if (!moving && sprite("poseCrawl")) {
+        const im = sprite("poseCrawl");
+        drawStanding(im, p.x + p.w / 2, p.y + p.h + 4, 104 * (im.naturalHeight / im.naturalWidth), p.facing < 0);
+        return { key: "crawl", gun: null, crawl: true };
+      }
+      const sheet = sprite("crawlSheet") || sprite("swimSheet");
+      if (sheet) {
+        drawCrawl(p, sheet);
+        return { key: "crawl", gun: null, crawl: true };
+      }
     }
     if (p.swimming && state.mode !== "stageClear" && !(p.invincible > 0.55 && sprite("poseHurt")) && sprite("swimSheet")) {
       drawSwimSheet(p, sprite("swimSheet"));
