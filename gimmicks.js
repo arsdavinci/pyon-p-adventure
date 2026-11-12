@@ -172,7 +172,7 @@
     ctx.save();
     ctx.translate(cx, cy);
     if (p.facing < 0) ctx.scale(-1, 1);
-    ctx.rotate(Math.max(-0.5, Math.min(0.5, (p.vy / 330) * 0.45)));
+    ctx.rotate(p.swimTilt ?? Math.max(-0.5, Math.min(0.5, (p.vy / 330) * 0.45)));
     ctx.drawImage(im, f.x, f.y, f.w, f.h, -w / 2, -h / 2, w, h);
     ctx.restore();
   }

@@ -382,7 +382,7 @@
       e.icon.style.visibility = "hidden";
       e.name.textContent = stolen ? L("うばわれた！", "Stolen!") : L("光線銃なし", "No ray gun");
       e.lv.textContent = "";
-      e.hint.textContent = stolen ? L("敵をふんで取りかえそう", "Stomp the thief to get it back") : L("ひろうか、SELECTで装備しよう", "Pick one up or equip with SELECT");
+      e.hint.textContent = stolen ? (isUnderwaterStage() ? L("Xの空気鉄砲でひよらせて取りかえそう", "Stun the thief with your air gun (X)") : L("敵をふんで取りかえそう", "Stomp the thief to get it back")) : L("ひろうか、SELECTで装備しよう", "Pick one up or equip with SELECT");
       for (const bar of [e.atk, e.range, e.rapid]) bar.style.width = "0%";
       return;
     }

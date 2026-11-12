@@ -2695,7 +2695,13 @@ function updateSwimmingPlayer(dt) {
     const muzzle = playerMuzzle(p);
     shootBeam("player", muzzle.x, muzzle.y, p.facing, p.aim);
     state.gun.cooldown = weaponStage().cooldown;
+  } else if (shootFresh && !hasEquippedWeapon() && state.gun.cooldown <= 0) {
+    shootAirBubble(p);
   }
+
+  // 泳ぐ向きに体をかたむける（上・下だけなら90度）
+  const tiltTarget = dy ? Math.atan2(dy, Math.abs(dx)) : clamp((p.vy / 330) * 0.45, -0.5, 0.5);
+  p.swimTilt = (p.swimTilt ?? 0) + (tiltTarget - (p.swimTilt ?? 0)) * Math.min(1, dt * 10);
 
   p.invincible = Math.max(0, p.invincible - dt);
   p.x = clamp(p.x + p.vx * dt, 0, WORLD_WIDTH - p.w);
@@ -3379,6 +3385,8 @@ function updateSwimmingEnemy(e, dt, idle = false) {
   e.vy = clamp(e.vy * 0.986, -speed * 0.75, speed * 0.75);
   e.x = clamp(e.x + e.vx * dt, e.boss ? e.left : 0, (e.boss ? e.right : WORLD_WIDTH) - e.w);
   e.y = clamp(e.y + e.vy * dt, 72, worldBottom() - e.h - 48);
+  // 敵も岩のかべ・門は通りぬけられない
+  resolveSeaGates(e, true);
   e.grounded = false;
   syncEnemyFacing(e);
 }
@@ -3957,6 +3965,46 @@ function shootBeam(owner, x, y, dir, aimAngle = null) {
   }
 }
 
+// 武器がないときの空気鉄砲（水中だけ）。少ししか飛ばず、酸素をつかう。当たった敵はひよるだけ
+const AIR_BUBBLE_OXYGEN = 6;
+function shootAirBubble(p) {
+  if ((state.oxygen ?? MAX_OXYGEN) < AIR_BUBBLE_OXYGEN + 2) return;
+  state.oxygen -= AIR_BUBBLE_OXYGEN;
+  state.gun.cooldown = 0.45;
+  const a = p.aim ?? (p.facing < 0 ? Math.PI : 0);
+  const cx = p.x + p.w / 2 + Math.cos(a) * 34;
+  const cy = p.y + p.h / 2 + Math.sin(a) * 34;
+  state.beams.push({
+    owner: "player", bubble: true,
+    x: cx - 15, y: cy - 15, w: 30, h: 30,
+    vx: Math.cos(a) * 420, vy: Math.sin(a) * 420, angle: 0,
+    life: 1, damage: 0, colors: ["#e8fbff", "#9ee8ff", "#ffffff"], power: 0,
+    pierce: 0, wave: 0, distance: 0, range: 230
+  });
+  playTone({ start: 0, freq: 520, endFreq: 260, duration: 0.14, type: "sine", gain: 0.035 });
+}
+
+function drawAirBubble(b) {
+  const k = 1 - b.distance / b.range;
+  const r = 13 + (1 - k) * 5;
+  ctx.globalAlpha = 0.55 + k * 0.4;
+  const g = ctx.createRadialGradient(-4, -4, 2, 0, 0, r);
+  g.addColorStop(0, "rgba(255, 255, 255, 0.95)");
+  g.addColorStop(0.6, "rgba(190, 240, 255, 0.35)");
+  g.addColorStop(1, "rgba(120, 210, 255, 0.6)");
+  ctx.fillStyle = g;
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.arc(-r * 0.4, -r * 0.4, r * 0.22, 0, Math.PI * 2);
+  ctx.fill();
+}
+
 function shootHomingMissiles(owner, x, y, dir, stage) {
   const visibleEnemies = state.enemies
     .filter(e => e.alive && e.x + e.w > state.camera - 60 && e.x < state.camera + canvas.width + 60)
@@ -4475,7 +4523,7 @@ function updateBeams(dt) {
       : rect(b.x, b.y, b.w, b.h);
     b.hitRect = beamRect;
     if (b.owner === "player") {
-      FX.beamTrail(b);
+      if (!b.bubble) FX.beamTrail(b);
       // 敵の弾とぶつかったら、おたがいに消える（撃って防げる）
       for (const other of state.beams) {
         if (other.owner === "player" || other.life <= 0 || !other.hitRect || !hit(beamRect, other.hitRect)) continue;
@@ -4496,7 +4544,7 @@ function updateBeams(dt) {
           break;
         }
         if (!block.breakable || block.broken || !hit(beamRect, block)) continue;
-        breakBlock(block);
+        if (!b.bubble) breakBlock(block);
         b.life = 0;
         break;
       }
@@ -4510,7 +4558,11 @@ function updateBeams(dt) {
       }
       for (const e of state.enemies) {
         if (!e.alive || !hit(beamRect, e)) continue;
-        if (b.explosion) explodeMissile(b.x + b.w / 2, b.y + b.h / 2, b);
+        if (b.bubble) {
+          // 空気鉄砲：ダメージはなく、ひよらせるだけ（うばわれた武器は落とす）
+          stunEnemy(e);
+          FX.hit(b.x + b.w / 2, b.y + b.h / 2, b.colors);
+        } else if (b.explosion) explodeMissile(b.x + b.w / 2, b.y + b.h / 2, b);
         else damageEnemy(e, b.damage ?? 1);
         if (b.pierce > 0) b.pierce -= 1;
         else b.life = 0;
@@ -4576,13 +4628,13 @@ function seaGateRects(g) {
   return { top, bottom, gap, gapY };
 }
 
-function resolveSeaGates(p) {
+function resolveSeaGates(p, isEnemy = false) {
   for (const g of state.seaGates ?? []) {
     if (p.x + p.w <= g.x || p.x >= g.x + g.w) continue;
     const { top, bottom, gap } = seaGateRects(g);
     if (gap < p.h - 2) {
       // はさまれた：ダメージを受けて、近いほうの外へはじき出される
-      damagePlayer(false, null, false);
+      if (!isEnemy) damagePlayer(false, null, false);
       p.x = p.x + p.w / 2 < g.x + g.w / 2 ? g.x - p.w - 2 : g.x + g.w + 2;
       p.vx = 0;
       continue;
@@ -8879,6 +8931,11 @@ function drawBeams() {
     ctx.globalAlpha = 0.9;
     ctx.translate(b.x + b.w / 2, b.y + b.h / 2);
     ctx.rotate(b.angle ?? 0);
+    if (b.bubble) {
+      drawAirBubble(b);
+      ctx.restore();
+      continue;
+    }
     if (b.bossOrb) {
       drawBossOrb(b);
       ctx.restore();
