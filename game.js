@@ -4074,10 +4074,14 @@ function drawPauseScreen() {
   ctx.restore();
 }
 
+// マップのアップぐあいと、丸・文字・ぴょんぴーの大きさ
+const MAP_ZOOM = 3.3;
+const MAP_UI = 1.55;
+
 function mapImageLayout() {
   const imgW = worldMapImage.naturalWidth || 1680;
   const imgH = worldMapImage.naturalHeight || 945;
-  const scale = Math.max(canvas.width / imgW, canvas.height / imgH) * 2.35;
+  const scale = Math.max(canvas.width / imgW, canvas.height / imgH) * MAP_ZOOM;
   const w = imgW * scale;
   const h = imgH * scale;
   const visibleW = canvas.width / scale;
@@ -4124,7 +4128,7 @@ function updateWorldMapCamera(dt) {
 function mapCourseAt(x, y) {
   for (let i = 0; i <= unlockedCourse; i++) {
     const p = mapPointToCanvas(i);
-    const radius = i === mapSelectedCourse ? 28 : 23;
+    const radius = (i === mapSelectedCourse ? 28 : 23) * MAP_UI;
     if (Math.hypot(x - p.x, y - p.y) <= radius) return i;
   }
   return -1;
@@ -4226,13 +4230,13 @@ function drawWorldMapScreen() {
     const endX = from.x + (to.x - from.x) * activeReveal;
     const endY = from.y + (to.y - from.y) * activeReveal;
     ctx.strokeStyle = "rgba(35, 210, 54, 0.88)";
-    ctx.lineWidth = 16;
+    ctx.lineWidth = 24;
     ctx.beginPath();
     ctx.moveTo(from.x, from.y);
     ctx.lineTo(endX, endY);
     ctx.stroke();
     ctx.strokeStyle = "rgba(255, 243, 164, 0.92)";
-    ctx.lineWidth = 5;
+    ctx.lineWidth = 8;
     ctx.beginPath();
     ctx.moveTo(from.x, from.y);
     ctx.lineTo(endX, endY);
@@ -4242,14 +4246,14 @@ function drawWorldMapScreen() {
     const from = mapPointToCanvas(SHOP_MAP_NODE.course);
     const to = shopNodeToCanvas();
     ctx.strokeStyle = "rgba(255, 196, 64, 0.9)";
-    ctx.lineWidth = 14;
+    ctx.lineWidth = 21;
     ctx.beginPath();
     ctx.moveTo(from.x, from.y);
     ctx.lineTo(to.x, to.y);
     ctx.stroke();
     ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
-    ctx.lineWidth = 4;
-    ctx.setLineDash([10, 9]);
+    ctx.lineWidth = 6;
+    ctx.setLineDash([14, 13]);
     ctx.lineDashOffset = -performance.now() / 60;
     ctx.beginPath();
     ctx.moveTo(from.x, from.y);
@@ -4267,6 +4271,10 @@ function drawWorldMapScreen() {
     const completed = completedCourses.has(i);
     const p = mapPointToCanvas(i);
     const selected = i === mapSelectedCourse;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.scale(MAP_UI, MAP_UI);
+    ctx.translate(-p.x, -p.y);
     ctx.save();
     ctx.globalAlpha = unlocked ? 1 : 0.24;
     if (selected) {
@@ -4302,6 +4310,7 @@ function drawWorldMapScreen() {
     }
     ctx.restore();
     Story.drawMapNodeStars(i, p);
+    ctx.restore();
   }
 
   if (shopNodeAvailable()) drawShopMapNode();
@@ -4313,7 +4322,8 @@ function drawWorldMapScreen() {
     y: layoutForWalker.y + walkerPoint.y * layoutForWalker.scale
   };
   ctx.save();
-  ctx.translate(p.x, p.y - 28 + Math.sin(performance.now() / 140) * 3);
+  ctx.translate(p.x, p.y - 28 * MAP_UI + Math.sin(performance.now() / 140) * 3);
+  ctx.scale(MAP_UI, MAP_UI);
   const walking = mapWalkTimer > 0 || (mapShopT > 0 && mapShopT < 1);
   if (pyompyRun.complete && pyompyRun.naturalWidth > 0 && walking) {
     const frame = PYOMPY_RUN_FRAMES[Math.floor(performance.now() / 90) % PYOMPY_RUN_FRAMES.length];
@@ -4342,6 +4352,15 @@ function drawWorldMapScreen() {
 function drawShopMapNode() {
   const p = shopNodeToCanvas();
   const t = performance.now() / 1000;
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.scale(MAP_UI, MAP_UI);
+  ctx.translate(-p.x, -p.y);
+  drawShopMapNodeInner(p, t);
+  ctx.restore();
+}
+
+function drawShopMapNodeInner(p, t) {
   ctx.save();
   if (mapAtShop) {
     const pulse = 1 + Math.sin(t * 7.7) * 0.08;
@@ -4410,21 +4429,21 @@ function drawWorldMapPanel() {
     ctx.strokeStyle = "#ffd85a";
     ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.roundRect(34, canvas.height - 108, canvas.width - 68, 82, 8);
+    ctx.roundRect(24, canvas.height - 148, canvas.width - 48, 128, 14);
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = "#d98a2b";
-    ctx.font = "900 24px Segoe UI, system-ui, sans-serif";
+    ctx.font = `900 38px ${FX.FONT}`;
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
-    ctx.fillText(language === "ja" ? "よろず屋 つきのわ" : "Tsukinowa General Store", 58, canvas.height - 92);
+    ctx.fillText(language === "ja" ? "よろず屋 つきのわ" : "Tsukinowa General Store", 50, canvas.height - 134);
     ctx.fillStyle = "#4d4773";
-    ctx.font = "800 17px Segoe UI, system-ui, sans-serif";
-    ctx.fillText(language === "ja" ? "柿の種とピーナッツで、べんりな道具が買えるお店。" : "Trade kaki seeds and peanuts for handy gear.", 58, canvas.height - 60);
+    ctx.font = `800 27px ${FX.FONT}`;
+    ctx.fillText(language === "ja" ? "柿の種とピーナッツで、べんりな道具が買えるお店。" : "Trade kaki seeds and peanuts for handy gear.", 50, canvas.height - 82);
     ctx.fillStyle = "#ff8db7";
-    ctx.font = "900 15px Segoe UI, system-ui, sans-serif";
+    ctx.font = `900 22px ${FX.FONT}`;
     ctx.textAlign = "right";
-    ctx.fillText(language === "ja" ? "決定で入る ／ →でもどる" : "Confirm: enter  /  →: back", canvas.width - 58, canvas.height - 60);
+    ctx.fillText(language === "ja" ? "決定で入る ／ →でもどる" : "Confirm: enter  /  →: back", canvas.width - 50, canvas.height - 50);
     ctx.restore();
     return;
   }
@@ -4436,21 +4455,21 @@ function drawWorldMapPanel() {
   ctx.strokeStyle = "#c8b2ff";
   ctx.lineWidth = 4;
   ctx.beginPath();
-  ctx.roundRect(34, canvas.height - 108, canvas.width - 68, 82, 8);
+  ctx.roundRect(24, canvas.height - 148, canvas.width - 48, 128, 14);
   ctx.fill();
   ctx.stroke();
   ctx.fillStyle = "#7f67c8";
-  ctx.font = "900 24px Segoe UI, system-ui, sans-serif";
+  ctx.font = `900 38px ${FX.FONT}`;
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
-  ctx.fillText(`${stageLabel(mapSelectedCourse)}  ${Story.worldName(world)}${course.bossStage ? `  ${t("boss")}` : course.climbStage ? (language === "ja" ? "  のぼりステージ" : "  Climb") : ""}`, 58, canvas.height - 92);
+  ctx.fillText(`${stageLabel(mapSelectedCourse)}  ${Story.worldName(world)}${course.bossStage ? `  ${t("boss")}` : course.climbStage ? (language === "ja" ? "  のぼりステージ" : "  Climb") : ""}`, 50, canvas.height - 134);
   ctx.fillStyle = "#4d4773";
-  ctx.font = "800 17px Segoe UI, system-ui, sans-serif";
-  ctx.fillText(line, 58, canvas.height - 60);
+  ctx.font = `800 27px ${FX.FONT}`;
+  ctx.fillText(line, 50, canvas.height - 82);
   ctx.fillStyle = "#ff8db7";
-  ctx.font = "900 15px Segoe UI, system-ui, sans-serif";
+  ctx.font = `900 22px ${FX.FONT}`;
   ctx.textAlign = "right";
-  ctx.fillText(language === "ja" ? "Enter / Space でスタート" : "Enter / Space to start", canvas.width - 58, canvas.height - 60);
+  ctx.fillText((typeof controlMode !== "undefined" && controlMode === "pc") ? (language === "ja" ? "Enter / Space でスタート" : "Enter / Space to start") : (language === "ja" ? "A でスタート" : "Press A to start"), canvas.width - 50, canvas.height - 50);
   ctx.restore();
 }
 
@@ -8694,7 +8713,7 @@ canvas.addEventListener("pointerdown", event => {
   if (state.mode === "worldMap") {
     if (shopNodeAvailable()) {
       const sp = shopNodeToCanvas();
-      if (Math.hypot(pos.x - sp.x, pos.y - (sp.y - 16)) <= 44) {
+      if (Math.hypot(pos.x - sp.x, pos.y - (sp.y - 16 * MAP_UI)) <= 44 * MAP_UI) {
         if (mapAtShop) confirmMapSelection();
         else {
           mapSelectedCourse = SHOP_MAP_NODE.course;
