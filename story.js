@@ -159,7 +159,7 @@
       ]
     },
     world0: {
-      music: "story",
+      music: "select",
       lines: [
         { s: "yana", bg: "world0", ja: "翻訳酸素カプセルからこんにちは。人工知能のヤナビスです。翻訳だけやなくて道案内もできますねん。……あ、関西弁がうつりました。", en: "Hello from your translation oxygen capsule. I am Yanabisu, the AI. I do translation AND directions, y'know. ...Oh dear, your accent is rubbing off on me." },
         { s: "yana", ja: "最初のかけらは『月あめ平原』に反応があります。敵は上からふむとピヨります。そのすきに光線銃でやっつけましょう。", en: "The first shard is somewhere in Moon Candy Field. Stomp enemies from above to stun them, then finish them with your ray gun." },
