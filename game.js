@@ -1633,6 +1633,11 @@ function closeInventory() {
   state.inventoryConfirmWorldMap = false;
   state.saveMenu = null;
   state.deletePrompt = null;
+  if (state.mechBoardPending) {
+    // そうび画面をとじたら、ロボットに乗りこむ絵を見せる
+    state.mechBoardPending = false;
+    state.mechBoardUntil = performance.now() + 1600;
+  }
   state.mode = state.inventoryReturnMode === "respawning" ? "respawning" : "playing";
   state.inventoryReturnMode = null;
   lastTime = performance.now();
@@ -3658,6 +3663,7 @@ function fuseInventoryItems(fromIndex, toIndex) {
   if (isRideable(nextPower)) {
     // ロボット完成（または戦闘機に進化）：そのまま乗りこむ
     equipWeapon(nextPower - 1);
+    if (nextPower === MECH_POWER) state.mechBoardPending = true;
     FX.flash("#ffffff", 0.6, 0.5);
     FX.shake(0.4);
   }
@@ -8206,6 +8212,14 @@ function drawBossOrb(b) {
 }
 
 function drawHomingMissile(b) {
+  // ロボットと戦闘機のミサイルは、専用の絵を使う
+  const art = typeof mechArt !== "undefined" ? mechArt.missile : null;
+  if ((b.power ?? 0) >= MECH_POWER && art && art.complete && art.naturalWidth > 0) {
+    const w = 58;
+    const h = w * (art.naturalHeight / art.naturalWidth);
+    ctx.drawImage(art, -w / 2, -h / 2, w, h);
+    return;
+  }
   const colors = b.colors || WEAPON_STAGES[0].colors;
   ctx.fillStyle = colors[1];
   ctx.strokeStyle = colors[2];
@@ -8919,11 +8933,13 @@ function drawPlayerBody(p) {
 // ---------- ロボット「ムーニアン・メカ」 ----------
 // assets/mech-*.png があれば使い、なければプログラムで描いた仮のロボットを出す
 const mechArt = {};
-for (const key of ["idle", "jump", "shoot", "walk-6"]) {
+for (const key of ["idle", "jump", "shoot", "walk-6", "board", "missile"]) {
   const im = new Image();
   im.src = `assets/mech-${key}.png`;
   mechArt[key] = im;
 }
+// 歩きのシートは、コマの下半分にロボットが描かれているので、その部分だけ切りとって使う
+const MECH_WALK_CROP = { y: 456, h: 568 };
 const MECH_H = 170; // ぴょんぴー（約84）の2倍くらい
 
 function drawMech(p) {
@@ -8939,13 +8955,16 @@ function drawMech(p) {
   ctx.translate(cx, bottom);
   ctx.scale(f, 1);
   if (p.retro && !grounded) drawMechRetroThrust(t);
-  const art = !grounded ? mechArt.jump : shooting ? mechArt.shoot : walking ? null : mechArt.idle;
+  // 合体した直後は、乗りこむ絵をしばらく出す
+  const boarding = (state.mechBoardUntil ?? 0) > performance.now() && grounded;
+  const art = boarding ? mechArt.board : !grounded ? mechArt.jump : shooting ? mechArt.shoot : walking ? null : mechArt.idle;
   const sheet = mechArt["walk-6"];
-  if (walking && ok(sheet)) {
+  if (walking && !boarding && ok(sheet)) {
     const frame = Math.floor(t * 10) % 6;
     const fw = sheet.naturalWidth / 6;
-    const dw = MECH_H * (fw / sheet.naturalHeight);
-    ctx.drawImage(sheet, frame * fw, 0, fw, sheet.naturalHeight, -dw / 2, -MECH_H, dw, MECH_H);
+    const crop = MECH_WALK_CROP;
+    const dw = MECH_H * (fw / crop.h);
+    ctx.drawImage(sheet, frame * fw, crop.y, fw, crop.h, -dw / 2, -MECH_H, dw, MECH_H);
   } else if (ok(art)) {
     const dh = grounded ? MECH_H : MECH_H * 1.05;
     const dw = dh * (art.naturalWidth / art.naturalHeight);
