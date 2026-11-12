@@ -472,25 +472,65 @@ let mapInputLockTimer = 0;
 let mapCamera = { x: 0, y: 0 };
 let mapWalkTimer = 0;
 // よろず屋は 1-3 から左へのびる別ルートの先（月のクレーターの中）にある
-const SHOP_MAP_NODE = { x: 84, y: 390, course: 2 };
+// よろず屋は、ワールドごとに1けん。道のとちゅうから枝分かれした先にある（そのワールドだけの品もならぶ）
+// dir = そのステージで十字キーをどちらに押すと、お店への道に入るか
+const SHOP_MAP_NODES = [{ x: 84, y: 390, course: 2, world: 0, dir: "left" }];
+let mapShopIndex = 0;
+let SHOP_MAP_NODE = SHOP_MAP_NODES[0];
 let mapAtShop = false;
 let mapShopT = 0; // 0 = 1-3 の上、1 = よろず屋の上（歩く途中は間）
 const shopMapIcon = new Image();
 shopMapIcon.src = "assets/map-shop.png";
 
-function shopNodeAvailable() {
-  return typeof Shop !== "undefined" && Shop.unlocked() && unlockedCourse >= SHOP_MAP_NODE.course;
+function shopNodeAvailable(node = SHOP_MAP_NODE) {
+  return typeof Shop !== "undefined" && Shop.unlocked() && unlockedCourse >= node.course;
 }
 
-function shopNodeToCanvas() {
+function shopNodeToCanvas(node = SHOP_MAP_NODE) {
   const layout = mapImageLayout();
-  return { x: layout.x + SHOP_MAP_NODE.x * layout.scale, y: layout.y + SHOP_MAP_NODE.y * layout.scale };
+  return { x: layout.x + node.x * layout.scale, y: layout.y + node.y * layout.scale };
 }
 
-// 十字キーの向きでマップを動く。1-3 で左を押すとよろず屋への道に入る
+function setActiveShop(i) {
+  mapShopIndex = i;
+  SHOP_MAP_NODE = SHOP_MAP_NODES[i];
+}
+
+// ワールド2〜6のお店の場所：そのワールドの3つ目のステージから、まわりのステージや道からいちばんはなれた向きへ
+function placeWorldShops() {
+  const pts = MAP_NODE_POINTS;
+  const segDist = (px, py, a, b) => {
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const t = Math.max(0, Math.min(1, ((px - a.x) * dx + (py - a.y) * dy) / (dx * dx + dy * dy || 1)));
+    return Math.hypot(px - (a.x + dx * t), py - (a.y + dy * t));
+  };
+  for (let w = 1; w < STAGE_AREA_COUNTS.length; w++) {
+    const course = Math.min(STAGE_START_INDICES[w] + 2, pts.length - 1);
+    const base = pts[course];
+    let best = null;
+    for (let k = 0; k < 8; k++) {
+      const ang = (k / 8) * Math.PI * 2;
+      const x = base.x + Math.cos(ang) * 92;
+      const y = base.y + Math.sin(ang) * 92;
+      if (x < 60 || x > 1610 || y < 80 || y > 880) continue;
+      let clear = Infinity;
+      for (let i = 0; i < pts.length; i++) {
+        if (i !== course) clear = Math.min(clear, Math.hypot(x - pts[i].x, y - pts[i].y));
+        if (i > 0) clear = Math.min(clear, segDist(x, y, pts[i - 1], pts[i]) + (i - 1 === course || i === course ? 40 : 0));
+      }
+      for (const n of SHOP_MAP_NODES) clear = Math.min(clear, Math.hypot(x - n.x, y - n.y));
+      if (!best || clear > best.clear) best = { x, y, clear };
+    }
+    const dx = best.x - base.x, dy = best.y - base.y;
+    const dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? "left" : "right") : (dy < 0 ? "up" : "down");
+    SHOP_MAP_NODES.push({ x: Math.round(best.x), y: Math.round(best.y), course, world: w, dir });
+  }
+}
+
+// 十字キーの向きでマップを動く。お店のあるステージで、お店のほうへ押すとよろず屋への道に入る
 function mapMove(direction) {
   if (mapAtShop) {
-    if (direction === "right" || direction === "down" || direction === "up") {
+    if (direction !== SHOP_MAP_NODE.dir) {
       mapAtShop = false;
       mapSelectedCourse = SHOP_MAP_NODE.course;
       currentCourse = mapSelectedCourse;
@@ -499,7 +539,9 @@ function mapMove(direction) {
     }
     return;
   }
-  if (direction === "left" && mapSelectedCourse === SHOP_MAP_NODE.course && shopNodeAvailable()) {
+  const shopHere = SHOP_MAP_NODES.findIndex(n => n.course === mapSelectedCourse && n.dir === direction && shopNodeAvailable(n));
+  if (shopHere >= 0) {
+    setActiveShop(shopHere);
     mapAtShop = true;
     playSfx("cursor");
     return;
@@ -509,7 +551,7 @@ function mapMove(direction) {
 
 function confirmMapSelection() {
   if (mapAtShop) {
-    if (mapShopT > 0.85) Shop.open();
+    if (mapShopT > 0.85) Shop.open(SHOP_MAP_NODE.world);
     return;
   }
   startMapCourse(mapSelectedCourse);
@@ -739,6 +781,10 @@ const MAP_NODE_POINTS = [
   { x: 1236, y: 395 }, { x: 1187, y: 309 }, { x: 1332, y: 537 }, { x: 1388, y: 613 }, { x: 1467, y: 623 },
   { x: 1562, y: 591 }, { x: 1539, y: 489 }, { x: 1538, y: 438 }, { x: 1518, y: 330 }, { x: 1510, y: 266 }
 ];
+placeWorldShops();
+// 火星のお店は、氷の星とのさかい目にならないよう、火星の島のまん中（2-2 の下）へ
+Object.assign(SHOP_MAP_NODES[1], { x: 470, y: 660, course: STAGE_START_INDICES[1] + 1, dir: "down" });
+
 const MAP_WORLD_FOG_ZONES = [
   null,
   { x: 470, y: 452, rx: 185, ry: 302, rotate: -0.08, color: "rgba(255, 209, 237, 0.74)" },
@@ -2070,7 +2116,8 @@ function buildStageAreas(index) {
     areas.push(room);
     first.level.doors.push({ x: dx, y: spot.y - DOOR_H, w: DOOR_W, h: DOOR_H, to: room.areaNo, spawnX: 230, bonus: true });
   }
-  // よろず屋の扉（どのステージにも。寄り道の扉とはなして置く）
+  // （よろず屋は、ステージの中ではなく、ワールドマップの各ワールドにある）
+  if (false) {
   const taken = first.level.doors.map(d => d.x);
   const farFromDoors = x => taken.every(t => Math.abs(t - x) > 260);
   const shopSafe = (first.level.doorSpots ?? []).filter(d => d.x > 500 && d.x < 3500 && farFromDoors(d.x))
@@ -2084,6 +2131,7 @@ function buildStageAreas(index) {
   if (shopX && shopG) first.level.doors.push({ x: shopX, y: shopG.y - DOOR_H, w: DOOR_W, h: DOOR_H, to: 0, spawnX: shopX, shop: true });
   // 海のステージは、門より手前の水の中に、うかぶよろず屋
   else if (underwater) first.level.doors.push({ x: 560, y: 360, w: DOOR_W, h: DOOR_H, to: 0, spawnX: 560, shop: true });
+  }
   courses[index] = areas[0];
 }
 
@@ -7002,9 +7050,10 @@ function drawWorldMapScreen() {
     ctx.lineTo(endX, endY);
     ctx.stroke();
   }
-  if (shopNodeAvailable()) {
-    const from = mapPointToCanvas(SHOP_MAP_NODE.course);
-    const to = shopNodeToCanvas();
+  for (const node of SHOP_MAP_NODES) {
+    if (!shopNodeAvailable(node)) continue;
+    const from = mapPointToCanvas(node.course);
+    const to = shopNodeToCanvas(node);
     ctx.strokeStyle = "rgba(255, 196, 64, 0.9)";
     ctx.lineWidth = 21;
     ctx.beginPath();
@@ -7073,7 +7122,7 @@ function drawWorldMapScreen() {
     ctx.restore();
   }
 
-  if (shopNodeAvailable()) drawShopMapNode();
+  SHOP_MAP_NODES.forEach((node, i) => { if (shopNodeAvailable(node)) drawShopMapNode(node, i); });
 
   const walkerPoint = currentMapWalkerPoint();
   const layoutForWalker = mapImageLayout();
@@ -7111,20 +7160,20 @@ function drawWorldMapScreen() {
 }
 
 // よろず屋の目じるし（assets/map-shop.png があればそれを、なければ仮の絵を出す）
-function drawShopMapNode() {
-  const p = shopNodeToCanvas();
+function drawShopMapNode(node = SHOP_MAP_NODE, i = mapShopIndex) {
+  const p = shopNodeToCanvas(node);
   const t = performance.now() / 1000;
   ctx.save();
   ctx.translate(p.x, p.y);
   ctx.scale(MAP_UI, MAP_UI);
   ctx.translate(-p.x, -p.y);
-  drawShopMapNodeInner(p, t);
+  drawShopMapNodeInner(p, t, mapAtShop && i === mapShopIndex);
   ctx.restore();
 }
 
-function drawShopMapNodeInner(p, t) {
+function drawShopMapNodeInner(p, t, here = mapAtShop) {
   ctx.save();
-  if (mapAtShop) {
+  if (here) {
     const pulse = 1 + Math.sin(t * 7.7) * 0.08;
     ctx.strokeStyle = "rgba(255, 255, 255, 0.92)";
     ctx.lineWidth = 5;
@@ -7134,7 +7183,7 @@ function drawShopMapNodeInner(p, t) {
   }
   const bob = Math.sin(t * 2.4) * 3;
   if (shopMapIcon.complete && shopMapIcon.naturalWidth > 0) {
-    const h = mapAtShop ? 92 : 80;
+    const h = here ? 92 : 80;
     const w = h * (shopMapIcon.naturalWidth / shopMapIcon.naturalHeight);
     ctx.drawImage(shopMapIcon, p.x - w / 2, p.y - h * 0.78 + bob, w, h);
   } else {
@@ -7170,7 +7219,7 @@ function drawShopMapNodeInner(p, t) {
   const label = language === "ja" ? "よろず屋" : "Shop";
   ctx.font = "900 14px Segoe UI, system-ui, sans-serif";
   const lw = ctx.measureText(label).width + 20;
-  ctx.fillStyle = mapAtShop ? "#ffd85a" : "rgba(255, 251, 224, 0.95)";
+  ctx.fillStyle = here ? "#ffd85a" : "rgba(255, 251, 224, 0.95)";
   ctx.strokeStyle = "#d98a2b";
   ctx.lineWidth = 2;
   ctx.beginPath();
@@ -7205,7 +7254,7 @@ function drawWorldMapPanel() {
     ctx.fillStyle = "#ff8db7";
     ctx.font = `900 22px ${FX.FONT}`;
     ctx.textAlign = "right";
-    ctx.fillText(language === "ja" ? "決定で入る ／ →でもどる" : "Confirm: enter  /  →: back", canvas.width - 50, canvas.height - 50);
+    { const back = { left: "→", right: "←", up: "↓", down: "↑" }[SHOP_MAP_NODE.dir] ?? "→"; ctx.fillText(language === "ja" ? `決定で入る ／ ${back}でもどる` : `Confirm: enter  /  ${back}: back`, canvas.width - 50, canvas.height - 50); }
     ctx.restore();
     return;
   }
@@ -12453,11 +12502,16 @@ canvas.addEventListener("pointerdown", event => {
     return;
   }
   if (state.mode === "worldMap") {
-    if (shopNodeAvailable()) {
-      const sp = shopNodeToCanvas();
-      if (Math.hypot(pos.x - sp.x, pos.y - (sp.y - 16 * MAP_UI)) <= 44 * MAP_UI) {
-        if (mapAtShop) confirmMapSelection();
+    const tapped = SHOP_MAP_NODES.findIndex(n => {
+      if (!shopNodeAvailable(n)) return false;
+      const sp = shopNodeToCanvas(n);
+      return Math.hypot(pos.x - sp.x, pos.y - (sp.y - 16 * MAP_UI)) <= 44 * MAP_UI;
+    });
+    if (tapped >= 0) {
+      {
+        if (mapAtShop && tapped === mapShopIndex) confirmMapSelection();
         else {
+          setActiveShop(tapped);
           mapSelectedCourse = SHOP_MAP_NODE.course;
           currentCourse = mapSelectedCourse;
           mapAtShop = true;

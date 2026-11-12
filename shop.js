@@ -131,9 +131,9 @@
     });
   }
 
-  function open() {
+  function open(world = null) {
     if (!unlocked() || state.mode !== "worldMap" || FX.transitioning()) return;
-    shopWorld = null;
+    shopWorld = world;
     inStage = null;
     playSfx("decide");
     FX.startTransition({
