@@ -6767,7 +6767,35 @@ function drawInventorySlot(slot) {
     ctx.restore();
     return;
   }
+  // つかんでいる武器と合成できるマスは、赤く光らせて「合成」の札を出す
+  const grab = state.inventoryGrab;
+  const fusable = grab && slot.index !== grab.from && slot.power === grab.power && canFusePower(slot.power);
+  if (fusable) {
+    const pulse = 0.6 + Math.sin(t * 8) * 0.4;
+    ctx.save();
+    ctx.shadowColor = "#ff3d5a";
+    ctx.shadowBlur = 18 + pulse * 10;
+    ctx.fillStyle = `rgba(255, 61, 90, ${0.12 + pulse * 0.12})`;
+    ctx.strokeStyle = "#ff3d5a";
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.roundRect(slot.x + 3, slot.y + 3, slot.w - 6, slot.h - 6, 18);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
   drawWeaponIcon(slot.x + slot.w / 2, slot.y + slot.h / 2 - (equipped ? 10 : 2), slot.power, weaponIconFitScale(slot.power, slot.w - 20, 1.7), 1);
+  if (fusable) {
+    ctx.fillStyle = "#ff3d5a";
+    ctx.beginPath();
+    ctx.roundRect(slot.x + 16, slot.y + slot.h - 40, slot.w - 32, 30, 15);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = `900 20px ${FX.FONT}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(language === "ja" ? "合成できる" : "FUSE", slot.x + slot.w / 2, slot.y + slot.h - 24);
+  }
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   // レベル
@@ -6791,7 +6819,7 @@ function drawInventorySlot(slot) {
     ctx.textAlign = "center";
     ctx.fillText(`×${count}`, slot.x + slot.w - 35, slot.y + 26);
   }
-  if (equipped) {
+  if (equipped && !fusable) {
     ctx.fillStyle = "#ff8db7";
     ctx.beginPath();
     ctx.roundRect(slot.x + 16, slot.y + slot.h - 40, slot.w - 32, 30, 15);
