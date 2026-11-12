@@ -728,7 +728,7 @@ const MAP_WORLD_FOG_ZONES = [
   { x: 1515, y: 450, rx: 255, ry: 380, rotate: 0.07, color: "rgba(200, 178, 255, 0.78)" }
 ];
 
-function makeCourse(worldIndex, areaIndex) {
+function makeCourse(worldIndex, areaIndex, layout = areaIndex) {
   const difficulty = STAGE_START_INDICES[worldIndex] + areaIndex + 1;
   const bossStage = areaIndex === stageAreaCount(worldIndex) - 1;
   const finalStage = worldIndex === STAGE_THEMES.length - 1 && bossStage;
@@ -751,11 +751,11 @@ function makeCourse(worldIndex, areaIndex) {
     platforms = buildFactoryCoursePlatforms(difficulty, areaIndex, bossStage);
   }
   if (trait !== "iceSlide" && trait !== "factoryBelt" && trait !== "underwater") {
-    platforms = buildVariedCoursePlatforms(worldIndex, areaIndex, difficulty, bossStage, finalStage);
+    platforms = buildVariedCoursePlatforms(worldIndex, layout, difficulty, bossStage, finalStage);
   }
   if (finalStage) platforms = buildFinalBossCoursePlatforms();
   if (trait === "underwater") platforms.length = 0;
-  const climb = !bossStage && trait !== "underwater" && Gimmick.isClimbArea(worldIndex, areaIndex) ? Gimmick.buildClimb(worldIndex, areaIndex) : null;
+  const climb = !bossStage && trait !== "underwater" && Gimmick.isClimbArea(worldIndex, layout) ? Gimmick.buildClimb(worldIndex, layout) : null;
   if (climb) platforms = climb.platforms;
 
   const blocks = [];
@@ -1130,6 +1130,247 @@ for (let i = 1; i < stageAreaCount(0); i++) {
   };
 }
 
+// ---------- エリアを扉でつないだステージ（まずはワールド1のふつうのステージ） ----------
+// 1つのステージ = 3つのエリア。エリアのおわりの扉に入ると次のエリアへ。最後のエリアの旗でクリア。
+// まん中のエリアの出口はカギつき（カギはそのエリアの空のルートにある）。最初のエリアには寄り道の小部屋がある
+const DOOR_W = 70;
+const DOOR_H = 110;
+
+function groundUnder(course, x) {
+  let top = null;
+  for (const p of course.platforms) {
+    if (p.mover || p.conveyor || x < p.x + 20 || x > p.x + p.w - 20) continue;
+    if (p.y < 300) continue;
+    if (top === null || p.y < top.y) top = p;
+  }
+  return top;
+}
+
+function makeBonusRoom(stageIndex, roomNo, returnTo) {
+  const room = {
+    ...courses[stageIndex],
+    climbStage: false,
+    climbMeta: null,
+    puzzle: null,
+    isRoom: true,
+    top: 0,
+    bottom: canvas.height,
+    platforms: [rect(0, 492, 1400, 48), rect(-40, 0, 40, 540), rect(1400, 0, 40, 540), rect(420, 360, 200, 32), rect(820, 300, 200, 32)],
+    blocks: [breakable(470, 220, "power"), breakable(560, 220, roomNo % 2 ? "power" : "hp"), breakable(870, 160, "hp")],
+    gun: { x: 300, y: 430 }
+  };
+  const coins = [];
+  for (let i = 0; i < 10; i++) coins.push(coin(200 + i * 100, 440 - (i % 3) * 40, i % 2 ? "pea" : "kaki"));
+  for (let i = 0; i < 4; i++) coins.push(coin(860 + i * 40, 250, i % 2 ? "pea" : "kaki"));
+  room.level = {
+    enemies: [], coins, starItems: [], oxygenItems: [], seaGates: [], lavaGeysers: [], lavaPools: [], rotatingFires: [],
+    keys: [], springs: [], chests: [],
+    flag: rect(-99999, 0, 1, 1),
+    doors: [{ x: 120, y: 492 - DOOR_H, w: DOOR_W, h: DOOR_H, to: returnTo.area, spawnX: returnTo.x }]
+  };
+  return room;
+}
+
+function buildStageAreas(index) {
+  const base = courses[index];
+  const { worldIndex, areaIndex } = courseIndexToWorldArea(index);
+  const layouts = [null, (areaIndex + 1) % 4 + (areaIndex === 1 ? 0 : 4), (areaIndex + 3) % 4 + 8];
+  const areas = [base];
+  for (let k = 1; k < 3; k++) {
+    areas.push({ ...makeCourse(worldIndex, areaIndex, layouts[k]), theme: base.theme, gun: base.gun });
+  }
+  areas.forEach((area, n) => {
+    area.areas = areas;
+    area.areaNo = n;
+    const lv = area.level;
+    lv.chests = []; // カギは宝箱ではなく扉に使う
+    // ★は各エリアに1つずつ（ステージ全体で3つ）
+    lv.starItems = (lv.starItems ?? []).filter((_, i) => i === n);
+    lv.doors = lv.doors ?? [];
+    if (n < areas.length - 1) {
+      const f = lv.flag;
+      const locked = n === 1 && (lv.keys ?? []).length > 0 && !area.climbStage;
+      lv.doors.push({ x: f.x - 10, y: f.y + f.h - DOOR_H, w: DOOR_W, h: DOOR_H, to: n + 1, spawnX: 90, locked, exit: true });
+      lv.flag = rect(-99999, 0, 1, 1);
+    }
+  });
+  // 最初のエリアの途中に、寄り道の小部屋
+  const first = areas[0];
+  const spot = groundUnder(first, 2300) ?? groundUnder(first, 1900) ?? groundUnder(first, 2800);
+  if (spot && !first.climbStage) {
+    const dx = clamp(2300, spot.x + 40, spot.x + spot.w - 40 - DOOR_W);
+    const room = makeBonusRoom(index, index, { area: 0, x: dx });
+    room.areas = areas;
+    room.areaNo = areas.length;
+    areas.push(room);
+    first.level.doors.push({ x: dx, y: spot.y - DOOR_H, w: DOOR_W, h: DOOR_H, to: room.areaNo, spawnX: 230, bonus: true });
+  }
+  courses[index] = areas[0];
+}
+
+for (let i = 0; i < stageAreaCount(0) - 1; i++) buildStageAreas(i);
+
+// ステージ全体の★の数（エリアに分かれていても合計で数える）
+function courseStarTotal(index) {
+  const c = courses[index];
+  const list = (c?.areas ?? [c]).filter(a => a && !a.isRoom);
+  return list.reduce((sum, a) => sum + (a.level.starItems ?? []).length, 0);
+}
+
+// ステージを始めるときは、いつも最初のエリアから
+function resetStageAreas(index) {
+  const areas = courses[index]?.areas;
+  if (areas) courses[index] = areas[0];
+}
+
+// 扉に入る：今の持ち物・時間・カギはそのままで、行き先のエリアを読みこむ
+function enterArea(to, spawnX) {
+  const areas = courses[currentCourse]?.areas;
+  if (!areas?.[to] || FX.transitioning()) return;
+  playSfx("decide");
+  FX.startTransition({
+    type: "fade",
+    dur: 0.7,
+    onMid: () => {
+      const keep = campaignSnapshotFromState();
+      const time = state.time;
+      const keys = state.keys;
+      // エリアごとに「取った★・取ったカギ・あけた扉」を覚えておく（もどってきても復活しない）
+      const memo = JSON.parse(JSON.stringify(state.areaMemo ?? {}));
+      const from = courses[currentCourse].areaNo ?? 0;
+      memo[from] = {
+        stars: state.starItems.map((s, i) => (s.taken ? i : -1)).filter(i => i >= 0),
+        keys: (state.keyItems ?? []).map((k, i) => (k.taken ? i : -1)).filter(i => i >= 0),
+        opened: (level.doors ?? []).map((d, i) => (d.lockedOriginally && !d.locked ? i : -1)).filter(i => i >= 0)
+      };
+      courses[currentCourse] = areas[to];
+      state = newState();
+      restoreCampaignSnapshot(keep);
+      state.time = time;
+      state.keys = keys;
+      state.areaMemo = memo;
+      state.doorHold = true;
+      const mine = memo[to];
+      if (mine) {
+        mine.stars.forEach(i => { if (state.starItems[i]) state.starItems[i].taken = true; });
+        mine.keys.forEach(i => { if (state.keyItems[i]) state.keyItems[i].taken = true; });
+        mine.opened.forEach(i => { if (level.doors[i]) level.doors[i].locked = false; });
+      }
+      state.stageStarsGot = Object.entries(memo).filter(([n]) => Number(n) !== to).reduce((sum, [, m]) => sum + m.stars.length, 0);
+      state.mode = "playing";
+      const p = state.player;
+      const g = groundUnder(courses[currentCourse], spawnX + 20);
+      p.x = spawnX;
+      p.y = (g ? g.y : 492) - p.h;
+      p.vx = 0;
+      p.vy = 0;
+      p.grounded = true;
+      p.invincible = 0.6;
+      updateCamera(0, true);
+      lastTime = performance.now();
+    }
+  });
+}
+
+function updateDoors() {
+  const p = state.player;
+  const doors = level.doors ?? [];
+  state.nearDoor = null;
+  const upHeld = keys.has("ArrowUp") || keys.has("KeyW") || gamepadState.up;
+  if (!upHeld) state.doorHold = false;
+  for (const d of doors) {
+    const touching = p.x + p.w > d.x + 8 && p.x < d.x + d.w - 8 && p.y + p.h > d.y + 20 && p.y < d.y + d.h;
+    if (!touching) continue;
+    state.nearDoor = d;
+    const up = keys.has("ArrowUp") || keys.has("KeyW") || gamepadState.up;
+    // 扉から出てきた直後は、↑をいったんはなすまで入れない（すぐもどってしまわないように）
+    if (state.doorHold) continue;
+    if (!up || !p.grounded) continue;
+    if (d.locked) {
+      if ((state.keys ?? 0) > 0) {
+        state.keys -= 1;
+        d.locked = false;
+        playSfx("unlock", d.x);
+        FX.floater(d.x + d.w / 2, d.y - 20, "OPEN!", { size: 28, color: "#c9f6ff", stroke: "#3f62c8", life: 1.1 });
+        Chat.event("doorOpen");
+      } else if ((state.gimmickHint ?? 0) <= 0) {
+        state.gimmickHint = 2.2;
+        FX.floater(d.x + d.w / 2, d.y - 20, language === "ja" ? "カギが ひつよう！" : "You need a key!", { color: "#ffffff", stroke: "#ff5f9e", size: 22, life: 1.3 });
+        playSfx("locked", d.x);
+        Chat.event("needKey");
+      }
+      continue;
+    }
+    enterArea(d.to, d.spawnX);
+    return;
+  }
+}
+
+function drawDoors() {
+  const t = performance.now() / 1000;
+  for (const d of level.doors ?? []) {
+    ctx.save();
+    // 扉の枠
+    ctx.fillStyle = d.bonus ? "#ffd1ed" : "#c8b2ff";
+    ctx.strokeStyle = "#5a3d9a";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.roundRect(d.x - 8, d.y - 8, d.w + 16, d.h + 8, [40, 40, 4, 4]);
+    ctx.fill();
+    ctx.stroke();
+    // 入口（暗いアーチ）
+    const g = ctx.createLinearGradient(0, d.y, 0, d.y + d.h);
+    g.addColorStop(0, d.locked ? "#4d3a7a" : "#1d1440");
+    g.addColorStop(1, d.locked ? "#2d2050" : "#0d0820");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.roundRect(d.x, d.y, d.w, d.h, [34, 34, 0, 0]);
+    ctx.fill();
+    if (!d.locked) {
+      // 中でまたたく星
+      ctx.fillStyle = `rgba(255, 243, 164, ${0.5 + Math.sin(t * 4 + d.x) * 0.4})`;
+      drawTinyStar(d.x + d.w * 0.35, d.y + 34, 5);
+      drawTinyStar(d.x + d.w * 0.68, d.y + 58, 4);
+    } else {
+      // カギ穴
+      ctx.fillStyle = "#ffd85a";
+      ctx.beginPath();
+      ctx.arc(d.x + d.w / 2, d.y + d.h * 0.48, 9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(d.x + d.w / 2 - 4, d.y + d.h * 0.48, 8, 20);
+    }
+    // 上の札
+    const label = d.locked ? "🔒" : d.bonus ? "★" : d.exit ? "▶" : "◀";
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "900 20px Segoe UI, system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, d.x + d.w / 2, d.y - 24);
+    ctx.restore();
+    // 近くにいるときは「↑ではいる」
+    if (state.nearDoor === d) {
+      ctx.save();
+      const bob = Math.sin(t * 6) * 4;
+      const text = d.locked ? (language === "ja" ? "↑ カギであける" : "↑ Unlock") : (language === "ja" ? "↑ はいる" : "↑ Enter");
+      ctx.font = "900 20px Segoe UI, system-ui, sans-serif";
+      const w = ctx.measureText(text).width + 24;
+      ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+      ctx.strokeStyle = "#ff8db7";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(d.x + d.w / 2 - w / 2, d.y - 76 + bob, w, 32, 16);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#5a3d9a";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, d.x + d.w / 2, d.y - 60 + bob);
+      ctx.restore();
+    }
+  }
+}
+
+
 function rect(x, y, w, h) {
   return { x, y, w, h };
 }
@@ -1309,6 +1550,7 @@ function applyCourse(index) {
     lavaGeysers: (course.level.lavaGeysers ?? []).map(g => ({ ...g })),
     lavaPools: (course.level.lavaPools ?? []).map(g => ({ ...g })),
     rotatingFires: (course.level.rotatingFires ?? []).map(g => ({ ...g })),
+    doors: (course.level.doors ?? []).map(d => ({ ...d, lockedOriginally: !!d.locked })),
     flag: { ...course.level.flag }
   };
 }
@@ -1438,13 +1680,22 @@ function startGame(fresh = false) {
         enterWorldMap(unlockedCourse, true);
         maybePlayWorldIntro(courses[unlockedCourse].worldIndex);
       } else {
+        // 全クリしたあとの「はじめから」は、武器と柿ピーを持ったまま最初から（強くてニューゲーム）
+        const plus = Story.data.cleared && Story.data.keep ? JSON.parse(JSON.stringify(Story.data.keep)) : null;
         Story.resetSave();
         currentCourse = 0;
         unlockedCourse = 0;
         mapSelectedCourse = 0;
         completedCourses = new Set();
         campaignKeep = null;
+        if (plus) {
+          campaignKeep = { ...plus, score: 0, lives: MAX_LIVES, hp: MAX_HP };
+          Story.data.newGamePlus = (Story.data.newGamePlus ?? 0) + 1;
+          Story.data.cleared = false;
+          Story.persist();
+        }
         state = newState();
+        if (campaignKeep) restoreCampaignSnapshot(campaignKeep);
         Story.play("opening", () => {
           enterWorldMap(0, true);
           maybePlayWorldIntro(0);
@@ -1574,11 +1825,14 @@ function startMapCourse(index = mapSelectedCourse) {
 }
 
 function beginCourse(index) {
+  resetStageAreas(index);
   currentCourse = index;
   mapSelectedCourse = index;
   const snapshot = campaignKeep;
   state = newState();
   restoreCampaignSnapshot(snapshot);
+  // エリアが何個もあるステージは、時間を長めにする
+  if (courses[index].areas) state.time = 300;
   state.mode = "playing";
   pendingCourseStart = false;
   overlay.classList.add("hidden");
@@ -1787,6 +2041,7 @@ function update(dt) {
   collectCoins();
   collectStarItems();
   collectOxygenItems();
+  updateDoors();
   checkGoal();
   updateHud();
 }
@@ -4635,6 +4890,7 @@ function drawGameWorld() {
   drawPlatforms();
   Gimmick.drawForeground();
   drawStageHazards();
+  drawDoors();
   drawBossHazards();
   drawGun();
   drawItems();
@@ -10383,6 +10639,11 @@ document.querySelector("#newGameButton")?.addEventListener("click", event => {
     return;
   }
   button.dataset.armed = "1";
+  if (Story.data.cleared) {
+    button.textContent = language === "ja" ? "武器を持ったまま はじめから？" : "Start over with your weapons?";
+    playSfx("decide");
+    return;
+  }
   playSfx("decide");
   button.textContent = language === "ja" ? "セーブを消してはじめる？" : "Erase save and start?";
 });

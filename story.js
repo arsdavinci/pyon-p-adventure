@@ -135,7 +135,7 @@
     let got = 0;
     let total = 0;
     courses.forEach((c, i) => {
-      const n = (c.level.starItems ?? []).length;
+      const n = courseStarTotal(i);
       total += n;
       got += Math.min(n, data.stars[i] || 0);
     });
@@ -1027,8 +1027,8 @@
 
   function beginStageClear(opts = {}) {
     const course = courses[currentCourse];
-    const stars = state.starItems.filter(s => s.taken).length;
-    const starTotal = state.starItems.length;
+    const stars = state.starItems.filter(s => s.taken).length + (state.stageStarsGot ?? 0);
+    const starTotal = courseStarTotal(currentCourse);
     const coins = state.coinItems.filter(c => c.taken).length;
     const coinTotal = state.coinItems.length;
     const timeBonus = Math.ceil(Math.max(0, state.time) / 5) * 5;
@@ -1533,7 +1533,7 @@
 
   // ---------- ワールドマップの追加表示 ----------
   function drawMapNodeStars(index, p) {
-    const total = (courses[index]?.level.starItems ?? []).length;
+    const total = courseStarTotal(index);
     if (!total || !completedCourses.has(index)) return;
     const got = Math.min(total, data.stars[index] || 0);
     ctx.save();
@@ -1617,7 +1617,7 @@
       startButton.textContent = hasSave() ? L("つづきから", "Continue") : L("はじめる", "Start");
     }
     if (newBtn) {
-      newBtn.textContent = L("はじめから", "New Game");
+      newBtn.textContent = data.cleared ? L("強くてはじめから", "New Game+") : L("はじめから", "New Game");
       newBtn.classList.toggle("hidden", !(atTitle && hasSave()));
       delete newBtn.dataset.armed;
     }
