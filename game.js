@@ -4463,9 +4463,11 @@ function drawWorldMapPanel() {
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   ctx.fillText(`${stageLabel(mapSelectedCourse)}  ${Story.worldName(world)}${course.bossStage ? `  ${t("boss")}` : course.climbStage ? (language === "ja" ? "  のぼりステージ" : "  Climb") : ""}`, 50, canvas.height - 134);
+  // 下の会話欄に同じセリフが出ているときは、ここには出さない（読む場所を1つにする）
+  const talkBelow = typeof Handheld !== "undefined" && Handheld.active() && Handheld.commOn();
   ctx.fillStyle = "#4d4773";
   ctx.font = `800 27px ${FX.FONT}`;
-  ctx.fillText(line, 50, canvas.height - 82);
+  if (!talkBelow) ctx.fillText(line, 50, canvas.height - 82);
   ctx.fillStyle = "#ff8db7";
   ctx.font = `900 22px ${FX.FONT}`;
   ctx.textAlign = "right";

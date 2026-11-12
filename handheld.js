@@ -8,6 +8,7 @@
     HOLE_T: 123, // 画面の穴までの上の余白
     HOLE_B: 65, // 画面の穴の下〜枠画像の下端
     HOLE_W: 729,
+    SCREEN_W: 858, // ゲーム画面は本体の絵の穴より広く取り、左右のふちの上まで広げる
     HUD: 46,
     CTRL_H: 716,
     OVERLAP: 4,
@@ -15,11 +16,12 @@
     CROP_BOTTOM: 48
   };
   const CROP_MAX = SRC.CROP_TOP + SRC.CROP_BOTTOM;
-  const FIXED = SRC.HOLE_T + (SRC.HOLE_W * 9) / 16 + SRC.HUD + SRC.HOLE_B + SRC.CTRL_H - SRC.OVERLAP;
+  const FIXED = SRC.HOLE_T + (SRC.SCREEN_W * 9) / 16 + SRC.HUD + SRC.HOLE_B + SRC.CTRL_H - SRC.OVERLAP;
   const BLEED = 1.0; // 本体の横はばを画面の横はばにぴったり合わせる（左右が見切れないように）
   const COMM_MIN = 120; // 会話だけ出せる高さ
   const COMM_FULL = 236; // 会話＋そうび中の武器を出せる高さ
   const COMM_TARGET = 200;
+  const COMM_MAX = 300; // 会話の欄はこれ以上大きくしない（ゲーム画面を主役にする）
 
   const shell = document.querySelector(".shell");
   const controls = document.querySelector(".touch-controls");
@@ -115,9 +117,9 @@
       // スマホ：横幅で大きさが決まる。あまった高さを会話パネルに回す
       u = uWide;
       const free = availH / u - FIXED;
-      // あまった高さはぜんぶ会話パネルに回して、下にすき間を作らない
+      // 会話パネルは小さめにおさえる。あまった高さは本体の上（ステータスバーの下）に回す
       crop = Math.min(CROP_MAX, Math.max(0, COMM_TARGET - free));
-      comm = free + crop;
+      comm = Math.min(COMM_MAX, free + crop);
       if (comm < COMM_MIN) {
         comm = 0;
         crop = Math.max(0, -free);
@@ -139,8 +141,9 @@
     const visible = total - crop * u;
     const cropTop = crop * (SRC.CROP_TOP / CROP_MAX);
     const x = safe.l + (availW - SRC.W * u) / 2;
-    const y = safe.t - underTop + Math.max(0, availH - visible) / 2 - cropTop * u;
-    const screenH = (SRC.HOLE_T + (SRC.HOLE_W * 9) / 16 + SRC.HUD + comm + SRC.HOLE_B) * u;
+    // 本体は下につめて置く（下にすき間を作らない）
+    const y = safe.t - underTop + Math.max(0, availH - visible) - cropTop * u;
+    const screenH = (SRC.HOLE_T + (SRC.SCREEN_W * 9) / 16 + SRC.HUD + comm + SRC.HOLE_B) * u;
     shell.style.setProperty("--u", `${u}px`);
     shell.style.setProperty("--gb-x", `${x}px`);
     shell.style.setProperty("--gb-y", `${y}px`);

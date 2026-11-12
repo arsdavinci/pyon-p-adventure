@@ -1057,15 +1057,19 @@ body[data-layout="handheld"] .gb-screen {
   top: var(--gb-y);
   width: calc(898 * var(--u));
   height: var(--gb-screen-h);
-  padding: calc(123 * var(--u)) calc(84 * var(--u)) calc(65 * var(--u)) calc(85 * var(--u));
+  /* 画面は本体の絵の穴（729）より広い 858。左右のふちの上まで広げて、ゲーム画面を大きく見せる */
+  padding: calc(123 * var(--u)) calc(20 * var(--u)) calc(65 * var(--u)) calc(20 * var(--u));
 }
 
 body[data-layout="handheld"] .gb-screen::before {
   content: "";
   position: absolute;
-  inset: calc(119 * var(--u)) calc(80 * var(--u)) calc(61 * var(--u)) calc(81 * var(--u));
-  border-radius: calc(32 * var(--u));
+  inset: calc(115 * var(--u)) calc(12 * var(--u)) calc(57 * var(--u)) calc(12 * var(--u));
+  z-index: 1;
+  border: calc(8 * var(--u)) solid #171031;
+  border-radius: calc(36 * var(--u));
   background: linear-gradient(180deg, #2b2050, #171031);
+  box-shadow: 0 0 0 calc(3 * var(--u)) rgba(200, 178, 255, 0.85), 0 calc(6 * var(--u)) calc(18 * var(--u)) rgba(60, 40, 110, 0.35);
 }
 
 /* 画面の枠：上・まん中（たてにのばす）・下の3枚で描く */
@@ -1073,7 +1077,7 @@ body[data-layout="handheld"] .gb-frame-art {
   display: block;
   position: absolute;
   inset: 0;
-  z-index: 5;
+  z-index: 0;
   pointer-events: none;
   background:
     url("assets/gb-frame-top.webp") top center / 100% calc(160 * var(--u)) no-repeat,
@@ -1089,7 +1093,8 @@ body[data-layout="handheld"] .game-wrap {
   max-height: none;
   aspect-ratio: 16 / 9;
   border: 0;
-  border-radius: 0;
+  border-radius: calc(26 * var(--u)) calc(26 * var(--u)) 0 0;
+  overflow: hidden;
   box-shadow: none;
 }
 
