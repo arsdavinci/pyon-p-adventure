@@ -142,6 +142,9 @@
   }
 
   // ---------- ボタン入力 ----------
+  // iPhone で長押しすると出る虫めがね（ルーペ）や文字選択を止める。ボタンは pointer イベントで動く
+  if (controls) controls.addEventListener("touchstart", event => event.preventDefault(), { passive: false });
+
   function press(code) {
     if (typeof pressTouchControl === "function") pressTouchControl(code);
   }

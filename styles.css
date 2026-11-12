@@ -672,10 +672,45 @@ body[data-control-mode="mobile"][data-overlay-open="true"] .touch-controls {
 
 .title-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 12px;
   align-items: center;
   justify-content: center;
+}
+
+/* 上から「はじめから」「つづきから」。音のボタンは画面の右はしへ */
+.title-actions #newGameButton {
+  order: 0;
+}
+
+.title-actions #startButton {
+  order: 1;
+}
+
+.title-actions #soundButton {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+}
+
+/* 十字キーで選んでいるボタン */
+.title-actions #newGameButton.is-focused {
+  background: rgba(255, 255, 255, 0.92);
+  color: #5a3d9a;
+  border-color: #ffd85a;
+  box-shadow: 0 0 0 3px #ffd85a, 0 4px 0 rgba(40, 26, 96, 0.5);
+}
+
+.title-actions #startButton:not(.is-focused) {
+  animation: none;
+  filter: saturate(0.55) brightness(0.92);
+}
+
+.touch-controls,
+.touch-controls * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .primary-button {
@@ -1307,6 +1342,16 @@ body[data-layout="handheld"] .overlay p {
 
 body[data-layout="handheld"] .title-actions {
   gap: calc(12 * var(--u));
+}
+
+body[data-layout="handheld"] .title-actions #soundButton {
+  right: calc(12 * var(--u));
+  bottom: calc(12 * var(--u));
+}
+
+body[data-layout="handheld"] .title-actions #newGameButton {
+  min-width: calc(230 * var(--u));
+  font-size: calc(26 * var(--u));
 }
 
 body[data-layout="handheld"] .primary-button {

@@ -1606,6 +1606,7 @@
     }
     const sound = document.querySelector("#soundButton");
     if (sound) sound.textContent = (typeof soundEnabled !== "undefined" && soundEnabled) ? "♪ ON" : "♪ OFF";
+    if (typeof syncTitleFocus === "function") syncTitleFocus();
   }
 
   // ---------- BGM 切り替え ----------

@@ -7310,10 +7310,9 @@ function updateGamepad() {
   if (!overlay.classList.contains("hidden")) {
     const anyStartPressed = jumpPressed || shootPressed || runPressed || startPressed || selectPressed;
     const anyStartLatched = gamepadState.jumpLatch || gamepadState.shootLatch || gamepadState.runLatch || gamepadState.startLatch || gamepadState.selectLatch;
-    if (anyStartPressed && !anyStartLatched) {
-      if (state?.mode === "ended" && gameOverContinueAvailable) continueFromGameOver();
-      else pendingCourseStart ? startCurrentCourse() : startGame();
-    }
+    if (state.mode === "title" && gamepadState.up && !gamepadState.upLatch) moveTitleFocus(-1);
+    if (state.mode === "title" && gamepadState.down && !gamepadState.downLatch) moveTitleFocus(1);
+    if (anyStartPressed && !anyStartLatched) confirmOverlay();
     gamepadState.leftLatch = gamepadState.left;
     gamepadState.rightLatch = gamepadState.right;
     gamepadState.upLatch = gamepadState.up;
@@ -7405,8 +7404,7 @@ function updateGamepad() {
     updateInventoryGamepadFocus(now, jumpPressed, runPressed, shootPressed);
   }
   if (startPressed && !gamepadState.startLatch && state.mode !== "inventory" && !overlay.classList.contains("hidden")) {
-    if (state?.mode === "ended" && gameOverContinueAvailable) continueFromGameOver();
-    else pendingCourseStart ? startCurrentCourse() : startGame();
+    confirmOverlay();
   }
   gamepadState.leftLatch = gamepadState.left;
   gamepadState.rightLatch = gamepadState.right;
@@ -7479,12 +7477,52 @@ function handleKeyDown(code, event = { repeat: false }) {
     handleInventoryKeyboardFocus(code, event.repeat);
     return;
   }
+  if (!overlay.classList.contains("hidden") && state.mode === "title" && !event.repeat) {
+    if (code === "ArrowUp" || code === "KeyW") return moveTitleFocus(-1);
+    if (code === "ArrowDown" || code === "KeyS") return moveTitleFocus(1);
+    if (["KeyX", "KeyY", "KeyJ"].includes(code)) return confirmOverlay();
+  }
   if ((code === "Enter" || code === "Space") && !overlay.classList.contains("hidden")) {
-    if (state?.mode === "ended" && gameOverContinueAvailable) continueFromGameOver();
-    else pendingCourseStart ? startCurrentCourse() : startGame();
+    confirmOverlay();
     return;
   }
   keys.add(code);
+}
+
+// タイトルの「はじめから / つづきから」を十字キーで選ぶ（上から順に並ぶ）
+let titleFocusIndex = -1;
+
+function titleMenuButtons() {
+  return [document.querySelector("#newGameButton"), startButton]
+    .filter(button => button && !button.classList.contains("hidden"));
+}
+
+function syncTitleFocus() {
+  const buttons = titleMenuButtons();
+  if (titleFocusIndex < 0 || titleFocusIndex >= buttons.length) titleFocusIndex = buttons.indexOf(startButton);
+  for (const button of document.querySelectorAll(".title-actions button")) {
+    button.classList.toggle("is-focused", buttons[titleFocusIndex] === button);
+  }
+}
+
+function moveTitleFocus(dir) {
+  const buttons = titleMenuButtons();
+  if (buttons.length < 2) return;
+  syncTitleFocus();
+  const next = clamp(titleFocusIndex + dir, 0, buttons.length - 1);
+  if (next === titleFocusIndex) return;
+  titleFocusIndex = next;
+  Story.refreshTitleUi(); // 「セーブを消してはじめる？」の確認を取り消す
+  syncTitleFocus();
+  playSfx("equip");
+}
+
+function confirmOverlay() {
+  if (state?.mode === "ended" && gameOverContinueAvailable) continueFromGameOver();
+  else if (state?.mode === "title" && !pendingCourseStart) {
+    syncTitleFocus();
+    (titleMenuButtons()[titleFocusIndex] ?? startButton).click();
+  } else pendingCourseStart ? startCurrentCourse() : startGame();
 }
 
 function handleKeyUp(code) {
