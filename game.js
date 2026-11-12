@@ -5962,13 +5962,19 @@ function handleSaveMenuKey(code, repeat = false) {
     return true;
   }
   if (left || right) {
-    menu.tab = 1 - menu.tab;
+    // ←→ で「セーブする → ロードする → とじる」の順に動く
+    const pos = ((menu.onClose ? 2 : menu.tab) + (right ? 1 : 2)) % 3;
+    menu.onClose = pos === 2;
+    if (pos < 2) menu.tab = pos;
     playSfx("cursor");
   } else if (up || down) {
+    menu.onClose = false;
     menu.sel = (menu.sel + (down ? 1 : SAVE_SLOT_COUNT - 1)) % SAVE_SLOT_COUNT;
     playSfx("cursor");
-  } else if (ok) saveMenuConfirmSelected();
-  else if (back) closeSaveMenu();
+  } else if (ok) {
+    if (menu.onClose) closeSaveMenu();
+    else saveMenuConfirmSelected();
+  } else if (back) closeSaveMenu();
   return true;
 }
 
@@ -5998,6 +6004,7 @@ function handleSaveMenuPointer(x, y) {
   for (let i = 0; i < lay.tabs.length; i++) {
     if (inside(lay.tabs[i]) && menu.tab !== i) {
       menu.tab = i;
+      menu.onClose = false;
       playSfx("cursor");
       return true;
     }
@@ -6062,14 +6069,19 @@ function drawSaveMenu() {
   const tabLabels = [saveText("セーブする", "Save"), saveText("ロードする", "Load")];
   for (let i = 0; i < 2; i++) {
     const r = lay.tabs[i];
-    const on = menu.tab === i;
-    panel(r, on ? (i === 0 ? "#ff8db7" : "#7fd6ea") : "rgba(255,255,255,0.75)", on ? "#ffffff" : "#c8b2ff", on ? 4 : 2, 18);
+    const on = menu.tab === i && !menu.onClose;
+    panel(r, on ? (i === 0 ? "#ff8db7" : "#7fd6ea") : menu.tab === i ? "rgba(255, 243, 164, 0.6)" : "rgba(255,255,255,0.75)", on ? "#ffffff" : "#c8b2ff", on ? 4 : 2, 18);
     ctx.fillStyle = on ? "#ffffff" : "#7f67c8";
     ctx.font = font(26);
     ctx.textAlign = "center";
     ctx.fillText(tabLabels[i], r.x + r.w / 2, r.y + r.h / 2 + 1);
   }
-  panel(lay.close, "rgba(255,255,255,0.8)", "#c8b2ff", 2, 18);
+  if (menu.onClose) {
+    ctx.shadowColor = "#ffd85a";
+    ctx.shadowBlur = 16;
+  }
+  panel(lay.close, menu.onClose ? "#fff3a4" : "rgba(255,255,255,0.8)", menu.onClose ? "#ff8db7" : "#c8b2ff", menu.onClose ? 5 : 2, 18);
+  ctx.shadowBlur = 0;
   ctx.fillStyle = "#7f67c8";
   ctx.font = font(22);
   ctx.textAlign = "center";
@@ -6079,7 +6091,7 @@ function drawSaveMenu() {
   for (let i = 0; i < SAVE_SLOT_COUNT; i++) {
     const r = lay.slots[i];
     const slot = menu.slots[i];
-    const on = menu.sel === i;
+    const on = menu.sel === i && !menu.onClose;
     const accent = menu.tab === 0 ? "#ff8db7" : "#4fc3dc";
     if (on) {
       ctx.shadowColor = accent;
