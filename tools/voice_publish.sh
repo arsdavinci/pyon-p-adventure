@@ -8,7 +8,7 @@ STATUS="D:/Development/02_App/AfurecoBooth/data/batch_status.json"
 publish() {
   git add -- assets/voice
   if git diff --cached --quiet -- assets/voice; then return; fi
-  n=$(git diff --cached --name-only -- assets/voice | grep -c '\.mp3$')
+  n=$(git -c core.quotepath=off diff --cached --name-only -- assets/voice | grep -c '\.mp3$')
   git commit -q -m "Voices: add ${n} more voiced lines" -- assets/voice || return
   git pull -q --rebase --autostash && git push -q && echo "$(date +%T) pushed ${n} mp3"
 }
