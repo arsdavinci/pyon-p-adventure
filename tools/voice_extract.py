@@ -78,6 +78,11 @@ def chat_lines() -> list[tuple[str, str, str, int]]:
         for i, t in enumerate((ROOT / f).read_text(encoding="utf-8").splitlines(), 1):
             for m in re.finditer(r'\[\s*"(pyon|ran|yana|luva)",\s*' + STR + r'\s*,', t):
                 rows.append((m.group(1), unq(m.group(2)), f, i))
+            # マップのひとこと（"ぴょんぴー「…」" の形。プレイ中のかけあいと同じく chat で流れる）
+            if f == "game.js":
+                for m in re.finditer(r'"ぴょんぴー「([^」"]+)」"', t):
+                    if "pyonJa" not in t and "inventorySortComment" not in t and "return" not in t and "showFuseHint" not in t:
+                        rows.append(("pyon", m.group(1), f, i))
             if f == "chat.js" and re.match(r"^\s*\[" + STR + r",\s*" + STR + r"\],?$", t):  # GAGS（ぴょんぴー）
                 m = re.match(r"^\s*\[" + STR, t)
                 rows.append(("pyon", unq(m.group(1)), f, i))

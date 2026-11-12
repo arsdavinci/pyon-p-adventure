@@ -146,17 +146,17 @@
   const BUILDERS = {
     stageStart: stageStartLines,
     weaponGet: name => firstTime("tipWeapon") ? BUILDERS.fuseTeach() : [pick([
-      ["pyon", `${name}、ゲットじゃ！`, `Got the ${name}!`],
-      ["pyon", `おっ、${name}でないか。ええでないか！`, `Ooh, a ${name}. Nice!`]
+      ["pyon", "光線銃、ゲットじゃ！", "Got a ray gun!"],
+      ["pyon", "おっ、新しい光線銃でないか。ええでないか！", "Ooh, a new ray gun. Nice!"]
     ])],
-    fuse: name => [["pyon", `合体成功！ ${name}になったじょ！`, `Fusion complete! It's a ${name} now!`]],
+    fuse: name => [["pyon", "合体成功！ 強い光線銃になったじょ！", "Fusion complete! It's a stronger ray gun now!"]],
     canFuse: name => firstTime("tipFuseHowTo") ? [
-      ["yana", `${name}が2つそろいました。同じ光線銃を2つ合成すると、1つ上の新しい光線銃が生まれます。`, `You now have two ${name}s. Fuse two of the same ray gun to create the next, stronger one.`],
+      ["yana", "同じ光線銃が2つそろいました。同じ光線銃を2つ合成すると、1つ上の新しい光線銃が生まれます。", "You now have two of the same ray gun. Fuse them to create the next, stronger one."],
       ...fuseHowTo(),
       ["yana", "月の武器🌙と星の武器⭐は別の種類です。同じ種類の、同じ武器どうしでしか合成できません。合成をくり返すと、それぞれ Lv8 まで進化しますよ。", "Moon 🌙 and star ⭐ weapons are different types; only the exact same weapon can be fused. Each line evolves up to Lv8."],
       ["pyon", "配合みたいなもんじゃな。ええでないか、いっちょ育てたろ！", "Like breeding, huh. Nice. Let's raise a monster of a gun!"]
     ] : [
-      ["yana", `${name}が2つそろいました。装備画面で、同じ光線銃どうしを重ねると合成できます。`, `You have two ${name}s. Stack them in the equipment screen to fuse.`]
+      ["yana", "同じ光線銃が2つそろいました。装備画面で、同じ光線銃どうしを重ねると合成できます。", "You have two of the same ray gun. Stack them in the equipment screen to fuse."]
     ],
     fuseTeach: () => [
       ["yana", "光線銃をひろいましたね。おぼえておいてください。同じ光線銃を2つ集めると、合成して新しい光線銃を生み出せます。", "You picked up a ray gun. Remember this: collect two of the same ray gun and you can fuse them into a new one."],
