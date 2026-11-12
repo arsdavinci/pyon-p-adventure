@@ -871,6 +871,7 @@ function makeCourse(worldIndex, areaIndex, layout = areaIndex, seed = null) {
     level: {
       enemies, coins: chunk ? chunk.coins : coins, starItems: chunkStuff ? chunkStuff.stars : starItems,
       oxygenItems, seaGates, lavaGeysers, lavaPools, rotatingFires, spikes: chunk ? chunk.spikes : [],
+      lowBars: chunk ? chunk.lowBars : [], rails: chunk ? chunk.rails : [],
       doorSpots: chunk ? chunk.doorSpots : [], flag: rect(5060, 252, 28, 240)
     },
     gun: { x: Math.min(520, 330 + areaIndex * 70), y: 430 }
@@ -1111,7 +1112,7 @@ function buildChunkCourse({ seed, difficulty, trait, endX = 4860, worldEnd = WOR
   const ice = trait === "iceSlide";
   const factory = trait === "factoryBelt";
   const BOTTOM = canvas.height;
-  const out = { platforms: [], blocks: [], coins: [], enemySpots: [], rewardSpots: [], spikes: [], pitXs: [], keySpots: [], doorSpots: [] };
+  const out = { platforms: [], blocks: [], coins: [], enemySpots: [], rewardSpots: [], spikes: [], pitXs: [], keySpots: [], doorSpots: [], lowBars: [], rails: [] };
   const P = out.platforms;
   let coinNo = 0;
   const addCoin = (x, y) => out.coins.push(coin(x, y, coinNo++ % 2 ? "pea" : "kaki"));
@@ -1323,6 +1324,24 @@ function buildChunkCourse({ seed, difficulty, trait, endX = 4860, worldEnd = WOR
       gy = ny;
       x += len;
     },
+    // トロッコ（メカのワールド）：レールの上を走る。頭の上のはりは、しゃがんでくぐる
+    cart() {
+      ground(x, gy, 220);
+      const L = Math.round(between(1300, 1600));
+      const startX = x + 220;
+      const cw = 170;
+      P.push({ ...rect(startX, gy, cw, 26), cart: { startX, endX: startX + L - cw, speed: 280, state: "idle" } });
+      out.rails.push({ x0: startX, x1: startX + L, y: gy + 26 });
+      for (let bx = startX + 420; bx < startX + L - 260; bx += between(320, 420)) {
+        out.lowBars.push({ x: bx, y: gy - 150, w: 44, h: 150 - 36 });
+        addCoin(bx + 22, gy - 16);
+      }
+      out.pitXs.push(startX + L / 2);
+      x = startX + L;
+      ground(x, gy, 320);
+      out.enemySpots.push({ x: x + 220, y: gy, left: x + 120, right: x + 310, armed: true });
+      x += 320;
+    },
     // ひと息つける平地（アイテムブロック）
     flat() {
       const len = between(480, 600);
@@ -1342,9 +1361,11 @@ function buildChunkCourse({ seed, difficulty, trait, endX = 4860, worldEnd = WOR
     [order[i], order[j]] = [order[j], order[i]];
   }
   if (factory) order.splice(Math.floor(rnd() * order.length), 0, "mover");
+  // メカのワールドは、はじめのほうにトロッコ
+  if (factory && kinds === CHUNK_KINDS) order.splice(Math.floor(rnd() * 2), 0, "cart");
   // 旗の前に、地面へもどる階段と平地が入るように、区間はここまでにおさめる（はみ出したらやり直し）
   const limit = endX - 360;
-  const lists = ["platforms", "blocks", "coins", "enemySpots", "rewardSpots", "spikes", "pitXs", "keySpots", "doorSpots"];
+  const lists = ["platforms", "blocks", "coins", "enemySpots", "rewardSpots", "spikes", "pitXs", "keySpots", "doorSpots", "lowBars", "rails"];
   let n = 0;
   let misses = 0;
   while (x < limit - 380 && misses < order.length) {
@@ -1379,7 +1400,7 @@ function chunkCourseContent(c, worldIndex, difficulty, enemyCount) {
     const s = spots[Math.floor((i * spots.length) / take)];
     const power = Math.min(MAX_WEAPON_POWER, Math.max(2, Math.floor((difficulty + i) / 3)));
     const ex = clamp(s.x - 21, s.left, s.right - 42);
-    const foe = (i + difficulty) % 3 === 0 ? armedEnemy(ex, s.y - 42, s.left, s.right, power) : enemy(ex, s.y - 42, s.left, s.right);
+    const foe = s.armed || (i + difficulty) % 3 === 0 ? armedEnemy(ex, s.y - 42, s.left, s.right, power) : enemy(ex, s.y - 42, s.left, s.right);
     foe.enemyKind = worldIndex;
     enemies.push(foe);
   }
@@ -2191,7 +2212,7 @@ function newState() {
 
 function applyCourse(index) {
   const course = courses[index];
-  platforms = course.platforms.map(p => ({ ...p }));
+  platforms = course.platforms.map(p => (p.cart ? { ...p, x: p.cart.startX, cart: { ...p.cart, state: "idle" } } : { ...p }));
   blocks = course.blocks.map(b => ({ ...b, broken: b.phase === 1 }));
   level = {
     keys: (course.level.keys ?? []).map(k => ({ ...k })),
@@ -2207,6 +2228,8 @@ function applyCourse(index) {
     rotatingFires: (course.level.rotatingFires ?? []).map(g => ({ ...g })),
     doors: (course.level.doors ?? []).map(d => ({ ...d, lockedOriginally: !!d.locked })),
     spikes: (course.level.spikes ?? []).map(sp => ({ ...sp })),
+    lowBars: (course.level.lowBars ?? []).map(b => ({ ...b })),
+    rails: (course.level.rails ?? []).map(r => ({ ...r })),
     flag: { ...course.level.flag }
   };
 }
@@ -2712,6 +2735,7 @@ function update(dt) {
   collectOxygenItems();
   updateDoors();
   updateSpikes();
+  updateLowBars();
   checkGoal();
   updateHud();
 }
@@ -3065,8 +3089,14 @@ function updatePlayer(dt) {
   const wantsShoot = keys.has("KeyX") || keys.has("KeyY") || keys.has("KeyJ") || gamepadState.shoot;
   const trait = currentStageTrait();
   const slippery = trait === "iceSlide";
-  const accel = slippery ? (wantsRun ? 1380 : 820) : wantsRun ? 2100 : 1250;
-  const maxSpeed = slippery ? (wantsRun ? 410 : 270) : wantsRun ? 360 : 235;
+  // しゃがむ（地面で↓）。しゃがんだまま←→で、ほふく前進。敵の弾は頭の上を通りすぎる
+  const wantsDown = keys.has("ArrowDown") || keys.has("KeyS") || gamepadState.down;
+  const canCrouch = !(hasEquippedWeapon() && isRideable(state.weaponPower));
+  if (wantsDown && p.grounded && canCrouch && !p.crouch) setCrouch(p, true);
+  else if (p.crouch && (!wantsDown || !p.grounded || !canCrouch)) setCrouch(p, false);
+  const crawl = !!p.crouch;
+  const accel = crawl ? 900 : slippery ? (wantsRun ? 1380 : 820) : wantsRun ? 2100 : 1250;
+  const maxSpeed = crawl ? 115 : slippery ? (wantsRun ? 410 : 270) : wantsRun ? 360 : 235;
 
   if (movingLeft) {
     p.vx -= accel * dt;
@@ -3090,7 +3120,10 @@ function updatePlayer(dt) {
   }
   p.jumpWas = wantsJump;
   p.coyote = p.grounded ? 0.1 : Math.max(0, (p.coyote ?? 0) - dt);
-  if (wantsJump && (p.grounded || p.coyote > 0)) {
+  // しゃがんでいるときは、立てる場所でだけジャンプできる
+  if (wantsJump && p.crouch && !p.jumpWasCrouch) setCrouch(p, false);
+  p.jumpWasCrouch = wantsJump;
+  if (wantsJump && (p.grounded || p.coyote > 0) && !p.crouch) {
     spawnJumpSmoke(p.x + p.w / 2, p.y + p.h);
     FX.jump(p.x + p.w / 2, p.y + p.h);
     playSfx("jump", p.x);
@@ -3109,7 +3142,7 @@ function updatePlayer(dt) {
   }
   if (p.vy >= 0) p.jumpHeld = false;
 
-  p.aim = playerAimAngle(p, dxInput);
+  p.aim = p.crouch ? (p.facing < 0 ? Math.PI : 0) : playerAimAngle(p, dxInput);
   const shootFresh = wantsShoot && !p.shootHeld;
   p.shootHeld = wantsShoot;
   // ロボット・戦闘機は、ボタンを押すたびに1発（おしっぱなしで連射しない）
@@ -3135,6 +3168,27 @@ function updatePlayer(dt) {
 
   if (p.y > worldBottom() + 100) damagePlayer(true);
   updateCamera(dt);
+}
+
+const STAND_H = 54;
+const CROUCH_H = 30;
+
+// しゃがむ・立つ（足の位置はそのまま）。上がつかえていて立てないときは、しゃがんだまま
+function setCrouch(p, on) {
+  if (on) {
+    if (p.crouch) return;
+    p.crouch = true;
+    p.y += STAND_H - CROUCH_H;
+    p.h = CROUCH_H;
+    return;
+  }
+  if (!p.crouch) return;
+  const standing = { x: p.x + 2, y: p.y - (STAND_H - CROUCH_H), w: p.w - 4, h: STAND_H - 2 };
+  const blocked = platforms.some(s => hit(standing, s)) || blocks.some(b => !b.broken && hit(standing, b));
+  if (blocked) return;
+  p.crouch = false;
+  p.y -= STAND_H - CROUCH_H;
+  p.h = STAND_H;
 }
 
 function updateSwimmingPlayer(dt) {
@@ -3298,7 +3352,120 @@ function distanceToSegment(px, py, ax, ay, bx, by) {
   return Math.hypot(px - sx, py - sy);
 }
 
+// トロッコ：乗るとレールの上を走り出す。終点で止まる。ジャンプしても、いっしょに前へ進む
+function updateCarts(dt) {
+  const p = state.player;
+  for (const c of platforms) {
+    if (!c.cart) continue;
+    const m = c.cart;
+    const onIt = p.grounded && Math.abs(p.y + p.h - c.y) <= 6 && p.x + p.w > c.x + 4 && p.x < c.x + c.w - 4;
+    if (m.state === "idle" && onIt) {
+      m.state = "run";
+      playSfx("equip", c.x);
+      let told = false;
+      try { told = localStorage.getItem("pyonpCartTip") === "1"; localStorage.setItem("pyonpCartTip", "1"); } catch (_) {}
+      if (!told) {
+        Chat.say([
+          ["yana", "トロッコが走り出しました！ 頭の上のはりは、↓でしゃがんでくぐってください。敵の弾も、しゃがめば頭の上を通りすぎます。", "The cart is moving! Duck under the beams with ↓. Ducking also lets enemy shots fly over your head."],
+          ["pyon", "ほふく前進じゃ！ 吾輩、地面すれすれでも、かっこええじょ！", "Belly crawl time! I look cool even down here!"]
+        ], true);
+      }
+    }
+    if (m.state !== "run") continue;
+    const dx = Math.min(m.speed * dt, m.endX - c.x);
+    c.x += dx;
+    if (onIt) {
+      p.x += dx;
+      p.onCart = c;
+    } else if (p.onCart === c && !p.grounded) {
+      p.x += dx; // とんでいるあいだも、トロッコといっしょに進む
+    } else if (p.grounded) {
+      p.onCart = null;
+    }
+    if (c.x >= m.endX - 0.5) {
+      m.state = "done";
+      FX.shake(0.15);
+    }
+  }
+}
+
+function resetCarts() {
+  for (const c of platforms) {
+    if (!c.cart) continue;
+    c.x = c.cart.startX;
+    c.cart.state = "idle";
+  }
+  if (state?.player) state.player.onCart = null;
+}
+
+// 頭の上の低いはり：立っていると当たる。しゃがめば下をくぐれる
+function updateLowBars() {
+  const p = state.player;
+  for (const b of level.lowBars ?? []) {
+    if (p.x + p.w > b.x + 4 && p.x < b.x + b.w - 4 && p.y < b.y + b.h - 4 && p.y + p.h > b.y + 4) {
+      damagePlayer(false, null, false);
+      return;
+    }
+  }
+}
+
+function drawRailsAndBars() {
+  const top = (state.cameraY ?? 0) - 40;
+  ctx.save();
+  for (const r of level.rails ?? []) {
+    if (r.x1 < state.camera - 60 || r.x0 > state.camera + VIEW_W + 60) continue;
+    ctx.strokeStyle = "#6d5a8f";
+    ctx.lineWidth = 5;
+    for (const dy of [4, 14]) {
+      ctx.beginPath();
+      ctx.moveTo(r.x0, r.y + dy);
+      ctx.lineTo(r.x1, r.y + dy);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#4b3d66";
+    for (let x = r.x0; x < r.x1; x += 46) ctx.fillRect(x, r.y + 2, 8, 16);
+    ctx.fillStyle = "#3a2f52";
+    for (let x = r.x0 + 200; x < r.x1 - 60; x += 420) ctx.fillRect(x, r.y + 18, 16, canvas.height - r.y);
+  }
+  for (const b of level.lowBars ?? []) {
+    if (b.x + b.w < state.camera - 60 || b.x > state.camera + VIEW_W + 60) continue;
+    ctx.fillStyle = "#4b3d66";
+    ctx.fillRect(b.x + b.w / 2 - 6, top, 12, b.y - top);
+    ctx.fillStyle = "#ffd85a";
+    ctx.fillRect(b.x, b.y, b.w, b.h);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(b.x, b.y, b.w, b.h);
+    ctx.clip();
+    ctx.fillStyle = "#3a2f52";
+    for (let y = b.y - 20; y < b.y + b.h; y += 26) {
+      ctx.beginPath();
+      ctx.moveTo(b.x, y);
+      ctx.lineTo(b.x + b.w, y + 18);
+      ctx.lineTo(b.x + b.w, y + 30);
+      ctx.lineTo(b.x, y + 12);
+      ctx.fill();
+    }
+    ctx.restore();
+    ctx.strokeStyle = "#ff3d7f";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(b.x, b.y, b.w, b.h);
+  }
+  for (const c of platforms) {
+    if (!c.cart || c.x + c.w < state.camera - 60 || c.x > state.camera + VIEW_W + 60) continue;
+    // トロッコの車輪
+    ctx.fillStyle = "#3a2f52";
+    for (const wx of [c.x + 30, c.x + c.w - 30]) {
+      ctx.beginPath();
+      ctx.arc(wx, c.y + c.h + 6, 12, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
 function updateMovingPlatforms(dt) {
+  updateCarts(dt);
   const p = state.player;
   const t = (state.stagePulse ?? 0) + dt;
   for (const platform of platforms) {
@@ -3695,7 +3862,8 @@ function updateEnemies(dt) {
       updateBossAttackPattern(e, dt);
     } else if ((state.gun.holder === e.id || e.weaponPower) && e.gunCooldown <= 0 && enemyCanSeePlayer(e)) {
       const dir = state.player.x + state.player.w / 2 < e.x + e.w / 2 ? -1 : 1;
-      shootBeam(e.id, e.x + e.w / 2 + dir * 22, e.y + 22, dir);
+      // ふつうの敵は胸の高さで撃つ（しゃがめば頭の上を通る）
+      shootBeam(e.id, e.x + e.w / 2 + dir * 22, e.boss ? e.y + 22 : e.y + e.h - 50, dir);
       e.attackAnim = e.boss ? 0.42 : 0.28;
       e.gunCooldown = e.finalBoss ? 0.22 : e.boss ? (e.weaponPower >= 5 ? 0.48 : 0.68) : e.weaponPower >= 3 ? 0.92 : 1.25;
     }
@@ -4383,6 +4551,7 @@ function playerAimAngle(p, dxInput = 0) {
 
 // 銃をにぎる肩の位置と、銃口の位置
 function playerShoulder(p) {
+  if (p.crouch) return { x: p.x + p.w / 2 + (p.facing || 1) * 22, y: p.y + 12 };
   return { x: p.x + p.w / 2 + (p.facing || 1) * 4, y: p.y + 30 };
 }
 
@@ -4407,11 +4576,13 @@ function shootBeam(owner, x, y, dir, aimAngle = null) {
     shootMechMissile(x, y, dir, stage);
     return;
   }
-  if (stage.pattern === "homing") {
+  // ふつうの敵の弾は、まっすぐ1発（しゃがめばよけられる）。ボスはいろいろな撃ち方
+  const plainEnemy = owner !== "player" && !state.enemies.find(e => e.id === owner)?.boss;
+  if (stage.pattern === "homing" && !plainEnemy) {
     shootHomingMissiles(owner, x, y, dir, stage);
     return;
   }
-  const angles = weaponAngles(stage, dir, base);
+  const angles = plainEnemy ? [base] : weaponAngles(stage, dir, base);
   for (let i = 0; i < angles.length; i++) {
     const angle = angles[i];
     const side = i - (angles.length - 1) / 2;
@@ -5691,6 +5862,8 @@ function startDeathFall() {
 
 function startMoonRespawn() {
   const p = state.player;
+  if (p.crouch) { p.crouch = false; p.h = STAND_H; }
+  resetCarts();
   playSfx("respawn", p.x + p.w / 2);
   state.hp = MAX_HP;
   state.time = Math.max(30, state.time);
@@ -5799,8 +5972,12 @@ function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.save();
   FX.applyShake();
-  const inGame = mode !== "worldMap" && mode !== "cutscene" && mode !== "credits" && mode !== "shop" && !(mode === "title" && Story.drawTitleKey());
-  if (mode === "worldMap") drawWorldMapScreen();
+  // 動画の読みこみ中・再生中は、うしろのステージを見せない（暗い画面で待つ）
+  const inGame = mode !== "worldMap" && mode !== "cutscene" && mode !== "credits" && mode !== "shop" && mode !== "movie" && !(mode === "title" && Story.drawTitleKey());
+  if (mode === "movie") {
+    ctx.fillStyle = "#120a2a";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  } else if (mode === "worldMap") drawWorldMapScreen();
   else if (mode === "cutscene") Story.drawCutscene();
   else if (mode === "credits") Story.drawCredits();
   else if (mode === "shop") Shop.draw();
@@ -5855,6 +6032,7 @@ function drawGameWorld() {
   Gimmick.drawForeground();
   drawStageHazards();
   drawSpikes();
+  drawRailsAndBars();
   drawDoors();
   drawBossArenaWalls();
   drawBossHazards();
@@ -10182,8 +10360,8 @@ function drawPlayerBody(p) {
   if (pose) {
     // ポーズの絵には銃が描かれていないので、にぎった手に、ねらう向きで銃を持たせる
     if (pose.gun && hasEquippedWeapon()) drawGunInHand(p, pose.gun.x, pose.gun.y);
-    // 泳いでいるときも、銃を持たせる（前にのばした手のあたり）
-    else if (p.swimming && hasEquippedWeapon()) drawAimedGun(p);
+    // 泳いでいるとき・ふせているときも、銃を持たせる（前にのばした手のあたり）
+    else if ((p.swimming || pose.crawl) && hasEquippedWeapon()) drawAimedGun(p);
     return;
   }
   if (pyompySprite.complete && pyompySprite.naturalWidth > 0) drawPlayerSprite(p);

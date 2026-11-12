@@ -178,8 +178,28 @@
     ctx.restore();
   }
 
+  // しゃがみ・ほふく前進：泳ぎの絵（はらばい）を、地面にふせて描く
+  function drawCrawl(p, im) {
+    const frames = sheetFrames(im, 6);
+    const moving = Math.abs(p.vx) > 30;
+    const f = frames[moving ? Math.floor(FX.S.time * 8) % frames.length : 0];
+    const maxW = Math.max(...frames.map(fr => fr.w));
+    const s = 92 / maxW;
+    const w = f.w * s;
+    const h = f.h * s;
+    ctx.save();
+    ctx.translate(p.x + p.w / 2, p.y + p.h + 6 - h / 2);
+    if (p.facing < 0) ctx.scale(-1, 1);
+    ctx.drawImage(im, f.x, f.y, f.w, f.h, -w / 2, -h / 2, w, h);
+    ctx.restore();
+  }
+
   // ぴょんぴーの追加ポーズ。該当する絵があれば描いて true を返す
   function drawPlayerPose(p) {
+    if (p.crouch && state.mode === "playing" && sprite("swimSheet")) {
+      drawCrawl(p, sprite("swimSheet"));
+      return { key: "crawl", gun: null, crawl: true };
+    }
     if (p.swimming && state.mode !== "stageClear" && !(p.invincible > 0.55 && sprite("poseHurt")) && sprite("swimSheet")) {
       drawSwimSheet(p, sprite("swimSheet"));
       return true;
