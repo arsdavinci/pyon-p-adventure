@@ -765,8 +765,10 @@ function makeCourse(worldIndex, areaIndex, layout = areaIndex, seed = null) {
   if (climb) platforms = climb.platforms;
   // ふつうのステージは、区間をつないだ、その場所だけの通路にする
   const chunk = !bossStage && !finalStage && trait !== "underwater" && !climb
-    ? buildChunkCourse({ seed: seed ?? (STAGE_START_INDICES[worldIndex] + areaIndex) * 3, difficulty, trait })
+    ? buildChunkCourse({ seed: seed ?? (STAGE_START_INDICES[worldIndex] + areaIndex) * 3, difficulty, trait, endX: 3500, worldEnd: 3900 })
     : null;
+  // 外の道は 3900 まで。その先は高いかべ
+  if (chunk) chunk.platforms.push(rect(3900, -1200, WORLD_WIDTH - 3900 + 200, canvas.height + 1248));
   if (chunk) platforms = chunk.platforms;
 
   const blocks = [];
@@ -872,7 +874,7 @@ function makeCourse(worldIndex, areaIndex, layout = areaIndex, seed = null) {
       enemies, coins: chunk ? chunk.coins : coins, starItems: chunkStuff ? chunkStuff.stars : starItems,
       oxygenItems, seaGates, lavaGeysers, lavaPools, rotatingFires, spikes: chunk ? chunk.spikes : [],
       lowBars: chunk ? chunk.lowBars : [], rails: chunk ? chunk.rails : [],
-      doorSpots: chunk ? chunk.doorSpots : [], flag: rect(5060, 252, 28, 240)
+      doorSpots: chunk ? chunk.doorSpots : [], flag: chunk ? rect(3760, 252, 28, 240) : rect(5060, 252, 28, 240)
     },
     gun: { x: Math.min(520, 330 + areaIndex * 70), y: 430 }
   }));
@@ -1383,8 +1385,8 @@ function buildChunkCourse({ seed, difficulty, trait, endX = 4860, worldEnd = WOR
   // 最後は旗のある地面（高さ GROUND_Y）にもどる
   while (gy < GROUND_Y - 4) {
     gy = Math.min(GROUND_Y, gy + 70);
-    ground(x, gy, 140);
-    x += 140;
+    ground(x, gy, 100);
+    x += 100;
   }
   ground(x, GROUND_Y, Math.max(300, worldEnd - x));
   out.endX = x;
@@ -1440,7 +1442,7 @@ function makeCaveArea(base, worldIndex, areaIndex, difficulty, seed) {
   const star = c.rewardSpots.find(r => Math.abs(r.x - key.x) > 300) ?? c.rewardSpots.find(r => r !== key) ?? { x: fx, y: surfaceAt(fx) - 70 };
   const doorX = caveEnd - 200;
   const area = {
-    ...base, climbStage: false, climbMeta: null, puzzle: null, isMaze: true,
+    ...base, climbStage: false, climbMeta: null, puzzle: null, isMaze: true, indoor: true,
     top: ceilY - 200, ceilingY: ceilY, bottom: canvas.height, platforms: P, blocks: c.blocks, gun: { x: 300, y: 430 }
   };
   area.level = {
@@ -1453,7 +1455,7 @@ function makeCaveArea(base, worldIndex, areaIndex, difficulty, seed) {
 }
 
 // ---------- まん中のエリア：たて穴（左右の足場をジグザグにのぼる塔） ----------
-function makeShaftArea(base, worldIndex, areaIndex, difficulty, seed) {
+function makeShaftArea(base, worldIndex, areaIndex, difficulty, seed, down = false) {
   const rnd = seededRandom(seed);
   const between = (a, b) => a + rnd() * (b - a);
   const ice = base.trait === "iceSlide";
@@ -1512,9 +1514,21 @@ function makeShaftArea(base, worldIndex, areaIndex, difficulty, seed) {
   platforms.push(rect(W, ceilY - 400, 2800, canvas.height - ceilY + 448));
   const doorX = lastCol === 0 ? W - 170 : 60;
   const area = {
-    ...base, climbStage: false, climbMeta: null, puzzle: null, isMaze: true,
+    ...base, climbStage: false, climbMeta: null, puzzle: null, isMaze: true, indoor: true,
     top: ceilY - 200, ceilingY: ceilY, bottom: canvas.height, platforms, blocks, gun: { x: 300, y: 430 }
   };
+  if (down) {
+    // 下りのたて穴：いちばん上から入って、足場をつたって下までおりる。出口は下の床のはし
+    area.spawn = { x: lastCol === 0 ? W - 200 : 140, y: topY };
+    area.level = {
+      enemies, coins,
+      starItems: [starItem(lastCol === 0 ? 200 : W - 200, GROUND_Y - 70)],
+      oxygenItems: [], seaGates: [], lavaGeysers: [], lavaPools: [], rotatingFires: [],
+      keys: [], springs: [], chests: [], spikes,
+      flag: rect(lastCol === 0 ? 70 : W - 160, GROUND_Y - 240, 28, 240), doors: []
+    };
+    return area;
+  }
   area.level = {
     enemies, coins,
     starItems: [starItem(lastCol === 0 ? topFloor.x + 200 : topFloor.x + topFloor.w - 200, topY - 70)],
@@ -1749,6 +1763,143 @@ function makeMazeArea(base, worldIndex, areaIndex, difficulty, mazeSeed = worldI
   return area;
 }
 
+// ---------- いろいろな形のエリア（くねくねトンネル・たて穴・たたかいの部屋） ----------
+// ステージは、形のちがうエリアを扉でつないで作る。外の道 → 中の部屋いくつか → ゴールの道
+
+function emptyLevelBits() {
+  return { oxygenItems: [], seaGates: [], lavaGeysers: [], lavaPools: [], rotatingFires: [], springs: [], chests: [], lowBars: [], rails: [] };
+}
+
+// くねくねトンネル：上ったり下りたりしながら、ななめ上へ進む洞くつ
+function makeWindingArea(base, worldIndex, difficulty, seed) {
+  const rnd = seededRandom(seed * 7 + 11);
+  const between = (a, b) => a + rnd() * (b - a);
+  const pick = arr => arr[Math.floor(rnd() * arr.length)];
+  const BOTTOM = canvas.height;
+  const platforms = [];
+  const spikes = [];
+  const coins = [];
+  const enemies = [];
+  const blocks = [];
+  const stars = [];
+  let coinNo = 0;
+  const addCoin = (x, y) => coins.push(coin(x, y, coinNo++ % 2 ? "pea" : "kaki"));
+  const H = Math.round(between(250, 290)); // 通路の高さ
+  const n = 8 + Math.floor(rnd() * 3) + Math.min(3, Math.floor(difficulty / 10));
+  let x = 0;
+  let fy = GROUND_Y;
+  let minCeil = Infinity;
+  const segs = [];
+  for (let i = 0; i < n; i++) {
+    const len = i === 0 ? 460 : i === n - 1 ? 420 : Math.round(between(260, 520));
+    if (i > 0) {
+      // 多くは上り。ときどき下りや平らも（くねくね）
+      const dy = pick([-120, -110, -90, -70, 0, 80, 100]);
+      fy = clamp(fy + dy, -900, GROUND_Y);
+    }
+    const cy = fy - H;
+    minCeil = Math.min(minCeil, cy);
+    segs.push({ x, len, fy, cy });
+    x += len;
+  }
+  segs.forEach((s, i) => {
+    const pit = i > 0 && i < n - 1 && s.len >= 400 && rnd() < 0.35;
+    if (pit) {
+      // とげの穴（落ちてもジャンプで出られる深さ）
+      const px = s.x + s.len / 2 - 70;
+      platforms.push({ ...rect(s.x, s.fy, px - s.x, BOTTOM - s.fy), terrain: true });
+      platforms.push({ ...rect(px, s.fy + 130, 140, BOTTOM - s.fy - 130), terrain: true });
+      platforms.push({ ...rect(px + 140, s.fy, s.x + s.len - px - 140, BOTTOM - s.fy), terrain: true });
+      spikes.push({ x: px, y: s.fy + 130 - 22, w: 140, h: 22 });
+      addCoin(px + 70, s.fy - 90);
+    } else {
+      platforms.push({ ...rect(s.x, s.fy, s.len, BOTTOM - s.fy), terrain: true });
+    }
+    // 天井（上までつまった岩）
+    platforms.push(rect(s.x, s.cy - 1400, s.len, 1400));
+    if (i === 0 || i === n - 1 || pit) return;
+    const mid = s.x + s.len / 2;
+    const kind = Math.floor(rnd() * 5);
+    if (kind === 0 && s.len >= 300) {
+      spikes.push({ x: mid - 60, y: s.fy - 22, w: 120, h: 22 });
+      addCoin(mid, s.fy - 110);
+    } else if (kind === 1 && s.len >= 300) {
+      const foe = (i + difficulty) % 3 === 0 ? armedEnemy(mid - 21, s.fy - 42, s.x + 10, s.x + s.len - 52, Math.min(MAX_WEAPON_POWER, Math.max(2, Math.floor(difficulty / 3)))) : enemy(mid - 21, s.fy - 42, s.x + 10, s.x + s.len - 52);
+      foe.enemyKind = worldIndex;
+      enemies.push(foe);
+    } else if (kind === 2) {
+      blocks.push(breakable(mid - 24, s.fy - 160, i % 3 === 0 ? "hp" : "power"));
+    } else if (kind === 3 && s.len >= 380) {
+      // 通路のまん中にうかぶ岩
+      platforms.push(rect(mid - 50, s.fy - 120, 100, 30));
+      addCoin(mid, s.fy - 160);
+    } else {
+      for (let c = 0; c < 3; c++) addCoin(s.x + 60 + c * ((s.len - 120) / 2), s.fy - 50);
+    }
+    if (stars.length === 0 && i === Math.floor(n * 0.6)) stars.push(starItem(mid, s.fy - 90));
+  });
+  if (!stars.length) {
+    const s = segs[Math.floor(n / 2)];
+    stars.push(starItem(s.x + s.len / 2, s.fy - 110));
+  }
+  const last = segs[n - 1];
+  const end = last.x + last.len;
+  platforms.push(rect(-80, minCeil - 1400, 80, BOTTOM - minCeil + 1448));
+  platforms.push(rect(end, minCeil - 1400, 2800, BOTTOM - minCeil + 1448));
+  const area = {
+    ...base, climbStage: false, climbMeta: null, puzzle: null, isMaze: true, indoor: true, enclosed: true,
+    top: minCeil - 160, bottom: BOTTOM, platforms, blocks, gun: { x: 300, y: 430 }
+  };
+  area.level = {
+    ...emptyLevelBits(), enemies, coins, starItems: stars, keys: [], spikes,
+    flag: rect(end - 160, last.fy - 240, 28, 240), doors: []
+  };
+  return area;
+}
+
+// たたかいの部屋：敵をぜんぶたおすと、出口の扉があく
+function makeArenaRoom(base, worldIndex, difficulty, seed) {
+  const rnd = seededRandom(seed * 5 + 3);
+  const W = 1400;
+  const ceil = GROUND_Y - 470;
+  const platforms = [
+    { ...rect(0, GROUND_Y, W, canvas.height - GROUND_Y), terrain: true },
+    rect(-80, ceil - 1400, 80, 2600), rect(W, ceil - 1400, 2800, 2600), rect(0, ceil - 1400, W, 1400)
+  ];
+  const layouts = [
+    [[230, 340, 220], [950, 340, 220], [590, 220, 220]],
+    [[160, 300, 260], [520, 380, 360], [980, 300, 260]],
+    [[420, 340, 560], [200, 210, 180], [1020, 210, 180]]
+  ];
+  const lay = layouts[Math.floor(rnd() * layouts.length)];
+  for (const [lx, ly, lw] of lay) platforms.push(rect(lx, ly, lw, 30));
+  const count = Math.min(7, 4 + Math.floor(difficulty / 8));
+  const enemies = [];
+  for (let i = 0; i < count; i++) {
+    const onLedge = i % 2 === 1 && lay[(i >> 1) % lay.length];
+    // 入口（左）からはなして置く
+    const ex = onLedge ? onLedge[0] + onLedge[2] / 2 - 21 : 560 + i * 120;
+    const ey = onLedge ? onLedge[1] - 42 : GROUND_Y - 42;
+    const left = onLedge ? onLedge[0] + 4 : 420;
+    const right = onLedge ? onLedge[0] + onLedge[2] - 4 : W - 200;
+    const foe = i % 3 === 2 ? armedEnemy(ex, ey, left, right, Math.min(MAX_WEAPON_POWER, Math.max(2, Math.floor(difficulty / 3)))) : enemy(ex, ey, left, right);
+    foe.enemyKind = worldIndex;
+    enemies.push(foe);
+  }
+  const coins = [];
+  for (let i = 0; i < 6; i++) coins.push(coin(300 + i * 160, GROUND_Y - 40, i % 2 ? "pea" : "kaki"));
+  const area = {
+    ...base, climbStage: false, climbMeta: null, puzzle: null, isMaze: true, indoor: true, enclosed: true, arena: true,
+    top: ceil - 160, ceilingY: ceil, bottom: canvas.height, platforms,
+    blocks: [breakable(W / 2 - 24, ceil + 30, "hp")], gun: { x: 300, y: 430 }
+  };
+  area.level = {
+    ...emptyLevelBits(), enemies, coins, starItems: [], keys: [], spikes: [],
+    flag: rect(W - 150, GROUND_Y - 240, 28, 240), doors: []
+  };
+  return area;
+}
+
 function updateSpikes() {
   const p = state.player;
   for (const sp of level.spikes ?? []) {
@@ -1797,30 +1948,53 @@ function buildStageAreas(index) {
   const underwater = base.trait === "underwater";
   const other = n => (areaIndex + n) % normalCount;
   const areas = [base];
-  const seedFor = n => index * 3 + n;
+  const seedFor = n => index * 7 + n;
   const diff = base.difficulty ?? 1;
-  // 2つめ：建物の中（何階もある迷路・天井のあるほら穴・たて穴の塔を、ステージごとに入れかえる）
-  // 海のワールドは泳ぐので、門の場所がちがう別の海のエリア
-  const insideKind = index % 3;
-  areas.push(underwater
-    ? { ...makeCourse(worldIndex, areaIndex, 99, seedFor(1)), theme: base.theme, gun: base.gun }
-    : insideKind === 0 ? makeMazeArea(base, worldIndex, areaIndex, diff, seedFor(1))
-      : insideKind === 1 ? makeCaveArea(base, worldIndex, areaIndex, diff, seedFor(1))
-        : makeShaftArea(base, worldIndex, areaIndex, diff, seedFor(1)));
-  // 3つめ：このステージだけの、もうひとつの通路
-  areas.push({ ...makeCourse(worldIndex, areaIndex, 99, seedFor(2)), theme: base.theme, gun: base.gun });
+  if (underwater) {
+    // 海のワールドは泳ぐので、門の場所がちがう別の海のエリアを2つ
+    areas.push({ ...makeCourse(worldIndex, areaIndex, 99, seedFor(1)), theme: base.theme, gun: base.gun });
+    areas.push({ ...makeCourse(worldIndex, areaIndex, 99, seedFor(2)), theme: base.theme, gun: base.gun });
+  } else {
+    // 外の道のあとに、形のちがう部屋を3つ（ステージごとにえらぶ・順番もちがう）
+    const rnd = seededRandom(index * 31 + 9);
+    const kinds = ["winding", "shaftUp", "shaftDown", "arena", "maze", "cave", "winding"];
+    for (let i = kinds.length - 1; i > 0; i--) {
+      const j = Math.floor(rnd() * (i + 1));
+      [kinds[i], kinds[j]] = [kinds[j], kinds[i]];
+    }
+    const picked = [];
+    for (const k of kinds) if (!picked.includes(k) && picked.length < 3) picked.push(k);
+    picked.forEach((k, i) => {
+      const sd = seedFor(1 + i);
+      areas.push(k === "winding" ? makeWindingArea(base, worldIndex, diff, sd)
+        : k === "shaftUp" ? makeShaftArea(base, worldIndex, areaIndex, diff, sd)
+          : k === "shaftDown" ? makeShaftArea(base, worldIndex, areaIndex, diff, sd, true)
+            : k === "arena" ? makeArenaRoom(base, worldIndex, diff, sd)
+              : k === "maze" ? makeMazeArea(base, worldIndex, areaIndex, diff, sd)
+                : makeCaveArea(base, worldIndex, areaIndex, diff, sd));
+      areas[areas.length - 1].indoor = true;
+    });
+    // さいごはゴールの旗がある外の道
+    areas.push({ ...makeCourse(worldIndex, areaIndex, 99, seedFor(5)), theme: base.theme, gun: base.gun });
+  }
+  // ★はステージ全体で3つ：最初の道・まん中の部屋のどれか1つ・最後の道
+  const lastNo = areas.length - 1;
+  let middleStar = false;
   areas.forEach((area, n) => {
     area.areas = areas;
     area.areaNo = n;
     const lv = area.level;
     lv.chests = []; // カギは宝箱ではなく扉に使う
-    // ★は各エリアに1つずつ（ステージ全体で3つ）
-    if (!area.isMaze) lv.starItems = (lv.starItems ?? []).filter((_, i) => i === n);
+    const stars = lv.starItems ?? [];
+    if (n === 0) lv.starItems = stars.slice(0, 1);
+    else if (n === lastNo) lv.starItems = stars.slice(2, 3).length ? stars.slice(2, 3) : stars.slice(-1);
+    else if (!middleStar && stars.length) { lv.starItems = stars.slice(0, 1); middleStar = true; }
+    else lv.starItems = [];
     lv.doors = lv.doors ?? [];
     if (n < areas.length - 1) {
       const f = lv.flag;
-      const locked = n === 1 && (lv.keys ?? []).length > 0 && !area.climbStage;
-      lv.doors.push({ x: f.x - 10, y: f.y + f.h - DOOR_H, w: DOOR_W, h: DOOR_H, to: n + 1, spawnX: 90, locked, exit: true });
+      const locked = n > 0 && (lv.keys ?? []).length > 0 && !area.climbStage;
+      lv.doors.push({ x: f.x - 10, y: f.y + f.h - DOOR_H, w: DOOR_W, h: DOOR_H, to: n + 1, spawnX: 90, locked, exit: true, needsClear: !!area.arena });
       lv.flag = rect(-99999, 0, 1, 1);
     }
   });
@@ -1912,9 +2086,14 @@ function enterArea(to, spawnX) {
       }
       state.mode = "playing";
       const p = state.player;
-      const g = groundUnder(courses[currentCourse], spawnX + 20);
-      p.x = spawnX;
-      p.y = (g ? g.y : 492) - p.h;
+      const sp = courses[currentCourse].spawn;
+      const g = sp ? null : groundUnder(courses[currentCourse], spawnX + 20);
+      p.x = sp ? sp.x : spawnX;
+      p.y = (sp ? sp.y : g ? g.y : 492) - p.h;
+      state.lastSafe = { x: p.x, y: p.y + p.h };
+      // 扉から出てすぐは、敵は少し待ってから撃つ
+      for (const e of state.enemies) e.gunCooldown = Math.max(e.gunCooldown ?? 0, 1.5);
+      if (area.arena) Chat.say([["pyon", "敵がようけおるじょ！ ぜんぶたおさんと、扉はあかんみたいじゃ。", "So many enemies! Looks like the door won't open until they're all gone."]], true);
       p.vx = 0;
       p.vy = 0;
       p.grounded = true;
@@ -1939,6 +2118,14 @@ function updateDoors() {
     // 扉から出てきた直後は、↑をいったんはなすまで入れない（すぐもどってしまわないように）
     if (state.doorHold) continue;
     if (!up || !(p.grounded || p.swimming)) continue;
+    if (d.needsClear && state.enemies.some(e => e.alive && !e.boss)) {
+      if ((state.gimmickHint ?? 0) <= 0) {
+        state.gimmickHint = 2.2;
+        FX.floater(d.x + d.w / 2, d.y - 20, language === "ja" ? "てきを ぜんぶ たおそう！" : "Defeat every enemy!", { color: "#ffffff", stroke: "#ff5f9e", size: 22, life: 1.3 });
+        playSfx("locked", d.x);
+      }
+      continue;
+    }
     if (d.locked) {
       if ((state.keys ?? 0) > 0) {
         state.keys -= 1;
@@ -1970,7 +2157,8 @@ function drawDoors() {
   const t = performance.now() / 1000;
   for (const d of level.doors ?? []) {
     // 扉の絵（assets/door-*.png）があれば使う。カギを開けると、ふつうの扉の絵に変わる
-    const art = doorArt[d.locked ? "locked" : d.bonus ? "bonus" : d.exit ? "portal" : "back"];
+    const shut = d.locked || (d.needsClear && state.enemies.some(e => e.alive && !e.boss));
+    const art = doorArt[shut ? "locked" : d.bonus ? "bonus" : d.exit ? "portal" : "back"];
     const usedArt = art.complete && art.naturalWidth > 0;
     if (usedArt) {
       const w = d.w + 40;
@@ -2259,6 +2447,8 @@ function updateCamera(dt, snap = false) {
   let targetY = camY;
   if (cy < camY + VIEW_H * 0.26) targetY = cy - VIEW_H * 0.26;
   else if (cy > camY + VIEW_H * 0.7) targetY = cy - VIEW_H * 0.7;
+  // くねくねトンネルの中は、いつもまん中に（天井も床も見えるように）
+  if (courses[currentCourse]?.enclosed) targetY = cy - VIEW_H * 0.55;
   if (state.mode === "playing" && !p.swimming) {
     // 足もとより下に地面があるときは、そこが見えるところまでカメラを下げる
     const feet = p.y + p.h;
@@ -2513,7 +2703,7 @@ function beginCourse(index) {
   state = newState();
   restoreCampaignSnapshot(snapshot);
   // エリアが何個もあるステージは、時間を長めにする
-  if (courses[index].areas) state.time = 400;
+  if (courses[index].areas) state.time = 520;
   state.mode = "playing";
   pendingCourseStart = false;
   overlay.classList.add("hidden");
@@ -3061,8 +3251,15 @@ function updateMoonRespawn(dt) {
   const dx = (right ? 1 : 0) - (left ? 1 : 0);
   const dy = (down ? 1 : 0) - (up ? 1 : 0);
   const len = Math.hypot(dx, dy) || 1;
-  p.x = clamp(p.x + dx / len * speed * dt, 36, WORLD_WIDTH - p.w - 36);
-  p.y = clamp(p.y + dy / len * speed * dt, respawnMinY(), worldBottom() - 290);
+  if (courses[currentCourse]?.enclosed && state.lastSafe) {
+    // 閉じたエリアでは、タクシーはさいごに立っていた場所へ、まっすぐおりる（かべの中に入らない）
+    const k = 1 - clamp((state.respawnTimer ?? 0) / (state.respawnDuration ?? 3), 0, 1);
+    p.x = state.lastSafe.x;
+    p.y = state.lastSafe.y - p.h - 90 * (1 - k);
+  } else {
+    p.x = clamp(p.x + dx / len * speed * dt, 36, WORLD_WIDTH - p.w - 36);
+    p.y = clamp(p.y + dy / len * speed * dt, respawnMinY(), worldBottom() - 290);
+  }
   p.vx = dx / len * speed;
   p.vy = dy / len * speed;
   p.facing = dx < 0 ? -1 : dx > 0 ? 1 : p.facing;
@@ -3183,6 +3380,10 @@ function updatePlayer(dt) {
   p.invincible = Math.max(0, p.invincible - dt);
 
   moveAndCollide(p, dt);
+  // 閉じたエリアでやられたときにもどる場所（さいごに立っていた安全な床）
+  if (p.grounded && !p.onCart && !(level.spikes ?? []).some(sp => p.x + p.w > sp.x - 30 && p.x < sp.x + sp.w + 30 && Math.abs(p.y + p.h - sp.y - sp.h) < 30)) {
+    state.lastSafe = { x: p.x, y: p.y + p.h };
+  }
 
   if (p.y > worldBottom() + 100) damagePlayer(true);
   updateCamera(dt);
@@ -6071,6 +6272,11 @@ function drawGameWorld() {
   ctx.translate(-canvas.width / 2, -canvas.height / 2);
   drawSky(cam);
   ctx.restore();
+  if (courses[currentCourse]?.indoor && !title) {
+    // 建物・洞くつの中は、うしろを少し暗く
+    ctx.fillStyle = "rgba(28, 16, 58, 0.62)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
   ctx.save();
   const zoom = title ? ZOOM : (state.viewZoom ?? ZOOM);
   ctx.scale(zoom, zoom);
@@ -9425,6 +9631,12 @@ function drawPlatforms() {
     if (p.terrain) {
       drawTerrainBody(p, theme);
       drawMoonRock({ x: p.x, y: p.y, w: p.w, h: 48 }, theme?.ground[0] ?? "#f4e9cc", theme?.ground[1] ?? "#cfc7d6");
+      continue;
+    }
+    if (p.h > 160 && !p.mover && !p.conveyor) {
+      // 天井やかべの大きな岩：中を土でうめて、下のふちに岩をつける
+      drawTerrainBody(p, theme);
+      drawMoonRock({ x: p.x, y: p.y + p.h - 40, w: p.w, h: 40 }, theme?.ground[0] ?? "#f4e9cc", theme?.ground[1] ?? "#cfc7d6");
       continue;
     }
     drawMoonRock(p, theme?.ground[0] ?? "#f4e9cc", theme?.ground[1] ?? "#cfc7d6");
