@@ -11399,7 +11399,7 @@ function drawPlayerRunSprite(p) {
   const speedRate = clamp(Math.abs(p.vx) / 360, 0.45, 1.2);
   const frame = Math.floor(t * 13 * speedRate) % PYOMPY_RUN_FRAMES.length;
   const source = PYOMPY_RUN_FRAMES[frame];
-  const drawH = 170;
+  const drawH = 142; // 待機のぴょんぴーと同じくらいの大きさ
   const drawW = drawH * (source.w / source.h);
   const contactBaseline = 566;
   const scale = drawH / source.h;

@@ -30,17 +30,17 @@
   // hand = 絵の中のにぎりこぶしの位置（どちらも 0〜1。右向きの絵で測った値）
   const AIM_POSES = {
     ground: {
-      fwd: { key: "poseShoot", h: 92, center: [0.5, 1], hand: [0.82, 0.5] },
-      up: { key: "poseShootUp", h: 92, center: [0.5, 1], hand: [0.64, 0.15] },
-      upfwd: { key: "poseShootUpFwd", h: 92, center: [0.5, 1], hand: [0.83, 0.32] },
-      downfwd: { key: "poseShootDownFwd", h: 92, center: [0.5, 1], hand: [0.79, 0.78] }
+      fwd: { key: "poseShoot", h: 79, center: [0.5, 1], hand: [0.82, 0.5] },
+      up: { key: "poseShootUp", h: 79, center: [0.5, 1], hand: [0.64, 0.15] },
+      upfwd: { key: "poseShootUpFwd", h: 80, center: [0.5, 1], hand: [0.83, 0.32] },
+      downfwd: { key: "poseShootDownFwd", h: 83, center: [0.5, 1], hand: [0.79, 0.78] }
     },
     air: {
-      fwd: { key: "poseAirShoot", h: 107, center: [0.47, 0.53], hand: [0.8, 0.47] },
-      up: { key: "poseAirShootUp", h: 110, center: [0.5, 0.53], hand: [0.63, 0.17] },
-      upfwd: { key: "poseAirShootUpFwd", h: 99, center: [0.48, 0.5], hand: [0.82, 0.32] },
-      downfwd: { key: "poseAirShootDownFwd", h: 99, center: [0.47, 0.52], hand: [0.78, 0.66] },
-      down: { key: "poseAirShootDown", h: 103, center: [0.5, 0.5], hand: [0.53, 0.87] }
+      fwd: { key: "poseAirShoot", h: 94, center: [0.47, 0.53], hand: [0.8, 0.47] },
+      up: { key: "poseAirShootUp", h: 88, center: [0.5, 0.53], hand: [0.63, 0.17] },
+      upfwd: { key: "poseAirShootUpFwd", h: 85, center: [0.48, 0.5], hand: [0.82, 0.32] },
+      downfwd: { key: "poseAirShootDownFwd", h: 88, center: [0.47, 0.52], hand: [0.78, 0.66] },
+      down: { key: "poseAirShootDown", h: 87, center: [0.5, 0.5], hand: [0.53, 0.87] }
     }
   };
 
@@ -184,7 +184,7 @@
     const moving = Math.abs(p.vx) > 20;
     const f = frames[moving ? Math.floor(FX.S.time * 5) % frames.length : 0];
     const maxW = Math.max(...frames.map(fr => fr.w));
-    const s = 92 / maxW;
+    const s = 74 / maxW;
     const w = f.w * s;
     const h = f.h * s;
     ctx.save();
@@ -209,7 +209,7 @@
       const moving = Math.abs(p.vx) > 30;
       if (!moving && sprite("poseCrawl")) {
         const im = sprite("poseCrawl");
-        drawStanding(im, p.x + p.w / 2, p.y + p.h + 4, 104 * (im.naturalHeight / im.naturalWidth), p.facing < 0);
+        drawStanding(im, p.x + p.w / 2, p.y + p.h + 4, 84 * (im.naturalHeight / im.naturalWidth), p.facing < 0);
         return { key: "crawl", gun: null, crawl: true };
       }
       const sheet = sprite("crawlSheet") || sprite("swimSheet");
@@ -233,7 +233,8 @@
     }
     const im = key && sprite(key);
     if (!im) return false;
-    drawStanding(im, p.x + p.w / 2, p.y + p.h + 6, key === "poseSwim" ? 84 : 92, p.facing < 0);
+    // どのポーズも、待機のぴょんぴー（体の高さ約77）と同じ大きさに見えるように
+    drawStanding(im, p.x + p.w / 2, p.y + p.h + 6, key === "poseSwim" ? 84 : 79, p.facing < 0);
     return { key, gun: null };
   }
 
