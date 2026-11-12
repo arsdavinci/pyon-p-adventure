@@ -1168,6 +1168,12 @@ function makeBonusRoom(stageIndex, roomNo, returnTo) {
   const coins = [];
   for (let i = 0; i < 10; i++) coins.push(coin(200 + i * 100, 440 - (i % 3) * 40, i % 2 ? "pea" : "kaki"));
   for (let i = 0; i < 4; i++) coins.push(coin(860 + i * 40, 250, i % 2 ? "pea" : "kaki"));
+  // 1-1 の小部屋は「合成の練習部屋」：決まった武器がおいてあって、ヤナビスが合成のしかたを教える
+  if (stageIndex === 0) {
+    room.tutorial = true;
+    room.blocks = [breakable(870, 160, "hp")];
+    room.fixedDrops = [{ x: 480, power: 1 }, { x: 600, power: 1 }, { x: 760, power: WEAPON_ATTRIBUTE_SIZE + 1 }];
+  }
   room.level = {
     enemies: [], coins, starItems: [], oxygenItems: [], seaGates: [], lavaGeysers: [], lavaPools: [], rotatingFires: [],
     keys: [], springs: [], chests: [],
@@ -1245,6 +1251,7 @@ function enterArea(to, spawnX) {
       const memo = JSON.parse(JSON.stringify(state.areaMemo ?? {}));
       const from = courses[currentCourse].areaNo ?? 0;
       memo[from] = {
+        ...(memo[from] ?? {}),
         stars: state.starItems.map((s, i) => (s.taken ? i : -1)).filter(i => i >= 0),
         keys: (state.keyItems ?? []).map((k, i) => (k.taken ? i : -1)).filter(i => i >= 0),
         opened: (level.doors ?? []).map((d, i) => (d.lockedOriginally && !d.locked ? i : -1)).filter(i => i >= 0)
@@ -1262,7 +1269,23 @@ function enterArea(to, spawnX) {
         mine.keys.forEach(i => { if (state.keyItems[i]) state.keyItems[i].taken = true; });
         mine.opened.forEach(i => { if (level.doors[i]) level.doors[i].locked = false; });
       }
-      state.stageStarsGot = Object.entries(memo).filter(([n]) => Number(n) !== to).reduce((sum, [, m]) => sum + m.stars.length, 0);
+      state.stageStarsGot = Object.entries(memo).filter(([n]) => Number(n) !== to).reduce((sum, [, m]) => sum + (m.stars?.length ?? 0), 0);
+      // 決まった武器をおく（1回目に入ったときだけ）と、練習部屋の説明
+      const area = courses[currentCourse];
+      if (area.fixedDrops && !memo[to]?.dropsGiven) {
+        memo[to] = { ...(memo[to] ?? {}), dropsGiven: true, stars: memo[to]?.stars ?? [], keys: memo[to]?.keys ?? [], opened: memo[to]?.opened ?? [] };
+        for (const d of area.fixedDrops) {
+          state.items.push({ x: d.x, y: 300, type: "power", weaponPower: d.power, w: 28, h: 28, vx: 0, vy: -200, life: 9999, grounded: false });
+        }
+        if (area.tutorial) {
+          Chat.say([
+            ["yana", "ここは合成の練習部屋です。光線銃が3つおいてあります。ぜんぶひろってみてください。", "This is a fusion practice room. Three ray guns are here. Pick them all up."],
+            ["yana", "SELECTで装備画面をひらいて、🌙ムーンポッパーをAでつかみ、もう1つの🌙ムーンポッパーの上ではなすと合成できます。", "Open the equipment screen with SELECT, grab a 🌙 Moon Popper with A and drop it on the other one to fuse."],
+            ["yana", "でも⭐の武器とは合成できません。月の武器🌙と星の武器⭐は別の種類。同じ種類の、同じ武器どうしだけです。", "But you can't fuse it with the ⭐ weapon. Moon 🌙 and star ⭐ are different types; only the exact same weapon fuses."],
+            ["pyon", "月は月、星は星で育てるんやな。まかしとき！", "Moon with moon, star with star. Got it!"]
+          ], true);
+        }
+      }
       state.mode = "playing";
       const p = state.player;
       const g = groundUnder(courses[currentCourse], spawnX + 20);
@@ -1897,6 +1920,11 @@ function closeInventory() {
     // そうび画面をとじたら、ロボットに乗りこむ絵を見せる
     state.mechBoardPending = false;
     state.mechBoardUntil = performance.now() + 1600;
+  }
+  if (state.fighterTransformPending) {
+    // 戦闘機に進化したら、変形中の絵を見せる
+    state.fighterTransformPending = false;
+    state.fighterTransformUntil = performance.now() + 1600;
   }
   state.mode = state.inventoryReturnMode === "respawning" ? "respawning" : "playing";
   state.inventoryReturnMode = null;
@@ -3955,6 +3983,7 @@ function fuseInventoryItems(fromIndex, toIndex) {
     // ロボット完成（または戦闘機に進化）：そのまま乗りこむ
     equipWeapon(nextPower - 1);
     if (nextPower === MECH_POWER) state.mechBoardPending = true;
+    if (nextPower === FIGHTER_POWER) state.fighterTransformPending = true;
     FX.flash("#ffffff", 0.6, 0.5);
     FX.shake(0.4);
   }
@@ -9340,7 +9369,7 @@ function drawMech(p) {
 
 // ---------- 戦闘機「ムーニアン・ファイター」 ----------
 const fighterArt = {};
-for (const key of ["fly", "shoot"]) {
+for (const key of ["fly", "shoot", "transform"]) {
   const im = new Image();
   im.src = `assets/fighter-${key}.png`;
   fighterArt[key] = im;
@@ -9352,27 +9381,40 @@ function drawFighter(p) {
   const cx = p.x + p.w / 2;
   const cy = p.y + p.h / 2 + Math.sin(t * 4) * 3;
   const tilt = clamp((p.vy ?? 0) / 900, -0.25, 0.25);
+  const ready = im => im && im.complete && im.naturalWidth > 0;
+  const transforming = (state.fighterTransformUntil ?? 0) > performance.now() && ready(fighterArt.transform);
   const art = state.gun.cooldown > 0 ? fighterArt.shoot : fighterArt.fly;
+  const W = 190; // 絵の横はば
   ctx.save();
   ctx.translate(cx, cy);
   ctx.scale(f, 1);
   ctx.rotate(tilt);
-  // エンジンの炎
-  const flame = 26 + Math.random() * 14;
-  const g = ctx.createLinearGradient(-60, 0, -60 - flame, 0);
-  g.addColorStop(0, "rgba(255, 243, 164, 0.95)");
+  if (transforming) {
+    // ロボットから変形中の絵（キラキラつき）
+    const s = W * 1.05;
+    ctx.drawImage(fighterArt.transform, -s / 2, -s / 2, s, s);
+    ctx.restore();
+    return;
+  }
+  // エンジンの炎（絵があるときは、機体の後ろの噴射口から出す）
+  const useArt = ready(art);
+  const nozzleX = useArt ? -W / 2 + 6 : -58;
+  const nozzleY = useArt ? -W * 0.5 * 0.12 : 0;
+  const flame = 30 + Math.random() * 16;
+  const g = ctx.createLinearGradient(nozzleX, 0, nozzleX - flame, 0);
+  g.addColorStop(0, "rgba(255, 255, 255, 0.95)");
+  g.addColorStop(0.35, "rgba(158, 232, 255, 0.9)");
   g.addColorStop(1, "rgba(255, 120, 180, 0)");
   ctx.fillStyle = g;
   ctx.beginPath();
-  ctx.moveTo(-58, -10);
-  ctx.lineTo(-60 - flame, 0);
-  ctx.lineTo(-58, 10);
+  ctx.moveTo(nozzleX, nozzleY - 12);
+  ctx.lineTo(nozzleX - flame, nozzleY);
+  ctx.lineTo(nozzleX, nozzleY + 12);
   ctx.closePath();
   ctx.fill();
-  if (art && art.complete && art.naturalWidth > 0) {
-    const w = 190;
-    const h = w * (art.naturalHeight / art.naturalWidth);
-    ctx.drawImage(art, -w / 2, -h / 2, w, h);
+  if (useArt) {
+    const h = W * (art.naturalHeight / art.naturalWidth);
+    ctx.drawImage(art, -W / 2, -h / 2, W, h);
   } else {
     drawFighterPlaceholder();
   }
