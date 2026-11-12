@@ -139,7 +139,7 @@
 
   const SCRIPTS = {
     opening: {
-      music: "story",
+      music: "opening",
       lines: [
         { s: "narr", bg: "city", ja: "月の内側に広がる、パステル色の街。\n月生まれ・月育ちのムーニアンたちは、今日も笑ってくらしていた。", en: "Inside the Moon lies a pastel city.\nThe Moonians who live there spend every day laughing together." },
         { s: "narr", ja: "三日月大使館のお笑いコンビ『ムーニアンズ』は、\n宇宙最大の舞台『銀河お笑いフェス』を、3日後にひかえていた。", en: "The comedy duo \"Moonians\" of the Crescent Embassy were\nthree days away from the biggest show in space: the Galaxy Comedy Fest." },
@@ -149,7 +149,7 @@
         { s: "ran", ja: "あかん……。どうツッコんだらええんか、ぜんぜん思い出されへん……。", en: "I can't... I've completely forgotten how to do a comeback..." },
         { s: "narr", bg: "dark", music: "finalBoss", fx: "shake", ja: "そのとき、夜空がまっくろにそまった。\n宇宙じゅうの“笑い”が、空のかなたへ吸い上げられていく——。", en: "At that moment the night sky turned pitch black.\nAll the laughter in the universe was being sucked away into the distance..." },
         { s: "mystery", fx: "flash", ja: "フハハハ！ 宇宙の笑いは、この魔王星がぜんぶいただいた！ もうだれも、笑うことはない！", en: "Mwahaha! The Demon Star has taken ALL the laughter in the universe! No one shall ever laugh again!" },
-        { s: "luva", bg: "duo", music: "story", ja: "緊急指令だ、ぴょんぴー。笑いのエネルギー『ワライスター』が6つにくだかれ、魔王の手下たちが6つの星へ持ち去った。", en: "Emergency orders, Pyon-P. The \"Warai Star\", the energy of laughter itself, was shattered into six pieces, and the Demon Lord's followers carried them off to six planets." },
+        { s: "luva", bg: "duo", music: "opening", ja: "緊急指令だ、ぴょんぴー。笑いのエネルギー『ワライスター』が6つにくだかれ、魔王の手下たちが6つの星へ持ち去った。", en: "Emergency orders, Pyon-P. The \"Warai Star\", the energy of laughter itself, was shattered into six pieces, and the Demon Lord's followers carried them off to six planets." },
         { s: "luva", ja: "かけらがもどらなければ、宇宙から笑顔が消えてしまう。……だれも笑えないままでは、3日後のフェスも開けない。", en: "Unless the shards return, smiles will vanish from the universe. ...And if no one can laugh, the Fest three days from now cannot be held." },
         { s: "luva", ja: "らんぴょんは笑いをうばわれて動けない。翻訳酸素カプセルのヤナビスが案内する。行けるのは、きみだけだ。", en: "Ranpyon has lost his laughter and cannot go. Yanabisu, in your translation oxygen capsule, will guide you. You are the only one who can do this." },
         { s: "pyon", ja: "なんでうちだけ平気なんやろ……まあええわ！ うちらの夢の舞台、つぶさせへんで！", en: "Why am I the only one who's fine... eh, whatever! Nobody's wrecking our dream stage!" },

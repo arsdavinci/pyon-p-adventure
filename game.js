@@ -1326,7 +1326,7 @@ function isUnderwaterStage() {
 function startGame(fresh = false) {
   if (FX.transitioning()) return;
   const resume = !fresh && Story.hasSave();
-  playSfx("confirm");
+  playSfx("gameStart");
   FX.startTransition({
     type: "fade",
     dur: 0.9,
@@ -2800,6 +2800,15 @@ function playSfx(name, x = state?.player?.x ?? 0) {
     playTone({ freq: 380, endFreq: 760, duration: 0.13, type: "sine", gain: 0.04, pan });
   } else if (name === "land") {
     playNoise({ duration: 0.07, gain: 0.03, filter: 420 });
+  } else if (name === "gameStart") {
+    // ぴょーん！と跳ねてキラキラ上がる、宇宙コメディっぽいスタート音
+    playTone({ freq: 220, endFreq: 880, duration: 0.16, type: "square", gain: 0.05, pan: 0 });
+    playTone({ start: 0.14, freq: 880, endFreq: 330, duration: 0.12, type: "triangle", gain: 0.05, pan: 0 });
+    [523, 659, 784, 1046, 1318].forEach((f, i) =>
+      playTone({ start: 0.24 + i * 0.06, freq: f, endFreq: f, duration: 0.12, type: "square", gain: 0.04, pan: (i - 2) * 0.2 }));
+    playTone({ start: 0.56, freq: 1568, endFreq: 3136, duration: 0.32, type: "triangle", gain: 0.05, pan: 0 });
+    playTone({ start: 0.56, freq: 2093, endFreq: 2093, duration: 0.36, type: "sine", gain: 0.035, pan: 0 });
+    playNoise({ start: 0.52, duration: 0.36, gain: 0.025, filter: 6000 });
   } else if (name === "confirm") {
     playTone({ freq: 660, endFreq: 660, duration: 0.07, type: "triangle", gain: 0.045, pan: 0 });
     playTone({ start: 0.06, freq: 990, endFreq: 990, duration: 0.1, type: "triangle", gain: 0.042, pan: 0 });

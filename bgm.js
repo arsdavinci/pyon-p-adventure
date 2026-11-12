@@ -322,6 +322,30 @@
       }
     },
 
+    // ---- Opening cutscene: bouncy C-major chiptune, game-intro energy -------
+    opening: {
+      bpm: 144, form: "A B",
+      v: { lead: { w: "p25", g: 0.038, gate: 0.75 }, arp: { w: "square", g: 0.014, gate: 0.45 } },
+      kit: {
+        a: "k...s...k.k.s.../h.h.h.h.h.h.h.h.", b: "k...s...k.k.ssss/h.h.h.h.h.h.o...",
+        c: "k.k.s...k.k.s.../..o...o...o...o.", d: "k.k.s...k.s.ssss/..o...o.....c..."
+      },
+      sec: {
+        A: {
+          lead: "C5 E5 G5 C6:3 G5:1 E5 G5:4 | A5:3 G5:1 E5 C5 E5:4 -:4 | F5 A5 C6 F6:3 E6:1 D6 C6 A5 | B5:4 G5:4 D6:6 - |" +
+                "C5 E5 G5 C6:3 G5:1 E5 G5:4 | A5:3 C6:1 E6 D6 C6 A5 C6:4 | D6:3 C6:1 A5 F5 G5 B5 D6 F6 | E6:3 D6:1 C6:8 -:4",
+          chords: "C Am F G C Am Dm,G C",
+          arp: "..c...c...c...c.", bass: "1.8.5.8.1.8.5.8.", drums: "aaab"
+        },
+        B: {
+          lead: "A5 A5:1 A5:1 G5 A5 C6:4 A5:4 | B5 B5:1 B5:1 A5 B5 D6:4 B5:4 | G5:3 E5:3 G5 B5:4 E6:4 | C6:3 A5:3 E5 A5:8 |" +
+                "C6 A5 F5 A5 F6:4 E6 D6 | D6 B5 G5 B5 G6:4 F6 E6 | E6:3 C6:3 A5 C6:3 D6:3 F#6 | G6:4 D6 B5 G5 D5 -:4",
+          chords: "F G Em Am F G Am,D7 G",
+          arp: "0.2.1.2.3.2.1.2.", bass: "1..1..5.1..1..5.", drums: "cccccccd"
+        }
+      }
+    },
+
     // ---- Ending: main theme in C, low and warm, then lifted an octave -------
     ending: {
       bpm: 96, tr: -7, echo: 0.3, form: "A B A2",
