@@ -2032,6 +2032,8 @@ function updatePlayer(dt) {
     p.vy = trait === "moonFloat" ? -990 : -900;
     // ダッシュしながらのジャンプは少し高く飛べる
     if (wantsRun && Math.abs(p.vx) > 260) p.vy *= 1.08;
+    // ロボットはジャンプ力が高い
+    if (hasEquippedWeapon() && isMechPower(state.weaponPower)) p.vy *= 1.3;
     p.grounded = false;
     p.coyote = 0;
     p.jumpHeld = true;
@@ -2052,6 +2054,12 @@ function updatePlayer(dt) {
   p.vx = clamp(p.vx, -maxSpeed, maxSpeed);
   const gravity = trait === "moonFloat" ? GRAVITY * 0.78 : trait === "demonPulse" ? GRAVITY * (1 + Math.sin(state.stagePulse) * 0.2) : GRAVITY;
   p.vy += gravity * dt;
+  // ロボット：落ちるときは足から逆噴射して、ゆっくり着地する
+  p.retro = false;
+  if (hasEquippedWeapon() && isMechPower(state.weaponPower) && !p.grounded && p.vy > 0) {
+    p.vy = Math.min(p.vy, 230);
+    p.retro = true;
+  }
   p.invincible = Math.max(0, p.invincible - dt);
 
   moveAndCollide(p, dt);
@@ -8837,6 +8845,7 @@ function drawMech(p) {
   ctx.save();
   ctx.translate(cx, bottom);
   ctx.scale(f, 1);
+  if (p.retro && !grounded) drawMechRetroThrust(t);
   const art = !grounded ? mechArt.jump : shooting ? mechArt.shoot : walking ? null : mechArt.idle;
   const sheet = mechArt["walk-6"];
   if (walking && ok(sheet)) {
@@ -8963,6 +8972,42 @@ function drawFighterPlaceholder() {
   ctx.stroke();
   drawWeaponMark(-28, 0, 12, 1);
   drawWeaponMark(-12, 0, 12, 16);
+}
+
+// 足の裏からの逆噴射（ゆっくり降りているとき）
+function drawMechRetroThrust(t) {
+  for (const side of [-1, 1]) {
+    const x = side * 24;
+    const len = 62 + Math.sin(t * 50 + side) * 10 + Math.random() * 14;
+    ctx.save();
+    ctx.shadowColor = "#9ee8ff";
+    ctx.shadowBlur = 22;
+    const g = ctx.createLinearGradient(0, -4, 0, len);
+    g.addColorStop(0, "rgba(255, 255, 255, 1)");
+    g.addColorStop(0.3, "rgba(158, 232, 255, 0.95)");
+    g.addColorStop(0.7, "rgba(255, 141, 183, 0.6)");
+    g.addColorStop(1, "rgba(255, 141, 183, 0)");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(x - 20, -4);
+    ctx.quadraticCurveTo(x, len * 1.2, x + 20, -4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+    ctx.beginPath();
+    ctx.ellipse(x, 2, 12, 7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    // まわりに散る光のつぶ
+    ctx.fillStyle = "rgba(255, 243, 164, 0.8)";
+    for (let k = 0; k < 3; k++) {
+      const px = x + (Math.random() - 0.5) * 30;
+      const py = len * (0.5 + Math.random() * 0.6);
+      ctx.beginPath();
+      ctx.arc(px, py, 2 + Math.random() * 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
 }
 
 // 仮のロボット（画像がとどくまで）
