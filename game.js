@@ -6785,10 +6785,63 @@ function drawMoonianNova(colors) {
 function drawEnemies() {
   for (const e of state.enemies) {
     if (!e.alive && e.defeated <= 0) continue;
-    if (e.alive && e.stun > 0 && Math.floor(performance.now() / 110) % 2) continue;
     if (e.boss) drawBossAlien(e);
     else drawPastelAlien(e);
+    // ピヨっているあいだは点滅させず、頭の上に星を回す
+    if (e.alive && e.stun > 0) drawDizzyStars(e);
   }
+}
+
+// 攻撃が当たった瞬間に重ねる、赤くそめた絵（画像ごとに1回だけ作る）
+const redTintCache = new Map();
+function redTintOf(img) {
+  let tinted = redTintCache.get(img);
+  if (tinted) return tinted;
+  tinted = document.createElement("canvas");
+  tinted.width = img.naturalWidth;
+  tinted.height = img.naturalHeight;
+  const g = tinted.getContext("2d");
+  g.drawImage(img, 0, 0);
+  g.globalCompositeOperation = "source-atop";
+  g.fillStyle = "#ff2d55";
+  g.fillRect(0, 0, tinted.width, tinted.height);
+  redTintCache.set(img, tinted);
+  return tinted;
+}
+
+// 0〜1：攻撃が当たってからの赤さ
+function enemyHitRed(e) {
+  if (!e.alive || !(e.hurtAnim > 0)) return 0;
+  const k = Math.min(1, e.hurtAnim / (e.boss ? 0.38 : 0.24));
+  return 0.25 + k * 0.55;
+}
+
+function drawDizzyStars(e) {
+  const t = performance.now() / 1000;
+  const cx = e.x + e.w / 2;
+  const headY = e.boss
+    ? (e.finalBoss ? e.y + e.h - 214 : e.y - e.h * 0.5)
+    : e.y - e.h * 0.62;
+  const rx = Math.max(22, e.w * 0.55);
+  const ry = rx * 0.32;
+  const fadeOut = Math.min(1, e.stun / 0.3);
+  ctx.save();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = "#b8860b";
+  for (let i = 0; i < 3; i++) {
+    const a = t * 6 + (i * Math.PI * 2) / 3;
+    const x = cx + Math.cos(a) * rx;
+    const y = headY + Math.sin(a) * ry;
+    const front = Math.sin(a) > 0;
+    const r = front ? 13 : 9;
+    ctx.globalAlpha = fadeOut * (front ? 1 : 0.6);
+    // ふちどりを先にぬって、背景にとけこまないようにする
+    ctx.fillStyle = "#8a5a00";
+    drawTinyStar(x, y, r + 3);
+    ctx.fillStyle = front ? "#ffe35a" : "#fff3a4";
+    drawTinyStar(x, y, r);
+  }
+  ctx.restore();
 }
 
 function drawBossAlien(e) {
@@ -6927,12 +6980,21 @@ function drawBossImage(e) {
   ctx.globalAlpha = alpha;
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
+  const red = enemyHitRed(e);
   if (facingRight) {
     ctx.drawImage(img, dx, dy, drawW, drawH);
+    if (red) {
+      ctx.globalAlpha = alpha * red;
+      ctx.drawImage(redTintOf(img), dx, dy, drawW, drawH);
+    }
   } else {
     ctx.translate(dx + drawW / 2, dy + drawH / 2);
     ctx.scale(-1, 1);
     ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+    if (red) {
+      ctx.globalAlpha = alpha * red;
+      ctx.drawImage(redTintOf(img), -drawW / 2, -drawH / 2, drawW, drawH);
+    }
   }
   ctx.restore();
 
@@ -7130,12 +7192,21 @@ function drawEnemyImage(e) {
   ctx.imageSmoothingQuality = "high";
   const facingRight = (e.facing ?? (e.vx >= 0 ? 1 : -1)) > 0;
   const flipImage = !facingRight;
+  const red = enemyHitRed(e);
   if (flipImage) {
     ctx.translate(dx + drawW, dy);
     ctx.scale(-1, 1);
     ctx.drawImage(img, 0, 0, drawW, drawH);
+    if (red) {
+      ctx.globalAlpha = alpha * red;
+      ctx.drawImage(redTintOf(img), 0, 0, drawW, drawH);
+    }
   } else {
     ctx.drawImage(img, dx, dy, drawW, drawH);
+    if (red) {
+      ctx.globalAlpha = alpha * red;
+      ctx.drawImage(redTintOf(img), dx, dy, drawW, drawH);
+    }
   }
   ctx.restore();
   if ((state.gun.holder === e.id || e.weaponPower) && e.alive) {
