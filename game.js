@@ -1481,9 +1481,31 @@ function updateDoors() {
   }
 }
 
+const doorArt = {};
+for (const key of ["portal", "locked", "bonus", "back"]) {
+  const im = new Image();
+  im.src = `assets/door-${key}.png`;
+  doorArt[key] = im;
+}
+
 function drawDoors() {
   const t = performance.now() / 1000;
   for (const d of level.doors ?? []) {
+    // 扉の絵（assets/door-*.png）があれば使う。カギを開けると、ふつうの扉の絵に変わる
+    const art = doorArt[d.locked ? "locked" : d.bonus ? "bonus" : d.exit ? "portal" : "back"];
+    const usedArt = art.complete && art.naturalWidth > 0;
+    if (usedArt) {
+      const w = d.w + 40;
+      const h = w * (art.naturalHeight / art.naturalWidth);
+      ctx.save();
+      if (!d.locked) {
+        ctx.shadowColor = d.bonus ? "#ff8db7" : "#9ee8ff";
+        ctx.shadowBlur = 14 + Math.sin(t * 3 + d.x) * 6;
+      }
+      ctx.drawImage(art, d.x + d.w / 2 - w / 2, d.y + d.h - h + 4, w, h);
+      ctx.restore();
+    }
+    if (!usedArt) {
     ctx.save();
     // 扉の枠
     ctx.fillStyle = d.bonus ? "#ffd1ed" : "#c8b2ff";
@@ -1522,6 +1544,7 @@ function drawDoors() {
     ctx.textBaseline = "middle";
     ctx.fillText(label, d.x + d.w / 2, d.y - 24);
     ctx.restore();
+    }
     // 近くにいるときは「↑ではいる」
     if (state.nearDoor === d) {
       ctx.save();
@@ -1533,13 +1556,13 @@ function drawDoors() {
       ctx.strokeStyle = "#ff8db7";
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.roundRect(d.x + d.w / 2 - w / 2, d.y - 76 + bob, w, 32, 16);
+      ctx.roundRect(d.x + d.w / 2 - w / 2, d.y - 96 + bob, w, 32, 16);
       ctx.fill();
       ctx.stroke();
       ctx.fillStyle = "#5a3d9a";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(text, d.x + d.w / 2, d.y - 60 + bob);
+      ctx.fillText(text, d.x + d.w / 2, d.y - 80 + bob);
       ctx.restore();
     }
   }
