@@ -2312,7 +2312,11 @@ function updatePlayer(dt) {
   if (p.vy >= 0) p.jumpHeld = false;
 
   p.aim = playerAimAngle(p, dxInput);
-  if (wantsShoot && hasEquippedWeapon() && state.gun.cooldown <= 0) {
+  const shootFresh = wantsShoot && !p.shootHeld;
+  p.shootHeld = wantsShoot;
+  // ロボット・戦闘機は、ボタンを押すたびに1発（おしっぱなしで連射しない）
+  const rideShot = hasEquippedWeapon() && isRideable(state.weaponPower);
+  if (wantsShoot && (!rideShot || shootFresh) && hasEquippedWeapon() && state.gun.cooldown <= 0) {
     const muzzle = playerMuzzle(p);
     shootBeam("player", muzzle.x, muzzle.y, p.facing, p.aim);
     state.gun.cooldown = weaponStage().cooldown;
@@ -2361,7 +2365,11 @@ function updateSwimmingPlayer(dt) {
   if (dx > 0) p.facing = 1;
 
   p.aim = playerAimAngle(p, dxInput);
-  if (wantsShoot && hasEquippedWeapon() && state.gun.cooldown <= 0) {
+  const shootFresh = wantsShoot && !p.shootHeld;
+  p.shootHeld = wantsShoot;
+  // ロボット・戦闘機は、ボタンを押すたびに1発（おしっぱなしで連射しない）
+  const rideShot = hasEquippedWeapon() && isRideable(state.weaponPower);
+  if (wantsShoot && (!rideShot || shootFresh) && hasEquippedWeapon() && state.gun.cooldown <= 0) {
     const muzzle = playerMuzzle(p);
     shootBeam("player", muzzle.x, muzzle.y, p.facing, p.aim);
     state.gun.cooldown = weaponStage().cooldown;
@@ -2395,7 +2403,9 @@ function updateFlyingPlayer(dt) {
   if (dx) p.facing = dx;
   p.aim = p.facing < 0 ? Math.PI : 0;
   const wantsShoot = keys.has("KeyX") || keys.has("KeyY") || keys.has("KeyJ") || gamepadState.shoot;
-  if (wantsShoot && state.gun.cooldown <= 0) {
+  const shootFresh = wantsShoot && !p.shootHeld;
+  p.shootHeld = wantsShoot;
+  if (shootFresh && state.gun.cooldown <= 0) {
     const m = playerMuzzle(p);
     shootBeam("player", m.x, m.y, p.facing, p.aim);
     state.gun.cooldown = weaponStage().cooldown;
@@ -2569,7 +2579,8 @@ function updateLightning(dt) {
     if (striking) {
       const top = (state.cameraY ?? 0) - 40;
       const r = { x: b.x - BOLT_W / 2 + 10, y: top, w: BOLT_W - 20, h: b.landY - top };
-      if (hit(p, r)) damagePlayer(false, null, false);
+      // ロボット・戦闘機に乗っているときは雷が効かない
+      if (hit(p, r) && !(hasEquippedWeapon() && isRideable(state.weaponPower))) damagePlayer(false, null, false);
     }
   }
   state.bolts = (state.bolts ?? []).filter(b => b.t < BOLT_WARN + BOLT_STRIKE + 0.25);
@@ -3583,6 +3594,10 @@ function shootBeam(owner, x, y, dir, aimAngle = null) {
   const base = aimAngle ?? (dir >= 0 ? 0 : Math.PI);
   playSfx("laser", x);
   if (owner === "player") FX.muzzle(x, y, Math.cos(base) >= -0.01 ? 1 : -1, stage.colors);
+  if (stage.pattern === "homing" && owner === "player" && isRideable(state.weaponPower)) {
+    shootMechMissile(x, y, dir, stage);
+    return;
+  }
   if (stage.pattern === "homing") {
     shootHomingMissiles(owner, x, y, dir, stage);
     return;
@@ -4350,9 +4365,62 @@ function beamHitsWall(r) {
   return false;
 }
 
+// 画面に映っている、ねらえるもの（敵とアイテムブロック）
+function visibleMissileTargets() {
+  const left = state.camera - 40;
+  const right = state.camera + VIEW_W + 40;
+  const top = (state.cameraY ?? 0) - 40;
+  const bottom = (state.cameraY ?? 0) + VIEW_H + 40;
+  const inView = o => o.x + o.w > left && o.x < right && o.y + o.h > top && o.y < bottom;
+  const list = [];
+  for (const e of state.enemies) if (e.alive && inView(e)) list.push({ kind: "enemy", ref: e });
+  for (const b of blocks) if (b.breakable && !b.broken && inView(b)) list.push({ kind: "block", ref: b });
+  return list;
+}
+
+// ロボットのミサイル：押すたびに1発。まだ誰もねらっていない一番近い敵（いなければアイテムブロック）へ
+function shootMechMissile(x, y, dir, stage) {
+  const aimed = new Set(state.beams.filter(b => b.homing && b.owner === "player" && b.life > 0).map(b => b.targetRef));
+  const targets = visibleMissileTargets().filter(t => !aimed.has(t.ref));
+  const dist = t => Math.hypot(t.ref.x + t.ref.w / 2 - x, t.ref.y + t.ref.h / 2 - y);
+  targets.sort((a, b) => (a.kind === b.kind ? 0 : a.kind === "enemy" ? -1 : 1) || dist(a) - dist(b));
+  const target = targets[0] ?? null;
+  const launchAngle = -Math.PI / 2 + dir * 0.5;
+  state.beams.push({
+    owner: "player",
+    homing: true,
+    targetRef: target?.ref ?? null,
+    targetId: target?.kind === "enemy" ? target.ref.id : null,
+    x: x + dir * 10,
+    y: y - 10,
+    w: stage.width,
+    h: stage.height,
+    vx: Math.cos(launchAngle) * stage.speed * 0.45 + dir * 160,
+    vy: Math.sin(launchAngle) * stage.speed * 0.45,
+    angle: launchAngle,
+    life: 3,
+    damage: stage.damage,
+    colors: stage.colors,
+    power: state.weaponPower,
+    explosion: stage.explosion ?? 120,
+    pierce: 0,
+    wave: 0,
+    distance: 0,
+    range: stage.range * 2
+  });
+}
+
 function updateHomingMissile(b, dt) {
-  const target = state.enemies.find(e => e.id === b.targetId && e.alive) ||
-    state.enemies.find(e => e.alive && e.x + e.w > state.camera - 80 && e.x < state.camera + canvas.width + 80);
+  let target = null;
+  if (b.targetRef && b.targetRef.alive !== false && !b.targetRef.broken) target = b.targetRef;
+  if (!target && b.targetRef === null && (b.power ?? 0) < MECH_POWER) {
+    target = state.enemies.find(e => e.id === b.targetId && e.alive) ||
+      state.enemies.find(e => e.alive && e.x + e.w > state.camera - 80 && e.x < state.camera + canvas.width + 80);
+  }
+  if (!target && (b.power ?? 0) < MECH_POWER) {
+    target = state.enemies.find(e => e.id === b.targetId && e.alive) ||
+      state.enemies.find(e => e.alive && e.x + e.w > state.camera - 80 && e.x < state.camera + canvas.width + 80);
+  }
   if (!target) return;
   const tx = target.x + target.w / 2;
   const ty = target.y + target.h / 2;
