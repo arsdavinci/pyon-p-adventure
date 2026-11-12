@@ -123,14 +123,14 @@ const WEAPON_STAGES = [
   { name: "weapon-moon-06-nebula-fan", count: 7, damage: 6, range: 920, speed: 1060, width: 50, height: 10, spread: 0, cooldown: 0.25, pattern: "fan", colors: ["#ffd1ed","#9ee8ff","#a976ff"] },
   { name: "weapon-moon-07-comet-reverse", count: 7, damage: 7, range: 1060, speed: 1140, width: 54, height: 11, spread: 0, cooldown: 0.23, pattern: "bothSpread", colors: ["#c9f6ff","#ffffff","#64d2ff"] },
   { name: "weapon-moon-08-moonian-nova", count: 9, damage: 8, range: 1200, speed: 1220, width: 60, height: 12, spread: 12, cooldown: 0.21, pattern: "spread", colors: ["#ffffff","#fff3a4","#ff8db7"] },
-  { name: "weapon-star-01-saturn-splitter", count: 9, damage: 9, range: 1340, speed: 1300, width: 62, height: 12, spread: 0, cooldown: 0.2, pattern: "cross", colors: ["#fff6a6","#ffb86b","#ffffff"] },
-  { name: "weapon-star-02-aquarium-spear", count: 10, damage: 10, range: 1480, speed: 1380, width: 66, height: 13, spread: 0, cooldown: 0.19, pattern: "wave", colors: ["#bff8ff","#4fe3ff","#ffffff"] },
-  { name: "weapon-star-03-quasar-drive", count: 11, damage: 11, range: 1620, speed: 1460, width: 70, height: 14, spread: 0, cooldown: 0.18, pattern: "fan", colors: ["#ffffff","#ffd85a","#ff5f9e"] },
-  { name: "weapon-star-04-galaxy-boomerang", count: 12, damage: 12, range: 1760, speed: 1540, width: 74, height: 15, spread: 18, cooldown: 0.17, pattern: "bothSpread", colors: ["#d7c8ff","#ffffff","#7d8cff"] },
-  { name: "weapon-star-05-black-hole-pulse", count: 14, damage: 13, range: 1900, speed: 1620, width: 76, height: 16, spread: 0, cooldown: 0.16, pattern: "radial", pierce: 1, colors: ["#2d245d","#9ee8ff","#ffffff"] },
-  { name: "weapon-star-06-cosmo-crown", count: 15, damage: 14, range: 2040, speed: 1700, width: 80, height: 17, spread: 0, cooldown: 0.15, pattern: "crown", colors: ["#fff3a4","#ff8db7","#ffffff"] },
-  { name: "weapon-star-07-supernova-360", count: 18, damage: 15, range: 2180, speed: 1780, width: 84, height: 18, spread: 0, cooldown: 0.14, pattern: "radial", pierce: 2, colors: ["#ffffff","#fff3a4","#ff3d7f"] },
-  { name: "weapon-star-08-stellar-guardian-cannon", count: 20, damage: 16, range: 2320, speed: 1860, width: 88, height: 19, spread: 0, cooldown: 0.13, pattern: "homing", explosion: 140, colors: ["#ffffff","#9ee8ff","#ff3d7f"] },
+  { name: "weapon-star-01-saturn-splitter", count: 4, damage: 1, range: 240, speed: 600, width: 26, height: 7, spread: 0, cooldown: 0.42, pattern: "cross", colors: ["#fff6a6","#ffb86b","#ffffff"] },
+  { name: "weapon-star-02-aquarium-spear", count: 2, damage: 2, range: 380, speed: 740, width: 34, height: 8, spread: 0, cooldown: 0.36, pattern: "wave", colors: ["#bff8ff","#4fe3ff","#ffffff"] },
+  { name: "weapon-star-03-quasar-drive", count: 3, damage: 3, range: 520, speed: 840, width: 38, height: 8, spread: 0, cooldown: 0.32, pattern: "fan", colors: ["#ffffff","#ffd85a","#ff5f9e"] },
+  { name: "weapon-star-04-galaxy-boomerang", count: 4, damage: 4, range: 660, speed: 920, width: 40, height: 9, spread: 18, cooldown: 0.3, pattern: "bothSpread", colors: ["#d7c8ff","#ffffff","#7d8cff"] },
+  { name: "weapon-star-05-black-hole-pulse", count: 6, damage: 5, range: 800, speed: 1000, width: 44, height: 10, spread: 0, cooldown: 0.27, pattern: "radial", pierce: 1, colors: ["#2d245d","#9ee8ff","#ffffff"] },
+  { name: "weapon-star-06-cosmo-crown", count: 7, damage: 6, range: 940, speed: 1080, width: 50, height: 10, spread: 0, cooldown: 0.25, pattern: "crown", colors: ["#fff3a4","#ff8db7","#ffffff"] },
+  { name: "weapon-star-07-supernova-360", count: 10, damage: 7, range: 1080, speed: 1160, width: 54, height: 11, spread: 0, cooldown: 0.23, pattern: "radial", pierce: 2, colors: ["#ffffff","#fff3a4","#ff3d7f"] },
+  { name: "weapon-star-08-stellar-guardian-cannon", count: 8, damage: 8, range: 1220, speed: 1240, width: 60, height: 12, spread: 0, cooldown: 0.21, pattern: "homing", explosion: 110, colors: ["#ffffff","#9ee8ff","#ff3d7f"] },
   { name: "Moonian Mecha", count: 26, damage: 27, range: 2660, speed: 2020, width: 92, height: 22, spread: 0, cooldown: 0.116, pattern: "homing", explosion: 175, colors: ["#ffffff","#ff8db7","#9ee8ff"] },
   { name: "Moonian Mecha Lv2", count: 28, damage: 30, range: 2720, speed: 2040, width: 92, height: 22, spread: 0, cooldown: 0.112, pattern: "homing", explosion: 180, colors: ["#ffffff","#ff8db7","#9ee8ff"] },
   { name: "Moonian Mecha Lv3", count: 30, damage: 33, range: 2780, speed: 2060, width: 92, height: 22, spread: 0, cooldown: 0.108, pattern: "homing", explosion: 185, colors: ["#ffffff","#ff8db7","#9ee8ff"] },
@@ -802,7 +802,7 @@ function makeCourse(worldIndex, areaIndex, layout = areaIndex) {
       final: finalStage,
       bossKind: worldIndex,
       weaponPower: bossPower,
-      hp: finalStage ? 320 : 96 + worldIndex * 34,
+      hp: finalStage ? 420 : Math.round((96 + worldIndex * 34) * 1.6),
       w: finalStage ? 190 : 96 + worldIndex * 10,
       h: finalStage ? 172 : 96 + worldIndex * 10
     }));
@@ -2063,6 +2063,11 @@ function update(dt) {
   }
   updateMovingPlatforms(dt);
   updatePlayer(dt);
+  if (state.arena) {
+    const pl = state.player;
+    if (pl.x < state.arena.left + 4) { pl.x = state.arena.left + 4; pl.vx = Math.max(0, pl.vx); }
+    if (pl.x + pl.w > state.arena.right - 4) { pl.x = state.arena.right - 4 - pl.w; pl.vx = Math.min(0, pl.vx); }
+  }
   FX.trackPlayer(state.player, dt);
   Gimmick.update(dt);
   updateStageTraits(dt);
@@ -2089,6 +2094,7 @@ function maybeStartBossIntro() {
   if (p.x + p.w < boss.x - 500) return false;
   state.mode = "bossIntro";
   state.bossIntroPlayed = true;
+  setupBossArena(boss);
   state.bossIntroTimer = 0;
   state.bossIntroBossId = boss.id;
   state.bossIntroStep = 0;
@@ -2100,6 +2106,123 @@ function maybeStartBossIntro() {
   p.grounded = true;
   lastTime = performance.now();
   return true;
+}
+
+// ---------- ボス戦のアリーナ ----------
+// ボスがあらわれたら、うしろに光のかべができて逃げられない。床があるので落ちない。
+// ボスは右はしにいて、決まった順番で攻撃する（体力が少なくなるとランダムになる）
+function setupBossArena(boss) {
+  const course = courses[currentCourse];
+  const left = Math.max(0, boss.left - 20);
+  const right = Math.min(WORLD_WIDTH, boss.right + 60);
+  state.arena = { left, right, scripted: !isUnderwaterStage() && !course?.finalStage };
+  const p = state.player;
+  if (p.x < left + 10) p.x = left + 10;
+  if (!state.arena.scripted) return;
+  // 落ちない床と、頭の上の足場（ボスの突進をよけるため）
+  platforms.push(rect(left, GROUND_Y, right - left, 48));
+  const span = right - left;
+  platforms.push(rect(left + span * 0.12, GROUND_Y - 170, 220, 30), rect(left + span * 0.52, GROUND_Y - 170, 220, 30));
+  boss.script = { step: 0, phase: "idle", t: 1.4 };
+  boss.left = left + 10;
+  boss.right = right - 10;
+}
+
+const BOSS_SEQUENCE = ["orb", "charge", "rain", "orb", "leap"];
+
+function updateBossScript(e, dt) {
+  const a = state.arena;
+  const p = state.player;
+  const sc = e.script;
+  const hpRate = (e.hp ?? e.maxHp) / Math.max(1, e.maxHp ?? 1);
+  const angry = hpRate < 0.3;
+  const home = a.right - e.w - 40;
+  const face = () => { e.facing = p.x + p.w / 2 < e.x + e.w / 2 ? -1 : 1; };
+  sc.t -= dt;
+  e.vy += GRAVITY * dt;
+
+  if (sc.phase === "idle") {
+    // 右はしの定位置へもどる
+    const dx = home - e.x;
+    e.vx = Math.abs(dx) > 8 ? Math.sign(dx) * (angry ? 340 : 260) : 0;
+    face();
+    if (sc.t <= 0 && Math.abs(dx) < 16 && e.grounded) {
+      const action = angry ? BOSS_SEQUENCE[Math.floor(Math.random() * BOSS_SEQUENCE.length)] : BOSS_SEQUENCE[sc.step % BOSS_SEQUENCE.length];
+      sc.step += 1;
+      sc.action = action;
+      sc.phase = "wind";
+      sc.t = action === "charge" ? (angry ? 0.6 : 0.85) : action === "leap" ? 0.55 : 0.5;
+      e.attackAnim = 0.9;
+      playSfx("equip", e.x + e.w / 2);
+    }
+  } else if (sc.phase === "wind") {
+    // 攻撃の前ぶれ（体をゆらす）
+    e.vx = 0;
+    face();
+    e.attackAnim = Math.max(e.attackAnim ?? 0, 0.2);
+    if (sc.t <= 0) {
+      if (sc.action === "orb" || sc.action === "rain") {
+        fireBossPattern(e, { type: sc.action, targetX: clamp(p.x + p.w / 2, a.left + 120, a.right - 120), count: angry ? 5 : 3 });
+        sc.phase = "idle";
+        sc.t = angry ? 0.7 : 1.2;
+      } else if (sc.action === "charge") {
+        sc.phase = "charge";
+        e.vx = -(angry ? 820 : 640);
+        e.facing = -1;
+        playSfx("whoosh", e.x);
+      } else {
+        // プレイヤーのいる場所へジャンプして、着地でしょうげき波
+        const air = (2 * 920) / GRAVITY;
+        const tx = clamp(p.x + p.w / 2 - e.w / 2, a.left + 20, a.right - e.w - 20);
+        e.vy = -920;
+        e.vx = (tx - e.x) / air;
+        e.grounded = false;
+        sc.phase = "leap";
+        sc.t = 0.2;
+      }
+    }
+  } else if (sc.phase === "charge") {
+    // 左のかべまで突進（ジャンプか、上の足場でよける）
+    e.vx = -(angry ? 820 : 640);
+    if (e.x <= a.left + 20) {
+      e.x = a.left + 20;
+      e.vx = 0;
+      FX.shake(0.25);
+      playSfx("explosion", e.x);
+      sc.phase = "idle";
+      sc.t = angry ? 0.4 : 0.9;
+    }
+  } else if (sc.phase === "leap") {
+    if (sc.t <= 0 && e.grounded) {
+      e.vx = 0;
+      FX.shake(0.3);
+      playSfx("explosion", e.x + e.w / 2);
+      fireBossPattern(e, { type: "eruption", targetX: e.x + e.w / 2, count: angry ? 4 : 2 });
+      sc.phase = "idle";
+      sc.t = angry ? 0.6 : 1.1;
+    }
+  }
+  moveEnemyAndCollide(e, dt);
+  e.x = clamp(e.x, a.left + 10, a.right - e.w - 10);
+}
+
+function drawBossArenaWalls() {
+  const a = state.arena;
+  if (!a) return;
+  const t = performance.now() / 1000;
+  for (const x of [a.left, a.right]) {
+    const g = ctx.createLinearGradient(x - 18, 0, x + 18, 0);
+    g.addColorStop(0, "rgba(255, 141, 183, 0)");
+    g.addColorStop(0.5, `rgba(255, 141, 183, ${0.55 + Math.sin(t * 6) * 0.2})`);
+    g.addColorStop(1, "rgba(255, 141, 183, 0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(x - 18, (state.cameraY ?? 0) - 40, 36, VIEW_H + 120);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+    for (let k = 0; k < 6; k++) {
+      const y = (state.cameraY ?? 0) + ((t * 120 + k * 120) % (VIEW_H + 80)) - 40;
+      ctx.fillRect(x - 2, y, 4, 34);
+    }
+  }
 }
 
 function updateBossIntro(dt) {
@@ -2909,10 +3032,14 @@ function updateEnemies(dt) {
       else moveEnemyAndCollide(e, dt);
     } else if (isUnderwaterStage()) {
       updateSwimmingEnemy(e, dt);
+    } else if (e.boss && e.script && state.arena?.scripted) {
+      updateBossScript(e, dt);
     } else {
       updateEnemyMovement(e, dt);
     }
-    if (e.boss && courses[currentCourse]?.bossStage && state.bossIntroPlayed) {
+    if (e.boss && e.script && state.arena?.scripted) {
+      // 攻撃は updateBossScript の中で決まった順番に出す
+    } else if (e.boss && courses[currentCourse]?.bossStage && state.bossIntroPlayed) {
       updateBossAttackPattern(e, dt);
     } else if ((state.gun.holder === e.id || e.weaponPower) && e.gunCooldown <= 0 && enemyCanSeePlayer(e)) {
       const dir = state.player.x + state.player.w / 2 < e.x + e.w / 2 ? -1 : 1;
@@ -3781,7 +3908,8 @@ function randomWeaponDropPower() {
   const difficulty = courses[currentCourse]?.difficulty ?? 1;
   // まず月か星かを決める（最初のステージから半々で出る）。レベルの上限は月も星も同じ
   const star = Math.random() < 0.5;
-  const cap = clamp(3 + Math.floor(difficulty / 2), 5, WEAPON_ATTRIBUTE_SIZE);
+  // 出るレベルの上限：はじめは Lv1〜2、先へ進むほど上がる（最後のワールドで Lv8）
+  const cap = clamp(1 + Math.floor(difficulty / 4), 2, WEAPON_ATTRIBUTE_SIZE);
   const weights = Array.from({ length: cap }, (_, i) => {
     const rank = i + 1;
     const curve = Math.max(0.03, 1.15 - rank * 0.13);
@@ -4995,6 +5123,7 @@ function drawGameWorld() {
   Gimmick.drawForeground();
   drawStageHazards();
   drawDoors();
+  drawBossArenaWalls();
   drawBossHazards();
   drawGun();
   drawItems();
