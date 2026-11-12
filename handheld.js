@@ -79,6 +79,25 @@
     return { t: n(cs.paddingTop), r: n(cs.paddingRight), b: n(cs.paddingBottom), l: n(cs.paddingLeft) };
   }
 
+  // ホーム画面から開いたアプリ（スタンドアロン）かどうか
+  function isStandalone() {
+    return navigator.standalone === true ||
+      Boolean(window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
+  }
+
+  // iPhone のホーム画面アプリでは innerHeight が画面より短く返ることがあり、
+  // そのぶん本体の下にすき間ができていた。アプリのときだけ画面そのものの高さを使う
+  function fullHeight() {
+    const h = Math.max(window.innerHeight, document.documentElement.clientHeight || 0);
+    if (!isStandalone() || !window.screen) return h;
+    const portrait = window.innerHeight >= window.innerWidth;
+    const screenH = portrait
+      ? Math.max(screen.width, screen.height)
+      : Math.min(screen.width, screen.height);
+    // 画面より大きすぎる値や、ずれが大きすぎるときは使わない
+    return screenH > h && screenH - h < 160 ? screenH : h;
+  }
+
   function layout() {
     if (!shell) return;
     const safe = safeArea();
@@ -88,7 +107,7 @@
     const underTop = Math.min(safe.t, (SRC.HOLE_T - 30) * uGuess);
     // 下のかざりはホームバーの下まで入れて、本体を画面の下はしまでのばす
     const underBottom = safe.b;
-    const viewH = Math.max(window.innerHeight, document.documentElement.clientHeight || 0);
+    const viewH = fullHeight();
     const availH = viewH - safe.t - safe.b + underTop + underBottom;
     const mobile = document.body.dataset.controlMode === "mobile";
     isActive = mobile && availH > availW * 1.05;
@@ -97,7 +116,17 @@
       commSrc = 0;
       delete document.body.dataset.commSize;
       for (const name of ["--u", "--gb-x", "--gb-y", "--gb-screen-h"]) shell.style.removeProperty(name);
+      shell.style.removeProperty("height");
+      shell.style.removeProperty("bottom");
       return;
+    }
+    // ホーム画面アプリでは、本体の入れ物を画面いっぱいの高さにする（下のすき間をなくす）
+    if (viewH > window.innerHeight + 1) {
+      shell.style.height = `${viewH}px`;
+      shell.style.bottom = "auto";
+    } else {
+      shell.style.removeProperty("height");
+      shell.style.removeProperty("bottom");
     }
 
     const uWide = (availW * BLEED) / SRC.W; // 横幅いっぱいに使ったときの倍率
