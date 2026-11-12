@@ -3312,7 +3312,7 @@ function updatePlayer(dt) {
   else if (p.crouch && (!wantsDown || !p.grounded || !canCrouch)) setCrouch(p, false);
   const crawl = !!p.crouch;
   const accel = crawl ? 900 : slippery ? (wantsRun ? 1380 : 820) : wantsRun ? 2100 : 1250;
-  const maxSpeed = crawl ? 115 : slippery ? (wantsRun ? 410 : 270) : wantsRun ? 360 : 235;
+  const maxSpeed = crawl ? 75 : slippery ? (wantsRun ? 410 : 270) : wantsRun ? 360 : 235;
 
   if (movingLeft) {
     p.vx -= accel * dt;

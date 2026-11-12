@@ -179,17 +179,25 @@
   }
 
   // しゃがみ・ほふく前進：泳ぎの絵（はらばい）を、地面にふせて描く
-  function drawCrawl(p, im) {
+  function drawCrawl(p, im, borrowed = false) {
     const frames = sheetFrames(im, 6);
-    const moving = Math.abs(p.vx) > 30;
-    const f = frames[moving ? Math.floor(FX.S.time * 8) % frames.length : 0];
+    const moving = Math.abs(p.vx) > 20;
+    const f = frames[moving ? Math.floor(FX.S.time * 5) % frames.length : 0];
     const maxW = Math.max(...frames.map(fr => fr.w));
     const s = 92 / maxW;
     const w = f.w * s;
     const h = f.h * s;
     ctx.save();
-    ctx.translate(p.x + p.w / 2, p.y + p.h + 6 - h / 2);
-    if (p.facing < 0) ctx.scale(-1, 1);
+    if (borrowed) {
+      // 泳ぎの絵を借りているあいだは、体を水平にたおして、少しつぶして地面にぺたっとつける
+      ctx.translate(p.x + p.w / 2, p.y + p.h + 4 - h * 0.3);
+      if (p.facing < 0) ctx.scale(-1, 1);
+      ctx.rotate(0.3);
+      ctx.scale(1, 0.82);
+    } else {
+      ctx.translate(p.x + p.w / 2, p.y + p.h + 6 - h / 2);
+      if (p.facing < 0) ctx.scale(-1, 1);
+    }
     ctx.drawImage(im, f.x, f.y, f.w, f.h, -w / 2, -h / 2, w, h);
     ctx.restore();
   }
@@ -206,7 +214,7 @@
       }
       const sheet = sprite("crawlSheet") || sprite("swimSheet");
       if (sheet) {
-        drawCrawl(p, sheet);
+        drawCrawl(p, sheet, !sprite("crawlSheet"));
         return { key: "crawl", gun: null, crawl: true };
       }
     }
