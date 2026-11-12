@@ -4859,7 +4859,39 @@ function spawnWeaponDrop(x, y, weaponPower) {
 }
 
 function updateItems(dt) {
+  const underwater = isUnderwaterStage();
   for (const item of state.items) {
+    if (underwater) {
+      // 水の中：ふわふわ浮かびながら、ゆっくりしずむ。底についたらそこでとまる。武器は消えない
+      if (item.type !== "power") item.life -= dt;
+      // 出てきたときの勢いも水がやわらげる（上へ飛んでいきすぎない）
+      item.vy = clamp(item.vy + 140 * dt, -90, 38);
+      item.vx *= Math.pow(0.2, dt);
+      item.x += (item.vx + Math.sin(performance.now() / 600 + item.x * 0.01) * 14) * dt;
+      item.y += item.vy * dt;
+      const floor = worldBottom() - 70 - item.h;
+      if (item.y < 70) item.y = 70;
+      if (item.y > floor) {
+        item.y = floor;
+        item.vy = 0;
+      }
+      item.x = clamp(item.x, 10, WORLD_WIDTH - item.w - 10);
+      if (hit(state.player, item)) {
+        if (item.type === "hp") {
+          state.lives = Math.min(MAX_LIVES, state.lives + 1);
+          state.hp = MAX_HP;
+          playSfx("snackStar", item.x);
+          FX.starGet(item.x + item.w / 2, item.y + item.h / 2);
+        }
+        if (item.type === "power" && !addWeaponStock(item.weaponPower ?? 1)) {
+          item.vy = -60;
+          item.vx = pusherAwayFromPlayer(item) * 0.4;
+          continue;
+        }
+        item.life = 0;
+      }
+      continue;
+    }
     item.life -= dt;
     item.vy += GRAVITY * dt;
     item.x += item.vx * dt;
