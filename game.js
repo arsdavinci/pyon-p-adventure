@@ -3474,12 +3474,9 @@ function randomWeaponDropPower() {
   const totalSnacks = state ? state.kakiTotal + state.peaTotal : 0;
   const balance = totalSnacks > 0 ? 1 - Math.abs(state.kakiTotal - state.peaTotal) / totalSnacks : 0;
   const difficulty = courses[currentCourse]?.difficulty ?? 1;
-  // まず月か星かを決める。星の武器は 1-4 から出はじめ、先のステージほど出やすい
-  // （前は月の続きとして数えていたので、星の武器はほとんど出なかった）
-  const star = difficulty >= 4 && Math.random() < (difficulty >= 9 ? 0.4 : 0.25);
-  const cap = star
-    ? clamp(1 + Math.floor((difficulty - 4) / 3), 1, WEAPON_ATTRIBUTE_SIZE)
-    : clamp(3 + Math.floor(difficulty / 2), 5, WEAPON_ATTRIBUTE_SIZE);
+  // まず月か星かを決める（最初のステージから半々で出る）。レベルの上限は月も星も同じ
+  const star = Math.random() < 0.5;
+  const cap = clamp(3 + Math.floor(difficulty / 2), 5, WEAPON_ATTRIBUTE_SIZE);
   const weights = Array.from({ length: cap }, (_, i) => {
     const rank = i + 1;
     const curve = Math.max(0.03, 1.15 - rank * 0.13);
