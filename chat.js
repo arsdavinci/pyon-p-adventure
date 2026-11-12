@@ -81,6 +81,20 @@
       : ["yana", "十字キーで移動、Aでジャンプ、X・Yで光線銃です。階段をのぼると、空のルートに行けますよ。", "Move with the D-pad, jump with A, fire with X / Y. Climb the steps to reach the sky route."];
   }
 
+  // 装備画面での合成のしかた（ボタン操作）
+  function fuseHowTo() {
+    const pc = typeof controlMode !== "undefined" && controlMode === "pc";
+    return pc
+      ? [
+        ["yana", "Tabキーで装備画面をひらいて、Spaceでアイテムリストに入ります。", "Press Tab to open the equipment screen, then Space to enter the item list."],
+        ["yana", "合成したい光線銃をえらんで、Spaceをおしたまま、矢印キーで同じ光線銃の上まで運んで、はなしてください。マウスでドラッグしてもできますよ。", "Pick a ray gun, hold Space, carry it onto a matching one with the arrow keys, then let go. You can also drag it with the mouse."]
+      ]
+      : [
+        ["yana", "SELECTで装備画面をひらいて、Aでアイテムリストに入ります。", "Press SELECT to open the equipment screen, then A to enter the item list."],
+        ["yana", "合成したい光線銃をえらんで、Aをおしたまま、十字キーで同じ光線銃の上まで運んで、Aをはなしてください。指でドラッグしてもできますよ。", "Pick a ray gun, hold A, carry it onto a matching one with the D-pad, then release A. You can also drag it with your finger."]
+      ];
+  }
+
   function dashHint() {
     const pc = typeof controlMode !== "undefined" && controlMode === "pc";
     return pc
@@ -127,10 +141,13 @@
       ["pyon", `おっ、${name}やん。ええやん！`, `Ooh, a ${name}. Nice!`]
     ])],
     fuse: name => [["pyon", `合体成功！ ${name}になったで！`, `Fusion complete! It's a ${name} now!`]],
-    canFuse: name => [
+    canFuse: name => firstTime("tipFuseHowTo") ? [
       ["yana", `${name}が2つそろいました。同じ光線銃を2つ合成すると、1つ上の新しい光線銃が生まれます。`, `You now have two ${name}s. Fuse two of the same ray gun to create the next, stronger one.`],
-      ["yana", "SELECT（Tabキー）で装備画面をひらいて、同じ銃どうしを重ねてください。合成をくり返すと、全部で16種類まで進化しますよ。", "Press SELECT (Tab) to open the equipment screen and drop one onto the other. Keep fusing and they evolve through 16 types in all."],
+      ...fuseHowTo(),
+      ["yana", "合成をくり返すと、全部で16種類まで進化しますよ。", "Keep fusing and they evolve through 16 types in all."],
       ["pyon", "配合みたいなもんやな。ええやん、いっちょ育てたろ！", "Like breeding, huh. Nice. Let's raise a monster of a gun!"]
+    ] : [
+      ["yana", `${name}が2つそろいました。装備画面で、同じ光線銃どうしを重ねると合成できます。`, `You have two ${name}s. Stack them in the equipment screen to fuse.`]
     ],
     fuseTeach: () => [
       ["yana", "光線銃をひろいましたね。おぼえておいてください。同じ光線銃を2つ集めると、合成して新しい光線銃を生み出せます。", "You picked up a ray gun. Remember this: collect two of the same ray gun and you can fuse them into a new one."],

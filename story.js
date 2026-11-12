@@ -147,7 +147,7 @@
         { s: "ran", ja: "…………。", en: "............" },
         { s: "pyon", ja: "えっ、ツッコミは！？ 『なんでやねん』は！？", en: "Huh? Where's the comeback!? Where's my \"No way!\"?" },
         { s: "ran", ja: "あかん……。どうツッコんだらええんか、ぜんぜん思い出されへん……。", en: "I can't... I've completely forgotten how to do a comeback..." },
-        { s: "narr", bg: "dark", music: "finalBoss", fx: "shake", ja: "そのとき、夜空がまっくろにそまった。\n宇宙じゅうの“笑い”が、空のかなたへ吸い上げられていく——。", en: "At that moment the night sky turned pitch black.\nAll the laughter in the universe was being sucked away into the distance..." },
+        { s: "narr", bg: "dark", music: "bossAppear", fx: "shake", ja: "そのとき、夜空がまっくろにそまった。\n宇宙じゅうの“笑い”が、空のかなたへ吸い上げられていく——。", en: "At that moment the night sky turned pitch black.\nAll the laughter in the universe was being sucked away into the distance..." },
         { s: "mystery", fx: "flash", ja: "フハハハ！ 宇宙の笑いは、この魔王星がぜんぶいただいた！ もうだれも、笑うことはない！", en: "Mwahaha! The Demon Star has taken ALL the laughter in the universe! No one shall ever laugh again!" },
         { s: "luva", bg: "duo", music: "opening", ja: "緊急指令だ、ぴょんぴー。笑いのエネルギー『ワライスター』が6つにくだかれ、魔王の手下たちが6つの星へ持ち去った。", en: "Emergency orders, Pyon-P. The \"Warai Star\", the energy of laughter itself, was shattered into six pieces, and the Demon Lord's followers carried them off to six planets." },
         { s: "luva", ja: "かけらがもどらなければ、宇宙から笑顔が消えてしまう。……だれも笑えないままでは、3日後のフェスも開けない。", en: "Unless the shards return, smiles will vanish from the universe. ...And if no one can laugh, the Fest three days from now cannot be held." },
@@ -1621,6 +1621,8 @@
     if (m === "credits") return cr?.done ? null : "credits";
     if (m === "stageClear" || m === "bossDeath" || m === "ended" || m === "movie") return null;
     const course = courses[currentCourse];
+    // ボス登場の場面は「The Demon Star Arrives」、戦いがはじまったら戦闘曲
+    if (m === "bossIntro") return "bossAppear";
     if (course?.bossStage && state.bossIntroPlayed) {
       if (state.enemies.some(e => e.boss && e.alive)) return course.finalStage ? "finalBoss" : "boss";
       return null;

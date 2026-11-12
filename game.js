@@ -5385,22 +5385,66 @@ function drawInventorySlot(slot) {
 function drawDraggedInventoryItem() {
   const drag = state.inventoryGrab;
   if (!drag) return;
+  // ボタン（A・Space）でつかんだときも、十字キーで選んだマスへついてくる
+  if (!drag.pointer && !drag.gamepad) {
+    const slot = inventorySlotRects().find(s => s.index === state.inventorySelection);
+    if (slot) {
+      drag.x = slot.x + slot.w / 2;
+      drag.y = slot.y + slot.h / 2;
+      drag.displayX = (drag.displayX ?? drag.x) + (drag.x - (drag.displayX ?? drag.x)) * 0.35;
+      drag.displayY = (drag.displayY ?? drag.y) + (drag.y - (drag.displayY ?? drag.y)) * 0.35;
+      drag.moved = drag.moved || drag.from !== state.inventorySelection;
+    }
+  }
+  const t = performance.now() / 1000;
+  const cx = drag.displayX ?? drag.x;
+  const cy = drag.displayY ?? drag.y;
+  const lift = 22 + Math.sin(t * 5) * 5; // ふわふわ浮かせる
+  const target = inventorySlotRects().find(s => s.index === state.inventorySelection);
+  const canFuseHere = !drag.pointer && target && !target.empty && target.index !== drag.from && target.power === drag.power && canFusePower(target.power);
   ctx.save();
-  ctx.globalAlpha = drag.gamepad ? 0.72 : 0.86;
-  ctx.translate(drag.displayX ?? drag.x, drag.displayY ?? drag.y);
-  ctx.rotate(Math.sin(performance.now() / 120) * 0.04);
-  drawWeaponIcon(0, 0, drag.power, drag.gamepad ? 1.35 : 1.18, 1);
-  ctx.strokeStyle = "rgba(255, 243, 164, 0.85)";
-  ctx.lineWidth = 3;
+  // 下に落ちる影
+  ctx.fillStyle = "rgba(40, 26, 96, 0.28)";
   ctx.beginPath();
-  ctx.roundRect(-38, -30, 76, 60, 8);
+  ctx.ellipse(cx, cy + 26, 30 - Math.sin(t * 5) * 4, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.translate(cx, cy - lift);
+  ctx.rotate(Math.sin(t * 8) * 0.05);
+  // うしろの光
+  const glow = ctx.createRadialGradient(0, 0, 6, 0, 0, 58);
+  glow.addColorStop(0, canFuseHere ? "rgba(255, 141, 183, 0.75)" : "rgba(255, 243, 164, 0.7)");
+  glow.addColorStop(1, "rgba(255, 243, 164, 0)");
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, 58, 0, Math.PI * 2);
+  ctx.fill();
+  drawWeaponIcon(0, 0, drag.power, 1.4, 1);
+  ctx.strokeStyle = canFuseHere ? "#ff8db7" : "#fff3a4";
+  ctx.lineWidth = 3;
+  ctx.setLineDash([8, 6]);
+  ctx.lineDashOffset = -t * 30;
+  ctx.beginPath();
+  ctx.roundRect(-44, -34, 88, 68, 10);
   ctx.stroke();
+  ctx.setLineDash([]);
+  // 同じ光線銃の上に来たら「合成！」と出す
+  if (canFuseHere) {
+    ctx.fillStyle = "#ff8db7";
+    ctx.beginPath();
+    ctx.roundRect(-56, -62, 112, 24, 12);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "900 14px Segoe UI, system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(language === "ja" ? "はなして合成" : "Release: Fuse", 0, -50);
+  }
   ctx.restore();
 }
 
 function drawGamepadInventoryGhost() {
   const grab = state.inventoryGrab;
-  if (!grab?.gamepad) return;
+  if (!grab || grab.pointer) return;
   const slot = inventorySlotRects().find(s => s.index === state.inventorySelection);
   if (!slot) return;
   ctx.save();
