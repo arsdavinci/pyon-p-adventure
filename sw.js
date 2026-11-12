@@ -1,4 +1,4 @@
-const CACHE_NAME = "pyon-p-adventure-v39";
+const CACHE_NAME = "pyon-p-adventure-v40";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -57,8 +57,9 @@ self.addEventListener("fetch", event => {
   if (url.pathname.endsWith(".mp4") || request.headers.has("range")) return;
 
   if (url.origin === location.origin && (url.pathname.endsWith(".js") || url.pathname.endsWith(".css") || url.pathname.endsWith(".html") || url.pathname.endsWith("/"))) {
+    // ブラウザの一時保存（最大10分）も通さず、いつも最新をとりにいく
     event.respondWith(
-      fetch(request).then(response => {
+      fetch(request, { cache: "no-cache" }).then(response => {
         const copy = response.clone();
         if (response.ok) caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
         return response;

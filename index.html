@@ -131,8 +131,33 @@
     <script>
       const isLocalPreview = ["localhost", "127.0.0.1", "::1"].includes(location.hostname);
       if ("serviceWorker" in navigator && location.protocol.startsWith("http") && !isLocalPreview) {
+        // 新しい版が出たら自動で入れかえる。アプリに戻ってきたときにも確認する
+        const hadController = !!navigator.serviceWorker.controller;
+        let reloading = false;
+        let pendingReload = false;
+        const canReloadNow = () => typeof state === "undefined" || !state || !["playing", "bossIntro", "respawning"].includes(state.mode);
+        const reloadForUpdate = () => {
+          if (reloading) return;
+          if (!canReloadNow()) { pendingReload = true; return; }
+          reloading = true;
+          location.reload();
+        };
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+          if (hadController) reloadForUpdate();
+        });
         window.addEventListener("load", () => {
-          navigator.serviceWorker.register("./sw.js").catch(() => {});
+          navigator.serviceWorker.register("./sw.js", { updateViaCache: "none" }).then(reg => {
+            const check = () => reg.update().catch(() => {});
+            document.addEventListener("visibilitychange", () => {
+              if (document.visibilityState !== "visible") return;
+              check();
+              if (pendingReload && canReloadNow()) reloadForUpdate();
+            });
+            setInterval(() => {
+              check();
+              if (pendingReload && canReloadNow()) reloadForUpdate();
+            }, 60000);
+          }).catch(() => {});
         });
       }
     </script>
