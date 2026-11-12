@@ -1856,7 +1856,8 @@ function isUnderwaterStage() {
 function startGame(fresh = false) {
   if (FX.transitioning()) return;
   // 「つづきから」：セーブファイルがあれば、どのファイルから始めるか選ぶ画面を出す
-  if (!fresh && state?.mode === "title" && !state.saveMenu && readSaveSlots().some(Boolean)) {
+  // 「ロード」：セーブファイルを選ぶ画面（ファイルがなくても開いて、空っぽを見せる）
+  if (!fresh && state?.mode === "title" && !state.saveMenu && (readSaveSlots().some(Boolean) || !Story.hasSave())) {
     openSaveMenu(true);
     overlay.classList.add("hidden");
     return;
@@ -10572,7 +10573,11 @@ function titleMenuButtons() {
 
 function syncTitleFocus() {
   const buttons = titleMenuButtons();
-  if (titleFocusIndex < 0 || titleFocusIndex >= buttons.length) titleFocusIndex = buttons.indexOf(startButton);
+  if (titleFocusIndex < 0 || titleFocusIndex >= buttons.length) {
+    // 読みこめるものがあれば「ロード」、なければ「はじめから」を選んでおく
+    const canLoad = readSaveSlots().some(Boolean) || Story.hasSave();
+    titleFocusIndex = buttons.indexOf(canLoad ? startButton : document.querySelector("#newGameButton"));
+  }
   for (const button of document.querySelectorAll(".title-actions button")) {
     button.classList.toggle("is-focused", buttons[titleFocusIndex] === button);
   }

@@ -951,9 +951,10 @@ body[data-game-mode="movie"] .comm-panel {
 }
 
 .comm-avatar[data-speaker="pyon"] {
-  background-image: url("assets/pyompy-jump-nosmoke.png");
-  background-size: 285%;
-  background-position: 53% 28%;
+  /* 小さな顔の絵（スマホでも軽い） */
+  background-image: url("assets/avatar-pyonpy.webp");
+  background-size: cover;
+  background-position: center;
   background-color: #efe6ff;
 }
 

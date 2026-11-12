@@ -1625,9 +1625,9 @@
     if (logo) {
       logo.classList.toggle("title-logo", atTitle);
       if (atTitle) {
-        if (!logo.src.endsWith("assets/title-logo.png")) logo.src = "assets/title-logo.png";
+        if (!/title-logo.(png|webp)/.test(logo.src)) logo.src = "assets/title-logo.png";
         logo.alt = t("title");
-      } else if (logo.src.endsWith("assets/title-logo.png")) {
+      } else if (/title-logo.(png|webp)/.test(logo.src)) {
         logo.src = language === "en" ? "assets/moonians-logo-English.png" : "assets/moonians-logo.png";
       }
     }
@@ -1635,11 +1635,12 @@
     if (atTitle) {
       h1.textContent = t("title");
       p.textContent = t("controls");
-      startButton.textContent = hasSave() ? L("つづきから", "Continue") : L("はじめる", "Start");
+      // タイトルはいつも「はじめから」と「ロード」の2つ
+      startButton.textContent = L("ロード", "Load");
     }
     if (newBtn) {
       newBtn.textContent = data.cleared ? L("強くてはじめから", "New Game+") : L("はじめから", "New Game");
-      newBtn.classList.toggle("hidden", !(atTitle && hasSave()));
+      newBtn.classList.toggle("hidden", !atTitle);
       delete newBtn.dataset.armed;
     }
     if (sub) {
