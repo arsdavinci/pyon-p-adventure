@@ -168,7 +168,7 @@
       ]
     },
     world1: {
-      music: "story",
+      music: "select",
       lines: [
         { s: "ran", bg: "world1", ja: "ぴょんぴー、聞こえる？ かけらが1つもどって、月のみんなに、ちょっとだけ笑顔がもどったで！", en: "Pyon-P, can you hear me? One shard is back, and everyone on the Moon is smiling again. Just a little!" },
         { s: "pyon", ja: "ほんまか！ ほな記念に一発ギャグを——", en: "Really!? Then to celebrate, here's a brand new gag—" },
@@ -178,7 +178,7 @@
       ]
     },
     world2: {
-      music: "story",
+      music: "select",
       lines: [
         { s: "yana", bg: "world2", ja: "クリスタル氷星に到着しました。地面がとてもすべります。", en: "We have arrived at the Crystal Ice Planet. The ground is extremely slippery." },
         { s: "pyon", ja: "まかしとき。うちのギャグはスベらへんけど、足はスベるかもしれん。", en: "No problem. My jokes never slip... my feet might, though." },
@@ -187,7 +187,7 @@
       ]
     },
     world3: {
-      music: "story",
+      music: "select",
       lines: [
         { s: "yana", bg: "world3", ja: "星の海です。水の中では酸素がへっていきます。O2バブルでこまめに補給してください。", en: "This is the Star Ocean. Your oxygen drains underwater, so grab O2 bubbles often." },
         { s: "pyon", ja: "泳ぎは得意ちゃうけど……上下ボタンでぷかぷか行けるな！", en: "Swimming isn't my thing... but I can float around with up and down!" },
@@ -196,7 +196,7 @@
       ]
     },
     world4: {
-      music: "story",
+      music: "select",
       lines: [
         { s: "yana", bg: "world4", ja: "リングメカ工場です。ベルトコンベアと動く床に気をつけて。", en: "The Ring Mecha Factory. Mind the conveyor belts and moving platforms." },
         { s: "ran", ja: "ぴょんぴー！ うち、だいぶツッコめるようになってきたで。『なんで…………やねん』！", en: "Pyon-P! My comebacks are almost back. \"No............ way!\"" },
@@ -205,7 +205,7 @@
       ]
     },
     world5: {
-      music: "story",
+      music: "select",
       lines: [
         { s: "yana", bg: "world5", ja: "……最後のかけらは、魔王星の城の奥です。重力が波のようにゆれています。", en: "...The last shard is deep inside the castle on the Demon Star. Gravity there pulses like a wave." },
         { s: "luva", ja: "フェスは、あしただ。ここから先は今までとはわけがちがう。気を引きしめて行きなさい。", en: "The Fest is tomorrow. From here on, it won't be like before. Stay sharp." },
