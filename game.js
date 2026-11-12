@@ -11419,10 +11419,10 @@ function drawPlayerRunSprite(p) {
 
 function drawPlayerJumpSprite(p) {
   const source = { x: 253, y: 48, w: 700, h: 966 };
-  const drawH = 96;
+  const drawH = 80; // 待機のぴょんぴー（約77）と同じくらい。ジャンプは体がのびるので少しだけ高め
   const drawW = drawH * (source.w / source.h);
   const dx = p.x + p.w / 2 - drawW * 0.54;
-  const dy = p.y + p.h - drawH + 8;
+  const dy = p.y + p.h - drawH + 7;
 
   ctx.save();
   if (p.facing < 0) {
