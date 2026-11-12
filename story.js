@@ -773,6 +773,44 @@
     return { x: 20, y: 10, w: 176, h: 40 };
   }
 
+  // 携帯ゲーム機レイアウトでは、会話の吹き出しをゲーム画面の下の欄に出す
+  const storyBox = {
+    el: document.querySelector("#gbStory"),
+    name: document.querySelector("#gbStoryName"),
+    text: document.querySelector("#gbStoryText"),
+    key: ""
+  };
+  storyBox.el?.addEventListener("pointerdown", event => {
+    event.preventDefault();
+    if (state?.mode !== "cutscene") return;
+    if (typeof unlockAudio === "function") unlockAudio();
+    advanceCutscene();
+  });
+
+  function useStoryBox() {
+    return Boolean(storyBox.el) && typeof Handheld !== "undefined" && Handheld.active() && Handheld.commOn();
+  }
+
+  function renderStoryBox(ln, sp, narr) {
+    const shown = Math.floor(cs.shown);
+    const total = [...lineText(ln)].length;
+    const done = shown >= total && !cs.ending;
+    const key = `${cs.i}:${language}:${shown}:${done}`;
+    if (key === storyBox.key) return;
+    const fresh = !storyBox.key.startsWith(`${cs.i}:${language}:`);
+    storyBox.key = key;
+    storyBox.el.classList.toggle("is-narration", narr);
+    storyBox.el.classList.toggle("is-done", done);
+    storyBox.el.style.setProperty("--speaker", narr ? "#c8b2ff" : sp.color);
+    storyBox.name.textContent = narr ? "" : L(sp.ja, sp.en);
+    storyBox.text.textContent = [...lineText(ln)].slice(0, shown).join("").replace(/\n/g, language === "ja" ? "" : " ");
+    if (fresh) {
+      storyBox.el.classList.remove("is-pop");
+      void storyBox.el.offsetWidth;
+      storyBox.el.classList.add("is-pop");
+    }
+  }
+
   function drawCutscene() {
     const W = canvas.width;
     const H = canvas.height;
@@ -814,6 +852,12 @@
     }
 
     // テキストボックス
+    if (useStoryBox()) renderStoryBox(ln, sp, narr);
+    else drawCanvasTextBox(ln, sp, narr, boxX, boxY, boxW, boxH);
+    drawSkipButton();
+  }
+
+  function drawCanvasTextBox(ln, sp, narr, boxX, boxY, boxW, boxH) {
     ctx.save();
     const pop = ease(cs.lineT / 0.18);
     ctx.translate(0, (1 - pop) * 10);
@@ -884,8 +928,9 @@
       ctx.fill();
     }
     ctx.restore();
+  }
 
-    // スキップ
+  function drawSkipButton() {
     const r = skipRect();
     ctx.save();
     ctx.globalAlpha = 0.88;

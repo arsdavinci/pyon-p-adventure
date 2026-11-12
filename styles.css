@@ -1195,7 +1195,6 @@ body[data-layout="handheld"] .comm-bubble p {
 
 /* タイトルや会話シーンでは、ボタンの説明を出す */
 body[data-layout="handheld"][data-comm="on"][data-game-mode="title"] .gb-guide,
-body[data-layout="handheld"][data-comm="on"][data-game-mode="cutscene"] .gb-guide,
 body[data-layout="handheld"][data-comm="on"][data-game-mode="credits"] .gb-guide,
 body[data-layout="handheld"][data-comm="on"][data-game-mode="movie"] .gb-guide {
   display: flex;
@@ -1580,4 +1579,99 @@ body[data-layout="handheld"] .touch-small.is-pressed::after {
   transform: translateY(calc(3 * var(--u))) scale(0.95);
   filter: brightness(1.12);
   transition-duration: 40ms;
+}
+
+/* 会話シーンの吹き出し（携帯ゲーム機レイアウトでは画面の下の欄に出す） */
+.gb-story {
+  display: none;
+}
+
+body[data-layout="handheld"][data-comm="on"][data-game-mode="cutscene"] .gb-story {
+  display: flex;
+}
+
+body[data-layout="handheld"] .gb-story {
+  --speaker: #c8b2ff;
+  position: relative;
+  z-index: 1;
+  order: 3;
+  flex: 1 1 0;
+  min-height: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: calc(6 * var(--u));
+  margin: calc(14 * var(--u)) calc(14 * var(--u)) calc(18 * var(--u));
+  padding: calc(16 * var(--u)) calc(26 * var(--u)) calc(22 * var(--u));
+  border: calc(5 * var(--u)) solid var(--speaker);
+  border-radius: calc(24 * var(--u));
+  background: rgba(255, 248, 253, 0.97);
+  box-shadow: inset 0 0 0 calc(3 * var(--u)) #ffffff;
+  color: #3f355d;
+  overflow: hidden;
+  cursor: pointer;
+  touch-action: none;
+}
+
+body[data-layout="handheld"] .gb-story.is-narration {
+  background: rgba(30, 18, 70, 0.92);
+  box-shadow: none;
+  color: #ffffff;
+  text-align: center;
+}
+
+body[data-layout="handheld"] .gb-story.is-pop {
+  animation: gb-story-pop 0.2s ease-out;
+}
+
+@keyframes gb-story-pop {
+  0% { transform: translateY(calc(8 * var(--u))); opacity: 0.6; }
+  100% { transform: none; opacity: 1; }
+}
+
+body[data-layout="handheld"] #gbStoryName {
+  align-self: flex-start;
+  padding: calc(3 * var(--u)) calc(18 * var(--u));
+  border-radius: 999px;
+  background: var(--speaker);
+  color: #ffffff;
+  font-size: calc(24 * var(--u));
+  font-weight: 900;
+}
+
+body[data-layout="handheld"] .gb-story.is-narration #gbStoryName {
+  display: none;
+}
+
+body[data-layout="handheld"] #gbStoryText {
+  margin: 0;
+  min-height: 2.7em;
+  font-size: calc(30 * var(--u));
+  font-weight: 800;
+  line-height: 1.38;
+  text-shadow: none;
+}
+
+body[data-layout="handheld"] .gb-story-next {
+  position: absolute;
+  right: calc(24 * var(--u));
+  bottom: calc(14 * var(--u));
+  width: 0;
+  height: 0;
+  border-left: calc(11 * var(--u)) solid transparent;
+  border-right: calc(11 * var(--u)) solid transparent;
+  border-top: calc(15 * var(--u)) solid var(--speaker);
+  opacity: 0;
+}
+
+body[data-layout="handheld"] .gb-story.is-narration .gb-story-next {
+  border-top-color: #fff3a4;
+}
+
+body[data-layout="handheld"] .gb-story.is-done .gb-story-next {
+  opacity: 1;
+  animation: gb-story-next 0.9s ease-in-out infinite;
+}
+
+@keyframes gb-story-next {
+  50% { transform: translateY(calc(5 * var(--u))); }
 }
