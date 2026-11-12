@@ -228,7 +228,7 @@
       const text = line.replace(/^ぴょんぴー「|」$|^Pyon-P: "|"$/g, "");
       if (typeof Shop !== "undefined" && Shop.unlocked() && firstTime("tipShop")) {
         return [
-          ["yana", "マップに『よろず屋 つきのわ』が開店しました。集めた柿の種とピーナッツで、便利な道具が買えますよ。", "The Tsukinowa General Store has opened on the map. Spend your kaki seeds and peanuts on handy gear."],
+          ["yana", "1-3から左へのびる道の先に『よろず屋 つきのわ』が開店しました。集めた柿の種とピーナッツで、便利な道具が買えますよ。", "The Tsukinowa General Store has opened at the end of the path left of 1-3. Spend your kaki seeds and peanuts on handy gear."],
           ["pyon", "2段ジャンプシューズ……たっか！ いつか買うたる！", "Double-Jump Shoes... so expensive! I'll buy them someday!"]
         ];
       }

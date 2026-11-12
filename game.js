@@ -409,6 +409,49 @@ let mapMessageTimer = 0;
 let mapInputLockTimer = 0;
 let mapCamera = { x: 0, y: 0 };
 let mapWalkTimer = 0;
+// よろず屋は 1-3 から左へのびる別ルートの先（月のクレーターの中）にある
+const SHOP_MAP_NODE = { x: 84, y: 390, course: 2 };
+let mapAtShop = false;
+let mapShopT = 0; // 0 = 1-3 の上、1 = よろず屋の上（歩く途中は間）
+const shopMapIcon = new Image();
+shopMapIcon.src = "assets/map-shop.png";
+
+function shopNodeAvailable() {
+  return typeof Shop !== "undefined" && Shop.unlocked() && unlockedCourse >= SHOP_MAP_NODE.course;
+}
+
+function shopNodeToCanvas() {
+  const layout = mapImageLayout();
+  return { x: layout.x + SHOP_MAP_NODE.x * layout.scale, y: layout.y + SHOP_MAP_NODE.y * layout.scale };
+}
+
+// 十字キーの向きでマップを動く。1-3 で左を押すとよろず屋への道に入る
+function mapMove(direction) {
+  if (mapAtShop) {
+    if (direction === "right" || direction === "down" || direction === "up") {
+      mapAtShop = false;
+      mapSelectedCourse = SHOP_MAP_NODE.course;
+      currentCourse = mapSelectedCourse;
+      playSfx("equip", state?.player?.x ?? 480);
+      updateHud();
+    }
+    return;
+  }
+  if (direction === "left" && mapSelectedCourse === SHOP_MAP_NODE.course && shopNodeAvailable()) {
+    mapAtShop = true;
+    playSfx("equip", state?.player?.x ?? 480);
+    return;
+  }
+  moveMapSelection(direction === "left" || direction === "up" ? -1 : 1);
+}
+
+function confirmMapSelection() {
+  if (mapAtShop) {
+    if (mapShopT > 0.85) Shop.open();
+    return;
+  }
+  startMapCourse(mapSelectedCourse);
+}
 let mapWalkFrom = 0;
 let mapWalkTo = 0;
 let gameOverContinueAvailable = false;
@@ -1448,6 +1491,8 @@ function restoreCampaignSnapshot(snapshot) {
 function enterWorldMap(selectedIndex = currentCourse, firstOpen = false, fromWorld = null) {
   currentCourse = clamp(selectedIndex, 0, courses.length - 1);
   mapSelectedCourse = clamp(selectedIndex, 0, unlockedCourse);
+  mapAtShop = false;
+  mapShopT = 0;
   if (!state) state = newState();
   state.mode = "worldMap";
   state.camera = 0;
@@ -1610,6 +1655,7 @@ function update(dt) {
     mapMessageTimer = Math.max(0, mapMessageTimer - dt);
     mapInputLockTimer = Math.max(0, mapInputLockTimer - dt);
     mapWalkTimer = Math.max(0, mapWalkTimer - dt);
+    mapShopT = clamp(mapShopT + (mapAtShop ? 1 : -1) * dt / 0.6, 0, 1);
     updateWorldMapCamera(dt);
     updateHud();
     return;
@@ -4006,7 +4052,10 @@ function currentMapWalkerPoint() {
       y: from.y + (to.y - from.y) * eased
     };
   }
-  return MAP_NODE_POINTS[mapSelectedCourse] ?? MAP_NODE_POINTS[0];
+  const base = MAP_NODE_POINTS[mapSelectedCourse] ?? MAP_NODE_POINTS[0];
+  if (mapShopT <= 0) return base;
+  const k = mapShopT * mapShopT * (3 - mapShopT * 2);
+  return { x: base.x + (SHOP_MAP_NODE.x - base.x) * k, y: base.y + (SHOP_MAP_NODE.y - base.y) * k };
 }
 
 function updateWorldMapCamera(dt) {
@@ -4133,6 +4182,25 @@ function drawWorldMapScreen() {
     ctx.lineTo(endX, endY);
     ctx.stroke();
   }
+  if (shopNodeAvailable()) {
+    const from = mapPointToCanvas(SHOP_MAP_NODE.course);
+    const to = shopNodeToCanvas();
+    ctx.strokeStyle = "rgba(255, 196, 64, 0.9)";
+    ctx.lineWidth = 14;
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
+    ctx.lineWidth = 4;
+    ctx.setLineDash([10, 9]);
+    ctx.lineDashOffset = -performance.now() / 60;
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
   ctx.restore();
 
   drawLockedMapFog(reveal);
@@ -4180,6 +4248,8 @@ function drawWorldMapScreen() {
     Story.drawMapNodeStars(i, p);
   }
 
+  if (shopNodeAvailable()) drawShopMapNode();
+
   const walkerPoint = currentMapWalkerPoint();
   const layoutForWalker = mapImageLayout();
   const p = {
@@ -4188,12 +4258,14 @@ function drawWorldMapScreen() {
   };
   ctx.save();
   ctx.translate(p.x, p.y - 28 + Math.sin(performance.now() / 140) * 3);
-  const walking = mapWalkTimer > 0;
+  const walking = mapWalkTimer > 0 || (mapShopT > 0 && mapShopT < 1);
   if (pyompyRun.complete && pyompyRun.naturalWidth > 0 && walking) {
     const frame = PYOMPY_RUN_FRAMES[Math.floor(performance.now() / 90) % PYOMPY_RUN_FRAMES.length];
     const h = 46;
     const w = h * (frame.w / frame.h);
-    const dir = (MAP_NODE_POINTS[mapWalkTo]?.x ?? walkerPoint.x) >= (MAP_NODE_POINTS[mapWalkFrom]?.x ?? walkerPoint.x) ? 1 : -1;
+    const dir = mapWalkTimer > 0
+      ? ((MAP_NODE_POINTS[mapWalkTo]?.x ?? walkerPoint.x) >= (MAP_NODE_POINTS[mapWalkFrom]?.x ?? walkerPoint.x) ? 1 : -1)
+      : (mapAtShop ? -1 : 1);
     ctx.scale(dir, 1);
     ctx.drawImage(pyompyRun, frame.x, frame.y, frame.w, frame.h, -w / 2, -h, w, h);
   } else if (pyompyJump.complete && pyompyJump.naturalWidth > 0) {
@@ -4207,11 +4279,99 @@ function drawWorldMapScreen() {
   ctx.restore();
 
   Story.drawMapHud();
-  Shop.drawMapButton();
   drawWorldMapPanel();
 }
 
+// よろず屋の目じるし（assets/map-shop.png があればそれを、なければ仮の絵を出す）
+function drawShopMapNode() {
+  const p = shopNodeToCanvas();
+  const t = performance.now() / 1000;
+  ctx.save();
+  if (mapAtShop) {
+    const pulse = 1 + Math.sin(t * 7.7) * 0.08;
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.92)";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 40 * pulse, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  const bob = Math.sin(t * 2.4) * 3;
+  if (shopMapIcon.complete && shopMapIcon.naturalWidth > 0) {
+    const h = mapAtShop ? 92 : 80;
+    const w = h * (shopMapIcon.naturalWidth / shopMapIcon.naturalHeight);
+    ctx.drawImage(shopMapIcon, p.x - w / 2, p.y - h * 0.78 + bob, w, h);
+  } else {
+    // 仮の絵：三日月の看板がついた小さなお店
+    ctx.translate(p.x, p.y + bob);
+    ctx.fillStyle = "#fff6dc";
+    ctx.strokeStyle = "#d98a2b";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.roundRect(-24, -30, 48, 34, 6);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#ff8db7";
+    ctx.beginPath();
+    ctx.moveTo(-32, -28);
+    ctx.lineTo(0, -52);
+    ctx.lineTo(32, -28);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#ffd85a";
+    ctx.beginPath();
+    ctx.arc(0, -14, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#fff6dc";
+    ctx.beginPath();
+    ctx.arc(4, -17, 8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+  // 名前の札
+  ctx.save();
+  const label = language === "ja" ? "よろず屋" : "Shop";
+  ctx.font = "900 14px Segoe UI, system-ui, sans-serif";
+  const lw = ctx.measureText(label).width + 20;
+  ctx.fillStyle = mapAtShop ? "#ffd85a" : "rgba(255, 251, 224, 0.95)";
+  ctx.strokeStyle = "#d98a2b";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(p.x - lw / 2, p.y + 14, lw, 22, 11);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#8a4f12";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(label, p.x, p.y + 25);
+  ctx.restore();
+}
+
 function drawWorldMapPanel() {
+  if (mapAtShop) {
+    ctx.save();
+    ctx.fillStyle = "rgba(255, 251, 236, 0.94)";
+    ctx.strokeStyle = "#ffd85a";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.roundRect(34, canvas.height - 108, canvas.width - 68, 82, 8);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#d98a2b";
+    ctx.font = "900 24px Segoe UI, system-ui, sans-serif";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillText(language === "ja" ? "よろず屋 つきのわ" : "Tsukinowa General Store", 58, canvas.height - 92);
+    ctx.fillStyle = "#4d4773";
+    ctx.font = "800 17px Segoe UI, system-ui, sans-serif";
+    ctx.fillText(language === "ja" ? "柿の種とピーナッツで、べんりな道具が買えるお店。" : "Trade kaki seeds and peanuts for handy gear.", 58, canvas.height - 60);
+    ctx.fillStyle = "#ff8db7";
+    ctx.font = "900 15px Segoe UI, system-ui, sans-serif";
+    ctx.textAlign = "right";
+    ctx.fillText(language === "ja" ? "決定で入る ／ →でもどる" : "Confirm: enter  /  →: back", canvas.width - 58, canvas.height - 60);
+    ctx.restore();
+    return;
+  }
   const course = courses[mapSelectedCourse] ?? courses[0];
   const world = course?.worldIndex ?? 0;
   const line = MAP_STAGE_MESSAGES[language]?.[world] ?? MAP_STAGE_MESSAGES.en[world] ?? "";
@@ -7402,16 +7562,16 @@ function updateGamepad() {
   }
 
   if (state.mode === "worldMap") {
-    const moveDir = gamepadState.left || gamepadState.up ? -1 : gamepadState.right || gamepadState.down ? 1 : 0;
+    const moveName = gamepadState.left ? "left" : gamepadState.up ? "up" : gamepadState.right ? "right" : gamepadState.down ? "down" : "";
     const freshMove = (gamepadState.left && !gamepadState.leftLatch) || (gamepadState.right && !gamepadState.rightLatch) || (gamepadState.up && !gamepadState.upLatch) || (gamepadState.down && !gamepadState.downLatch);
-    if (!moveDir) {
+    if (!moveName) {
       gamepadState.inventoryMoveDelay = 0;
     } else if (freshMove || now >= gamepadState.inventoryMoveDelay) {
-      moveMapSelection(moveDir);
+      mapMove(moveName);
       gamepadState.inventoryMoveDelay = now + (freshMove ? 230 : 125);
     }
     if (selectPressed && !gamepadState.selectLatch) Shop.open();
-    if ((jumpPressed && !gamepadState.jumpLatch) || (shootPressed && !gamepadState.shootLatch) || (startPressed && !gamepadState.startLatch)) startMapCourse(mapSelectedCourse);
+    if ((jumpPressed && !gamepadState.jumpLatch) || (shootPressed && !gamepadState.shootLatch) || (startPressed && !gamepadState.startLatch)) confirmMapSelection();
     gamepadState.leftLatch = gamepadState.left;
     gamepadState.rightLatch = gamepadState.right;
     gamepadState.upLatch = gamepadState.up;
@@ -7499,11 +7659,11 @@ function handleKeyDown(code, event = { repeat: false }) {
   }
   if (state.mode === "worldMap") {
     if (!event.repeat && (code === "Tab" || code === "Select" || code === "KeyI" || code === "KeyE")) Shop.open();
-    if (code === "ArrowLeft" || code === "KeyA") moveMapSelection(-1);
-    if (code === "ArrowRight" || code === "KeyD") moveMapSelection(1);
-    if (code === "ArrowUp" || code === "KeyW") moveMapSelection(-1);
-    if (code === "ArrowDown" || code === "KeyS") moveMapSelection(1);
-    if (code === "Enter" || code === "Space" || code === "KeyX" || code === "KeyY" || code === "KeyJ") startMapCourse(mapSelectedCourse);
+    if (code === "ArrowLeft" || code === "KeyA") mapMove("left");
+    if (code === "ArrowRight" || code === "KeyD") mapMove("right");
+    if (code === "ArrowUp" || code === "KeyW") mapMove("up");
+    if (code === "ArrowDown" || code === "KeyS") mapMove("down");
+    if (code === "Enter" || code === "Space" || code === "KeyX" || code === "KeyY" || code === "KeyJ") confirmMapSelection();
     return;
   }
   if (!event.repeat && code === "Enter" && (state.mode === "playing" || state.mode === "respawning") && overlay.classList.contains("hidden")) {
@@ -7637,14 +7797,26 @@ canvas.addEventListener("pointerdown", event => {
     return;
   }
   if (state.mode === "worldMap") {
-    if (Shop.mapPointer(pos.x, pos.y)) {
-      event.preventDefault();
-      return;
+    if (shopNodeAvailable()) {
+      const sp = shopNodeToCanvas();
+      if (Math.hypot(pos.x - sp.x, pos.y - (sp.y - 16)) <= 44) {
+        if (mapAtShop) confirmMapSelection();
+        else {
+          mapSelectedCourse = SHOP_MAP_NODE.course;
+          currentCourse = mapSelectedCourse;
+          mapAtShop = true;
+          playSfx("equip", state?.player?.x ?? 480);
+          updateHud();
+        }
+        event.preventDefault();
+        return;
+      }
     }
     const courseIndex = mapCourseAt(pos.x, pos.y);
     if (courseIndex >= 0) {
-      if (courseIndex === mapSelectedCourse) startMapCourse(courseIndex);
+      if (courseIndex === mapSelectedCourse && !mapAtShop) startMapCourse(courseIndex);
       else {
+        mapAtShop = false;
         mapSelectedCourse = courseIndex;
         currentCourse = courseIndex;
         playSfx("equip", state?.player?.x ?? 480);
