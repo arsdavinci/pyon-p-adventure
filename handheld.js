@@ -20,7 +20,6 @@
   const COMM_MIN = 120; // 会話だけ出せる高さ
   const COMM_FULL = 236; // 会話＋そうび中の武器を出せる高さ
   const COMM_TARGET = 200;
-  const COMM_MAX = 250;
 
   const shell = document.querySelector(".shell");
   const controls = document.querySelector(".touch-controls");
@@ -87,8 +86,10 @@
     // 本体の上のかざりはステータスバーの下、下のかざりはホームバーの下に入ってもよい
     const uGuess = (availW * BLEED) / SRC.W;
     const underTop = Math.min(safe.t, (SRC.HOLE_T - 30) * uGuess);
-    const underBottom = Math.min(safe.b, 40 * uGuess);
-    const availH = window.innerHeight - safe.t - safe.b + underTop + underBottom;
+    // 下のかざりはホームバーの下まで入れて、本体を画面の下はしまでのばす
+    const underBottom = safe.b;
+    const viewH = Math.max(window.innerHeight, document.documentElement.clientHeight || 0);
+    const availH = viewH - safe.t - safe.b + underTop + underBottom;
     const mobile = document.body.dataset.controlMode === "mobile";
     isActive = mobile && availH > availW * 1.05;
     document.body.dataset.layout = isActive ? "handheld" : "classic";
@@ -108,8 +109,9 @@
       // スマホ：横幅で大きさが決まる。あまった高さを会話パネルに回す
       u = uWide;
       const free = availH / u - FIXED;
+      // あまった高さはぜんぶ会話パネルに回して、下にすき間を作らない
       crop = Math.min(CROP_MAX, Math.max(0, COMM_TARGET - free));
-      comm = Math.min(COMM_MAX, free + crop);
+      comm = free + crop;
       if (comm < COMM_MIN) {
         comm = 0;
         crop = Math.max(0, -free);
@@ -140,6 +142,19 @@
     document.body.dataset.comm = comm > 0 ? "on" : "off";
     document.body.dataset.commSize = comm >= COMM_FULL ? "full" : "chat";
   }
+
+  // ---------- ダブルタップ・ピンチでのズームを止める ----------
+  for (const name of ["gesturestart", "gesturechange", "gestureend", "dblclick"]) {
+    document.addEventListener(name, event => event.preventDefault(), { passive: false });
+  }
+  let lastTouchEnd = 0;
+  document.addEventListener("touchend", event => {
+    const now = Date.now();
+    const quick = now - lastTouchEnd < 350;
+    lastTouchEnd = now;
+    // 2回目のすばやいタップがズームにならないようにする（ボタンはそのまま押せる）
+    if (quick && !event.target.closest?.("button, a, input, select, textarea")) event.preventDefault();
+  }, { passive: false });
 
   // ---------- ボタン入力 ----------
   // iPhone で長押しすると出る虫めがね（ルーペ）や文字選択を止める。ボタンは pointer イベントで動く
@@ -400,6 +415,9 @@
   }
 
   window.addEventListener("resize", layout);
+  // ホーム画面から開いたとき、最初の画面の高さがあとから変わることがあるので測りなおす
+  window.addEventListener("load", () => { layout(); setTimeout(layout, 400); setTimeout(layout, 1200); });
+  window.addEventListener("pageshow", () => setTimeout(layout, 100));
   window.addEventListener("orientationchange", () => setTimeout(layout, 250));
   window.visualViewport?.addEventListener("resize", layout);
   document.addEventListener("fullscreenchange", () => setTimeout(layout, 120));
