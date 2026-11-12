@@ -9616,6 +9616,8 @@ function drawPlayerBody(p) {
   if (pose) {
     // ポーズの絵には銃が描かれていないので、にぎった手に、ねらう向きで銃を持たせる
     if (pose.gun && hasEquippedWeapon()) drawGunInHand(p, pose.gun.x, pose.gun.y);
+    // 泳いでいるときも、銃を持たせる（前にのばした手のあたり）
+    else if (p.swimming && hasEquippedWeapon()) drawAimedGun(p);
     return;
   }
   if (pyompySprite.complete && pyompySprite.naturalWidth > 0) drawPlayerSprite(p);
