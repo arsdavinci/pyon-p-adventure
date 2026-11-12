@@ -44,7 +44,11 @@ const MAX_OXYGEN = 100;
 const STAGE_TRAITS = ["moonFloat", "marsLava", "iceSlide", "underwater", "factoryBelt", "demonPulse"];
 const SEA_GATE_PERIOD = 4.0;
 const SEA_GATE_W = 84;
-const MAX_WEAPON_POWER = 16;
+const MAX_WEAPON_POWER = 17;
+// 17番目はロボット「ムーニアン・メカ」。🌙Lv8 と ⭐Lv8 を合体させると手に入る
+const MECH_POWER = 17;
+const MOON_TOP = 8;
+const STAR_TOP = 16;
 const WEAPON_ATTRIBUTE_SIZE = 8;
 const MAX_INVENTORY_ITEMS = 27;
 const VISIBLE_INVENTORY_ITEMS = 15;
@@ -92,7 +96,8 @@ const WEAPON_NAMES_JA = [
   "ブラックホールパルス",
   "コスモクラウン",
   "スーパーノヴァ360",
-  "ステラガーディアンキャノン"
+  "ステラガーディアンキャノン",
+  "ムーニアン・メカ"
 ];
 const WEAPON_STAGES = [
   { name: "weapon-moon-01-moon-popper", count: 1, damage: 1, range: 220, speed: 560, width: 24, height: 7, spread: 0, cooldown: 0.42, pattern: "forward", colors: ["#fff3a4","#bff8ff","#ff9bd4"] },
@@ -110,7 +115,8 @@ const WEAPON_STAGES = [
   { name: "weapon-star-05-black-hole-pulse", count: 14, damage: 13, range: 1900, speed: 1620, width: 76, height: 16, spread: 0, cooldown: 0.16, pattern: "radial", pierce: 1, colors: ["#2d245d","#9ee8ff","#ffffff"] },
   { name: "weapon-star-06-cosmo-crown", count: 15, damage: 14, range: 2040, speed: 1700, width: 80, height: 17, spread: 0, cooldown: 0.15, pattern: "crown", colors: ["#fff3a4","#ff8db7","#ffffff"] },
   { name: "weapon-star-07-supernova-360", count: 18, damage: 15, range: 2180, speed: 1780, width: 84, height: 18, spread: 0, cooldown: 0.14, pattern: "radial", pierce: 2, colors: ["#ffffff","#fff3a4","#ff3d7f"] },
-  { name: "weapon-star-08-stellar-guardian-cannon", count: 20, damage: 16, range: 2320, speed: 1860, width: 88, height: 19, spread: 0, cooldown: 0.13, pattern: "homing", explosion: 140, colors: ["#ffffff","#9ee8ff","#ff3d7f"] }
+  { name: "weapon-star-08-stellar-guardian-cannon", count: 20, damage: 16, range: 2320, speed: 1860, width: 88, height: 19, spread: 0, cooldown: 0.13, pattern: "homing", explosion: 140, colors: ["#ffffff","#9ee8ff","#ff3d7f"] },
+  { name: "Moonian Mecha", count: 24, damage: 24, range: 2600, speed: 2000, width: 92, height: 22, spread: 0, cooldown: 0.12, pattern: "homing", explosion: 170, colors: ["#ffffff","#ff8db7","#9ee8ff"] }
 ];
 const TEXT = {
   ja: {
@@ -340,7 +346,8 @@ const weaponIcons = [
   "assets/weapon-star-05-black-hole-pulse.png",
   "assets/weapon-star-06-cosmo-crown.png",
   "assets/weapon-star-07-supernova-360.png",
-  "assets/weapon-star-08-stellar-guardian-cannon.png"
+  "assets/weapon-star-08-stellar-guardian-cannon.png",
+  "assets/weapon-mech-icon.png"
 ].map(src => {
   const img = new Image();
   img.src = `${src}?v=${WEAPON_ASSET_VERSION}`;
@@ -3120,6 +3127,9 @@ function playerShoulder(p) {
 }
 
 function playerMuzzle(p) {
+  if (state.weaponPower === MECH_POWER && hasEquippedWeapon()) {
+    return { x: p.x + p.w / 2 + (p.facing || 1) * 30, y: p.y + p.h - 150 };
+  }
   const s = playerShoulder(p);
   const a = p.aim ?? (p.facing < 0 ? Math.PI : 0);
   return { x: s.x + Math.cos(a) * 30, y: s.y + Math.sin(a) * 30 };
@@ -3215,7 +3225,9 @@ function weaponStage(power = state.weaponPower) {
 }
 
 function weaponAttribute(power = state?.weaponPower ?? 1) {
-  return clamp(Math.floor(power), 1, MAX_WEAPON_POWER) <= WEAPON_ATTRIBUTE_SIZE ? "moon" : "star";
+  const value = clamp(Math.floor(power), 1, MAX_WEAPON_POWER);
+  if (value === MECH_POWER) return "mech";
+  return value <= WEAPON_ATTRIBUTE_SIZE ? "moon" : "star";
 }
 
 function weaponRank(power = state?.weaponPower ?? 1) {
@@ -3225,10 +3237,25 @@ function weaponRank(power = state?.weaponPower ?? 1) {
 
 // 月の武器は 🌙、星の武器は ⭐。レベルは月・星それぞれ 1〜8 で数える
 function weaponLevelLabel(power = state?.weaponPower ?? 1, space = false) {
+  if (Math.floor(power) === MECH_POWER) return "🤖MAX";
   return `${weaponAttribute(power) === "moon" ? "🌙" : "⭐"}Lv${space ? " " : ""}${weaponRank(power)}`;
 }
 
+// 合成できる組み合わせ：同じ武器どうし（最高レベル以外）、または 🌙Lv8 と ⭐Lv8（ロボットになる）
+function fusionResult(a, b) {
+  if (!a || !b) return null;
+  if ((a === MOON_TOP && b === STAR_TOP) || (a === STAR_TOP && b === MOON_TOP)) return MECH_POWER;
+  if (a === b) return nextFusionPower(a);
+  return null;
+}
+
+
 function drawWeaponMark(x, y, size, power) {
+  if (Math.floor(power) === MECH_POWER) {
+    drawWeaponMark(x - size * 0.3, y, size * 0.75, 1);
+    drawWeaponMark(x + size * 0.35, y, size * 0.75, 16);
+    return;
+  }
   ctx.save();
   ctx.translate(x, y);
   ctx.lineWidth = Math.max(2, size * 0.14);
@@ -3252,12 +3279,13 @@ function drawWeaponMark(x, y, size, power) {
 
 function nextFusionPower(power) {
   const value = clamp(Math.floor(power), 1, MAX_WEAPON_POWER);
+  if (value === MECH_POWER) return null;
   if (weaponRank(value) >= WEAPON_ATTRIBUTE_SIZE) return null;
   return value + 1;
 }
 
 function canFusePower(power) {
-  return nextFusionPower(power) !== null;
+  return nextFusionPower(power) !== null || power === MOON_TOP || power === STAR_TOP;
 }
 
 function randomWeaponDropPower() {
@@ -3433,8 +3461,8 @@ function firstInventoryIndexByPower(power) {
 function fuseInventoryItems(fromIndex, toIndex) {
   ensureInventoryItems();
   const power = state.inventoryItems[fromIndex];
-  const nextPower = nextFusionPower(power);
-  if (!power || state.inventoryItems[toIndex] !== power || !nextPower) return;
+  const nextPower = fusionResult(power, state.inventoryItems[toIndex]);
+  if (!power || !nextPower) return;
   state.inventoryItems[fromIndex] = null;
   state.inventoryItems[toIndex] = nextPower;
   syncWeaponInventoryFromItems();
@@ -3450,6 +3478,12 @@ function fuseInventoryItems(fromIndex, toIndex) {
   FX.flash("#ffd1ed", 0.3, 0.3);
   FX.firework(canvas.width / 2, canvas.height / 2 - 40, FX.PASTEL);
   Chat.event("fuse", weaponName(nextPower));
+  if (nextPower === MECH_POWER) {
+    // ロボット完成：そのまま乗りこむ
+    equipWeapon(MECH_POWER - 1);
+    FX.flash("#ffffff", 0.6, 0.5);
+    FX.shake(0.4);
+  }
 }
 
 function showItemFullPrompt() {
@@ -3474,6 +3508,7 @@ function ensureInventorySelectionVisible() {
 }
 
 function strongestWeaponPower(inventory = state.weaponInventory) {
+  while (inventory.length < MAX_WEAPON_POWER) inventory.push(0);
   for (let i = MAX_WEAPON_POWER - 1; i >= 0; i--) {
     if ((inventory[i] ?? 0) > 0) return i + 1;
   }
@@ -4180,7 +4215,7 @@ function damagePlayer(fell = false, sourceEnemy = null, canStealWeapon = false) 
   const p = state.player;
   if (state.mode === "dying" || state.mode === "respawning") return;
   if (!fell && p.invincible > 0) return;
-  if (!fell && canStealWeapon && sourceEnemy && sourceEnemy.alive && hasEquippedWeapon() && !Shop.has("strap")) {
+  if (!fell && canStealWeapon && sourceEnemy && sourceEnemy.alive && hasEquippedWeapon() && !Shop.has("strap") && state.weaponPower !== MECH_POWER) {
     const playerPower = state.weaponPower;
     const enemyPower = sourceEnemy.weaponPower ?? 0;
     if (enemyPower === 0 || playerPower > enemyPower || (sourceEnemy.boss && playerPower >= enemyPower)) {
@@ -6785,7 +6820,7 @@ function drawInventorySlot(slot) {
   }
   // つかんでいる武器と合成できるマスは、赤く光らせて「合成」の札を出す
   const grab = state.inventoryGrab;
-  const fusable = grab && slot.index !== grab.from && slot.power === grab.power && canFusePower(slot.power);
+  const fusable = grab && slot.index !== grab.from && fusionResult(slot.power, grab.power) !== null;
   if (fusable) {
     const pulse = 0.6 + Math.sin(t * 8) * 0.4;
     ctx.save();
@@ -6867,7 +6902,7 @@ function drawDraggedInventoryItem() {
   const cy = drag.displayY ?? drag.y;
   const lift = 22 + Math.sin(t * 5) * 5; // ふわふわ浮かせる
   const target = inventorySlotRects().find(s => s.index === state.inventorySelection);
-  const canFuseHere = !drag.pointer && target && !target.empty && target.index !== drag.from && target.power === drag.power && canFusePower(target.power);
+  const canFuseHere = !drag.pointer && target && !target.empty && target.index !== drag.from && fusionResult(target.power, drag.power) !== null;
   ctx.save();
   ctx.translate(cx, cy);
   ctx.scale(1.6, 1.6);
@@ -7103,7 +7138,8 @@ function drawFusionPrompt() {
   ctx.fillStyle = "#4d4773";
   ctx.font = "900 23px Georgia, serif";
   ctx.textAlign = "center";
-  ctx.fillText(`${weaponName(prompt.power)}${t("fuseQuestion")}`, canvas.width / 2, y + 36);
+  const toMech = Number.isInteger(prompt.to) && fusionResult(state.inventoryItems[prompt.from], state.inventoryItems[prompt.to]) === MECH_POWER;
+  ctx.fillText(toMech ? (language === "ja" ? "ロボットに合体しますか？" : "Combine into the Mecha?") : `${weaponName(prompt.power)}${t("fuseQuestion")}`, canvas.width / 2, y + 36);
   const labels = ["Yes", "No"];
   ctx.font = "900 28px Georgia, serif";
   for (let i = 0; i < buttons.length; i++) {
@@ -8583,6 +8619,11 @@ function drawPlayer() {
 }
 
 function drawPlayerBody(p) {
+  if (hasEquippedWeapon() && state.weaponPower === MECH_POWER) {
+    if (p.invincible > 0 && state.mode !== "respawning" && Math.floor(performance.now() / 90) % 2) return;
+    drawMech(p);
+    return;
+  }
   if (hasEquippedWeapon() && state.weaponPower >= 16) drawBackCannon(p);
   if (p.invincible > 0 && state.mode !== "respawning" && Math.floor(performance.now() / 90) % 2) return;
   const pose = Gimmick.drawPlayerPose(p);
@@ -8594,6 +8635,153 @@ function drawPlayerBody(p) {
   if (pyompySprite.complete && pyompySprite.naturalWidth > 0) drawPlayerSprite(p);
   else drawPlayerFallback(p);
   if (hasEquippedWeapon()) drawAimedGun(p);
+}
+
+// ---------- ロボット「ムーニアン・メカ」 ----------
+// assets/mech-*.png があれば使い、なければプログラムで描いた仮のロボットを出す
+const mechArt = {};
+for (const key of ["idle", "jump", "shoot", "walk-6"]) {
+  const im = new Image();
+  im.src = `assets/mech-${key}.png`;
+  mechArt[key] = im;
+}
+const MECH_H = 170; // ぴょんぴー（約84）の2倍くらい
+
+function drawMech(p) {
+  const f = p.facing || 1;
+  const cx = p.x + p.w / 2;
+  const bottom = p.y + p.h + 4;
+  const t = performance.now() / 1000;
+  const grounded = p.grounded || isPlayerVisuallyOnGround(p);
+  const walking = grounded && Math.abs(p.vx) > 35;
+  const shooting = state.gun.cooldown > 0;
+  const ok = im => im && im.complete && im.naturalWidth > 0;
+  ctx.save();
+  ctx.translate(cx, bottom);
+  ctx.scale(f, 1);
+  const art = !grounded ? mechArt.jump : shooting ? mechArt.shoot : walking ? null : mechArt.idle;
+  const sheet = mechArt["walk-6"];
+  if (walking && ok(sheet)) {
+    const frame = Math.floor(t * 10) % 6;
+    const fw = sheet.naturalWidth / 6;
+    const dw = MECH_H * (fw / sheet.naturalHeight);
+    ctx.drawImage(sheet, frame * fw, 0, fw, sheet.naturalHeight, -dw / 2, -MECH_H, dw, MECH_H);
+  } else if (ok(art)) {
+    const dh = grounded ? MECH_H : MECH_H * 1.05;
+    const dw = dh * (art.naturalWidth / art.naturalHeight);
+    ctx.drawImage(art, -dw / 2, grounded ? -dh : -dh * 0.9, dw, dh);
+  } else {
+    drawMechPlaceholder(t, walking, grounded, shooting);
+  }
+  ctx.restore();
+}
+
+// 仮のロボット（画像がとどくまで）
+function drawMechPlaceholder(t, walking, grounded, shooting) {
+  const step = walking ? Math.sin(t * 12) : 0;
+  const bob = walking ? Math.abs(Math.cos(t * 12)) * 4 : Math.sin(t * 3) * 1.5;
+  const legs = grounded ? 0 : 10;
+  const stroke = "#5a3d9a";
+  ctx.lineJoin = "round";
+  ctx.lineWidth = 3;
+  // 足
+  for (const side of [-1, 1]) {
+    const swing = step * side * 10;
+    ctx.fillStyle = side < 0 ? "#9ad9e8" : "#b7e9f2";
+    ctx.strokeStyle = stroke;
+    ctx.beginPath();
+    ctx.roundRect(side * 22 - 12 + swing, -62 + legs, 24, 50 - legs, 8);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#fff3a4";
+    ctx.beginPath();
+    ctx.ellipse(side * 22 + swing + 4, -8 + legs * 0.4, 22, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+  ctx.translate(0, -bob);
+  // 背中のブースター
+  ctx.fillStyle = "#c8b2ff";
+  ctx.strokeStyle = stroke;
+  ctx.beginPath();
+  ctx.roundRect(-54, -126, 18, 46, 6);
+  ctx.fill();
+  ctx.stroke();
+  if (!grounded) {
+    ctx.fillStyle = `rgba(255, 180, 80, ${0.6 + Math.sin(t * 40) * 0.3})`;
+    ctx.beginPath();
+    ctx.moveTo(-52, -80);
+    ctx.lineTo(-38, -80);
+    ctx.lineTo(-45, -56 - Math.random() * 10);
+    ctx.closePath();
+    ctx.fill();
+  }
+  // 体
+  const body = ctx.createLinearGradient(-44, -150, 44, -60);
+  body.addColorStop(0, "#d9cbff");
+  body.addColorStop(1, "#a68ef0");
+  ctx.fillStyle = body;
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.roundRect(-44, -150, 88, 92, 26);
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = "#fff3a4";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.roundRect(-38, -144, 76, 80, 22);
+  ctx.stroke();
+  // うさ耳アンテナ
+  for (const side of [-1, 1]) {
+    ctx.fillStyle = "#ffd1ed";
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(side * 16, -168, 7, 18, side * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+  // コックピット（中にぴょんぴー）
+  ctx.fillStyle = "rgba(200, 245, 255, 0.85)";
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(6, -114, 26, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#fffaf0";
+  ctx.beginPath();
+  ctx.arc(8, -112, 14, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#3f355d";
+  ctx.beginPath();
+  ctx.arc(13, -114, 2.4, 0, Math.PI * 2);
+  ctx.arc(4, -114, 2.4, 0, Math.PI * 2);
+  ctx.fill();
+  // 肩のミサイルポッド
+  for (const side of [-1, 1]) {
+    ctx.save();
+    ctx.translate(side * 40, -150);
+    ctx.rotate(shooting ? -0.35 : 0);
+    ctx.fillStyle = "#ff8db7";
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.roundRect(-16, -18, 32, 26, 6);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#5a3d9a";
+    for (let k = 0; k < 3; k++) {
+      ctx.beginPath();
+      ctx.arc(-9 + k * 9, -5, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+  // 三日月と星のマーク
+  drawWeaponMark(-26, -92, 16, 1);
+  drawWeaponMark(28, -92, 16, 16);
 }
 
 function drawGunInHand(p, x, y) {
@@ -9318,7 +9506,7 @@ canvas.addEventListener("pointerup", event => {
     equipWeapon(target.power - 1);
     return;
   }
-  if (target && !target.empty && target.index !== grab.from && target.power === grab.power && canFusePower(target.power)) {
+  if (target && !target.empty && target.index !== grab.from && fusionResult(target.power, grab.power) !== null) {
     state.fusionPrompt = { power: grab.power, choice: 0, from: grab.from, to: target.index };
     return;
   }
@@ -9450,7 +9638,7 @@ function releaseInventoryGrab() {
     ensureInventorySelectionVisible();
     return;
   }
-  if (target.index !== grab.from && target.power === grab.power && canFusePower(target.power)) {
+  if (target.index !== grab.from && fusionResult(target.power, grab.power) !== null) {
     state.fusionPrompt = { power: grab.power, choice: 0, from: grab.from, to: target.index };
     return;
   }

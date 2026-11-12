@@ -319,7 +319,7 @@
       if (boss && boss.hp / Math.max(1, boss.maxHp) < 0.5) once("bossHalf", "bossHalf");
     }
     for (let power = 1; power < MAX_WEAPON_POWER; power++) {
-      if ((state.weaponInventory[power - 1] ?? 0) >= 2 && canFusePower(power) && !flags[`fuse${power}`]) {
+      if ((state.weaponInventory[power - 1] ?? 0) >= 2 && (nextFusionPower(power) !== null) && !flags[`fuse${power}`]) {
         flags[`fuse${power}`] = true;
         event("canFuse", weaponName(power));
         break;
@@ -396,7 +396,7 @@
     e.atk.style.width = `${Math.max(8, (st.damage / 16) * 100)}%`;
     e.range.style.width = `${Math.max(8, (st.range / 2320) * 100)}%`;
     e.rapid.style.width = `${Math.max(8, ((0.46 - st.cooldown) / 0.33) * 100)}%`;
-    const fusable = stock >= 2 && canFusePower(power);
+    const fusable = stock >= 2 && (nextFusionPower(power) !== null);
     e.hint.textContent = fusable
       ? L(`×${stock} もってる！ SELECTで合体できるよ`, `You have ×${stock}! Fuse them with SELECT`)
       : power >= MAX_WEAPON_POWER ? L("最終進化！", "Final evolution!") : L("同じ銃を2つ集めると合体", "Collect two of the same to fuse");
