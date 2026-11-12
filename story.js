@@ -1780,6 +1780,8 @@
   }
 
   let preloaded = false;
+  const HURRY_TIME = 60;
+  let lastHurry = false;
 
   function syncMusic() {
     if (!window.Bgm || !audioUnlocked) return;
@@ -1817,6 +1819,25 @@
       }
     }
     if (filePlaying) filePlaying.audio.muted = !soundEnabled;
+    // 残り時間が少なくなったら、曲を速くしてせかす（60秒から）
+    const inStage = ["playing", "paused", "inventory", "respawning", "dying"].includes(state.mode) && typeof state.time === "number";
+    const hurry = inStage && state.time <= HURRY_TIME && !courses[currentCourse]?.bossStage;
+    if (hurry && !lastHurry && state.mode === "playing" && typeof playTone === "function") {
+      // 「急いで！」の合図
+      for (let i = 0; i < 3; i++) playTone({ start: i * 0.16, freq: 1320, endFreq: 1180, duration: 0.11, type: "square", gain: 0.035 });
+    }
+    lastHurry = hurry;
+    if (filePlaying) {
+      const rate = hurry ? 1.3 : 1;
+      if (Math.abs(filePlaying.audio.playbackRate - rate) > 0.01) {
+        try { filePlaying.audio.preservesPitch = true; } catch (_) {}
+        filePlaying.audio.playbackRate = rate;
+      }
+    }
+    for (const name in fileTracks) {
+      const other = fileTracks[name];
+      if (other !== filePlaying && other.audio.playbackRate !== 1) other.audio.playbackRate = 1;
+    }
     if (duck !== lastDuck) {
       lastDuck = duck;
       Bgm.duck(duck);

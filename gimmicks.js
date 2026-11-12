@@ -5,7 +5,8 @@
   "use strict";
 
   const TAU = Math.PI * 2;
-  const CLIMB_AREAS = { 0: [2], 1: [2], 2: [2], 4: [2], 5: [2, 5] };
+  // 山のぼりは 1-3 だけ（ほかのステージは、それぞれちがう通路）
+  const CLIMB_AREAS = { 0: [2] };
   const CLIMB_BOTTOM = 1320;
   const UP = 112;
   const RED = "#ff7d9c";
@@ -426,7 +427,8 @@
     }
     if (course.bossStage) return course;
     if (course.climbStage) setupClimb(course);
-    else setupSky(course);
+    // 区間をつないだ通路には、どれも同じ形になる「空のルート」は足さない
+    else if (!course.chunky) setupSky(course);
     return course;
   }
 

@@ -734,7 +734,7 @@ const MAP_WORLD_FOG_ZONES = [
   { x: 1515, y: 450, rx: 255, ry: 380, rotate: 0.07, color: "rgba(200, 178, 255, 0.78)" }
 ];
 
-function makeCourse(worldIndex, areaIndex, layout = areaIndex) {
+function makeCourse(worldIndex, areaIndex, layout = areaIndex, seed = null) {
   const difficulty = STAGE_START_INDICES[worldIndex] + areaIndex + 1;
   const bossStage = areaIndex === stageAreaCount(worldIndex) - 1;
   const finalStage = worldIndex === STAGE_THEMES.length - 1 && bossStage;
@@ -763,6 +763,11 @@ function makeCourse(worldIndex, areaIndex, layout = areaIndex) {
   if (trait === "underwater") platforms.length = 0;
   const climb = !bossStage && trait !== "underwater" && Gimmick.isClimbArea(worldIndex, layout) ? Gimmick.buildClimb(worldIndex, layout) : null;
   if (climb) platforms = climb.platforms;
+  // ふつうのステージは、区間をつないだ、その場所だけの通路にする
+  const chunk = !bossStage && !finalStage && trait !== "underwater" && !climb
+    ? buildChunkCourse({ seed: seed ?? (STAGE_START_INDICES[worldIndex] + areaIndex) * 3, difficulty, trait })
+    : null;
+  if (chunk) platforms = chunk.platforms;
 
   const blocks = [];
   for (let i = 0; i < (finalStage || trait === "underwater" ? 0 : 9); i++) {
@@ -772,6 +777,7 @@ function makeCourse(worldIndex, areaIndex, layout = areaIndex) {
     else if (i % 3 === 1) blocks.push(breakable(bx, by, "power"));
     else blocks.push(breakable(bx, by, "power"));
   }
+  if (chunk) blocks.splice(0, blocks.length, ...chunk.blocks);
   if (finalStage) {
     blocks.push(
       hiddenItemBox(3420, 252, "power"),
@@ -794,7 +800,9 @@ function makeCourse(worldIndex, areaIndex, layout = areaIndex) {
     foe.enemyKind = worldIndex;
     enemies.push(foe);
   }
-  if (trait !== "underwater") placeEnemiesOnPlatforms(enemies, platforms);
+  const chunkStuff = chunk ? chunkCourseContent(chunk, worldIndex, difficulty, enemyCount) : null;
+  if (chunkStuff) enemies.splice(0, enemies.length, ...chunkStuff.enemies);
+  else if (trait !== "underwater") placeEnemiesOnPlatforms(enemies, platforms);
   if (bossStage) {
     const bossPowers = [5, 4, 7, 9, 11, 16];
     const bossPower = finalStage ? 16 : bossPowers[worldIndex] ?? Math.min(MAX_WEAPON_POWER, 5 + worldIndex * 2);
@@ -822,8 +830,11 @@ function makeCourse(worldIndex, areaIndex, layout = areaIndex) {
     oxygenItem(2060, 88),
     oxygenItem(3520, 104)
   ] : [];
-  const seaGates = trait === "underwater" && !bossStage ? buildSeaGates(areaIndex, difficulty) : [];
-  const lavaGeysers = trait === "marsLava" && !finalStage ? [
+  const seaGates = trait === "underwater" && !bossStage ? buildSeaGates(areaIndex, difficulty, seed ?? (STAGE_START_INDICES[worldIndex] + areaIndex) * 3) : [];
+  const pitGeysers = chunk && trait === "marsLava"
+    ? chunk.pitXs.filter((_, i, a) => a.length <= 4 || i % Math.ceil(a.length / 4) === 0).slice(0, 4).map((x, i) => lavaGeyser(x - 36, (i * 1.1 + 0.5) % 4.2))
+    : null;
+  const lavaGeysers = pitGeysers ? pitGeysers : trait === "marsLava" && !finalStage ? [
     lavaGeyser(980, 1.1),
     lavaGeyser(1780, 2.3),
     lavaGeyser(2880, 3.4),
@@ -844,7 +855,7 @@ function makeCourse(worldIndex, areaIndex, layout = areaIndex) {
     rotatingFire(3300, 260, 58, -1.55)
   ] : [];
 
-  return Gimmick.finalize({
+  return clearStuckThings(Gimmick.finalize({
     theme: STAGE_THEMES[worldIndex],
     worldIndex,
     areaIndex,
@@ -854,11 +865,25 @@ function makeCourse(worldIndex, areaIndex, layout = areaIndex) {
     difficulty,
     climbStage: !!climb,
     climbMeta: climb?.meta ?? null,
+    chunky: !!chunk,
     platforms,
     blocks,
-    level: { enemies, coins, starItems, oxygenItems, seaGates, lavaGeysers, lavaPools, rotatingFires, flag: rect(5060, 252, 28, 240) },
-    gun: { x: 330 + areaIndex * 70, y: 430 }
-  });
+    level: {
+      enemies, coins: chunk ? chunk.coins : coins, starItems: chunkStuff ? chunkStuff.stars : starItems,
+      oxygenItems, seaGates, lavaGeysers, lavaPools, rotatingFires, spikes: chunk ? chunk.spikes : [],
+      doorSpots: chunk ? chunk.doorSpots : [], flag: rect(5060, 252, 28, 240)
+    },
+    gun: { x: Math.min(520, 330 + areaIndex * 70), y: 430 }
+  }));
+}
+
+// 足場とかさなったコイン・敵はとりのぞく（あとから足した空のルートとぶつかったとき）
+function clearStuckThings(course) {
+  const solid = pt => course.platforms.some(p => pt.x > p.x + 2 && pt.x < p.x + p.w - 2 && pt.y > p.y + 2 && pt.y < p.y + p.h - 2);
+  const lv = course.level;
+  lv.coins = lv.coins.filter(c => !solid(c));
+  lv.enemies = lv.enemies.filter(e => e.boss || !solid({ x: e.x + e.w / 2, y: e.y + e.h / 2 }));
+  return course;
 }
 
 function icePlatform(x, y, w, h = 48, ramp = null) {
@@ -1061,6 +1086,424 @@ function buildFactoryCoursePlatforms(difficulty, areaIndex, bossStage) {
   return platforms;
 }
 
+// ---------- いろいろな通路（区間をつないでステージを作る） ----------
+// ステージ・エリアごとに、区間の順番も大きさもちがう。どのステージも別の通路になる。
+// ジャンプ：高さ約220、助走なしで横に約220とべる。区間はこの中でおさまるように作る
+function seededRandom(seed) {
+  let a = (Math.imul(seed + 1, 2654435761) >>> 0) || 1;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const CHUNK_KINDS = ["pits", "stairs", "spikeField", "pillars", "tunnel", "islands", "valley", "tower", "mover", "shelf", "flat", "cliff"];
+const HIGH_Y = 240; // 地面のいちばん高いところ
+
+function buildChunkCourse({ seed, difficulty, trait, endX = 4860, worldEnd = WORLD_WIDTH, kinds = CHUNK_KINDS }) {
+  const rnd = seededRandom(seed);
+  const pick = arr => arr[Math.floor(rnd() * arr.length)];
+  const between = (a, b) => a + rnd() * (b - a);
+  const k = clamp(difficulty / 34, 0, 1);
+  const ice = trait === "iceSlide";
+  const factory = trait === "factoryBelt";
+  const BOTTOM = canvas.height;
+  const out = { platforms: [], blocks: [], coins: [], enemySpots: [], rewardSpots: [], spikes: [], pitXs: [], keySpots: [], doorSpots: [] };
+  const P = out.platforms;
+  let coinNo = 0;
+  const addCoin = (x, y) => out.coins.push(coin(x, y, coinNo++ % 2 ? "pea" : "kaki"));
+  // 地面（下までつまった土）。工場では一部がベルトコンベアになる
+  const ground = (x, y, w) => {
+    if (factory && w >= 260 && rnd() < 0.4) {
+      P.push(beltPlatform(x, y, w, 48, (rnd() < 0.5 ? -1 : 1) * Math.round(between(150, 220))));
+      P.push({ ...rect(x, y + 48, w, BOTTOM - y - 48), terrain: true, under: true });
+    } else {
+      P.push({ ...rect(x, y, w, BOTTOM - y), terrain: true });
+    }
+  };
+  const ledge = (x, y, w, h = 30) => { P.push(rect(x, y, w, h)); };
+  const spot = (x, y, left, right) => { if (right - left >= 120) out.enemySpots.push({ x, y, left, right }); };
+  let blockNo = 0;
+  const addBlock = (x, y) => { if (y > 70) out.blocks.push(breakable(x - 24, y, blockNo++ % 3 === 0 ? "hp" : "power")); };
+
+  let x = 620;
+  let gy = GROUND_Y;
+  ground(0, GROUND_Y, 620);
+
+  const C = {
+    // すきまをとびこえる
+    pits() {
+      const n = 2 + (rnd() < 0.5 ? 1 : 0);
+      for (let i = 0; i < n; i++) {
+        const gap = between(110, 150 + k * 40) - (ice ? 10 : 0);
+        const w = between(170, 250) + (ice ? 30 : 0);
+        const ny = clamp(gy + pick([-90, -50, 0, 50, 90]), HIGH_Y + 20, GROUND_Y);
+        out.pitXs.push(x + gap / 2);
+        addCoin(x + gap / 2, Math.min(gy, ny) - 100);
+        x += gap;
+        ground(x, ny, w);
+        spot(x + w / 2, ny, x + 10, x + w - 10);
+        gy = ny;
+        x += w;
+      }
+    },
+    // 階段（上りか下り）
+    stairs() {
+      const up = gy - 3 * 84 >= HIGH_Y && (gy > 400 || rnd() < 0.5);
+      const n = up ? 3 + (gy - 4 * 84 >= HIGH_Y && rnd() < 0.5 ? 1 : 0) : Math.max(1, Math.min(4, Math.floor((GROUND_Y - gy) / 64)));
+      if (!up && n < 1) return C.flat();
+      for (let i = 0; i < n; i++) {
+        const w = between(150, 210);
+        gy += up ? -between(64, 84) : between(60, 80);
+        gy = clamp(gy, HIGH_Y, GROUND_Y);
+        ground(x, gy, w);
+        addCoin(x + w / 2, gy - 60);
+        x += w;
+      }
+      spot(x - 90, gy, x - 180, x - 10);
+    },
+    // トゲの床と、上の小さな足場
+    spikeField() {
+      const len = between(620, 760);
+      ground(x, gy, len);
+      const w = between(300, 380 + k * 60);
+      const sx = x + (len - w) / 2;
+      out.spikes.push({ x: sx, y: gy - 22, w, h: 22 });
+      const pw = ice ? 140 : 110;
+      const count = Math.max(2, Math.ceil((w + 60) / 170));
+      for (let j = 0; j < count; j++) {
+        const px = sx + (w / count) * (j + 0.5) - pw / 2;
+        ledge(px, gy - 95 - (j % 2) * 20, pw, 24);
+        addCoin(px + pw / 2, gy - 140 - (j % 2) * 20);
+      }
+      out.keySpots.push({ x: sx + w / 2, y: gy - 210 });
+      if (sx - x > 160) spot(x + (sx - x) / 2, gy, x + 10, sx - 20);
+      x += len;
+    },
+    // 柱をとびこえる
+    pillars() {
+      const len = between(700, 860);
+      ground(x, gy, len);
+      const n = 2 + (rnd() < 0.5 ? 1 : 0);
+      const step = len / (n + 1);
+      let prev = x;
+      for (let i = 0; i < n; i++) {
+        const px = x + step * (i + 1) - 35;
+        const h = between(90, 150 + k * 20);
+        P.push({ ...rect(px, gy - h, 70, BOTTOM - gy + h), terrain: true });
+        addCoin(px + 35, gy - h - 50);
+        spot((prev + px) / 2, gy, prev + 10, px - 10);
+        if (i === 0) addBlock((prev + px) / 2, gy - 160);
+        prev = px + 70;
+      }
+      out.rewardSpots.push({ x: x + step - 0, y: gy - 260 });
+      x += len;
+    },
+    // 天井の低いトンネル（屋根の上にものれる）
+    tunnel() {
+      const len = between(640, 800);
+      ground(x, gy, len);
+      const sx = x + 150;
+      const sw = len - 300;
+      ledge(x + 40, gy - 100, 80, 26);
+      P.push(rect(sx, gy - 200, sw, 60));
+      for (let c = 0; c < 4; c++) addCoin(sx + 40 + c * ((sw - 80) / 3), gy - 40);
+      for (let c = 0; c < 3; c++) addCoin(sx + sw / 2 - 60 + c * 60, gy - 250);
+      spot(sx + sw * 0.3, gy, sx, sx + sw);
+      spot(sx + sw * 0.75, gy, sx, sx + sw);
+      out.rewardSpots.push({ x: sx + sw / 2, y: gy - 270 });
+      x += len;
+    },
+    // 空にうかぶ島をわたる
+    islands() {
+      const n = 3 + (rnd() < 0.4 ? 1 : 0);
+      for (let i = 0; i < n; i++) {
+        const gap = between(110, 160);
+        const w = between(140, 200) + (ice ? 30 : 0);
+        const ny = clamp(gy + pick([-90, -50, 0, 50, 90]), HIGH_Y + 20, 470);
+        out.pitXs.push(x + gap / 2);
+        x += gap;
+        P.push(rect(x, ny, w, 40));
+        addCoin(x + w / 2, ny - 50);
+        if (i === 1) addBlock(x + w / 2, ny - 170);
+        if (i === n - 1) out.rewardSpots.push({ x: x + w / 2, y: ny - 70 });
+        gy = ny;
+        x += w;
+      }
+      const gap = between(110, 150);
+      const ny = clamp(gy + pick([0, 40, 60]), 340, GROUND_Y);
+      out.pitXs.push(x + gap / 2);
+      x += gap;
+      ground(x, ny, 240);
+      gy = ny;
+      x += 240;
+    },
+    // 谷におりて、また上がる
+    valley() {
+      const floorY = 640;
+      const len = between(520, 640);
+      ground(x, floorY, len);
+      const sx = x + len / 2 - 55;
+      out.spikes.push({ x: sx, y: floorY - 22, w: 110, h: 22 });
+      addCoin(sx + 55, floorY - 110);
+      spot(x + 90, floorY, x + 10, sx - 20);
+      spot(x + len - 90, floorY, sx + 130, x + len - 10);
+      out.rewardSpots.push({ x: x + 70, y: floorY - 60 });
+      addBlock(x + len - 120, floorY - 160);
+      x += len;
+      const target = clamp(gy, 400, GROUND_Y);
+      const rise = floorY - target;
+      const n = Math.max(2, Math.ceil(rise / 84));
+      for (let j = 1; j <= n; j++) {
+        ground(x, floorY - (rise * j) / n, 130);
+        x += 130;
+      }
+      gy = target;
+    },
+    // 高い塔に、手前の足場からのぼってこえる
+    tower() {
+      if (gy < 330) return C.stairs();
+      const len = 660;
+      ground(x, gy, len);
+      ledge(x + 50, gy - 110, 120, 26);
+      const top = gy - 250;
+      P.push({ ...rect(x + 210, top, 220, BOTTOM - top), terrain: true });
+      for (let c = 0; c < 3; c++) addCoin(x + 250 + c * 70, top - 50);
+      out.rewardSpots.push({ x: x + 320, y: top - 70 });
+      spot(x + 550, gy, x + 450, x + len - 10);
+      out.doorSpots.push({ x: x + 470, y: gy });
+      x += len;
+    },
+    // 動く足場で穴をわたる
+    mover() {
+      const pitW = between(420, 520);
+      const w = 170;
+      const range = (pitW - w) / 2 - 30;
+      P.push(movingPlatform(x + pitW / 2 - w / 2, gy - 10, w, 36, "x", range, between(0.9, 1.3), rnd() * 6));
+      out.pitXs.push(x + 60, x + pitW - 60);
+      addCoin(x + pitW / 2, gy - 120);
+      x += pitW;
+      ground(x, gy, 260);
+      spot(x + 150, gy, x + 20, x + 250);
+      out.doorSpots.push({ x: x + 60, y: gy });
+      x += 260;
+    },
+    // トゲの上の高い棚（上を通るしかない）
+    shelf() {
+      const len = between(720, 840);
+      ground(x, gy, len);
+      const w = between(330, 390);
+      const sx = x + (len - w) / 2;
+      ledge(sx, gy - 140, w, 30);
+      out.spikes.push({ x: sx + 40, y: gy - 22, w: w - 80, h: 22 });
+      for (let c = 0; c < 4; c++) addCoin(sx + 50 + c * ((w - 100) / 3), gy - 190);
+      out.rewardSpots.push({ x: sx + w / 2, y: gy - 210 });
+      spot(sx + w / 2, gy - 140, sx + 10, sx + w - 10);
+      x += len;
+    },
+    // がけ：足場を2つのぼって、高い台地へ
+    cliff() {
+      if (gy < HIGH_Y + 240) return C.stairs();
+      ground(x, gy, 380);
+      ledge(x + 60, gy - 110, 110, 26);
+      ledge(x + 210, gy - 205, 110, 26);
+      addCoin(x + 115, gy - 155);
+      addCoin(x + 265, gy - 250);
+      const ny = gy - 240;
+      x += 380;
+      const len = between(420, 620);
+      ground(x, ny, len);
+      for (let c = 0; c < 3; c++) addCoin(x + 80 + c * 70, ny - 50);
+      spot(x + len * 0.6, ny, x + 20, x + len - 20);
+      out.rewardSpots.push({ x: x + len - 80, y: ny - 70 });
+      out.doorSpots.push({ x: x + 40, y: ny });
+      gy = ny;
+      x += len;
+    },
+    // ひと息つける平地（アイテムブロック）
+    flat() {
+      const len = between(480, 600);
+      ground(x, gy, len);
+      addBlock(x + len * 0.35, gy - 150);
+      addBlock(x + len * 0.35 + 60, gy - 150);
+      out.doorSpots.push({ x: x + 40, y: gy });
+      spot(x + len * 0.7, gy, x + 20, x + len - 20);
+      x += len;
+    }
+  };
+
+  // 区間の順番：その場所だけのならび（同じ種類が続かない）
+  const order = kinds.slice();
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  if (factory) order.splice(Math.floor(rnd() * order.length), 0, "mover");
+  // 旗の前に、地面へもどる階段と平地が入るように、区間はここまでにおさめる（はみ出したらやり直し）
+  const limit = endX - 360;
+  const lists = ["platforms", "blocks", "coins", "enemySpots", "rewardSpots", "spikes", "pitXs", "keySpots", "doorSpots"];
+  let n = 0;
+  let misses = 0;
+  while (x < limit - 380 && misses < order.length) {
+    const save = { x, gy, coinNo, blockNo, lens: lists.map(name => out[name].length) };
+    C[order[n % order.length]]();
+    n += 1;
+    if (x > limit) {
+      lists.forEach((name, i) => { out[name].length = save.lens[i]; });
+      ({ x, gy, coinNo, blockNo } = save);
+      misses += 1;
+    } else {
+      misses = 0;
+    }
+  }
+  // 最後は旗のある地面（高さ GROUND_Y）にもどる
+  while (gy < GROUND_Y - 4) {
+    gy = Math.min(GROUND_Y, gy + 70);
+    ground(x, gy, 140);
+    x += 140;
+  }
+  ground(x, GROUND_Y, Math.max(300, worldEnd - x));
+  out.endX = x;
+  return out;
+}
+
+// 区間のデータを、コースの中身（敵・★・アイテム）にする
+function chunkCourseContent(c, worldIndex, difficulty, enemyCount) {
+  const enemies = [];
+  const spots = c.enemySpots.slice().sort((a, b) => a.x - b.x);
+  const take = Math.min(enemyCount, spots.length);
+  for (let i = 0; i < take; i++) {
+    const s = spots[Math.floor((i * spots.length) / take)];
+    const power = Math.min(MAX_WEAPON_POWER, Math.max(2, Math.floor((difficulty + i) / 3)));
+    const ex = clamp(s.x - 21, s.left, s.right - 42);
+    const foe = (i + difficulty) % 3 === 0 ? armedEnemy(ex, s.y - 42, s.left, s.right, power) : enemy(ex, s.y - 42, s.left, s.right);
+    foe.enemyKind = worldIndex;
+    enemies.push(foe);
+  }
+  const rewards = c.rewardSpots.slice().sort((a, b) => a.x - b.x);
+  const stars = [];
+  for (let i = 0; i < 3; i++) {
+    const r = rewards[Math.floor(((i + 0.5) * rewards.length) / 3)];
+    stars.push(r ? starItem(r.x, r.y) : starItem(900 + i * 1400, 380));
+  }
+  return { enemies, stars };
+}
+
+// ---------- まん中のエリア：ほら穴（天井のある、長い通路） ----------
+function makeCaveArea(base, worldIndex, areaIndex, difficulty, seed) {
+  const caveEnd = 3600;
+  const c = buildChunkCourse({ seed, difficulty, trait: base.trait, endX: caveEnd - 300, worldEnd: caveEnd,
+    kinds: ["pits", "stairs", "spikeField", "pillars", "tunnel", "valley", "shelf", "flat", "spikeField"] });
+  const P = c.platforms;
+  const ceilY = Math.min(...P.map(p => p.y)) - 170;
+  P.push(rect(-80, ceilY - 400, caveEnd + 160, 400));
+  P.push(rect(-80, ceilY - 400, 80, canvas.height - ceilY + 448));
+  P.push(rect(caveEnd, ceilY - 400, 2800, canvas.height - ceilY + 448));
+  // 天井からさがる岩（下に通れる高さを残す）
+  const rnd = seededRandom(seed + 77);
+  for (let x = 700; x < caveEnd - 500; x += 380 + rnd() * 260) {
+    let floor = Infinity;
+    for (const p of P) if (p.y > ceilY && x + 120 > p.x && x < p.x + p.w) floor = Math.min(floor, p.y);
+    const h = floor - 190 - ceilY;
+    // ★・カギ・コインのある場所にはさげない
+    const busy = c.rewardSpots.concat(c.keySpots, c.coins).some(r => r.x > x - 60 && r.x < x + 180);
+    if (floor < Infinity && h > 40 && !busy) P.push(rect(x, ceilY, 120, h));
+  }
+  const { enemies } = chunkCourseContent(c, worldIndex, difficulty, Math.min(10, 4 + Math.floor(difficulty / 2)));
+  const key = c.keySpots[Math.floor(c.keySpots.length / 2)] ?? c.rewardSpots[0] ?? { x: 1600, y: 300 };
+  const surfaceAt = x => Math.min(...P.filter(p => p.y > ceilY && x > p.x && x < p.x + p.w).map(p => p.y));
+  const fx = caveEnd - 700;
+  const star = c.rewardSpots.find(r => Math.abs(r.x - key.x) > 300) ?? c.rewardSpots.find(r => r !== key) ?? { x: fx, y: surfaceAt(fx) - 70 };
+  const doorX = caveEnd - 200;
+  const area = {
+    ...base, climbStage: false, climbMeta: null, puzzle: null, isMaze: true,
+    top: ceilY - 200, ceilingY: ceilY, bottom: canvas.height, platforms: P, blocks: c.blocks, gun: { x: 300, y: 430 }
+  };
+  area.level = {
+    enemies, coins: c.coins, starItems: [starItem(star.x, star.y)],
+    oxygenItems: [], seaGates: [], lavaGeysers: [], lavaPools: [], rotatingFires: [],
+    keys: [key], springs: [], chests: [], spikes: c.spikes,
+    flag: rect(doorX + 10, GROUND_Y - 240, 28, 240), doors: []
+  };
+  return area;
+}
+
+// ---------- まん中のエリア：たて穴（左右の足場をジグザグにのぼる塔） ----------
+function makeShaftArea(base, worldIndex, areaIndex, difficulty, seed) {
+  const rnd = seededRandom(seed);
+  const between = (a, b) => a + rnd() * (b - a);
+  const ice = base.trait === "iceSlide";
+  const W = 1240;
+  const RISE = 140;
+  const COLS = [120, 490, 860]; // 足場の左はし（幅 260、すき間 110）
+  let L = 9 + Math.min(4, Math.floor(difficulty / 8));
+  if (L % 4 === 1 || L % 4 === 3) L += 1; // 最後の足場は左か右のはし
+  const platforms = [];
+  const spikes = [];
+  const coins = [];
+  const enemies = [];
+  const blocks = [];
+  // 一番下の床（まん中にトゲ）
+  platforms.push({ ...rect(0, GROUND_Y, W, canvas.height - GROUND_Y), terrain: true });
+  spikes.push({ x: 470, y: GROUND_Y - 22, w: 300, h: 22 });
+  const pattern = [0, 1, 2, 1];
+  let keySpot = null;
+  const sideLevel = 3 + Math.floor(rnd() * Math.max(1, L - 5));
+  for (let i = 1; i <= L; i++) {
+    const y = GROUND_Y - RISE * i;
+    const col = pattern[i % 4];
+    const jitter = Math.round(between(-20, 20));
+    const w = ice ? 260 : Math.round(between(220, 260));
+    const lx = clamp(COLS[col] + jitter, COLS[col] - 10, COLS[col] + 260 - w + 10);
+    if (i % 5 === 3) {
+      platforms.push(movingPlatform(lx, y, w - 40, 32, "x", 50, between(0.8, 1.2), rnd() * 6));
+    } else {
+      platforms.push(rect(lx, y, w, 30));
+      if (i % 3 === 0 && w >= 230) {
+        const foe = enemy(lx + w / 2 - 21, y - 42, lx + 6, lx + w - 6);
+        foe.enemyKind = worldIndex;
+        enemies.push(foe);
+      }
+    }
+    coins.push(coin(lx + w / 2, y - 50, i % 2 ? "pea" : "kaki"));
+    // 寄り道の足場（ルートではない列）にカギ
+    // まん中の列の段のときだけ。寄り道は、ひとつ下の段と同じ列（上の段とぶつからない）
+    if (!keySpot && i >= sideLevel && col === 1 && i < L - 1) {
+      const sideCol = pattern[(i - 1) % 4];
+      const sx = COLS[sideCol] + 40;
+      platforms.push(rect(sx, y - 40, 180, 26));
+      keySpot = { x: sx + 90, y: y - 110 };
+      spikes.push({ x: sx + 10, y: y - 40 - 22, w: 40, h: 22 });
+    }
+    if (i === Math.floor(L / 2)) blocks.push(breakable(lx + w / 2 - 24, y - 190, "hp"));
+  }
+  const lastCol = pattern[L % 4];
+  const topY = GROUND_Y - RISE * (L + 1);
+  // 一番上の床：最後の足場の真上はあけておく（下から入れるように）
+  const topFloor = lastCol === 0 ? rect(COLS[1], topY, W - COLS[1], 40) : rect(0, topY, COLS[2] + 260 - 380, 40);
+  platforms.push(topFloor);
+  const ceilY = topY - 260;
+  platforms.push(rect(-80, ceilY - 400, W + 160, 400));
+  platforms.push(rect(-80, ceilY - 400, 80, canvas.height - ceilY + 448));
+  platforms.push(rect(W, ceilY - 400, 2800, canvas.height - ceilY + 448));
+  const doorX = lastCol === 0 ? W - 170 : 60;
+  const area = {
+    ...base, climbStage: false, climbMeta: null, puzzle: null, isMaze: true,
+    top: ceilY - 200, ceilingY: ceilY, bottom: canvas.height, platforms, blocks, gun: { x: 300, y: 430 }
+  };
+  area.level = {
+    enemies, coins,
+    starItems: [starItem(lastCol === 0 ? topFloor.x + 200 : topFloor.x + topFloor.w - 200, topY - 70)],
+    oxygenItems: [], seaGates: [], lavaGeysers: [], lavaPools: [], rotatingFires: [],
+    keys: [keySpot ?? { x: 620, y: GROUND_Y - RISE * 4 }], springs: [], chests: [], spikes,
+    flag: rect(doorX + 10, topY - 240, 28, 240), doors: []
+  };
+  return area;
+}
+
 function placeEnemiesOnPlatforms(enemies, platforms) {
   const ground = platforms.filter(p => p.w >= 150 && (p.y >= 380 || p.terrain));
   for (const e of enemies) {
@@ -1189,9 +1632,12 @@ function makeBonusRoom(stageIndex, roomNo, returnTo) {
 const MAZE_W = 2600;
 const MAZE_FLOOR_H = 240;
 
-function makeMazeArea(base, worldIndex, areaIndex, difficulty) {
-  const seed = worldIndex * 7 + areaIndex * 3;
-  const floors = clamp(4 + Math.floor(difficulty / 14), 4, 6);
+function makeMazeArea(base, worldIndex, areaIndex, difficulty, mazeSeed = worldIndex * 7 + areaIndex * 3) {
+  const seed = mazeSeed;
+  // 建物の幅・階の数・穴の広さは、ステージごとにちがう
+  const mr = seededRandom(mazeSeed * 13 + 5);
+  const MAZE_W = Math.round(2200 + mr() * 800);
+  const floors = clamp(4 + Math.floor(difficulty / 14) + (mr() < 0.4 ? 1 : 0), 4, 6);
   const floorY = k => GROUND_Y - MAZE_FLOOR_H * k;
   const topY = floorY(floors);
   const platforms = [];
@@ -1203,7 +1649,7 @@ function makeMazeArea(base, worldIndex, areaIndex, difficulty) {
   platforms.push(rect(-80, topY - 400, 80, GROUND_Y + 448 - topY), rect(MAZE_W, topY - 400, 2800, GROUND_Y + 448 - topY));
   platforms.push(rect(0, topY - 40, MAZE_W, 40));
   platforms.push(rect(0, GROUND_Y, MAZE_W, 48));
-  const GAP = 280;
+  const GAP = Math.round(250 + mr() * 70);
   for (let k = 1; k < floors; k++) {
     const y = floorY(k);
     // 奇数の階は右はしに穴、偶数の階は左はしに穴（ジグザグにのぼる）
@@ -1330,12 +1776,18 @@ function buildStageAreas(index) {
   const underwater = base.trait === "underwater";
   const other = n => (areaIndex + n) % normalCount;
   const areas = [base];
-  // 2つめ：入りくんだエリア（海のワールドは泳ぐので、別の海のエリア）
+  const seedFor = n => index * 3 + n;
+  const diff = base.difficulty ?? 1;
+  // 2つめ：建物の中（何階もある迷路・天井のあるほら穴・たて穴の塔を、ステージごとに入れかえる）
+  // 海のワールドは泳ぐので、門の場所がちがう別の海のエリア
+  const insideKind = index % 3;
   areas.push(underwater
-    ? { ...makeCourse(worldIndex, other(1)), theme: base.theme, gun: base.gun }
-    : makeMazeArea(base, worldIndex, areaIndex, base.difficulty ?? 1));
-  // 3つめ：同じワールドの別の地形
-  areas.push({ ...makeCourse(worldIndex, other(2)), theme: base.theme, gun: base.gun });
+    ? { ...makeCourse(worldIndex, areaIndex, 99, seedFor(1)), theme: base.theme, gun: base.gun }
+    : insideKind === 0 ? makeMazeArea(base, worldIndex, areaIndex, diff, seedFor(1))
+      : insideKind === 1 ? makeCaveArea(base, worldIndex, areaIndex, diff, seedFor(1))
+        : makeShaftArea(base, worldIndex, areaIndex, diff, seedFor(1)));
+  // 3つめ：このステージだけの、もうひとつの通路
+  areas.push({ ...makeCourse(worldIndex, areaIndex, 99, seedFor(2)), theme: base.theme, gun: base.gun });
   areas.forEach((area, n) => {
     area.areas = areas;
     area.areaNo = n;
@@ -1353,7 +1805,10 @@ function buildStageAreas(index) {
   });
   // 最初のエリアの途中に、寄り道の小部屋
   const first = areas[0];
-  const spot = groundUnder(first, 2300) ?? groundUnder(first, 1900) ?? groundUnder(first, 2800);
+  // 寄り道の扉は、平らで安全な地面に
+  const safe = (first.level.doorSpots ?? []).filter(d => d.x > 800 && d.x < 3900)
+    .sort((a, b) => Math.abs(a.x - 2300) - Math.abs(b.x - 2300))[0];
+  const spot = safe ? { x: safe.x - 40, y: safe.y, w: DOOR_W + 80 } : groundUnder(first, 2300) ?? groundUnder(first, 1900) ?? groundUnder(first, 2800);
   if (spot && !first.climbStage) {
     const dx = clamp(2300, spot.x + 40, spot.x + spot.w - 40 - DOOR_W);
     const room = makeBonusRoom(index, index, { area: 0, x: dx });
@@ -2844,7 +3299,6 @@ function distanceToSegment(px, py, ax, ay, bx, by) {
 }
 
 function updateMovingPlatforms(dt) {
-  if (currentStageTrait() !== "factoryBelt") return;
   const p = state.player;
   const t = (state.stagePulse ?? 0) + dt;
   for (const platform of platforms) {
@@ -4611,16 +5065,18 @@ function updateBeams(dt) {
 // ---------- 星の海：岩のかべと、開いたりとじたりする岩の門 ----------
 // 門はすき間を泳いで通る。とじる前に先が赤く光るので、開いているうちに通りぬける。はさまれるとダメージ
 
-function buildSeaGates(areaIndex, difficulty) {
-  const count = Math.min(7, 3 + areaIndex);
+function buildSeaGates(areaIndex, difficulty, seed = areaIndex) {
+  // 門の数・場所・すき間の高さは、エリアごとにちがう
+  const rnd = seededRandom(seed + 500);
+  const count = clamp(3 + Math.floor(rnd() * 3) + Math.floor(difficulty / 12), 3, 7);
   const gates = [];
   for (let i = 0; i < count; i++) {
-    const x = 980 + i * ((4500 - 980) / Math.max(1, count - 1)) * (count > 1 ? 1 : 0);
-    const moving = i % 2 === 0;
+    const x = 980 + i * ((4500 - 980) / Math.max(1, count - 1)) + (rnd() - 0.5) * 220;
+    const moving = rnd() < 0.55;
     gates.push({
-      x: Math.round(x),
+      x: Math.round(clamp(x, 900, 4560)),
       w: SEA_GATE_W,
-      frac: [0.5, 0.15, 0.8, 0.35, 0.65, 0.2, 0.85][(i + areaIndex) % 7], // すき間の高さ（0 = 上、1 = 下）
+      frac: 0.12 + rnd() * 0.76, // すき間の高さ（0 = 上、1 = 下）
       gapH: moving ? Math.max(150, 200 - difficulty * 2) : 150,
       moving,
       phase: (i * 1.37 + areaIndex * 0.6) % SEA_GATE_PERIOD
