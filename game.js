@@ -3515,11 +3515,31 @@ function updateOxygen(dt) {
     item.respawn = Math.max(0, (item.respawn ?? 0) - dt);
     if (item.respawn <= 0) item.taken = false;
   }
+  // 酸素が少ないとき：ピッピッと鳴らして、ぴょんぴーが知らせる（すぐわかるように）
+  const low = state.oxygen < OXYGEN_LOW;
+  if (low && !state.oxygenWarned) {
+    state.oxygenWarned = true;
+    Chat.say([["pyon", "く、くるしい……酸素が少ないじょ！ 丸いO2バブルをさがすんじゃ！", "C-can't breathe... I'm low on oxygen! Find a round O2 bubble!"]], true);
+  }
+  if (state.oxygen > OXYGEN_LOW + 20) state.oxygenWarned = false;
+  if (low) {
+    state.oxygenBeep = (state.oxygenBeep ?? 0) - dt;
+    if (state.oxygenBeep <= 0) {
+      state.oxygenBeep = state.oxygen <= 0 ? 0.45 : 0.9;
+      playTone({ freq: 1180, endFreq: 980, duration: 0.09, type: "square", gain: 0.03 });
+      playTone({ start: 0.12, freq: 1180, endFreq: 980, duration: 0.09, type: "square", gain: 0.03 });
+    }
+  }
   if (state.oxygen <= 0 && state.oxygenHurtCooldown <= 0) {
     state.oxygenHurtCooldown = 1.15;
+    const p = state.player;
+    FX.floater(p.x + p.w / 2, p.y - 20, language === "ja" ? "酸素がない！" : "No oxygen!", { color: "#ffffff", stroke: "#ff3d7f", size: 26, life: 1.1 });
+    FX.flash("#ff3d7f", 0.25, 0.25);
     damagePlayer(false, null, false);
   }
 }
+
+const OXYGEN_LOW = 30;
 
 // マグマの柱：ふき出す1秒前から地面が光って「！」が出る（LAVA_WARN_AT 〜 LAVA_ERUPT_AT が前ぶれ）
 const LAVA_WARN_AT = 1.55;
@@ -6727,16 +6747,46 @@ function drawOxygenMeter() {
   const w = 220;
   const h = 38;
   const ratio = clamp((state.oxygen ?? MAX_OXYGEN) / MAX_OXYGEN, 0, 1);
+  const low = (state.oxygen ?? MAX_OXYGEN) < OXYGEN_LOW;
+  const empty = (state.oxygen ?? MAX_OXYGEN) <= 0;
+  const blink = 0.5 + Math.sin(performance.now() / (empty ? 70 : 120)) * 0.5;
   ctx.save();
-  ctx.fillStyle = "rgba(235, 252, 255, 0.78)";
-  ctx.strokeStyle = "rgba(106, 198, 231, 0.82)";
-  ctx.lineWidth = 3;
+  if (low && state.mode === "playing") {
+    // 画面のふちを赤く点めつさせる
+    const edge = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, canvas.height * 0.35, canvas.width / 2, canvas.height / 2, canvas.width * 0.7);
+    edge.addColorStop(0, "rgba(255, 61, 127, 0)");
+    edge.addColorStop(1, `rgba(255, 61, 127, ${(empty ? 0.5 : 0.28) * blink})`);
+    ctx.fillStyle = edge;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // 上のまん中に大きく「酸素が少ない！」
+    const msg = language === "ja" ? (empty ? "酸素ゼロ！ O2バブルをとって！" : "酸素が少ない！ O2バブルをとって！") : (empty ? "Out of oxygen! Grab an O2 bubble!" : "Low oxygen! Grab an O2 bubble!");
+    ctx.font = `900 30px ${FX.FONT}`;
+    const mw = ctx.measureText(msg).width + 44;
+    const mx = canvas.width / 2 - mw / 2;
+    const my = 120;
+    ctx.globalAlpha = 0.65 + blink * 0.35;
+    ctx.fillStyle = empty ? "#ff3d7f" : "#fff3a4";
+    ctx.strokeStyle = empty ? "#ffffff" : "#ff3d7f";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.roundRect(mx, my, mw, 52, 26);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = empty ? "#ffffff" : "#c0266d";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(msg, canvas.width / 2, my + 27);
+    ctx.globalAlpha = 1;
+  }
+  ctx.fillStyle = low ? `rgba(255, 228, 238, ${0.8 + blink * 0.2})` : "rgba(235, 252, 255, 0.78)";
+  ctx.strokeStyle = low ? "#ff3d7f" : "rgba(106, 198, 231, 0.82)";
+  ctx.lineWidth = low ? 4 : 3;
   ctx.beginPath();
   ctx.roundRect(x, y, w, h, 8);
   ctx.fill();
   ctx.stroke();
   ctx.font = "900 14px Segoe UI, system-ui, sans-serif";
-  ctx.fillStyle = "#277394";
+  ctx.fillStyle = low ? "#c0266d" : "#277394";
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
   ctx.fillText("O2", x + 14, y + h / 2);
@@ -6746,8 +6796,8 @@ function drawOxygenMeter() {
   ctx.fill();
   const oxGrad = ctx.createLinearGradient(x + 48, y, x + 202, y);
   oxGrad.addColorStop(0, "#ffffff");
-  oxGrad.addColorStop(0.45, "#9ee8ff");
-  oxGrad.addColorStop(1, "#61f2a5");
+  oxGrad.addColorStop(0.45, low ? "#ff8db7" : "#9ee8ff");
+  oxGrad.addColorStop(1, low ? "#ff3d7f" : "#61f2a5");
   ctx.fillStyle = oxGrad;
   ctx.beginPath();
   ctx.roundRect(x + 48, y + 11, 154 * ratio, 16, 6);
