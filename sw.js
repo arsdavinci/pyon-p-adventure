@@ -1,4 +1,4 @@
-const CACHE_NAME = "pyon-p-adventure-v31";
+const CACHE_NAME = "pyon-p-adventure-v32";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -50,6 +50,8 @@ self.addEventListener("fetch", event => {
   const request = event.request;
   if (request.method !== "GET") return;
   const url = new URL(request.url);
+  // 動画はキャッシュを通さない（iPhone は動画を少しずつ読みこむので、キャッシュから丸ごと返すと再生できない）
+  if (url.pathname.endsWith(".mp4") || request.headers.has("range")) return;
 
   if (url.origin === location.origin && (url.pathname.endsWith(".js") || url.pathname.endsWith(".css") || url.pathname.endsWith(".html") || url.pathname.endsWith("/"))) {
     event.respondWith(

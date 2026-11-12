@@ -304,7 +304,8 @@
       lastTime = performance.now();
       if (onEnd) onEnd();
     };
-    const timer = setTimeout(() => { if (!started) finish(); }, 2500);
+    // 読みこみに時間がかかっても待つ（スマホの回線でも流れるように）
+    const timer = setTimeout(() => { if (!started) finish(); }, 12000);
     v.playsInline = true;
     v.preload = "auto";
     v.muted = typeof soundEnabled !== "undefined" && !soundEnabled;
@@ -319,7 +320,11 @@
       started = true;
       wrap.appendChild(v);
       wrap.appendChild(hint);
-      v.play().catch(finish);
+      // iPhone はタップ以外で音つき動画を再生させてくれないことがある。そのときは音なしで流す
+      v.play().catch(() => {
+        v.muted = true;
+        v.play().catch(finish);
+      });
     });
     movie = { finish };
     v.src = `assets/video/${id}.mp4`;
