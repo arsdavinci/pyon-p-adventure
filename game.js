@@ -259,9 +259,11 @@ const stageBackgroundImages = [
   "assets/stage-ocean-bg.png",
   "assets/stage-ring-bg.png",
   "assets/stage-demon-bg.png"
-].map(src => {
+].map((src, i) => {
+  // ステージの背景は、そのワールドに入ったときに読みこむ（スマホのメモリを節約。1-1 の背景だけ最初から）
   const img = new Image();
-  img.src = `${src}?v=${BACKGROUND_ASSET_VERSION}`;
+  img.lazySrc = `${src}?v=${BACKGROUND_ASSET_VERSION}`;
+  if (i === 0) img.src = img.lazySrc;
   return img;
 });
 const stageBackgroundMirrorImages = [
@@ -271,11 +273,23 @@ const stageBackgroundMirrorImages = [
   "assets/stage-ocean-bg2.png",
   "assets/stage-ring-bg2.png",
   "assets/stage-demon-bg2.png"
-].map(src => {
+].map((src, i) => {
   const img = new Image();
-  img.src = `${src}?v=${BACKGROUND_ASSET_VERSION}`;
+  img.lazySrc = `${src}?v=${BACKGROUND_ASSET_VERSION}`;
+  if (i === 0) img.src = img.lazySrc;
   return img;
 });
+
+// そのワールドの背景を読みこむ（まだなら）
+function ensureStageBackground(i) {
+  for (const list of [stageBackgroundImages, stageBackgroundMirrorImages]) {
+    const img = list[i];
+    if (img && img.lazySrc && !img.loadStarted) {
+      img.loadStarted = true;
+      img.src = img.lazySrc;
+    }
+  }
+}
 const stageGroundImages = [
   "assets/pastel-moon-ground.png",
   "assets/stage-mars-ground.png",
@@ -2925,6 +2939,7 @@ function startMapCourse(index = mapSelectedCourse) {
 }
 
 function beginCourse(index) {
+  ensureStageBackground(courses[index]?.theme?.imageIndex ?? 0);
   resetStageAreas(index);
   currentCourse = index;
   mapSelectedCourse = index;
@@ -9975,6 +9990,7 @@ function drawSky(cam) {
     return;
   }
 
+  ensureStageBackground(theme.imageIndex);
   const bg = stageBackgroundImages[theme.imageIndex];
   if (bg?.complete && bg.naturalWidth > 0) {
     if (theme.imageIndex === 0) drawPastelBackgroundImage(cam);

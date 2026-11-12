@@ -35,8 +35,18 @@
   const img = {};
   for (const [key, src] of Object.entries(OPTIONAL)) {
     const im = new Image();
-    im.src = src;
+    // オープニング・エンディングの大きな絵は、会話がはじまるときに読みこむ（スマホのメモリを節約）
+    if (key.startsWith("cg")) im.lazySrc = src;
+    else im.src = src;
     img[key] = im;
+  }
+  function loadStoryArt() {
+    for (const im of Object.values(img)) {
+      if (im.lazySrc && !im.loadStarted) {
+        im.loadStarted = true;
+        im.src = im.lazySrc;
+      }
+    }
   }
 
   const WORLD_NAMES = [
@@ -350,6 +360,7 @@
   }
 
   function play(id, onEnd, afterMovie = false) {
+    if (id === "opening" || id === "ending") loadStoryArt();
     if (!afterMovie && MOVIE_BEFORE[id]) {
       playMovie(MOVIE_BEFORE[id], () => play(id, onEnd, true));
       return;
