@@ -130,7 +130,7 @@
       return [[
         ["yana", "マグマの柱は、ふき出す前に地面が赤く光ります。ふき出すと石もふってくるので、地面の影と「！」を見てよけてください。", "The ground glows red before a lava pillar erupts. Rocks rain down afterwards, so watch for shadows and \"!\" marks."],
         ["yana", "氷はすべります。はやめにブレーキをかけましょう。", "Ice is slippery. Start braking early."],
-        ["yana", "上下にも泳げます。深いところにもアイテムがありますよ。", "You can swim up and down. There are items in the deep, too."],
+        ["yana", "岩のかべは、すき間を泳いで通ります。動く門は、先が赤く光ったらとじる合図。はさまれないように、開いているうちに通りぬけてください。", "Swim through the gaps in the rock walls. A moving gate glows red before it shuts, so slip through while it is open or you will be crushed."],
         ["yana", "ベルトコンベアは向きに注意。動く床はタイミングを見て。", "Mind the conveyor direction, and time your jumps onto moving platforms."],
         ["yana", "重力がゆれています。ジャンプの高さが変わりますよ。", "Gravity is pulsing here. Your jump height will change."]
       ][w - 1]];

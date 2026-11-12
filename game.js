@@ -42,6 +42,8 @@ const MAX_LIVES = 3;
 const MAX_HP = 5;
 const MAX_OXYGEN = 100;
 const STAGE_TRAITS = ["moonFloat", "marsLava", "iceSlide", "underwater", "factoryBelt", "demonPulse"];
+const SEA_GATE_PERIOD = 4.0;
+const SEA_GATE_W = 84;
 const MAX_WEAPON_POWER = 16;
 const WEAPON_ATTRIBUTE_SIZE = 8;
 const MAX_INVENTORY_ITEMS = 27;
@@ -774,6 +776,7 @@ function makeCourse(worldIndex, areaIndex) {
     oxygenItem(2060, 88),
     oxygenItem(3520, 104)
   ] : [];
+  const seaGates = trait === "underwater" && !bossStage ? buildSeaGates(areaIndex, difficulty) : [];
   const lavaGeysers = trait === "marsLava" && !finalStage ? [
     lavaGeyser(980, 1.1),
     lavaGeyser(1780, 2.3),
@@ -807,7 +810,7 @@ function makeCourse(worldIndex, areaIndex) {
     climbMeta: climb?.meta ?? null,
     platforms,
     blocks,
-    level: { enemies, coins, starItems, oxygenItems, lavaGeysers, lavaPools, rotatingFires, flag: rect(5060, 252, 28, 240) },
+    level: { enemies, coins, starItems, oxygenItems, seaGates, lavaGeysers, lavaPools, rotatingFires, flag: rect(5060, 252, 28, 240) },
     gun: { x: 330 + areaIndex * 70, y: 430 }
   });
 }
@@ -1201,6 +1204,8 @@ function newState() {
     oxygen: MAX_OXYGEN,
     oxygenHurtCooldown: 0,
     oxygenItems: (level.oxygenItems ?? []).map(o => ({ ...o, taken: false, respawn: 0 })),
+    seaGates: (level.seaGates ?? []).map(g => ({ ...g })),
+    seaClock: 0,
     lavaGeysers: (level.lavaGeysers ?? []).map(g => ({ ...g })),
     lavaPools: (level.lavaPools ?? []).map(g => ({ ...g })),
     rotatingFires: (level.rotatingFires ?? []).map(g => ({ ...g })),
@@ -1260,6 +1265,7 @@ function applyCourse(index) {
     coins: (course.level.coins ?? []).map(c => ({ ...c })),
     starItems: (course.level.starItems ?? []).map(s => ({ ...s })),
     oxygenItems: (course.level.oxygenItems ?? []).map(o => ({ ...o })),
+    seaGates: (course.level.seaGates ?? []).map(g => ({ ...g })),
     lavaGeysers: (course.level.lavaGeysers ?? []).map(g => ({ ...g })),
     lavaPools: (course.level.lavaPools ?? []).map(g => ({ ...g })),
     rotatingFires: (course.level.rotatingFires ?? []).map(g => ({ ...g })),
@@ -2037,6 +2043,7 @@ function updateSwimmingPlayer(dt) {
   p.invincible = Math.max(0, p.invincible - dt);
   p.x = clamp(p.x + p.vx * dt, 0, WORLD_WIDTH - p.w);
   p.y = clamp(p.y + p.vy * dt, 58, worldBottom() - p.h - 42);
+  resolveSeaGates(p);
   p.grounded = false;
   p.swimming = true;
   updateCamera(dt);
@@ -2071,7 +2078,10 @@ function isDoubleTapRunActive(dxInput) {
 function updateStageTraits(dt) {
   const trait = currentStageTrait();
   state.stagePulse = (state.stagePulse ?? 0) + dt * 2.2;
-  if (trait === "underwater") updateOxygen(dt);
+  if (trait === "underwater") {
+    updateOxygen(dt);
+    state.seaClock = (state.seaClock ?? 0) + dt;
+  }
   if (trait === "marsLava") updateLavaGeysers(dt);
   updateFinalStageHazards(dt);
   if (trait === "factoryBelt" && state.player.grounded) {
@@ -3650,7 +3660,159 @@ function updateBeams(dt) {
   ));
 }
 
+// ---------- 星の海：岩のかべと、開いたりとじたりする岩の門 ----------
+// 門はすき間を泳いで通る。とじる前に先が赤く光るので、開いているうちに通りぬける。はさまれるとダメージ
+
+function buildSeaGates(areaIndex, difficulty) {
+  const count = Math.min(7, 3 + areaIndex);
+  const gates = [];
+  for (let i = 0; i < count; i++) {
+    const x = 980 + i * ((4500 - 980) / Math.max(1, count - 1)) * (count > 1 ? 1 : 0);
+    const moving = i % 2 === 0;
+    gates.push({
+      x: Math.round(x),
+      w: SEA_GATE_W,
+      frac: [0.5, 0.15, 0.8, 0.35, 0.65, 0.2, 0.85][(i + areaIndex) % 7], // すき間の高さ（0 = 上、1 = 下）
+      gapH: moving ? Math.max(150, 200 - difficulty * 2) : 150,
+      moving,
+      phase: (i * 1.37 + areaIndex * 0.6) % SEA_GATE_PERIOD
+    });
+  }
+  return gates;
+}
+
+// 門の開きぐあい（1 = 全開、0 = とじている）と、とじる前ぶれ
+function seaGateState(g) {
+  if (!g.moving) return { open: 1, warn: false };
+  const t = ((state.seaClock ?? 0) + g.phase) % SEA_GATE_PERIOD;
+  if (t < 1.9) return { open: 1, warn: t > 1.1 };
+  if (t < 2.5) return { open: 1 - (t - 1.9) / 0.6, warn: true };
+  if (t < 2.9) return { open: 0, warn: false };
+  return { open: (t - 2.9) / 1.1, warn: false };
+}
+
+function seaGateRects(g) {
+  const swimTop = 58;
+  const swimBottom = worldBottom() - 42;
+  const gapY = swimTop + 110 + g.frac * (swimBottom - swimTop - 220);
+  const gap = g.gapH * seaGateState(g).open;
+  const top = { x: g.x, y: -400, w: g.w, h: gapY - gap / 2 + 400 };
+  const bottom = { x: g.x, y: gapY + gap / 2, w: g.w, h: worldBottom() + 300 - (gapY + gap / 2) };
+  return { top, bottom, gap, gapY };
+}
+
+function resolveSeaGates(p) {
+  for (const g of state.seaGates ?? []) {
+    if (p.x + p.w <= g.x || p.x >= g.x + g.w) continue;
+    const { top, bottom, gap } = seaGateRects(g);
+    if (gap < p.h - 2) {
+      // はさまれた：ダメージを受けて、近いほうの外へはじき出される
+      damagePlayer(false, null, false);
+      p.x = p.x + p.w / 2 < g.x + g.w / 2 ? g.x - p.w - 2 : g.x + g.w + 2;
+      p.vx = 0;
+      continue;
+    }
+    for (const r of [top, bottom]) {
+      if (!hit(p, r)) continue;
+      const penX = Math.min(p.x + p.w - r.x, r.x + r.w - p.x);
+      const penY = r === top ? r.y + r.h - p.y : p.y + p.h - r.y;
+      if (penX < penY) {
+        p.x = p.x + p.w / 2 < r.x + r.w / 2 ? r.x - p.w : r.x + r.w;
+        p.vx = 0;
+      } else {
+        p.y = r === top ? r.y + r.h : r.y - p.h;
+        p.vy = 0;
+      }
+    }
+  }
+}
+
+function drawSeaGates() {
+  const now = performance.now() / 1000;
+  for (const g of state.seaGates ?? []) {
+    if (g.x + g.w < state.camera - 80 || g.x > state.camera + VIEW_W + 80) continue;
+    const { top, bottom, gap } = seaGateRects(g);
+    const st = seaGateState(g);
+    for (const r of [top, bottom]) {
+      const isTop = r === top;
+      const tipY = isTop ? r.y + r.h : r.y;
+      ctx.save();
+      const grad = ctx.createLinearGradient(r.x, 0, r.x + r.w, 0);
+      grad.addColorStop(0, g.moving ? "#5a4fa8" : "#3f6f8f");
+      grad.addColorStop(0.5, g.moving ? "#8f7be0" : "#62a9c4");
+      grad.addColorStop(1, g.moving ? "#4a3f96" : "#356080");
+      ctx.fillStyle = grad;
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.75)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      if (isTop) ctx.roundRect(r.x, r.y, r.w, r.h, [0, 0, 22, 22]);
+      else ctx.roundRect(r.x, r.y, r.w, r.h, [22, 22, 0, 0]);
+      ctx.fill();
+      ctx.stroke();
+      // もよう（岩のすじ）
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.22)";
+      ctx.lineWidth = 2;
+      for (let k = 1; k <= 5; k++) {
+        const ly = tipY + (isTop ? -1 : 1) * k * 70;
+        ctx.beginPath();
+        ctx.moveTo(r.x + 10, ly);
+        ctx.lineTo(r.x + r.w - 10, ly + 10);
+        ctx.stroke();
+      }
+      if (g.moving) {
+        // 先のギザギザ。とじる前は赤く点めつする
+        const blink = st.warn ? 0.55 + Math.sin(now * 22) * 0.45 : 0;
+        ctx.fillStyle = st.warn ? `rgba(255, 70, 90, ${0.55 + blink * 0.45})` : "#ffd85a";
+        for (let k = 0; k < 4; k++) {
+          const tx = r.x + 6 + k * ((r.w - 12) / 4);
+          const tw = (r.w - 12) / 4;
+          ctx.beginPath();
+          ctx.moveTo(tx, tipY);
+          ctx.lineTo(tx + tw / 2, tipY + (isTop ? 16 : -16));
+          ctx.lineTo(tx + tw, tipY);
+          ctx.closePath();
+          ctx.fill();
+        }
+        if (st.warn) {
+          ctx.shadowColor = "#ff465a";
+          ctx.shadowBlur = 18;
+          ctx.strokeStyle = `rgba(255, 70, 90, ${0.5 + blink * 0.5})`;
+          ctx.lineWidth = 5;
+          ctx.beginPath();
+          ctx.moveTo(r.x, tipY);
+          ctx.lineTo(r.x + r.w, tipY);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+    }
+    // とじる前ぶれ：すき間に「！」
+    if (g.moving && st.warn && gap > 60) {
+      const cy = (top.y + top.h + bottom.y) / 2;
+      ctx.save();
+      ctx.fillStyle = "#ff3d5a";
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(g.x + g.w / 2, cy, 17 + Math.sin(now * 12) * 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "900 22px Segoe UI, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("!", g.x + g.w / 2, cy + 1);
+      ctx.restore();
+    }
+  }
+}
+
 function beamHitsWall(r) {
+  for (const g of state.seaGates ?? []) {
+    if (r.x + r.w <= g.x || r.x >= g.x + g.w) continue;
+    const jaws = seaGateRects(g);
+    if (hit(r, jaws.top) || hit(r, jaws.bottom)) return true;
+  }
   for (const s of platforms) if (hit(r, s)) return true;
   for (const block of blocks) if (!block.broken && hit(r, block)) return true;
   return false;
@@ -4958,6 +5120,7 @@ function drawStageEnvironment() {
 function drawStageHazards() {
   ctx.save();
   drawFinalStageHazards();
+  drawSeaGates();
   if (currentStageTrait() !== "marsLava") {
     ctx.restore();
     return;
