@@ -90,6 +90,22 @@
     } catch (_) {}
   }
 
+  // セーブファイル（3つ）用：今の記録をまるごと取り出す／入れかえる
+  function exportSave() {
+    return JSON.parse(JSON.stringify(data));
+  }
+
+  function importSave(saved) {
+    const d = Object.assign(blank(), JSON.parse(JSON.stringify(saved || {})));
+    if (!Array.isArray(d.completed)) d.completed = [];
+    if (!d.stars || typeof d.stars !== "object") d.stars = {};
+    if (!d.seen || typeof d.seen !== "object") d.seen = {};
+    if (d.keep && (!Array.isArray(d.keep.weaponInventory) || !Array.isArray(d.keep.inventoryItems))) d.keep = null;
+    data = d;
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch (_) {}
+    applyToGame();
+  }
+
   function hasSave() {
     return data.unlocked > 0 || data.completed.length > 0 || !!data.seen.opening;
   }
@@ -1749,7 +1765,7 @@
     beginStageClear, stageClearWarp, startCredits,
     drawMapNodeStars, drawMapHud,
     drawTitleKey, returnToTitle, refreshTitleUi, yanabisIcon,
-    syncMusic,
+    syncMusic, exportSave, importSave,
     seen: id => !!data.seen[id]
   };
 })();

@@ -1579,6 +1579,7 @@ function closeInventory() {
   state.inventoryGrab = null;
   state.fusionPrompt = null;
   state.inventoryConfirmWorldMap = false;
+  state.saveMenu = null;
   state.mode = state.inventoryReturnMode === "respawning" ? "respawning" : "playing";
   state.inventoryReturnMode = null;
   lastTime = performance.now();
@@ -5025,6 +5026,7 @@ function drawInventoryScreen() {
   if (state.inventoryGrab) drawDraggedInventoryItem();
   if (state.fusionPrompt) drawFusionPrompt();
   ctx.restore();
+  if (state.saveMenu) drawSaveMenu();
 }
 
 function drawInventoryDynamicText() {
@@ -5228,9 +5230,328 @@ function activateInventoryTopMenuButton() {
     playSfx("decide");
     return;
   }
+  if (index === 3) {
+    openSaveMenu();
+    return;
+  }
   state.inventoryMessage = performance.now() + 1000;
   state.inventoryMessageLabel = "未定ボタンです";
   playSfx("decide");
+}
+
+// ---------- セーブ・ロード（そうび画面の4つめのボタン。3つまで記録できる） ----------
+const SAVE_SLOT_KEY = "pyonpSaveSlotsV1";
+const SAVE_SLOT_COUNT = 3;
+const saveText = (ja, en) => (language === "ja" ? ja : en);
+
+function readSaveSlots() {
+  let list = [];
+  try {
+    list = JSON.parse(localStorage.getItem(SAVE_SLOT_KEY) || "[]");
+  } catch (_) {}
+  if (!Array.isArray(list)) list = [];
+  return Array.from({ length: SAVE_SLOT_COUNT }, (_, i) => (list[i] && typeof list[i] === "object" && list[i].data ? list[i] : null));
+}
+
+function openSaveMenu() {
+  state.saveMenu = { tab: 0, sel: 0, confirm: null, choice: 0, slots: readSaveSlots(), note: "", noteUntil: 0 };
+  playSfx("decide");
+}
+
+function closeSaveMenu() {
+  state.saveMenu = null;
+  playSfx("cancel");
+}
+
+function saveMenuNote(text) {
+  if (!state.saveMenu) return;
+  state.saveMenu.note = text;
+  state.saveMenu.noteUntil = performance.now() + 2200;
+}
+
+function saveToSlot(index) {
+  const menu = state.saveMenu;
+  campaignKeep = campaignSnapshotFromState();
+  Story.persist();
+  menu.slots[index] = { savedAt: Date.now(), course: currentCourse, data: Story.exportSave() };
+  try {
+    localStorage.setItem(SAVE_SLOT_KEY, JSON.stringify(menu.slots));
+    playSfx("powerUp");
+    saveMenuNote(saveText(`ファイル${index + 1}にセーブしたよ！`, `Saved to File ${index + 1}!`));
+  } catch (_) {
+    playSfx("locked");
+    saveMenuNote(saveText("セーブできなかった……", "Could not save..."));
+  }
+}
+
+function loadFromSlot(index) {
+  const slot = state.saveMenu?.slots[index];
+  if (!slot || FX.transitioning()) return;
+  playSfx("powerUp");
+  FX.startTransition({
+    type: "fade",
+    dur: 0.9,
+    onMid: () => {
+      Story.importSave(slot.data);
+      state.saveMenu = null;
+      state.inventoryGrab = null;
+      state.fusionPrompt = null;
+      enterWorldMap(clamp(slot.course | 0, 0, unlockedCourse), true, null);
+      overlay.classList.add("hidden");
+      lastTime = performance.now();
+    }
+  });
+}
+
+function saveMenuConfirmSelected() {
+  const menu = state.saveMenu;
+  const slot = menu.slots[menu.sel];
+  if (menu.tab === 0) {
+    if (slot) {
+      menu.confirm = "save";
+      menu.choice = 1;
+      playSfx("decide");
+    } else saveToSlot(menu.sel);
+  } else if (slot) {
+    menu.confirm = "load";
+    menu.choice = 1;
+    playSfx("decide");
+  } else {
+    playSfx("locked");
+    saveMenuNote(saveText("このファイルは、からっぽだよ。", "This file is empty."));
+  }
+}
+
+function saveMenuAnswer(yes) {
+  const menu = state.saveMenu;
+  const kind = menu.confirm;
+  menu.confirm = null;
+  if (!yes) {
+    playSfx("cancel");
+    return;
+  }
+  if (kind === "save") saveToSlot(menu.sel);
+  else loadFromSlot(menu.sel);
+}
+
+function handleSaveMenuKey(code, repeat = false) {
+  const menu = state.saveMenu;
+  if (!menu || repeat || FX.transitioning()) return true;
+  const left = code === "ArrowLeft" || code === "KeyA";
+  const right = code === "ArrowRight" || code === "KeyD";
+  const up = code === "ArrowUp" || code === "KeyW";
+  const down = code === "ArrowDown" || code === "KeyS";
+  const ok = code === "Enter" || code === "Space" || code === "KeyZ";
+  const back = code === "Escape" || code === "KeyB";
+  if (menu.confirm) {
+    if (left || right) {
+      menu.choice = 1 - menu.choice;
+      playSfx("cursor");
+    } else if (ok) saveMenuAnswer(menu.choice === 0);
+    else if (back) saveMenuAnswer(false);
+    return true;
+  }
+  if (left || right) {
+    menu.tab = 1 - menu.tab;
+    playSfx("cursor");
+  } else if (up || down) {
+    menu.sel = (menu.sel + (down ? 1 : SAVE_SLOT_COUNT - 1)) % SAVE_SLOT_COUNT;
+    playSfx("cursor");
+  } else if (ok) saveMenuConfirmSelected();
+  else if (back) closeSaveMenu();
+  return true;
+}
+
+function saveMenuLayout() {
+  const win = { x: 210, y: 44, w: 860, h: 632 };
+  const tabs = [0, 1].map(i => ({ x: win.x + 40 + i * 250, y: win.y + 84, w: 236, h: 62 }));
+  const slots = Array.from({ length: SAVE_SLOT_COUNT }, (_, i) => ({ x: win.x + 40, y: win.y + 170 + i * 128, w: win.w - 80, h: 114 }));
+  const close = { x: win.x + win.w - 196, y: win.y + 84, w: 156, h: 62 };
+  const yesNo = [0, 1].map(i => ({ x: 400 + i * 260, y: 420, w: 220, h: 72 }));
+  return { win, tabs, slots, close, yesNo };
+}
+
+function handleSaveMenuPointer(x, y) {
+  const menu = state.saveMenu;
+  if (!menu || FX.transitioning()) return true;
+  const inside = r => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+  const lay = saveMenuLayout();
+  if (menu.confirm) {
+    if (inside(lay.yesNo[0])) saveMenuAnswer(true);
+    else if (inside(lay.yesNo[1])) saveMenuAnswer(false);
+    return true;
+  }
+  if (inside(lay.close) || !inside(lay.win)) {
+    closeSaveMenu();
+    return true;
+  }
+  for (let i = 0; i < lay.tabs.length; i++) {
+    if (inside(lay.tabs[i]) && menu.tab !== i) {
+      menu.tab = i;
+      playSfx("cursor");
+      return true;
+    }
+  }
+  for (let i = 0; i < lay.slots.length; i++) {
+    if (!inside(lay.slots[i])) continue;
+    if (menu.sel === i) saveMenuConfirmSelected();
+    else {
+      menu.sel = i;
+      playSfx("cursor");
+    }
+    return true;
+  }
+  return true;
+}
+
+function drawSaveMenu() {
+  const menu = state.saveMenu;
+  if (!menu) return;
+  const lay = saveMenuLayout();
+  const { win } = lay;
+  const t = performance.now() / 1000;
+  const font = (size, weight = 900) => `${weight} ${size}px ${FX.FONT}`;
+  const panel = (r, fill, stroke, width = 3, radius = 16) => {
+    ctx.fillStyle = fill;
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    ctx.roundRect(r.x, r.y, r.w, r.h, radius);
+    ctx.fill();
+    ctx.stroke();
+  };
+  ctx.save();
+  ctx.fillStyle = "rgba(30, 20, 70, 0.62)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // ウインドウ本体（パステルのサイバー風）
+  const body = ctx.createLinearGradient(win.x, win.y, win.x + win.w, win.y + win.h);
+  body.addColorStop(0, "rgba(246, 240, 255, 0.98)");
+  body.addColorStop(1, "rgba(226, 244, 255, 0.98)");
+  ctx.shadowColor = "rgba(142, 220, 232, 0.9)";
+  ctx.shadowBlur = 26;
+  panel(win, body, "#8edce8", 5, 24);
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = "rgba(255, 141, 183, 0.75)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(win.x + 10, win.y + 10, win.w - 20, win.h - 20, 18);
+  ctx.stroke();
+
+  ctx.fillStyle = "#5a3d9a";
+  ctx.font = font(34);
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(saveText("セーブ ／ ロード", "SAVE / LOAD"), win.x + 44, win.y + 48);
+  ctx.fillStyle = "#8f8ad0";
+  ctx.font = font(16, 800);
+  ctx.textAlign = "right";
+  ctx.fillText("DATA TERMINAL  //  3 FILES", win.x + win.w - 44, win.y + 50);
+
+  // タブ
+  const tabLabels = [saveText("セーブする", "Save"), saveText("ロードする", "Load")];
+  for (let i = 0; i < 2; i++) {
+    const r = lay.tabs[i];
+    const on = menu.tab === i;
+    panel(r, on ? (i === 0 ? "#ff8db7" : "#7fd6ea") : "rgba(255,255,255,0.75)", on ? "#ffffff" : "#c8b2ff", on ? 4 : 2, 18);
+    ctx.fillStyle = on ? "#ffffff" : "#7f67c8";
+    ctx.font = font(26);
+    ctx.textAlign = "center";
+    ctx.fillText(tabLabels[i], r.x + r.w / 2, r.y + r.h / 2 + 1);
+  }
+  panel(lay.close, "rgba(255,255,255,0.8)", "#c8b2ff", 2, 18);
+  ctx.fillStyle = "#7f67c8";
+  ctx.font = font(22);
+  ctx.textAlign = "center";
+  ctx.fillText(saveText("とじる", "Close"), lay.close.x + lay.close.w / 2, lay.close.y + lay.close.h / 2 + 1);
+
+  // ファイル3つ
+  for (let i = 0; i < SAVE_SLOT_COUNT; i++) {
+    const r = lay.slots[i];
+    const slot = menu.slots[i];
+    const on = menu.sel === i;
+    const accent = menu.tab === 0 ? "#ff8db7" : "#4fc3dc";
+    if (on) {
+      ctx.shadowColor = accent;
+      ctx.shadowBlur = 14 + Math.sin(t * 6) * 6;
+    }
+    panel(r, on ? "#fffbe0" : "rgba(255,255,255,0.86)", on ? accent : "#d6c8ff", on ? 5 : 2, 18);
+    ctx.shadowBlur = 0;
+    // 番号
+    ctx.fillStyle = on ? accent : "#b9a8ee";
+    ctx.beginPath();
+    ctx.roundRect(r.x + 16, r.y + 17, 84, 80, 14);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = font(15);
+    ctx.textAlign = "center";
+    ctx.fillText("FILE", r.x + 58, r.y + 38);
+    ctx.font = font(40);
+    ctx.fillText(String(i + 1), r.x + 58, r.y + 72);
+    ctx.textAlign = "left";
+    if (!slot) {
+      ctx.fillStyle = "#b3a9d6";
+      ctx.font = font(28);
+      ctx.fillText(saveText("—— からっぽ ——", "—— EMPTY ——"), r.x + 124, r.y + r.h / 2 + 1);
+      continue;
+    }
+    const d = slot.data || {};
+    const course = clamp(slot.course | 0, 0, courses.length - 1);
+    const world = courses[course]?.worldIndex ?? 0;
+    const stars = Object.values(d.stars || {}).reduce((a, b) => a + (b | 0), 0);
+    const when = new Date(slot.savedAt || 0);
+    const pad = n => String(n).padStart(2, "0");
+    ctx.fillStyle = "#4d4773";
+    ctx.font = font(28);
+    ctx.fillText(`${saveText("ステージ", "Stage")} ${stageLabel(course)}  ${Story.worldName(world)}`, r.x + 124, r.y + 38);
+    ctx.fillStyle = "#7f67c8";
+    ctx.font = font(21, 800);
+    ctx.fillText(
+      `★ ${stars}   ${saveText("柿の種", "Kaki")} ${d.keep?.kakiTotal ?? 0}   ${saveText("ピーナッツ", "Peanuts")} ${d.keep?.peaTotal ?? 0}`,
+      r.x + 124, r.y + 80
+    );
+    ctx.fillStyle = "#9a8fc4";
+    ctx.textAlign = "right";
+    ctx.fillText(`${when.getMonth() + 1}/${when.getDate()} ${pad(when.getHours())}:${pad(when.getMinutes())}`, r.x + r.w - 22, r.y + 80);
+  }
+
+  // 下の説明
+  ctx.textAlign = "center";
+  ctx.font = font(20, 800);
+  const showNote = menu.note && performance.now() < menu.noteUntil;
+  ctx.fillStyle = showNote ? "#ff5f9e" : "#7f67c8";
+  const pc = typeof controlMode !== "undefined" && controlMode === "pc";
+  const help = pc
+    ? saveText("←→ セーブ/ロード　↑↓ ファイル　Space 決定　Esc とじる", "←→ Save/Load   ↑↓ File   Space: OK   Esc: Close")
+    : saveText("←→ セーブ/ロード　↑↓ ファイル　A 決定　B とじる", "←→ Save/Load   ↑↓ File   A: OK   B: Close");
+  ctx.fillText(showNote ? menu.note : help, win.x + win.w / 2, win.y + win.h - 34);
+
+  // 確認
+  if (menu.confirm) {
+    ctx.fillStyle = "rgba(30, 20, 70, 0.55)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const box = { x: 330, y: 230, w: 620, h: 300 };
+    panel(box, "rgba(255, 250, 255, 0.98)", "#ff8db7", 5, 22);
+    ctx.fillStyle = "#4d4773";
+    ctx.font = font(28);
+    const q = menu.confirm === "save"
+      ? [saveText(`ファイル${menu.sel + 1}に上書きセーブする？`, `Overwrite File ${menu.sel + 1}?`), saveText("前の記録は消えるよ。", "The old record will be lost.")]
+      : [saveText(`ファイル${menu.sel + 1}をロードする？`, `Load File ${menu.sel + 1}?`), saveText("今の進みぐあいは、ロードした記録に入れかわるよ。", "Your current progress will be replaced.")];
+    ctx.fillText(q[0], box.x + box.w / 2, box.y + 76);
+    ctx.fillStyle = "#7f67c8";
+    ctx.font = font(20, 800);
+    ctx.fillText(q[1], box.x + box.w / 2, box.y + 126);
+    const labels = [saveText("はい", "Yes"), saveText("いいえ", "No")];
+    for (let i = 0; i < 2; i++) {
+      const b = lay.yesNo[i];
+      const on = menu.choice === i;
+      panel(b, on ? "#fff3a4" : "#ffffff", on ? "#ff5f9e" : "#c8b2ff", on ? 5 : 2, 18);
+      ctx.fillStyle = "#4d4773";
+      ctx.font = font(28);
+      ctx.fillText(labels[i], b.x + b.w / 2, b.y + b.h / 2 + 1);
+    }
+  }
+  ctx.restore();
 }
 
 function handleInventoryWorldMapConfirm(accept) {
@@ -5753,7 +6074,7 @@ function inventoryFocusComment(power = state.weaponPower) {
       "ぴょんぴー「ここはゲーム画面に戻るボタンだよ。冒険に戻ろう！」",
       "ぴょんぴー「ここはまだ準備中のボタンだよ。今は押しても何も起きないよ！」",
       "ぴょんぴー「ここはワールドマップに戻るボタンだよ。押す前に確認するね！」",
-      "ぴょんぴー「ここもまだ準備中だよ。あとで何か入れよう！」"
+      "ぴょんぴー「ここはセーブとロードだよ。ファイルは3つまで記録できるよ！」"
     ];
     return messages[state.inventoryTopMenuIndex ?? 0] ?? messages[0];
   }
@@ -7972,6 +8293,11 @@ canvas.addEventListener("pointerdown", event => {
     return;
   }
   if (state.mode === "inventory") {
+    if (state.saveMenu) {
+      handleSaveMenuPointer(pos.x, pos.y);
+      event.preventDefault();
+      return;
+    }
     if (handleInventoryWorldMapConfirmPointer(pos.x, pos.y)) {
       event.preventDefault();
       return;
@@ -8203,6 +8529,7 @@ function inventoryFreshMove() {
 }
 
 function handleInventoryKeyboardFocus(code, repeat = false) {
+  if (state.saveMenu) return handleSaveMenuKey(code, repeat);
   if (state.inventoryConfirmWorldMap) {
     if (code === "ArrowLeft" || code === "ArrowRight" || code === "KeyA" || code === "KeyD") {
       state.inventoryConfirmChoice = 1 - (state.inventoryConfirmChoice ?? 0);
@@ -8295,6 +8622,15 @@ function handleInventoryKeyboardFocus(code, repeat = false) {
 }
 
 function updateInventoryGamepadFocus(now, jumpPressed, runPressed, shootPressed) {
+  if (state.saveMenu) {
+    if (gamepadState.left && !gamepadState.leftLatch) handleSaveMenuKey("ArrowLeft");
+    if (gamepadState.right && !gamepadState.rightLatch) handleSaveMenuKey("ArrowRight");
+    if (gamepadState.up && !gamepadState.upLatch) handleSaveMenuKey("ArrowUp");
+    if (gamepadState.down && !gamepadState.downLatch) handleSaveMenuKey("ArrowDown");
+    if (jumpPressed && !gamepadState.jumpLatch) handleSaveMenuKey("Space");
+    if (runPressed && !gamepadState.runLatch) handleSaveMenuKey("Escape");
+    return;
+  }
   if (state.inventoryConfirmWorldMap) {
     if ((gamepadState.left || gamepadState.right) && !(gamepadState.leftLatch || gamepadState.rightLatch)) {
       state.inventoryConfirmChoice = 1 - (state.inventoryConfirmChoice ?? 0);
