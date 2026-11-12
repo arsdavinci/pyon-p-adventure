@@ -2563,6 +2563,12 @@ function openInventory() {
   state.inventoryGrab = null;
   state.fusionPrompt = null;
   resetInventoryFocus();
+  // はじめての合成：カーソルを、合成できる武器に合わせておく
+  const guide = fuseGuideStep();
+  if (guide?.step === 1) {
+    state.inventorySelection = guide.source;
+    ensureInventorySelectionVisible();
+  }
   playSfx("decide");
 }
 
@@ -4980,6 +4986,12 @@ function fuseInventoryItems(fromIndex, toIndex) {
   ensureInventorySelectionVisible();
   spawnBlockPoof(state.player.x + state.player.w / 2, state.player.y - 10);
   state.score += 25 * nextPower;
+  if (!fuseGuideDone()) {
+    Story.data.seen.fuseGuide = true;
+    Story.persist();
+    state.inventorySortComment = "ぴょんぴー「合成できたじょ！ 同じ武器を2つ重ねるたびに、どんどん強うなるけんな。いらん武器は X ですてられるじょ。」";
+    state.inventorySortCommentUntil = performance.now() + 6000;
+  }
   playSfx("powerUp", state.player.x);
   FX.flash("#ffd1ed", 0.3, 0.3);
   FX.firework(canvas.width / 2, canvas.height / 2 - 40, FX.PASTEL);
@@ -6010,7 +6022,10 @@ function draw() {
     if (mode === "stageClear") Story.drawStageClear();
     if (mode === "paused") drawPauseScreen();
     if (state.itemFullPrompt > 0) drawItemFullPrompt();
-    if (mode === "inventory") drawInventoryScreen();
+    if (mode === "inventory") {
+      drawInventoryScreen();
+      drawFuseGuide();
+    }
   }
   if (mode === "title" && state.saveMenu) drawSaveMenu();
   Chat.drawToast();
@@ -8754,10 +8769,120 @@ function drawWeaponDetail(power) {
   ctx.restore();
 }
 
+// ---------- はじめての合成を、ていねいに教える ----------
+// 同じ武器を2つ持っていて、まだ合成したことがないときだけ。1回合成したら、もう出さない
+function fuseGuideDone() {
+  return !!Story.data.seen?.fuseGuide;
+}
+
+function findFusePair() {
+  const items = state.inventoryItems ?? [];
+  for (let i = 0; i < items.length; i++) {
+    if (!items[i]) continue;
+    for (let j = i + 1; j < items.length; j++) {
+      if (items[j] === items[i] && fusionResult(items[i], items[j]) !== null) return [i, j];
+    }
+  }
+  return null;
+}
+
+function fuseGuideStep() {
+  if (!state || state.mode !== "inventory" || fuseGuideDone() || state.saveMenu || state.deletePrompt) return null;
+  if (state.fusionPrompt) return { step: 3 };
+  const grab = state.inventoryGrab;
+  if (grab) {
+    const items = state.inventoryItems ?? [];
+    const target = items.findIndex((p, i) => p && i !== grab.from && p === grab.power && fusionResult(p, grab.power) !== null);
+    return target >= 0 ? { step: 2, target } : null;
+  }
+  const pair = findFusePair();
+  if (!pair) return null;
+  const sel = state.inventorySelection;
+  const source = pair.includes(sel) ? sel : pair[0];
+  return { step: 1, source, target: source === pair[0] ? pair[1] : pair[0] };
+}
+
+function fuseGuideText(g) {
+  const pc = typeof controlMode !== "undefined" && controlMode === "pc";
+  const a = pc ? "Space" : "A";
+  if (g.step === 1) return `はじめての合成じゃ！ 同じ武器を2つ重ねると、強い武器になるんじょ。まず、光っとる武器で ${a} をおしたままにしてだ（つかむ）。`;
+  if (g.step === 2) return `つかめたじょ！ ${a} をおしたまま、十字キーで、もうひとつの同じ武器（光っとる方）の上まで運んで、そこで ${a} をはなすんじょ。`;
+  return `「はい」をえらんで ${a} で合成じゃ！`;
+}
+
+function drawFuseGuide() {
+  const g = fuseGuideStep();
+  if (!g || g.step === 3) return;
+  const rects = inventorySlotRects();
+  const idx = g.step === 1 ? g.source : g.target;
+  const r = rects.find(s => s.index === idx);
+  const other = g.step === 1 ? rects.find(s => s.index === g.target) : null;
+  const t = performance.now() / 1000;
+  ctx.save();
+  const glow = (s, color) => {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 6 + Math.sin(t * 6) * 2;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 22;
+    ctx.beginPath();
+    ctx.roundRect(s.x - 6, s.y - 6, s.w + 12, s.h + 12, 18);
+    ctx.stroke();
+  };
+  if (other) glow(other, "rgba(255, 216, 90, 0.55)");
+  if (r) {
+    glow(r, "#ffd85a");
+    // 上下にはねる矢印と、ひとこと
+    const cx = r.x + r.w / 2;
+    // 上の段は、上のメニューにかぶらないように、下から指す
+    const below = r.y < 200;
+    const bob = Math.sin(t * 7) * 7;
+    const ay = below ? r.y + r.h + 18 + bob : r.y - 18 + bob;
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "#ff5f9e";
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    if (below) {
+      ctx.moveTo(cx - 20, ay + 26);
+      ctx.lineTo(cx + 20, ay + 26);
+      ctx.lineTo(cx, ay);
+    } else {
+      ctx.moveTo(cx - 20, ay - 26);
+      ctx.lineTo(cx + 20, ay - 26);
+      ctx.lineTo(cx, ay);
+    }
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fill();
+    const pc = typeof controlMode !== "undefined" && controlMode === "pc";
+    const key = pc ? "Space" : "A";
+    const ja = language === "ja";
+    const label = g.step === 1 ? (ja ? `${key} をおしたまま` : `Hold ${key}`) : (ja ? `ここで ${key} をはなす` : `Release ${key} here`);
+    ctx.font = `900 24px ${FX.FONT}`;
+    const w = ctx.measureText(label).width + 30;
+    const bx = clamp(cx - w / 2, 20, canvas.width - w - 20);
+    const by = below ? ay + 32 : Math.max(8, ay - 72);
+    ctx.fillStyle = "#fff3a4";
+    ctx.strokeStyle = "#ff5f9e";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.roundRect(bx, by, w, 40, 20);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#5a3d9a";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, bx + w / 2, by + 21);
+  }
+  ctx.restore();
+}
+
 function inventoryFocusComment(power = state.weaponPower) {
   if (state.inventorySortComment && performance.now() < (state.inventorySortCommentUntil ?? 0)) {
     return state.inventorySortComment;
   }
+  const guide = fuseGuideStep();
+  if (guide) return `ぴょんぴー「${fuseGuideText(guide)}」`;
   if (state.inventoryConfirmWorldMap) {
     return "ぴょんぴー「ワールドマップに戻るんか？ はいならマップへ、いいえならここに残るじょ！」";
   }
