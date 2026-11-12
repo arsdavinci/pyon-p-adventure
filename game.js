@@ -474,7 +474,20 @@ let mapWalkTimer = 0;
 // よろず屋は 1-3 から左へのびる別ルートの先（月のクレーターの中）にある
 // よろず屋は、ワールドごとに1けん。道のとちゅうから枝分かれした先にある（そのワールドだけの品もならぶ）
 // dir = そのステージで十字キーをどちらに押すと、お店への道に入るか
-const SHOP_MAP_NODES = [{ x: 84, y: 390, course: 2, world: 0, dir: "left" }];
+const SHOP_MAP_NODES = [
+  { x: 176, y: 580, course: 4, world: 0, dir: "down", via: [[278, 512], [259, 540], [215, 566]] }, // 月あめ：石のわき道の先
+  { x: 465, y: 592, course: 6, world: 1, dir: "down", via: [[500, 562]] },                        // 火星：道ばたの車
+  { x: 708, y: 372, course: 12, world: 2, dir: "up", via: [[745, 405]] },                         // 氷：ドームの入口
+  { x: 928, y: 690, course: 20, world: 3, dir: "left", via: [] },                                 // 海：下の泡の家
+  { x: 1262, y: 268, course: 25, world: 4, dir: "right", via: [[1215, 248]] },                    // メカ：列車
+  { x: 1605, y: 478, course: 29, world: 5, dir: "right", via: [] }                                // 魔王星：ランタンの家
+];
+
+// お店への枝道（絵の座標の点の列）
+function shopLinkPoints(node) {
+  if (!node.path) node.path = smoothPath([MAP_NODE_POINTS[node.course], ...(node.via ?? []).map(([x, y]) => ({ x, y })), { x: node.x, y: node.y }]);
+  return node.path;
+}
 let mapShopIndex = 0;
 let SHOP_MAP_NODE = SHOP_MAP_NODES[0];
 let mapAtShop = false;
@@ -772,18 +785,97 @@ const MAP_STAGE_MESSAGES = {
   ]
 };
 
+// マップの絵の、金色の石・道・目じるしの建物の上にステージを置く（絵の座標）
 const MAP_NODE_POINTS = [
-  { x: 220, y: 237 }, { x: 190, y: 320 }, { x: 174, y: 392 }, { x: 228, y: 460 }, { x: 292, y: 499 },
-  { x: 406, y: 566 }, { x: 486, y: 565 }, { x: 525, y: 475 }, { x: 385, y: 380 }, { x: 470, y: 307 },
-  { x: 672, y: 371 }, { x: 773, y: 482 }, { x: 705, y: 527 }, { x: 667, y: 628 }, { x: 784, y: 674 },
-  { x: 888, y: 618 }, { x: 1012, y: 678 }, { x: 1157, y: 728 }, { x: 1185, y: 654 }, { x: 1027, y: 571 },
-  { x: 971, y: 440 }, { x: 951, y: 269 }, { x: 1064, y: 310 }, { x: 1169, y: 478 }, { x: 1261, y: 473 },
-  { x: 1236, y: 395 }, { x: 1187, y: 309 }, { x: 1332, y: 537 }, { x: 1388, y: 613 }, { x: 1467, y: 623 },
-  { x: 1562, y: 591 }, { x: 1539, y: 489 }, { x: 1538, y: 438 }, { x: 1518, y: 330 }, { x: 1510, y: 266 }
+  // 1 月あめ平原
+  { x: 220, y: 237 }, { x: 192, y: 320 }, { x: 177, y: 382 }, { x: 234, y: 442 }, { x: 290, y: 486 },
+  // 2 火星（石 → 石 → ロケット台 → ドーム → 大きなドーム＝ボス）
+  { x: 430, y: 540 }, { x: 527, y: 530 }, { x: 545, y: 428 }, { x: 395, y: 345 }, { x: 472, y: 255 },
+  // 3 氷の星（門 → 石 → 石 → 石 → ロケット＝ボス）
+  { x: 615, y: 530 }, { x: 715, y: 498 }, { x: 762, y: 447 }, { x: 765, y: 552 }, { x: 775, y: 646 },
+  // 4 星の海（石 → 石 → 小さなドーム → 大きなドーム → サンゴの島 → 下のドーム → 石＝ボス）
+  { x: 925, y: 577 }, { x: 1020, y: 545 }, { x: 1040, y: 474 }, { x: 962, y: 440 }, { x: 895, y: 482 }, { x: 985, y: 645 }, { x: 1102, y: 512 },
+  // 5 メカ工場（石 → 石 → ロボットの像 → 上のドーム → 輪のむこうの石＝ボス）
+  { x: 1215, y: 452 }, { x: 1269, y: 461 }, { x: 1222, y: 410 }, { x: 1170, y: 242 }, { x: 1362, y: 570 },
+  // 6 魔王星（石 → 大きな輪 → 石 → 石 → 石 → ふしぎな門 → 城の階段 → 城の門＝魔王）
+  { x: 1435, y: 587 }, { x: 1530, y: 560 }, { x: 1565, y: 460 }, { x: 1576, y: 412 }, { x: 1545, y: 365 }, { x: 1435, y: 440 }, { x: 1428, y: 340 }, { x: 1475, y: 282 }
 ];
-placeWorldShops();
-// 火星のお店は、氷の星とのさかい目にならないよう、火星の島のまん中（2-2 の下）へ
-Object.assign(SHOP_MAP_NODES[1], { x: 470, y: 660, course: STAGE_START_INDICES[1] + 1, dir: "down" });
+// ステージ i-1 → i の道が通る点（絵の道にそって曲がる）
+const MAP_LINK_WAYPOINTS = [
+  [],
+  [[205, 280]], [[183, 352]], [[188, 412], [212, 436]], [[262, 458]],
+  [[322, 490], [362, 502], [390, 528]], [[480, 537]], [[522, 492]], [[500, 400], [455, 360]], [[440, 295]],
+  [[520, 330], [545, 480], [585, 530]], [[665, 514]], [[742, 470]], [[792, 498]], [[800, 600]],
+  [[820, 615], [870, 598]], [[972, 562]], [[1040, 510]], [[1000, 452]], [[920, 462]], [[905, 570], [940, 632]], [[1050, 612], [1090, 560]],
+  [[1150, 478]], [[1242, 455]], [[1250, 428]], [[1200, 330]], [[1290, 300], [1335, 400], [1340, 510]],
+  [[1400, 585]], [[1482, 588]], [[1555, 510]], [], [], [[1490, 405]], [[1430, 395]], [[1445, 310]]
+];
+
+// 点の列を、なめらかな曲線（Catmull-Rom）でつないだ点にする
+function smoothPath(pts, perSeg = 10) {
+  if (pts.length < 2) return pts.slice();
+  const out = [];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+    for (let k = 0; k < perSeg; k++) {
+      const t = k / perSeg, t2 = t * t, t3 = t2 * t;
+      out.push({
+        x: 0.5 * (2 * p1.x + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3),
+        y: 0.5 * (2 * p1.y + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3)
+      });
+    }
+  }
+  out.push(pts[pts.length - 1]);
+  return out;
+}
+
+const mapLinkCache = new Map();
+// ステージ i-1 → i の道（絵の座標の点の列）
+function mapLinkPoints(i) {
+  if (mapLinkCache.has(i)) return mapLinkCache.get(i);
+  const a = MAP_NODE_POINTS[i - 1], b = MAP_NODE_POINTS[i];
+  const pts = [a, ...(MAP_LINK_WAYPOINTS[i] ?? []).map(([x, y]) => ({ x, y })), b];
+  const path = smoothPath(pts);
+  mapLinkCache.set(i, path);
+  return path;
+}
+
+// 点の列の上で、全体の t（0〜1）の場所
+function pointAlong(path, t) {
+  if (path.length === 1) return path[0];
+  const lens = [0];
+  for (let i = 1; i < path.length; i++) lens.push(lens[i - 1] + Math.hypot(path[i].x - path[i - 1].x, path[i].y - path[i - 1].y));
+  const target = clamp(t, 0, 1) * lens[lens.length - 1];
+  for (let i = 1; i < path.length; i++) {
+    if (lens[i] >= target) {
+      const k = (target - lens[i - 1]) / Math.max(0.001, lens[i] - lens[i - 1]);
+      return { x: path[i - 1].x + (path[i].x - path[i - 1].x) * k, y: path[i - 1].y + (path[i].y - path[i - 1].y) * k };
+    }
+  }
+  return path[path.length - 1];
+}
+
+// 道を、t（0〜1）のところまで、太い線と細い線で描く
+function strokeMapPath(path, t, layout, styles) {
+  const toC = p => ({ x: layout.x + p.x * layout.scale, y: layout.y + p.y * layout.scale });
+  const lens = [0];
+  for (let i = 1; i < path.length; i++) lens.push(lens[i - 1] + Math.hypot(path[i].x - path[i - 1].x, path[i].y - path[i - 1].y));
+  const limit = clamp(t, 0, 1) * lens[lens.length - 1];
+  const pts = [toC(path[0])];
+  for (let i = 1; i < path.length; i++) {
+    if (lens[i] <= limit) pts.push(toC(path[i]));
+    else { pts.push(toC(pointAlong(path, limit / lens[lens.length - 1]))); break; }
+  }
+  for (const st of styles) {
+    ctx.strokeStyle = st.color;
+    ctx.lineWidth = st.width;
+    if (st.dash) { ctx.setLineDash(st.dash); ctx.lineDashOffset = -performance.now() / 60; }
+    ctx.beginPath();
+    pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
+    ctx.stroke();
+    if (st.dash) ctx.setLineDash([]);
+  }
+}
 
 const MAP_WORLD_FOG_ZONES = [
   null,
@@ -6911,19 +7003,21 @@ function mapPointToCanvas(index) {
 
 function currentMapWalkerPoint() {
   if (mapWalkTimer > 0 && mapWalkTo !== mapWalkFrom) {
-    const from = MAP_NODE_POINTS[mapWalkFrom] ?? MAP_NODE_POINTS[0];
-    const to = MAP_NODE_POINTS[mapWalkTo] ?? MAP_NODE_POINTS[mapSelectedCourse] ?? MAP_NODE_POINTS[0];
     const progress = 1 - clamp(mapWalkTimer / 1.2, 0, 1);
     const eased = progress * progress * (3 - progress * 2);
-    return {
-      x: from.x + (to.x - from.x) * eased,
-      y: from.y + (to.y - from.y) * eased
-    };
+    // となりのステージへは、絵の道にそって歩く
+    if (Math.abs(mapWalkTo - mapWalkFrom) === 1) {
+      const link = mapLinkPoints(Math.max(mapWalkFrom, mapWalkTo));
+      return pointAlong(link, mapWalkTo > mapWalkFrom ? eased : 1 - eased);
+    }
+    const from = MAP_NODE_POINTS[mapWalkFrom] ?? MAP_NODE_POINTS[0];
+    const to = MAP_NODE_POINTS[mapWalkTo] ?? MAP_NODE_POINTS[mapSelectedCourse] ?? MAP_NODE_POINTS[0];
+    return { x: from.x + (to.x - from.x) * eased, y: from.y + (to.y - from.y) * eased };
   }
   const base = MAP_NODE_POINTS[mapSelectedCourse] ?? MAP_NODE_POINTS[0];
   if (mapShopT <= 0) return base;
   const k = mapShopT * mapShopT * (3 - mapShopT * 2);
-  return { x: base.x + (SHOP_MAP_NODE.x - base.x) * k, y: base.y + (SHOP_MAP_NODE.y - base.y) * k };
+  return pointAlong(shopLinkPoints(SHOP_MAP_NODE), k);
 }
 
 function updateWorldMapCamera(dt) {
@@ -7031,44 +7125,20 @@ function drawWorldMapScreen() {
   ctx.save();
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
+  const mapLayout = mapImageLayout();
   for (let i = 1; i <= unlockedCourse; i++) {
-    const from = mapPointToCanvas(i - 1);
-    const to = mapPointToCanvas(i);
     const activeReveal = i > lastPathIndex ? reveal : 1;
-    const endX = from.x + (to.x - from.x) * activeReveal;
-    const endY = from.y + (to.y - from.y) * activeReveal;
-    ctx.strokeStyle = "rgba(35, 210, 54, 0.88)";
-    ctx.lineWidth = 24;
-    ctx.beginPath();
-    ctx.moveTo(from.x, from.y);
-    ctx.lineTo(endX, endY);
-    ctx.stroke();
-    ctx.strokeStyle = "rgba(255, 243, 164, 0.92)";
-    ctx.lineWidth = 8;
-    ctx.beginPath();
-    ctx.moveTo(from.x, from.y);
-    ctx.lineTo(endX, endY);
-    ctx.stroke();
+    strokeMapPath(mapLinkPoints(i), activeReveal, mapLayout, [
+      { color: "rgba(35, 210, 54, 0.88)", width: 24 },
+      { color: "rgba(255, 243, 164, 0.92)", width: 8 }
+    ]);
   }
   for (const node of SHOP_MAP_NODES) {
     if (!shopNodeAvailable(node)) continue;
-    const from = mapPointToCanvas(node.course);
-    const to = shopNodeToCanvas(node);
-    ctx.strokeStyle = "rgba(255, 196, 64, 0.9)";
-    ctx.lineWidth = 21;
-    ctx.beginPath();
-    ctx.moveTo(from.x, from.y);
-    ctx.lineTo(to.x, to.y);
-    ctx.stroke();
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
-    ctx.lineWidth = 6;
-    ctx.setLineDash([14, 13]);
-    ctx.lineDashOffset = -performance.now() / 60;
-    ctx.beginPath();
-    ctx.moveTo(from.x, from.y);
-    ctx.lineTo(to.x, to.y);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    strokeMapPath(shopLinkPoints(node), 1, mapLayout, [
+      { color: "rgba(255, 196, 64, 0.9)", width: 21 },
+      { color: "rgba(255, 255, 255, 0.95)", width: 6, dash: [14, 13] }
+    ]);
   }
   ctx.restore();
 
