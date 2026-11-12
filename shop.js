@@ -31,7 +31,44 @@
       en: ["Double-Jump Shoes", "Jump once more in mid-air. Sky routes become a breeze."] },
     { id: "statue", price: 999, color: "#fff3a4", mark: "★",
       ja: ["黄金の柿ピー像", "とくに効果はない。でも、すごい。"],
-      en: ["Golden Kaki-Pea Statue", "Does nothing in particular. But it is magnificent."] }
+      en: ["Golden Kaki-Pea Statue", "Does nothing in particular. But it is magnificent."] },
+    // ---- そのワールドのステージの中のお店でしか買えない ----
+    { id: "moonJump", world: 0, price: 60, color: "#fff3a4", mark: "☾",
+      ja: ["月あめジャンプ", "ジャンプが少し高くなる。月あめのふわふわパワー。"],
+      en: ["Moon Candy Jump", "Your jumps go a little higher. Fluffy moon-candy power."] },
+    { id: "charm", world: 0, price: 150, color: "#ffd1ed", mark: "♥",
+      ja: ["うさみみお守り", "ステージで1回だけ、やられてもその場で復活できる。"],
+      en: ["Bunny-Ear Charm", "Once per stage, get back up on the spot instead of going down."] },
+    { id: "heatCape", world: 1, price: 100, color: "#ff9a6b", mark: "♨",
+      ja: ["たいねつマント", "マグマとふん石のダメージが半分になる。"],
+      en: ["Heatproof Cape", "Halves damage from lava and falling rocks."] },
+    { id: "drill", world: 1, price: 200, color: "#ffcf73", mark: "⚒",
+      ja: ["火星ドリル", "アイテムブロックの中身が2つ出てくる。"],
+      en: ["Mars Drill", "Item blocks give you two of what's inside."] },
+    { id: "spikeShoes", world: 2, price: 120, color: "#c6fff4", mark: "❄",
+      ja: ["スパイクシューズ", "氷の上でもすべらない。"],
+      en: ["Spike Shoes", "No more slipping on ice."] },
+    { id: "iceShield", world: 2, price: 220, color: "#9ee8ff", mark: "◇",
+      ja: ["こおりのたて", "ステージで1回だけ、敵の弾をふせぐ。"],
+      en: ["Ice Shield", "Blocks one enemy shot per stage."] },
+    { id: "tank", world: 3, price: 150, color: "#bff8ff", mark: "O₂",
+      ja: ["大きな酸素タンク", "水の中で、酸素が2倍長もちする。"],
+      en: ["Big Oxygen Tank", "Your oxygen lasts twice as long underwater."] },
+    { id: "fins", world: 3, price: 250, color: "#7fd8ff", mark: "≈",
+      ja: ["ひれ", "泳ぐのが速くなる。"],
+      en: ["Swim Fins", "You swim faster."] },
+    { id: "helmet", world: 4, price: 180, color: "#ffc67a", mark: "⛑",
+      ja: ["ヘルメット", "トロッコの頭の上のはりに当たってもへいき。"],
+      en: ["Hard Hat", "Mine-cart beams can't hurt you anymore."] },
+    { id: "booster", world: 4, price: 300, color: "#ff8db7", mark: "»",
+      ja: ["ロケットブースター", "ダッシュが速くなる。"],
+      en: ["Rocket Booster", "Your dash gets faster."] },
+    { id: "rod", world: 5, price: 250, color: "#d7c8ff", mark: "ϟ",
+      ja: ["ひらいしん", "雷が当たらなくなる。"],
+      en: ["Lightning Rod", "Lightning can't hit you anymore."] },
+    { id: "kingCape", world: 5, price: 400, color: "#ff3d7f", mark: "♛",
+      ja: ["王さまのマント", "受けるダメージが半分になる。"],
+      en: ["Royal Cape", "Halves the damage you take."] }
   ];
 
   const art = {};
@@ -69,8 +106,35 @@
     lineT = 0;
   }
 
+  // ならぶ商品：どこでも買える物 ＋（ステージの中のお店なら）そのワールドだけの物
+  let shopWorld = null;
+  let inStage = null;
+  const stock = () => ITEMS.filter(it => it.world === undefined || it.world === shopWorld);
+
+  // ステージの中のよろず屋：いまの持ち物でお買い物して、終わったらステージにもどる
+  function openInStage() {
+    if (state.mode !== "playing" || FX.transitioning()) return;
+    inStage = { prevKeep: campaignKeep };
+    campaignKeep = campaignSnapshotFromState();
+    shopWorld = courses[currentCourse]?.worldIndex ?? 0;
+    playSfx("decide");
+    FX.startTransition({
+      type: "fade", dur: 0.6,
+      onMid: () => {
+        state.mode = "shop";
+        sel = 0;
+        tab = 0;
+        page = 0;
+        say("まいど〜！ ここのお店には、このあたりでしか売ってへん品もあるで。",
+          "Welcome! This branch has a few things you won't find anywhere else.");
+      }
+    });
+  }
+
   function open() {
     if (!unlocked() || state.mode !== "worldMap" || FX.transitioning()) return;
+    shopWorld = null;
+    inStage = null;
     playSfx("decide");
     FX.startTransition({
       type: "fade", dur: 0.6,
@@ -95,11 +159,28 @@
     if (FX.transitioning()) return;
     playSfx("cancel");
     Story.persist();
+    if (inStage) {
+      const back = inStage;
+      inStage = null;
+      FX.startTransition({
+        type: "fade", dur: 0.6,
+        onMid: () => {
+          // お店で使った柿ピー・買ったバーガー・売った武器を、ステージの持ち物にもどす
+          restoreCampaignSnapshot(campaignKeep);
+          campaignKeep = back.prevKeep;
+          state.mode = "playing";
+          state.doorHold = true;
+          updateHud();
+          lastTime = performance.now();
+        }
+      });
+      return;
+    }
     FX.startTransition({ type: "fade", dur: 0.6, onMid: () => { state.mode = "worldMap"; lastTime = performance.now(); } });
   }
 
   function buy() {
-    const it = ITEMS[sel];
+    const it = stock()[sel];
     const w = wallet();
     if (!it.repeat && has(it.id)) {
       playSfx("locked");
@@ -134,8 +215,10 @@
     Story.persist();
   }
 
+  // 商品が多いときは、行を少しつめる
   function rowRect(i) {
-    return { x: 520, y: 140 + i * 66, w: 716, h: 58 };
+    const step = tab === 0 ? Math.min(66, Math.floor(568 / Math.max(1, stock().length))) : 66;
+    return { x: 520, y: 140 + i * step, w: 716, h: step - 6 };
   }
 
   // ---------- 武器を売る ----------
@@ -212,7 +295,7 @@
   const backRect = () => ({ x: 34, y: 20, w: 170, h: 46 });
 
   function handleKey(code) {
-    const rows = tab === 0 ? ITEMS.length : sellRowCount();
+    const rows = tab === 0 ? stock().length : sellRowCount();
     const pages = Math.max(1, Math.ceil(sellList().length / SELL_ROWS));
     if (code === "ArrowLeft" || code === "KeyA") {
       if (tab === 1 && page > 0) { page -= 1; sel = 0; playSfx("cursor"); }
@@ -247,7 +330,7 @@
         return true;
       }
     }
-    const rows = tab === 0 ? ITEMS.length : sellRowCount();
+    const rows = tab === 0 ? stock().length : sellRowCount();
     for (let i = 0; i < rows; i++) {
       const r = rowRect(i);
       if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) {
@@ -417,7 +500,7 @@
     ctx.fillStyle = "#7f67c8";
     ctx.font = `900 18px ${FX.FONT}`;
     ctx.textAlign = "center";
-    ctx.fillText(L("◀ マップへ (Esc)", "◀ Map (Esc)"), b.x + b.w / 2, b.y + b.h / 2 + 1);
+    ctx.fillText(inStage ? L("◀ ステージへ", "◀ Back") : L("◀ マップへ (Esc)", "◀ Map (Esc)"), b.x + b.w / 2, b.y + b.h / 2 + 1);
 
     // 看板と さいふ
     ctx.font = `900 34px ${FX.FONT}`;
@@ -462,7 +545,7 @@
     if (tab === 1) drawSellList();
 
     // 商品リスト
-    if (tab === 0) ITEMS.forEach((it, i) => {
+    if (tab === 0) stock().forEach((it, i) => {
       const r = rowRect(i);
       const active = i === sel;
       const got = !it.repeat && has(it.id);
@@ -480,10 +563,21 @@
       ctx.textAlign = "left";
       ctx.font = `900 21px ${FX.FONT}`;
       ctx.fillStyle = got ? "#9a8fc0" : "#4d4773";
-      ctx.fillText(txt[0], r.x + 70, r.y + 20);
+      ctx.fillText(txt[0], r.x + 70, r.y + r.h * 0.34);
+      if (it.world !== undefined) {
+        // ここでしか買えない印
+        const nameW = ctx.measureText(txt[0]).width;
+        ctx.fillStyle = "#ff5f9e";
+        ctx.beginPath();
+        ctx.roundRect(r.x + 80 + nameW, r.y + r.h * 0.34 - 11, 92, 22, 11);
+        ctx.fill();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = `900 13px ${FX.FONT}`;
+        ctx.fillText(L("ここだけ！", "Only here!"), r.x + 90 + nameW, r.y + r.h * 0.34 + 1);
+      }
       ctx.font = `700 14px ${FX.FONT}`;
       ctx.fillStyle = "#8b82b3";
-      ctx.fillText(txt[1], r.x + 70, r.y + 43);
+      ctx.fillText(txt[1], r.x + 70, r.y + r.h * 0.76);
       ctx.textAlign = "right";
       ctx.font = `900 22px ${FX.FONT}`;
       if (got) {
@@ -552,5 +646,5 @@
     return false;
   }
 
-  window.Shop = { ITEMS, has, unlocked, open, close, update, draw, handleKey, handlePointer, drawMapButton, mapPointer };
+  window.Shop = { ITEMS, has, unlocked, open, openInStage, close, update, draw, handleKey, handlePointer, drawMapButton, mapPointer };
 })();

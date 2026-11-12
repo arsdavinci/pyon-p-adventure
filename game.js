@@ -2056,6 +2056,20 @@ function buildStageAreas(index) {
     areas.push(room);
     first.level.doors.push({ x: dx, y: spot.y - DOOR_H, w: DOOR_W, h: DOOR_H, to: room.areaNo, spawnX: 230, bonus: true });
   }
+  // よろず屋の扉（どのステージにも。寄り道の扉とはなして置く）
+  const taken = first.level.doors.map(d => d.x);
+  const farFromDoors = x => taken.every(t => Math.abs(t - x) > 260);
+  const shopSafe = (first.level.doorSpots ?? []).filter(d => d.x > 500 && d.x < 3500 && farFromDoors(d.x))
+    .sort((a, b) => Math.abs(a.x - 1100) - Math.abs(b.x - 1100))[0];
+  const tryXs = [];
+  for (let x = 700; x <= 3500; x += 100) tryXs.push(x);
+  tryXs.sort((a, b) => Math.abs(a - 1100) - Math.abs(b - 1100));
+  tryXs.push(320, 420); // どこにも置けなければ、スタート地点の近く
+  const shopX = shopSafe ? shopSafe.x : tryXs.find(x => farFromDoors(x) && doorFits(x));
+  const shopG = shopSafe ? { y: shopSafe.y } : shopX ? wideGround(shopX) : null;
+  if (shopX && shopG) first.level.doors.push({ x: shopX, y: shopG.y - DOOR_H, w: DOOR_W, h: DOOR_H, to: 0, spawnX: shopX, shop: true });
+  // 海のステージは、門より手前の水の中に、うかぶよろず屋
+  else if (underwater) first.level.doors.push({ x: 560, y: 360, w: DOOR_W, h: DOOR_H, to: 0, spawnX: 560, shop: true });
   courses[index] = areas[0];
 }
 
@@ -2234,6 +2248,7 @@ function enterArea(to, spawnX) {
       const keep = campaignSnapshotFromState();
       const time = state.time;
       const keys = state.keys;
+      const used = { charmUsed: state.charmUsed, iceShieldUsed: state.iceShieldUsed };
       // エリアごとに「取った★・取ったカギ・あけた扉」を覚えておく（もどってきても復活しない）
       const memo = JSON.parse(JSON.stringify(state.areaMemo ?? {}));
       const from = courses[currentCourse].areaNo ?? 0;
@@ -2248,6 +2263,7 @@ function enterArea(to, spawnX) {
       restoreCampaignSnapshot(keep);
       state.time = time;
       state.keys = keys;
+      Object.assign(state, used);
       state.areaMemo = memo;
       state.doorHold = true;
       const mine = memo[to];
@@ -2315,6 +2331,10 @@ function updateDoors() {
       }
       continue;
     }
+    if (d.shop) {
+      Shop.openInStage();
+      return;
+    }
     if (d.locked) {
       if ((state.keys ?? 0) > 0) {
         state.keys -= 1;
@@ -2347,7 +2367,26 @@ function drawDoors() {
   for (const d of level.doors ?? []) {
     // 扉の絵（assets/door-*.png）があれば使う。カギを開けると、ふつうの扉の絵に変わる
     const shut = d.locked || (d.needsClear && state.enemies.some(e => e.alive && !e.boss));
-    const art = doorArt[shut ? "locked" : d.bonus ? "bonus" : d.exit ? "portal" : "back"];
+    const art = doorArt[shut ? "locked" : d.bonus || d.shop ? "bonus" : d.exit ? "portal" : "back"];
+    if (d.shop) {
+      // よろず屋の看板
+      ctx.save();
+      ctx.font = `900 20px ${FX.FONT}`;
+      const label = language === "ja" ? "よろず屋" : "SHOP";
+      const lw = ctx.measureText(label).width + 22;
+      ctx.fillStyle = "#fff3a4";
+      ctx.strokeStyle = "#d98a2b";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(d.x + d.w / 2 - lw / 2, d.y - 44, lw, 30, 10);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#a35a12";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(label, d.x + d.w / 2, d.y - 28);
+      ctx.restore();
+    }
     const usedArt = art.complete && art.naturalWidth > 0;
     if (usedArt) {
       const w = d.w + 40;
@@ -3495,7 +3534,7 @@ function updatePlayer(dt) {
   const wantsRun = isRunHeld(dxInput) || doubleTapRun;
   const wantsShoot = keys.has("KeyX") || keys.has("KeyY") || keys.has("KeyJ") || gamepadState.shoot;
   const trait = currentStageTrait();
-  const slippery = trait === "iceSlide";
+  const slippery = trait === "iceSlide" && !Shop.has("spikeShoes");
   // しゃがむ（地面で↓）。しゃがんだまま←→で、ほふく前進。敵の弾は頭の上を通りすぎる
   const wantsDown = keys.has("ArrowDown") || keys.has("KeyS") || gamepadState.down;
   const canCrouch = !(hasEquippedWeapon() && isRideable(state.weaponPower));
@@ -3503,7 +3542,8 @@ function updatePlayer(dt) {
   else if (p.crouch && (!wantsDown || !p.grounded || !canCrouch)) setCrouch(p, false);
   const crawl = !!p.crouch;
   const accel = crawl ? 900 : slippery ? (wantsRun ? 1380 : 820) : wantsRun ? 2100 : 1250;
-  const maxSpeed = crawl ? 75 : slippery ? (wantsRun ? 410 : 270) : wantsRun ? 360 : 235;
+  const boost = Shop.has("booster") ? 1.2 : 1; // ロケットブースター：ダッシュが速い
+  const maxSpeed = crawl ? 75 : slippery ? (wantsRun ? 410 * boost : 270) : wantsRun ? 360 * boost : 235;
 
   if (movingLeft) {
     p.vx -= accel * dt;
@@ -3539,6 +3579,8 @@ function updatePlayer(dt) {
     if (wantsRun && Math.abs(p.vx) > 260) p.vy *= 1.08;
     // ロボットはジャンプ力が高い
     if (hasEquippedWeapon() && isMechPower(state.weaponPower)) p.vy *= 1.3;
+    // 月あめジャンプ：少し高く
+    if (Shop.has("moonJump")) p.vy *= 1.08;
     p.grounded = false;
     p.coyote = 0;
     p.jumpHeld = true;
@@ -3615,7 +3657,7 @@ function updateSwimmingPlayer(dt) {
   const dx = dxInput;
   const dy = (movingDown ? 1 : 0) - (movingUp ? 1 : 0);
   const len = Math.hypot(dx, dy) || 1;
-  const speed = wantsRun ? 330 : 230;
+  const speed = (wantsRun ? 330 : 230) * (Shop.has("fins") ? 1.3 : 1);
 
   if (dx || dy) {
     p.vx += (dx / len * speed - p.vx) * Math.min(1, dt * 8);
@@ -3835,6 +3877,7 @@ function updateLowBars() {
   const p = state.player;
   for (const b of level.lowBars ?? []) {
     if (p.x + p.w > b.x + 4 && p.x < b.x + b.w - 4 && p.y < b.y + b.h - 4 && p.y + p.h > b.y + 4) {
+      if (shopGuards("bar")) return;
       damagePlayer(false, null, false);
       return;
     }
@@ -3922,7 +3965,7 @@ function platformUnderBody(body) {
 }
 
 function updateOxygen(dt) {
-  state.oxygen = clamp((state.oxygen ?? MAX_OXYGEN) - dt * 5.8, 0, MAX_OXYGEN);
+  state.oxygen = clamp((state.oxygen ?? MAX_OXYGEN) - dt * (Shop.has("tank") ? 2.9 : 5.8), 0, MAX_OXYGEN);
   state.oxygenHurtCooldown = Math.max(0, (state.oxygenHurtCooldown ?? 0) - dt);
   for (const item of state.oxygenItems ?? []) {
     if (!item.taken) continue;
@@ -4001,8 +4044,8 @@ function updateLightning(dt) {
     if (striking) {
       const top = (state.cameraY ?? 0) - 40;
       const r = { x: b.x - BOLT_W / 2 + 10, y: top, w: BOLT_W - 20, h: b.landY - top };
-      // ロボット・戦闘機に乗っているときは雷が効かない
-      if (hit(p, r) && !(hasEquippedWeapon() && isRideable(state.weaponPower))) damagePlayer(false, null, false);
+      // ロボット・戦闘機に乗っているときは雷が効かない（ひらいしんでも）
+      if (hit(p, r) && !(hasEquippedWeapon() && isRideable(state.weaponPower)) && !shopGuards("bolt")) damagePlayer(false, null, false);
     }
   }
   state.bolts = (state.bolts ?? []).filter(b => b.t < BOLT_WARN + BOLT_STRIKE + 0.25);
@@ -4066,7 +4109,7 @@ function updateLavaGeysers(dt) {
     if (g.active && !wasActive) eruptLavaRocks(g);
     if (!g.active) continue;
     const jet = { x: g.x, y: (g.baseY ?? canvas.height) - g.h, w: g.w, h: g.h };
-    if (hit(p, jet)) damagePlayer(false, null, false);
+    if (hit(p, jet) && p.invincible <= 0 && !shopGuards("lava")) damagePlayer(false, null, false);
   }
   updateLavaRocks(dt);
 }
@@ -4128,7 +4171,7 @@ function updateLavaRocks(dt) {
     rock.t += dt;
     rock.spin += dt * 7;
     const r = lavaRockRect(rock);
-    if (r && hit(state.player, r)) damagePlayer(false, null, false);
+    if (r && hit(state.player, r) && state.player.invincible <= 0 && !shopGuards("lava")) damagePlayer(false, null, false);
     if (rock.t >= ROCK_RISE + ROCK_WARN) {
       rock.done = true;
       if (rock.landY !== null) {
@@ -5792,7 +5835,7 @@ function updateBeams(dt) {
       }
     } else if (hit(beamRect, state.player)) {
       const source = state.enemies.find(e => e.id === b.owner);
-      damagePlayer(false, source);
+      if (state.player.invincible > 0 || !shopGuards("shot")) damagePlayer(false, source);
       b.life = 0;
     } else if (!b.bossOrb && beamHitsWall(beamRect)) {
       // 敵の弾も、かべや地面で止まる（ボスの大きな弾だけは別）
@@ -6064,15 +6107,20 @@ function breakBlock(block) {
   spawnBlockPoof(block.x + block.w / 2, block.y + block.h / 2);
   FX.blockBreak(block.x + block.w / 2, block.y + block.h / 2);
   playSfx("break", block.x);
+  const times = Shop.has("drill") ? 2 : 1;
+  for (let k = 0; k < times; k++) spawnBlockContents(block, k);
+}
+
+function spawnBlockContents(block, k) {
   if (block.item === "power" && Math.random() < 0.5) {
     // 武器ブロックの半分は、柿ピーがはじける（武器は出にくい）
     for (let i = 0; i < 4; i++) {
-      const c = coin(block.x + block.w / 2 + (i - 1.5) * 34, block.y - 40 - (i % 2) * 24, i % 2 ? "pea" : "kaki");
+      const c = coin(block.x + block.w / 2 + (i - 1.5) * 34 + k * 20, block.y - 40 - (i % 2) * 24 - k * 40, i % 2 ? "pea" : "kaki");
       state.coinItems.push({ ...c, taken: false });
     }
     return;
   }
-  if (block.item) spawnItem(block.x + block.w / 2, block.y - 12, block.item);
+  if (block.item) spawnItem(block.x + block.w / 2 + k * 30, block.y - 12, block.item);
 }
 
 function spawnBlockPoof(x, y) {
@@ -6403,6 +6451,29 @@ function drawParticles() {
   }
 }
 
+// ---------- よろず屋のアイテムで、ダメージをふせぐ ----------
+// kind: "lava"（マグマ・ふん石） / "bolt"（雷） / "bar"（トロッコのはり） / "shot"（敵の弾）
+function shopGuards(kind) {
+  const p = state.player;
+  const guard = (ja, en) => {
+    p.invincible = Math.max(p.invincible, 0.9);
+    FX.floater(p.x + p.w / 2, p.y - 20, language === "ja" ? ja : en, { color: "#ffffff", stroke: "#7f67c8", size: 22, life: 1 });
+    playSfx("equip", p.x);
+    return true;
+  };
+  if (kind === "bolt" && Shop.has("rod")) return true;
+  if (kind === "bar" && Shop.has("helmet")) return true;
+  if (kind === "lava" && Shop.has("heatCape")) {
+    state.heatCapeTick = !state.heatCapeTick;
+    if (state.heatCapeTick) return guard("マントでふせいだ！", "Cape blocked it!");
+  }
+  if (kind === "shot" && Shop.has("iceShield") && !state.iceShieldUsed) {
+    state.iceShieldUsed = true;
+    return guard("こおりのたて！", "Ice Shield!");
+  }
+  return false;
+}
+
 function damagePlayer(fell = false, sourceEnemy = null, canStealWeapon = false) {
   const p = state.player;
   if (state.mode === "dying" || state.mode === "respawning") return;
@@ -6418,6 +6489,15 @@ function damagePlayer(fell = false, sourceEnemy = null, canStealWeapon = false) 
       state.gun.holder = sourceEnemy.id;
       Chat.event("stolen");
       sourceEnemy.gunCooldown = sourceEnemy.boss ? 0.2 : 0.5;
+    }
+  }
+  if (!fell && Shop.has("kingCape")) {
+    state.kingCapeTick = !state.kingCapeTick;
+    if (state.kingCapeTick) {
+      p.invincible = Math.max(p.invincible, 1.1);
+      FX.floater(p.x + p.w / 2, p.y - 20, language === "ja" ? "王さまのマント！" : "Royal Cape!", { color: "#ffffff", stroke: "#ff3d7f", size: 22, life: 1 });
+      playSfx("equip", p.x);
+      return;
     }
   }
   if (fell) {
@@ -6437,6 +6517,18 @@ function damagePlayer(fell = false, sourceEnemy = null, canStealWeapon = false) 
     p.vy = -360;
     return;
   }
+  if (!fell && Shop.has("charm") && !state.charmUsed) {
+    // うさみみお守り：その場で元気に復活
+    state.charmUsed = true;
+    state.hp = MAX_HP;
+    p.invincible = 2.2;
+    p.vy = -420;
+    FX.floater(p.x + p.w / 2, p.y - 24, language === "ja" ? "うさみみお守り！" : "Bunny-Ear Charm!", { color: "#ffffff", stroke: "#ff5f9e", size: 26, life: 1.4 });
+    FX.flash("#ffd1ed", 0.4, 0.3);
+    playSfx("respawn", p.x);
+    return;
+  }
+  if (fell && Shop.has("charm") && !state.charmUsed) state.charmSaveLife = true;
   startDeathFall();
   return;
   state.lives -= 1;
@@ -6453,7 +6545,13 @@ function damagePlayer(fell = false, sourceEnemy = null, canStealWeapon = false) 
 function startDeathFall() {
   const p = state.player;
   playSfx("death", p.x + p.w / 2);
-  state.lives = Math.max(0, state.lives - 1);
+  if (state.charmSaveLife) {
+    // 穴に落ちたときは、お守りでライフをへらさない
+    state.charmSaveLife = false;
+    state.charmUsed = true;
+  } else {
+    state.lives = Math.max(0, state.lives - 1);
+  }
   state.hp = 0;
   state.mode = "dying";
   state.deathTimer = 1.55;
