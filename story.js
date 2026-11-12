@@ -1030,7 +1030,7 @@
     FX.flash("#ffffff", 0.45, 0.4);
     if (window.Bgm) {
       Bgm.stop(0.15);
-      Bgm.jingle(opts.boss ? "bossClear" : "stageClear");
+      if (opts.boss || !playFileJingle("stageClear")) Bgm.jingle(opts.boss ? "bossClear" : "stageClear");
     }
     playSfx("stageClear", state.player.x);
   }
@@ -1666,6 +1666,21 @@
     return tr;
   }
 
+  // 一回だけ鳴らす曲（ステージクリアのファンファーレなど）。mp3 が読めていなければ false
+  let fileJingle = null;
+  function playFileJingle(name) {
+    const tr = fileTrack(name);
+    if (!tr.ready || tr.missing || !soundEnabled) return false;
+    if (filePlaying) { fadeFile(filePlaying, 0, true); filePlaying = null; lastWant = null; }
+    tr.audio.loop = false;
+    tr.audio.currentTime = 0;
+    clearInterval(tr.fade);
+    setFileVol(tr, 0.7);
+    tr.audio.play().catch(() => { tr.missing = true; });
+    fileJingle = tr;
+    return true;
+  }
+
   function setFileVol(tr, v) {
     tr.vol = v;
     if (tr.gain) tr.gain.gain.value = v;
@@ -1690,12 +1705,14 @@
   function syncMusic() {
     if (!window.Bgm || !audioUnlocked) return;
     const want = desiredTrack();
+    fileTrack("stageClear"); // 先に読み込んでおく（クリアした瞬間に鳴らせるように）
     const duck = state.mode === "paused" || (state.mode === "inventory" && want !== "select");
     const tr = want ? fileTrack(want) : null;
     const useFile = !!tr && tr.ready && !tr.missing;
     const key = want ? `${useFile ? "file" : "synth"}:${want}` : null;
     if (key !== lastWant) {
       lastWant = key;
+      if (fileJingle && want) { fadeFile(fileJingle, 0, true); fileJingle = null; }
       if (filePlaying && filePlaying !== tr) {
         fadeFile(filePlaying, 0, true);
         filePlaying = null;
