@@ -1791,7 +1791,8 @@ function updateCamera(dt, snap = false) {
       if (s.y > feet + 40 && s.y < feet + 620 && s.y > floor) floor = s.y;
     }
     let wantZoom = ZOOM;
-    if (floor > -Infinity) {
+    // 入りくんだエリア（建物の中）は下に落ちる心配がないので、引かずにぴょんぴーをアップで追う
+    if (floor > -Infinity && !courses[currentCourse]?.isMaze) {
       // 画面に入りきらないほど深いときは、少し引いて（ズームアウトして）下まで見せる
       const span = floor + 90 - (p.y - 70);
       if (span > VIEW_H) wantZoom = clamp(canvas.height / span, 0.92, ZOOM);
