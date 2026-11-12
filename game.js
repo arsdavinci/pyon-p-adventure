@@ -177,8 +177,8 @@ const TEXT = {
     sorted: "アイテムを整理したよ",
     loreClassic: "はムーニアン工房で育った基本兵装。融合するほど星の火力が濃くなる。",
     loreExperimental: "は未知惑星の設計図から生まれた実験兵装。ムーニアンノヴァを越える弾道を持つ。",
-    commentClassic: "、かわいい顔してるけどちゃんと強いよ！",
-    commentExperimental: "！？これ、撃ったあと画面を見るほうが忙しいやつだ！",
+    commentClassic: "、かわいい顔しとるけど、ちゃんと強いじょ！",
+    commentExperimental: "！？ これ、撃ったあと画面を見るほうが忙しいやつじゃ！",
     ranks: ["ちょこっと柿ピー", "おやつ柿ピー", "いい感じの柿ピー", "大盛り柿ピー", "満タン柿ピーパーティー"],
     mix: "比率",
     balance: "バランス"
@@ -643,39 +643,39 @@ BOSS_DEFEAT_DIALOGUES[5].pyonJa = "ぴょんぴー「ほな、おはようさん
 const BOSS_STORY_LINES = [
   {
     intro: ["魔王さまからあずかった『かけら』は、ふわふわ月あめ王国のたからものだよ！", "The shard the Demon Lord gave me is the treasure of my fluffy candy kingdom!"],
-    introPyon: ["それ、みんなの笑いやねん。半分こもなしで、ぜんぶ返してもらうで！", "That's everybody's laughter. No splitting it. I'm taking all of it back!"],
+    introPyon: ["それ、みんなの笑いじょ。半分こもなしで、ぜんぶ返してもらうけん！", "That's everybody's laughter. No splitting it. I'm taking all of it back!"],
     defeat: ["やられたー！ ……あれ？ なんか、おなかの底から笑えてきたよ。かけら、返すね！", "I'm beaten! ...Huh? I feel like laughing from deep in my belly. Here, take the shard back!"],
-    defeatPyon: ["おおきに！ 今度フェスやるから、月あめ持って見に来てや！", "Thanks! We've got a Fest coming up. Bring some moon candy and come watch!"]
+    defeatPyon: ["おおきに！ 今度フェスやるけん、月あめ持って見に来てだ！", "Thanks! We've got a Fest coming up. Bring some moon candy and come watch!"]
   },
   {
     intro: ["このかけらは火星ドームの動力にする。笑いなど、ネオンのこやしで十分だ！", "This shard will power my Mars dome. Laughter is nothing but fuel for neon!"],
-    introPyon: ["笑いは電気代ちゃうねん。みんなのもんや、返してもらうで！", "Laughter isn't a power bill. It belongs to everyone, so hand it over!"],
+    introPyon: ["笑いは電気代でないんじょ。みんなのもんじゃ、返してもらうけん！", "Laughter isn't a power bill. It belongs to everyone, so hand it over!"],
     defeat: ["ぐぬぬ……ネオンが消えたのに、なぜか胸が明るい。これが、笑いか……。持っていけ！", "Grr... the neon is out, yet my chest feels bright. So this is laughter... Take it!"],
-    defeatPyon: ["節電もできて一石二鳥やん。司令官もフェス、見に来てや！", "Saves power too. Two birds, one stone! Come see the Fest, Commander!"]
+    defeatPyon: ["節電もできて一石二鳥でないか。司令官もフェス、見に来てだ！", "Saves power too. Two birds, one stone! Come see the Fest, Commander!"]
   },
   {
     intro: ["かけらは、この水晶の星でキラキラに固めておく。きみもいっしょに固めてあげる。", "I will keep the shard frozen in sparkle on this crystal planet. You can freeze along with it."],
-    introPyon: ["固まる前に、こっちが先にとかす！ かけらも、あんたの顔もな！", "I'll melt it before that happens. The shard, and that frozen face of yours!"],
+    introPyon: ["固まる前に、こっちが先にとかしちゃる！ かけらも、あんたの顔もな！", "I'll melt it before that happens. The shard, and that frozen face of yours!"],
     defeat: ["きらきらに固めるつもりが、こっちの顔がゆるんじゃった……。ふふっ。かけら、どうぞ。", "I meant to freeze everything, but my own face has melted into a smile... Hehe. Here is the shard."],
-    defeatPyon: ["ええ笑顔やん！ その顔でフェス見に来てや！", "Now that's a great smile! Bring it to the Fest!"]
+    defeatPyon: ["ええ笑顔でないか！ その顔でフェス見に来てだ！", "Now that's a great smile! Bring it to the Fest!"]
   },
   {
     intro: ["このかけらは星の海の底にしずめたわ。あなたも泡にして、しずめてあげる。", "I have sunk the shard to the bottom of the star sea. I shall turn you to bubbles and sink you too."],
-    introPyon: ["泳ぎは得意ちゃうけど、笑いをしずめたままにはでけへん！", "I'm no swimmer, but I can't leave laughter at the bottom of the sea!"],
+    introPyon: ["泳ぎは得意でないけど、笑いをしずめたままにはできんじょ！", "I'm no swimmer, but I can't leave laughter at the bottom of the sea!"],
     defeat: ["ぶくぶく……あら、泡といっしょに笑いがこみあげてきたわ。かけらは、あなたにあずけるわね。", "Bubble bubble... oh my, laughter is rising with the bubbles. I shall leave the shard with you."],
-    defeatPyon: ["おおきに、クイーン！ フェスの客席、いちばんええ水そう用意しとくわ！", "Thanks, Queen! I'll save you the best tank in the audience at the Fest!"]
+    defeatPyon: ["おおきに、クイーン！ フェスの客席、いちばんええ水そう用意しとくけん！", "Thanks, Queen! I'll save you the best tank in the audience at the Fest!"]
   },
   {
     intro: ["カケラハ コウジョウノ ネンリョウ。ワライ、フヨウ。ハグルマニ マキコマレナ！", "SHARD IS FACTORY FUEL. LAUGHTER: NOT REQUIRED. GET CAUGHT IN THE GEARS!"],
-    introPyon: ["笑いは不要ちゃう、必要や！ かわいいだけやなくて強いとこ、見せたるわ！", "Laughter is required, thank you! I'll show you I'm strong, not just cute!"],
+    introPyon: ["笑いは不要でない、必要じゃ！ かわいいだけでのうて強いとこ、見せちゃるわ！", "Laughter is required, thank you! I'll show you I'm strong, not just cute!"],
     defeat: ["ハグルマ、カラマワリ……ピピ……ワライ、インストール カンリョウ。カケラ、ヘンキャク スル。", "GEARS SPINNING FREELY... BEEP... LAUGHTER: INSTALL COMPLETE. RETURNING SHARD."],
-    defeatPyon: ["アップデートできてよかったな！ フェスも予定に入れといてや！", "Glad the update went through! Put the Fest on your schedule too!"]
+    defeatPyon: ["アップデートできてよかったな！ フェスも予定に入れといてだ！", "Glad the update went through! Put the Fest on your schedule too!"]
   },
   {
     intro: ["よくぞここまで来た。だが最後のかけらは渡さぬ。笑いなど、宇宙から消えてしまえばよいのだ！", "You have done well to come this far. But I will not give up the last shard. Laughter should vanish from the universe!"],
-    introPyon: ["消させへん。ここが終点やない、大冒険のクライマックスや！", "Not on my watch. This isn't the end. It's the grand finale!"],
+    introPyon: ["消させはせん。ここが終点でない、大冒険のクライマックスじゃ！", "Not on my watch. This isn't the end. It's the grand finale!"],
     defeat: ["ば、ばかな……。魔王星の夜が……明けていく……！", "I-impossible... The night of the Demon Star... is ending...!"],
-    defeatPyon: ["ほな、おはようさん。なあ魔王、ちょっと話、聞かせてや。", "Good morning, then. Hey, Demon Lord. Tell me your story."]
+    defeatPyon: ["ほな、おはようさん。なあ魔王、ちょっと話、聞かせてだ。", "Good morning, then. Hey, Demon Lord. Tell me your story."]
   }
 ];
 BOSS_STORY_LINES.forEach((line, i) => {
@@ -699,12 +699,12 @@ const AREA_LANDMARKS = [
 
 const MAP_STAGE_MESSAGES = {
   ja: [
-    "ぴょんぴー「パステル宇宙、出発や！」",
-    "ぴょんぴー「火星の赤い町まで道がつながったで！」",
-    "ぴょんぴー「氷の星や。すべらんように行こ！」",
-    "ぴょんぴー「海の星、ぷかぷか進むで！」",
-    "ぴょんぴー「メカの輪っか都市、ビリビリしてるな！」",
-    "ぴょんぴー「最後の魔王城や。ここで決めるで！」"
+    "ぴょんぴー「パステル宇宙、出発じゃ！」",
+    "ぴょんぴー「火星の赤い町まで道がつながったじょ！」",
+    "ぴょんぴー「氷の星じゃ。すべらんように行こう！」",
+    "ぴょんぴー「海の星、ぷかぷか進むじょ！」",
+    "ぴょんぴー「メカの輪っか都市、ビリビリしよるな！」",
+    "ぴょんぴー「最後の魔王城じゃ。ここで決めるじょ！」"
   ],
   en: [
     'Pyon-P: "Pastel space, here we go!"',
@@ -1428,7 +1428,7 @@ function enterArea(to, spawnX) {
             ["yana", "ここは合成の練習部屋です。光線銃が3つおいてあります。ぜんぶひろってみてください。", "This is a fusion practice room. Three ray guns are here. Pick them all up."],
             ["yana", "SELECTで装備画面をひらいて、🌙ムーンポッパーをAでつかみ、もう1つの🌙ムーンポッパーの上ではなすと合成できます。", "Open the equipment screen with SELECT, grab a 🌙 Moon Popper with A and drop it on the other one to fuse."],
             ["yana", "でも⭐の武器とは合成できません。月の武器🌙と星の武器⭐は別の種類。同じ種類の、同じ武器どうしだけです。", "But you can't fuse it with the ⭐ weapon. Moon 🌙 and star ⭐ are different types; only the exact same weapon fuses."],
-            ["pyon", "月は月、星は星で育てるんやな。まかしとき！", "Moon with moon, star with star. Got it!"]
+            ["pyon", "月は月、星は星で育てるんじゃな。まかしとき！", "Moon with moon, star with star. Got it!"]
           ], true);
         }
       }
@@ -1856,7 +1856,7 @@ function isUnderwaterStage() {
 function startGame(fresh = false) {
   if (FX.transitioning()) return;
   // 「つづきから」：セーブファイルがあれば、どのファイルから始めるか選ぶ画面を出す
-  // 「ロード」：セーブファイルを選ぶ画面（ファイルがなくても開いて、空っぽを見せる）
+  // 「つづきから」：セーブファイルを選ぶ画面（ファイルがなくても開いて、空っぽを見せる）
   if (!fresh && state?.mode === "title" && !state.saveMenu && (readSaveSlots().some(Boolean) || !Story.hasSave())) {
     openSaveMenu(true);
     overlay.classList.add("hidden");
@@ -4281,14 +4281,14 @@ function runInventorySort() {
   const alreadyCompact = state.inventoryItems.every((item, index) => item === compacted[index]);
   if (items.length === 0) {
     state.inventorySortToastLabel = "整理するものなし";
-    state.inventorySortComment = "ぴょんぴー「いや整理するものがないがな！」";
+    state.inventorySortComment = "ぴょんぴー「いや整理するもんがないでないか！」";
   } else if (alreadyCompact) {
     state.inventorySortToastLabel = "整理済み";
-    state.inventorySortComment = "ぴょんぴー「いやもう整理されとる！」";
+    state.inventorySortComment = "ぴょんぴー「いや、もう整理されとるじょ！」";
   } else {
     compactInventoryItems();
     state.inventorySortToastLabel = "整理されました";
-    state.inventorySortComment = "ぴょんぴー「わあ、綺麗に並んだな！」";
+    state.inventorySortComment = "ぴょんぴー「わあ、きれいに並んだな！」";
   }
   state.inventorySortFlash = performance.now() + 220;
   state.inventorySortCommentUntil = performance.now() + 2200;
@@ -8091,33 +8091,33 @@ function inventoryFocusComment(power = state.weaponPower) {
     return state.inventorySortComment;
   }
   if (state.inventoryConfirmWorldMap) {
-    return "ぴょんぴー「ワールドマップに戻る？ はいならマップへ、いいえならここに残るよ！」";
+    return "ぴょんぴー「ワールドマップに戻るんか？ はいならマップへ、いいえならここに残るじょ！」";
   }
   const mode = state.inventoryFocusMode ?? INVENTORY_FOCUS_MODES.AREA_SELECT;
   const area = state.inventoryFocusArea ?? "itemList";
   if (mode === INVENTORY_FOCUS_MODES.INSIDE_TOP_MENU) {
     const messages = [
-      "ぴょんぴー「ここはゲーム画面に戻るボタンだよ。冒険に戻ろう！」",
-      "ぴょんぴー「せいとんボタンだよ。もちものを前からきれいにならべなおすよ！」",
-      "ぴょんぴー「ここはワールドマップに戻るボタンだよ。押す前に確認するね！」",
-      "ぴょんぴー「ここはセーブとロードだよ。ファイルは3つまで記録できるよ！」"
+      "ぴょんぴー「ここはゲーム画面に戻るボタンじゃ。冒険に戻ろう！」",
+      "ぴょんぴー「せいとんボタンじゃ。もちものを前からきれいにならべなおすじょ！」",
+      "ぴょんぴー「ここはワールドマップに戻るボタンじゃ。押す前に確認するけんな！」",
+      "ぴょんぴー「ここはセーブとロードじゃ。ファイルは3つまで記録できるじょ！」"
     ];
     return messages[state.inventoryTopMenuIndex ?? 0] ?? messages[0];
   }
   if (mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST && power) {
-    if (state.inventoryGrab) return "ぴょんぴー「同じ武器の上ではなすと合成、からっぽのマスではなすと移動、その場ではなすとそうびだよ！」";
+    if (state.inventoryGrab) return "ぴょんぴー「同じ武器の上ではなすと合成、からっぽのマスではなすと移動、その場ではなすとそうびじゃ！」";
     return pyonpyWeaponComment(power);
   }
   if (mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST) {
-    return "ぴょんぴー「Aで武器をつかめるよ。Xでいらない武器をすてる、Yでせいとん、一番上で↑をおすとメニュー、Bでとじるよ！」";
+    return "ぴょんぴー「Aで武器をつかめるじょ。Xでいらん武器をすてる、Yでせいとん、一番上で↑をおすとメニュー、Bでとじるじょ！」";
   }
   if (area === "topMenu") {
-    return "ぴょんぴー「上のメニューだよ。Aで入ると、ゲームに戻るボタンやマップに戻るボタンを選べるよ！」";
+    return "ぴょんぴー「上のメニューじゃ。Aで入ると、ゲームに戻るボタンやマップに戻るボタンを選べるじょ！」";
   }
   if (area === "sortButton") {
-    return "ぴょんぴー「この惑星ボタンを押すと、アイテムが前からきれいに整理されるよ！」";
+    return "ぴょんぴー「この惑星ボタンを押すと、アイテムが前からきれいに整理されるじょ！」";
   }
-  return "ぴょんぴー「ここはアイテムリストだよ。武器と武器を融合させて、もっと強い武器を作れるよ！」";
+  return "ぴょんぴー「ここはアイテムリストじゃ。武器と武器を融合させて、もっと強い武器を作れるじょ！」";
 }
 
 function drawPyonpyCommentPanel(comment) {
@@ -10574,7 +10574,7 @@ function titleMenuButtons() {
 function syncTitleFocus() {
   const buttons = titleMenuButtons();
   if (titleFocusIndex < 0 || titleFocusIndex >= buttons.length) {
-    // 読みこめるものがあれば「ロード」、なければ「はじめから」を選んでおく
+    // 読みこめるものがあれば「つづきから」、なければ「はじめから」を選んでおく
     const canLoad = readSaveSlots().some(Boolean) || Story.hasSave();
     titleFocusIndex = buttons.indexOf(canLoad ? startButton : document.querySelector("#newGameButton"));
   }
@@ -10905,15 +10905,15 @@ function releaseInventoryGrab() {
 // 合成できない組み合わせのとき、理由をぴょんぴーが説明する
 function explainNoFuse(a, b) {
   if (!a || !b || a === b && nextFusionPower(a) === null && !isMechPower(a)) {
-    if (a && a === b) showFuseHint("最高レベルどうしは、もう合成できないよ。🌙Lv8 と ⭐Lv8 ならロボットになるよ！", "Max level");
+    if (a && a === b) showFuseHint("最高レベルどうしは、もう合成できんのじゃ。🌙Lv8 と ⭐Lv8 ならロボットになるじょ！", "Max level");
     return;
   }
   const ta = weaponAttribute(a);
   const tb = weaponAttribute(b);
   if (ta !== tb && ta !== "mech" && tb !== "mech") {
-    showFuseHint("月の武器と星の武器は、別の種類！ 同じ種類の、同じ武器どうしでしか合成できないよ。（🌙Lv8 と ⭐Lv8 だけは特別にロボットになるよ）", "🌙 と ⭐ は別の種類");
+    showFuseHint("月の武器と星の武器は、別の種類じゃ！ 同じ種類の、同じ武器どうしでしか合成できんじょ。（🌙Lv8 と ⭐Lv8 だけは特別にロボットになるけん）", "🌙 と ⭐ は別の種類");
   } else {
-    showFuseHint("ちがう武器どうしは合成できないよ。同じ武器を2つ重ねてね！", "同じ武器どうしで合成");
+    showFuseHint("ちがう武器どうしは合成できんじょ。同じ武器を2つ重ねてだ！", "同じ武器どうしで合成");
   }
 }
 

@@ -66,13 +66,13 @@
   // プレイ中はらんぴょんとは通信がつながっていないので、会話はぴょんぴーとヤナビスだけ
 
   const GAGS = [
-    ["柿ピーのピーは、ぴょんぴーのピーやで。知らんけど。", "The 'pea' in kaki-pea stands for Pyon-P. Probably."],
-    ["うちの耳、アンテナちゃうで。……たまに電波入るけど。", "My ears aren't antennas. ...They do pick up radio sometimes."],
-    ["宇宙で食べる月見バーガーは、だいたい月見えへん。", "You can never actually see the moon when eating a moon-viewing burger in space."],
-    ["ジャンプ力のひみつ？ にんじんやない、柿ピーや！", "The secret to my jumps? Not carrots. Kaki-pea snacks!"],
-    ["星がきれいやなあ……って、あれ敵のビームやん！", "What pretty stars... wait, those are enemy beams!"],
-    ["もふもふは正義。これ、月の憲法第1条な。", "Fluffiness is justice. That's Article 1 of the Moon constitution."],
-    ["帰ったら餃子やな。宇宙すくったあとの餃子は格別やで。", "Dumplings when I get home. Nothing beats post-universe-saving dumplings."]
+    ["柿ピーのピーは、ぴょんぴーのピーじょ。知らんけど。", "The 'pea' in kaki-pea stands for Pyon-P. Probably."],
+    ["吾輩の耳、アンテナでないじょ。……たまに電波入るけど。", "My ears aren't antennas. ...They do pick up radio sometimes."],
+    ["宇宙で食べる月見バーガーは、だいたい月見えんのじゃ。", "You can never actually see the moon when eating a moon-viewing burger in space."],
+    ["ジャンプ力のひみつ？ にんじんでない、柿ピーじゃ！", "The secret to my jumps? Not carrots. Kaki-pea snacks!"],
+    ["星がきれいじゃなあ……って、あれ敵のビームでないか！", "What pretty stars... wait, those are enemy beams!"],
+    ["もふもふは正義じゃ。これ、月の憲法第1条な。", "Fluffiness is justice. That's Article 1 of the Moon constitution."],
+    ["帰ったら餃子じゃな。宇宙すくったあとの餃子は格別じょ。", "Dumplings when I get home. Nothing beats post-universe-saving dumplings."]
   ];
 
   function controlsHint() {
@@ -108,11 +108,11 @@
     if (!course) return null;
     const w = course.worldIndex;
     const a = course.areaIndex;
-    if (course.finalStage) return [["yana", "魔王の反応です。……ぴょんぴー、ご武運を。", "The Demon Lord is just ahead. ...Good luck, Pyon-P."], ["pyon", "まかしとき。最後は笑わせて勝つ！", "Leave it to me. I'm winning this one with a laugh!"]];
-    if (course.bossStage) return [["yana", "ボスの反応です。足元と頭上の予告マークに注意してください。", "Boss detected. Watch for warning marks at your feet and overhead."], ["pyon", "かけら、返してもらうで！", "I'm taking that shard back!"]];
+    if (course.finalStage) return [["yana", "魔王の反応です。……ぴょんぴー、ご武運を。", "The Demon Lord is just ahead. ...Good luck, Pyon-P."], ["pyon", "まかしとき。最後は笑わせて勝つけん！", "Leave it to me. I'm winning this one with a laugh!"]];
+    if (course.bossStage) return [["yana", "ボスの反応です。足元と頭上の予告マークに注意してください。", "Boss detected. Watch for warning marks at your feet and overhead."], ["pyon", "かけら、返してもらうじょ！", "I'm taking that shard back!"]];
     if (course.climbStage) {
       return w === 0
-        ? [["yana", "のぼりステージです。山をこえて、谷をくだって、ゴールをめざしましょう。", "A climbing stage. Go over the mountain, down the valley, and on to the goal."], ["pyon", "山あり谷あり。芸人人生みたいやな！", "Ups and downs. Just like a comedian's career!"]]
+        ? [["yana", "のぼりステージです。山をこえて、谷をくだって、ゴールをめざしましょう。", "A climbing stage. Go over the mountain, down the valley, and on to the goal."], ["pyon", "山あり谷あり。芸人人生みたいじゃな！", "Ups and downs. Just like a comedian's career!"]]
         : [["yana", "のぼりステージです。落ちても下の道にもどるだけ。あせらずどうぞ。", "A climbing stage. If you fall you just land on the lower path, so take your time."]];
     }
     if (w === 0 && a === 0) return [controlsHint(), dashHint()];
@@ -136,36 +136,36 @@
       ][w - 1]];
     }
     return [pick([
-      ["pyon", "よっしゃ、行くで！", "Alright, here we go!"],
-      ["pyon", "ここも柿ピーのにおいがするで！", "I can smell kaki-pea snacks around here!"],
-      ["pyon", "らんぴょん、見ててや！", "Watch me, Ranpyon!"],
-      ["pyon", "空のルートも見のがしたらあかんで。", "Don't miss the sky route up there."]
+      ["pyon", "よっしゃ、行くじょ！", "Alright, here we go!"],
+      ["pyon", "ここも柿ピーのにおいがするじょ！", "I can smell kaki-pea snacks around here!"],
+      ["pyon", "らんぴょん、見とってよ！", "Watch me, Ranpyon!"],
+      ["pyon", "空のルートも見のがしたらいかんじょ。", "Don't miss the sky route up there."]
     ])];
   }
 
   const BUILDERS = {
     stageStart: stageStartLines,
     weaponGet: name => firstTime("tipWeapon") ? BUILDERS.fuseTeach() : [pick([
-      ["pyon", `${name}、ゲットや！`, `Got the ${name}!`],
-      ["pyon", `おっ、${name}やん。ええやん！`, `Ooh, a ${name}. Nice!`]
+      ["pyon", `${name}、ゲットじゃ！`, `Got the ${name}!`],
+      ["pyon", `おっ、${name}でないか。ええでないか！`, `Ooh, a ${name}. Nice!`]
     ])],
-    fuse: name => [["pyon", `合体成功！ ${name}になったで！`, `Fusion complete! It's a ${name} now!`]],
+    fuse: name => [["pyon", `合体成功！ ${name}になったじょ！`, `Fusion complete! It's a ${name} now!`]],
     canFuse: name => firstTime("tipFuseHowTo") ? [
       ["yana", `${name}が2つそろいました。同じ光線銃を2つ合成すると、1つ上の新しい光線銃が生まれます。`, `You now have two ${name}s. Fuse two of the same ray gun to create the next, stronger one.`],
       ...fuseHowTo(),
       ["yana", "月の武器🌙と星の武器⭐は別の種類です。同じ種類の、同じ武器どうしでしか合成できません。合成をくり返すと、それぞれ Lv8 まで進化しますよ。", "Moon 🌙 and star ⭐ weapons are different types; only the exact same weapon can be fused. Each line evolves up to Lv8."],
-      ["pyon", "配合みたいなもんやな。ええやん、いっちょ育てたろ！", "Like breeding, huh. Nice. Let's raise a monster of a gun!"]
+      ["pyon", "配合みたいなもんじゃな。ええでないか、いっちょ育てたろ！", "Like breeding, huh. Nice. Let's raise a monster of a gun!"]
     ] : [
       ["yana", `${name}が2つそろいました。装備画面で、同じ光線銃どうしを重ねると合成できます。`, `You have two ${name}s. Stack them in the equipment screen to fuse.`]
     ],
     fuseTeach: () => [
       ["yana", "光線銃をひろいましたね。おぼえておいてください。同じ光線銃を2つ集めると、合成して新しい光線銃を生み出せます。", "You picked up a ray gun. Remember this: collect two of the same ray gun and you can fuse them into a new one."],
-      ["pyon", "2つで1つ？ へってるやん！", "Two become one? That's fewer guns!"],
+      ["pyon", "2つで1つ？ へっとるでないか！", "Two become one? That's fewer guns!"],
       ["yana", "数はへりますが、強くなります。……たぶん。", "Fewer, but stronger. ...Probably."]
     ],
     starGet: () => [pick([
-      ["pyon", "スターゲット！ 残機もふえたで！", "Star get! Extra life, too!"],
-      ["pyon", "きらきらや〜。もろとこ！", "So sparkly! I'll take it!"]
+      ["pyon", "スターゲット！ 残機もふえたじょ！", "Star get! Extra life, too!"],
+      ["pyon", "きらきらじゃ〜。もろとこ！", "So sparkly! I'll take it!"]
     ])],
     hurt: () => [pick([
       ["pyon", "いったぁ！", "Owww!"],
@@ -174,51 +174,51 @@
     ])],
     lowHp: () => [["yana", "HPがのこり1です。むりせず、スターやハートをさがしましょう。", "Only 1 HP left. Play it safe and look for stars or hearts."]],
     death: () => [["pyon", "月まで飛ばされた〜！", "I got launched all the way to the moooon!"]],
-    respawn: () => [["pyon", "三日月タクシーで復活や！ 好きなとこにおりるで。", "Back on the Crescent Taxi! I'll hop off wherever I like."]],
-    combo: () => [["pyon", "コンボや！ ノってきたで！", "Combo! I'm on a roll!"]],
-    bossHalf: () => [["yana", "ボスの体力、のこり半分です！", "The boss is down to half health!"], ["pyon", "あとひといきや！", "Almost there!"]],
-    stompBoost: () => [["pyon", "大ジャンプ！ 月までとどきそうや！", "Super jump! I could reach the moon!"]],
+    respawn: () => [["pyon", "三日月タクシーで復活じゃ！ 好きなとこにおりるじょ。", "Back on the Crescent Taxi! I'll hop off wherever I like."]],
+    combo: () => [["pyon", "コンボじゃ！ ノってきたじょ！", "Combo! I'm on a roll!"]],
+    bossHalf: () => [["yana", "ボスの体力、のこり半分です！", "The boss is down to half health!"], ["pyon", "あとひといきじゃ！", "Almost there!"]],
+    stompBoost: () => [["pyon", "大ジャンプ！ 月までとどきそうじゃ！", "Super jump! I could reach the moon!"]],
     timeLow: () => [["yana", "のこり時間30秒です。いそいで！", "30 seconds left. Hurry!"]],
     oxygenLow: () => [["yana", "酸素がのこりわずかです！ O2バブルへ！", "Oxygen is almost out! Get to an O2 bubble!"]],
-    sky: () => [["pyon", "うわぁ、ええ景色！ 空のルートや！", "Whoa, what a view! It's the sky route!"]],
-    valley: () => [["pyon", "谷底や……。なんか出そうやな。", "The bottom of the valley... feels like something's gonna pop out."]],
+    sky: () => [["pyon", "うわぁ、ええ景色！ 空のルートじゃ！", "Whoa, what a view! It's the sky route!"]],
+    valley: () => [["pyon", "谷底じゃ……。なんか出そうじゃな。", "The bottom of the valley... feels like something's gonna pop out."]],
     deep: () => [["pyon", "ふかっ！ 耳がキーンってなる！", "So deep! My ears are popping!"]],
     stolen: () => {
       if (firstTime("tipStolen")) {
         return [
-          ["pyon", "ちょ、こいつ武器うばいよったで！？ どういうこと！？ 敵が主人公の武器パクるゲームある！？ 返せや！", "Hey, this guy just stole my weapon!? What is going on!? What kind of game lets enemies swipe the hero's gun!? Give it back!"],
+          ["pyon", "ちょ、こいつ吾輩の武器うばいよったじょ！？ どういうこと！？ 敵が主人公の武器パクるゲームある！？ 返してだ！", "Hey, this guy just stole my weapon!? What is going on!? What kind of game lets enemies swipe the hero's gun!? Give it back!"],
           ["yana", "うばわれた光線銃は、その敵を上からふむと落とします。ひろえば取りもどせますよ。", "Stomp that enemy from above and it will drop your ray gun. Pick it up to get it back."],
-          ["pyon", "ほな、ふんだるわ。……こっちが悪者みたいやな。", "Fine, stomping it is. ...Now I feel like the bad guy."]
+          ["pyon", "ほな、ふんだろ。……こっちが悪者みたいじゃな。", "Fine, stomping it is. ...Now I feel like the bad guy."]
         ];
       }
       return [pick([
-        ["pyon", "また取られた！ それ、うちのやぞ！ 返せや！", "Stolen again! That's MINE! Give it back!"],
-        ["pyon", "どろぼー！ 光線銃どろぼーがおるでー！", "Thief! We've got a ray gun thief over here!"],
-        ["pyon", "なんで敵のほうが装備ととのってんねん！", "Why is the enemy better equipped than me!?"]
+        ["pyon", "また取られた！ それ、吾輩のじょ！ 返してだ！", "Stolen again! That's MINE! Give it back!"],
+        ["pyon", "どろぼー！ 光線銃どろぼーがおるじょー！", "Thief! We've got a ray gun thief over here!"],
+        ["pyon", "なんで敵のほうが装備ととのっとんな！", "Why is the enemy better equipped than me!?"]
       ])];
     },
     stomp: () => {
       if (firstTime("tipStomp")) {
         return [
-          ["pyon", "えっ、ふんでも倒れへんの！？ ふつう、どのゲームでも一発やろ！", "Wait, stomping doesn't beat them!? In every other game that's a one-hit KO!"],
+          ["pyon", "えっ、ふんでも倒れんの！？ ふつう、どのゲームでも一発じゃろ！", "Wait, stomping doesn't beat them!? In every other game that's a one-hit KO!"],
           ["yana", "このゲームでは、ふむと“ピヨる”だけです。ピヨっているあいだに光線銃でうってください。", "In this game, stomping only stuns them. Shoot them with your ray gun while they are dizzy."],
-          ["pyon", "ややこしい仕様やな……。開発者、出てこい！", "What a fussy rule... Developer, show yourself!"]
+          ["pyon", "ややこしい仕様じゃな……。開発者、出てこい！", "What a fussy rule... Developer, show yourself!"]
         ];
       }
       return Math.random() < 0.25 ? [pick([
-        ["pyon", "ピヨっとるピヨっとる。今のうちや！", "Dizzy, dizzy. Now's my chance!"],
-        ["pyon", "ふむだけやと倒れへんの、まだ納得してへんからな。", "For the record, I'm still not over the stomp-doesn't-KO thing."]
+        ["pyon", "ピヨっとるピヨっとる。今のうちじゃ！", "Dizzy, dizzy. Now's my chance!"],
+        ["pyon", "ふむだけじゃ倒れんの、まだ納得しとらんけんな。", "For the record, I'm still not over the stomp-doesn't-KO thing."]
       ])] : null;
     },
     needKey: () => [["yana", "カギが必要です。空のルートや、あやしい場所をさがしてみましょう。", "You need a key. Try the sky route, or anywhere that looks suspicious."]],
-    keyGet: () => [["pyon", "カギや！ どっかに開けるもんがあるはずやで。", "A key! There's gotta be something to open with it."]],
+    keyGet: () => [["pyon", "カギじゃ！ どっかに開けるもんがあるはずじょ。", "A key! There's gotta be something to open with it."]],
     switchHint: () => [["yana", "★スイッチです。下からたたくか光線銃でうつと、赤と青のブロックが入れかわります。", "A star switch. Bump it from below or shoot it to swap the red and blue blocks."]],
-    switchUsed: () => [["pyon", "おっ、赤と青が入れかわった！ 頭つかうやつやな。", "Whoa, red and blue swapped! Time to use my head."]],
-    chestOpen: () => [["pyon", "宝箱あいた〜！ 大もうけや！", "The chest is open! Jackpot!"]],
-    doorOpen: () => [["pyon", "バリア解除！ カギさまさまやな。", "Barrier down! Thank you, little key."]],
+    switchUsed: () => [["pyon", "おっ、赤と青が入れかわった！ 頭つかうやつじゃな。", "Whoa, red and blue swapped! Time to use my head."]],
+    chestOpen: () => [["pyon", "宝箱あいた〜！ 大もうけじゃ！", "The chest is open! Jackpot!"]],
+    doorOpen: () => [["pyon", "バリア解除！ カギさまさまじゃな。", "Barrier down! Thank you, little key."]],
     stageClear: () => [pick([
-      ["pyon", "クリアや！ おおきに！", "Stage clear! Thanks a bunch!"],
-      ["pyon", "よっしゃー！ この調子やで！", "Yesss! Let's keep it up!"]
+      ["pyon", "クリアじゃ！ おおきに！", "Stage clear! Thanks a bunch!"],
+      ["pyon", "よっしゃー！ この調子じょ！", "Yesss! Let's keep it up!"]
     ])],
     gameOver: () => [["yana", "ぴょんぴーさん……！ まだ終わっていませんよ！", "Pyon-P...! It's not over yet!"]],
     dashTeach: () => {
@@ -228,7 +228,7 @@
           ? ["yana", "←か→を2回すばやくおしても、ダッシュになりますよ。", "Tapping ← or → twice quickly also starts a dash."]
           : ["yana", "十字キーの←か→を2回すばやくタップしても、ダッシュになりますよ。", "Tapping ← or → on the D-pad twice quickly also starts a dash."],
         ["yana", "ダッシュしながらジャンプすると、ふつうより高く飛べます。高い足場は、助走をつけてねらってください。", "Jump while dashing and you'll fly higher than usual. Get a running start for high ledges."],
-        ["pyon", "助走が大事なんは、ボケもジャンプもいっしょやな！", "A good run-up matters for jokes AND jumps!"]
+        ["pyon", "助走が大事なんは、ボケもジャンプもいっしょじゃな！", "A good run-up matters for jokes AND jumps!"]
       ];
     },
     map: () => {
@@ -238,7 +238,7 @@
       if (typeof Shop !== "undefined" && Shop.unlocked() && firstTime("tipShop")) {
         return [
           ["yana", "1-3から左へのびる道の先に『よろず屋 つきのわ』が開店しました。集めた柿の種とピーナッツで、便利な道具が買えますよ。", "The Tsukinowa General Store has opened at the end of the path left of 1-3. Spend your kaki seeds and peanuts on handy gear."],
-          ["pyon", "2段ジャンプシューズ……たっか！ いつか買うたる！", "Double-Jump Shoes... so expensive! I'll buy them someday!"]
+          ["pyon", "2段ジャンプシューズ……たっか！ いつか買うたるけん！", "Double-Jump Shoes... so expensive! I'll buy them someday!"]
         ];
       }
       return [["pyon", text, text]];
@@ -246,7 +246,7 @@
     idle: () => {
       if (Math.random() < 0.18) {
         return [
-          ["pyon", "ヤナビスって『あんまり賢くないシステムやな』の頭文字らしいで。", "Apparently Yanabisu stands for You Are Not A Very Intelligent System."],
+          ["pyon", "ヤナビスって『やっぱり なんか ビミョーな システム』の頭文字らしいじょ。", "Apparently Yanabisu stands for You Are Not A Very Intelligent System."],
           ["yana", "……ぜんぶ聞こえていますよ。正式名称は Y.A.N.A.V.I.S です。かっこいいでしょう。", "...I can hear all of that. My formal name is Y.A.N.A.V.I.S. Rather cool, right?"]
         ];
       }

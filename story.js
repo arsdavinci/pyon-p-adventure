@@ -159,37 +159,37 @@
       lines: [
         { s: "narr", bg: "city", ja: "月の内側に広がる、パステル色の街。\n月生まれ・月育ちのムーニアンたちは、今日も笑ってくらしていた。", en: "Inside the Moon lies a pastel city.\nThe Moonians who live there spend every day laughing together." },
         { s: "narr", ja: "三日月大使館のお笑いコンビ『ムーニアンズ』は、\n宇宙最大の舞台『銀河お笑いフェス』を、3日後にひかえていた。", en: "The comedy duo \"Moonians\" of the Crescent Embassy were\nthree days away from the biggest show in space: the Galaxy Comedy Fest." },
-        { s: "pyon", bg: "duo", ja: "らんぴょん、フェスのネタ合わせしよか！ まずは新ギャグな。『月見バーガー、月で見たら……ただのバーガー！』", en: "Ranpyon, let's rehearse for the Fest! New gag first: \"A moon-viewing burger, viewed ON the moon... is just a burger!\"" },
+        { s: "pyon", bg: "duo", ja: "らんぴょん、フェスのネタ合わせしょうか！ まずは新ギャグじゃ。『月見バーガー、月で見たら……ただのバーガー！』", en: "Ranpyon, let's rehearse for the Fest! New gag first: \"A moon-viewing burger, viewed ON the moon... is just a burger!\"" },
         { s: "ran", ja: "…………。", en: "............" },
-        { s: "pyon", ja: "えっ、ツッコミは！？ 『なんでやねん』は！？", en: "Huh? Where's the comeback!? Where's my \"No way!\"?" },
-        { s: "ran", ja: "あかん……。どうツッコんだらええんか、ぜんぜん思い出されへん……。", en: "I can't... I've completely forgotten how to do a comeback..." },
+        { s: "pyon", ja: "えっ、ツッコミは！？ 『なんでなっ！』は！？", en: "Huh? Where's the comeback!? Where's my \"No way!\"?" },
+        { s: "ran", ja: "すみません、先輩……。どうツッコんだらええんか、ぜんぜん思い出せんのです……。", en: "I can't... I've completely forgotten how to do a comeback..." },
         { s: "narr", bg: "dark", music: "bossAppear", fx: "shake", ja: "そのとき、夜空がまっくろにそまった。\n宇宙じゅうの“笑い”が、空のかなたへ吸い上げられていく——。", en: "At that moment the night sky turned pitch black.\nAll the laughter in the universe was being sucked away into the distance..." },
         { s: "mystery", fx: "flash", ja: "フハハハ！ 宇宙の笑いは、この魔王星がぜんぶいただいた！ もうだれも、笑うことはない！", en: "Mwahaha! The Demon Star has taken ALL the laughter in the universe! No one shall ever laugh again!" },
         { s: "luva", bg: "duo", ja: "緊急指令だ、ぴょんぴー。笑いのエネルギー『ワライスター』が6つにくだかれ、魔王の手下たちが6つの星へ持ち去った。", en: "Emergency orders, Pyon-P. The \"Warai Star\", the energy of laughter itself, was shattered into six pieces, and the Demon Lord's followers carried them off to six planets." },
         { s: "luva", ja: "かけらがもどらなければ、宇宙から笑顔が消えてしまう。……だれも笑えないままでは、3日後のフェスも開けない。", en: "Unless the shards return, smiles will vanish from the universe. ...And if no one can laugh, the Fest three days from now cannot be held." },
         { s: "luva", ja: "らんぴょんは笑いをうばわれて動けない。翻訳酸素カプセルのヤナビスが案内する。行けるのは、きみだけだ。", en: "Ranpyon has lost his laughter and cannot go. Yanabisu, in your translation oxygen capsule, will guide you. You are the only one who can do this." },
-        { s: "pyon", ja: "なんでうちだけ平気なんやろ……まあええわ！ うちらの夢の舞台、つぶさせへんで！", en: "Why am I the only one who's fine... eh, whatever! Nobody's wrecking our dream stage!" },
-        { s: "ran", ja: "ぴょんぴー……たのむ。うちの『なんでやねん』、取り返してきて。", en: "Pyon-P... please. Bring my \"No way!\" back." },
-        { s: "pyon", bg: "depart", ja: "まかしとき！ 柿ピー食べたら百人力や。ほな、ちょっと宇宙すくってくるわ！", en: "Leave it to me! A handful of kaki-pea snacks and I'm unstoppable. Be right back, just gotta save the universe!" },
+        { s: "pyon", ja: "なんで吾輩だけ平気なんじゃろ……まあええわ！ 吾輩らの夢の舞台、つぶさせはせんじょ！", en: "Why am I the only one who's fine... eh, whatever! Nobody's wrecking our dream stage!" },
+        { s: "ran", ja: "ぴょんぴー先輩……お願いします。僕の『なんでなっ！』、取り返してきてください。", en: "Pyon-P... please. Bring my \"No way!\" back." },
+        { s: "pyon", bg: "depart", ja: "まかしとき！ 柿ピー食べたら百人力じゃ。ほな、ちょっと宇宙すくってくるけん！", en: "Leave it to me! A handful of kaki-pea snacks and I'm unstoppable. Be right back, just gotta save the universe!" },
         { s: "narr", ja: "こうして、ぴょんぴーの大冒険がはじまった。", en: "And so, Pyon-P's great adventure began." }
       ]
     },
     world0: {
       music: "select",
       lines: [
-        { s: "yana", bg: "world0", ja: "翻訳酸素カプセルからこんにちは。人工知能のヤナビスです。翻訳だけやなくて道案内もできますねん。……あ、関西弁がうつりました。", en: "Hello from your translation oxygen capsule. I am Yanabisu, the AI. I do translation AND directions, y'know. ...Oh dear, your accent is rubbing off on me." },
+        { s: "yana", bg: "world0", ja: "翻訳酸素カプセルからこんにちは。人工知能のヤナビスです。翻訳だけでのうて道案内もできるんじょ。……あ、阿波弁がうつりました。", en: "Hello from your translation oxygen capsule. I am Yanabisu, the AI. I do translation AND directions, y'know. ...Oh dear, your accent is rubbing off on me." },
         { s: "yana", ja: "最初のかけらは『月あめ平原』に反応があります。敵は上からふむとピヨります。そのすきに光線銃でやっつけましょう。", en: "The first shard is somewhere in Moon Candy Field. Stomp enemies from above to stun them, then finish them with your ray gun." },
         { s: "yana", ja: "光線銃は、同じものを2つ集めると合体して強くなります。SELECT（Tabキー）で装備画面をひらけますよ。", en: "Collect two of the same ray gun and they fuse into a stronger one. Press SELECT (Tab) to open the equipment screen." },
-        { s: "pyon", ja: "オッケー！ ほな、いっちょ行ったろか！", en: "Got it! Alright, let's do this!" }
+        { s: "pyon", ja: "オッケー！ ほな、吾輩、いっちょ行ってくるじょ！", en: "Got it! Alright, let's do this!" }
       ]
     },
     world1: {
       music: "select",
       lines: [
-        { s: "ran", bg: "world1", ja: "ぴょんぴー、聞こえる？ かけらが1つもどって、月のみんなに、ちょっとだけ笑顔がもどったで！", en: "Pyon-P, can you hear me? One shard is back, and everyone on the Moon is smiling again. Just a little!" },
+        { s: "ran", bg: "world1", ja: "ぴょんぴー先輩、聞こえますか？ かけらが1つもどって、月のみんなに、ちょっとだけ笑顔がもどりましたけん！", en: "Pyon-P, can you hear me? One shard is back, and everyone on the Moon is smiling again. Just a little!" },
         { s: "pyon", ja: "ほんまか！ ほな記念に一発ギャグを——", en: "Really!? Then to celebrate, here's a brand new gag—" },
-        { s: "ran", ja: "……それは、まだ笑われへんと思う。", en: "...I don't think anyone can laugh at THAT yet." },
-        { s: "pyon", ja: "まだ言うてへんのに！？", en: "I haven't even said it!" },
+        { s: "ran", ja: "……それは、まだ笑えんと思います。", en: "...I don't think anyone can laugh at THAT yet." },
+        { s: "pyon", ja: "まだ言うてもないのに！？", en: "I haven't even said it!" },
         { s: "yana", ja: "次は火星ネオンコロニーです。地面からふき出すマグマに注意してください。", en: "Next stop: Mars Neon Colony. Watch out for lava bursting from the ground." }
       ]
     },
@@ -197,27 +197,27 @@
       music: "select",
       lines: [
         { s: "yana", bg: "world2", ja: "クリスタル氷星に到着しました。地面がとてもすべります。", en: "We have arrived at the Crystal Ice Planet. The ground is extremely slippery." },
-        { s: "pyon", ja: "まかしとき。うちのギャグはスベらへんけど、足はスベるかもしれん。", en: "No problem. My jokes never slip... my feet might, though." },
-        { s: "ran", ja: "逆や逆！ ……あれ？ いま、ちょっとだけツッコめた？", en: "Other way around! ...Wait. Did I just do a comeback?" },
-        { s: "pyon", ja: "おっ、もどってきてるやん！ この調子でかけら集めるで！", en: "Hey, it's coming back! Let's keep collecting those shards!" }
+        { s: "pyon", ja: "まかしとき。吾輩のギャグはスベらんけど、足はスベるかもしれんな。", en: "No problem. My jokes never slip... my feet might, though." },
+        { s: "ran", ja: "逆です、逆！ ……あれ？ 僕、いま、ちょっとだけツッコめました？", en: "Other way around! ...Wait. Did I just do a comeback?" },
+        { s: "pyon", ja: "おっ、もどってきよるでないか！ この調子でかけら集めるじょ！", en: "Hey, it's coming back! Let's keep collecting those shards!" }
       ]
     },
     world3: {
       music: "select",
       lines: [
         { s: "yana", bg: "world3", ja: "星の海です。水の中では酸素がへっていきます。O2バブルでこまめに補給してください。", en: "This is the Star Ocean. Your oxygen drains underwater, so grab O2 bubbles often." },
-        { s: "pyon", ja: "泳ぎは得意ちゃうけど……上下ボタンでぷかぷか行けるな！", en: "Swimming isn't my thing... but I can float around with up and down!" },
+        { s: "pyon", ja: "泳ぎは得意でないけど……上下ボタンでぷかぷか行けるな！", en: "Swimming isn't my thing... but I can float around with up and down!" },
         { s: "luva", ja: "順調だね、ぴょんぴー。フェスの楽屋は、おさえたままにしてある。かならず帰っておいで。", en: "You're doing well, Pyon-P. I'm keeping your dressing room at the Fest reserved. Make sure you come back." },
-        { s: "pyon", ja: "さすがボス！ 月見バーガーも用意しといて！", en: "You're the best, boss! Have a moon-viewing burger ready for me!" }
+        { s: "pyon", ja: "さすがボス！ 月見バーガーも用意しといてだ！", en: "You're the best, boss! Have a moon-viewing burger ready for me!" }
       ]
     },
     world4: {
       music: "select",
       lines: [
         { s: "yana", bg: "world4", ja: "リングメカ工場です。ベルトコンベアと動く床に気をつけて。", en: "The Ring Mecha Factory. Mind the conveyor belts and moving platforms." },
-        { s: "ran", ja: "ぴょんぴー！ うち、だいぶツッコめるようになってきたで。『なんで…………やねん』！", en: "Pyon-P! My comebacks are almost back. \"No............ way!\"" },
-        { s: "pyon", ja: "間（ま）が長い長い！ あとちょっとやな！", en: "That pause is WAY too long! We're nearly there!" },
-        { s: "ran", ja: "のこりのかけら、たのんだで、相方！", en: "I'm counting on you for the rest, partner!" }
+        { s: "ran", ja: "ぴょんぴー先輩！ 僕、だいぶツッコめるようになってきました。『なんで…………なっ』！", en: "Pyon-P! My comebacks are almost back. \"No............ way!\"" },
+        { s: "pyon", ja: "間（ま）が長い長い！ あとちょっとじゃな！", en: "That pause is WAY too long! We're nearly there!" },
+        { s: "ran", ja: "のこりのかけら、お願いしますけん、先輩！", en: "I'm counting on you for the rest, partner!" }
       ]
     },
     world5: {
@@ -225,8 +225,8 @@
       lines: [
         { s: "yana", bg: "world5", ja: "……最後のかけらは、魔王星の城の奥です。重力が波のようにゆれています。", en: "...The last shard is deep inside the castle on the Demon Star. Gravity there pulses like a wave." },
         { s: "luva", ja: "フェスは、あしただ。ここから先は今までとはわけがちがう。気を引きしめて行きなさい。", en: "The Fest is tomorrow. From here on, it won't be like before. Stay sharp." },
-        { s: "ran", ja: "ぴょんぴー。帰ってきたら、いちばんええツッコミ入れたるからな。", en: "Pyon-P. When you get home, I'll give you the best comeback of my life." },
-        { s: "pyon", ja: "それ聞いたら負けられへんな。行くで、クライマックスや！", en: "Now I really can't lose. Here we go: the grand finale!" }
+        { s: "ran", ja: "ぴょんぴー先輩。帰ってきたら、いちばんええツッコミ入れますけん。", en: "Pyon-P. When you get home, I'll give you the best comeback of my life." },
+        { s: "pyon", ja: "ほれ聞いたら負けられんな。行くじょ、クライマックスじゃ！", en: "Now I really can't lose. Here we go: the grand finale!" }
       ]
     },
     ending: {
@@ -234,25 +234,25 @@
       lines: [
         { s: "narr", bg: "laugh", ja: "6つのかけらがひとつになり、\nワライスターは、かがやきを取りもどした。", en: "The six shards became one,\nand the Warai Star shone once more." },
         { s: "maou", ja: "なぜだ……。笑いなど、消えてしまえばよかったのだ……。", en: "Why... Laughter should have just disappeared..." },
-        { s: "pyon", ja: "なあ魔王。ほんまは、あんたも笑いたかったんちゃうん？", en: "Hey, Demon Lord. Deep down, didn't you want to laugh too?" },
+        { s: "pyon", ja: "なあ魔王。ほんまは、あんたも笑いたかったんでないん？", en: "Hey, Demon Lord. Deep down, didn't you want to laugh too?" },
         { s: "maou", ja: "……昔、わしも芸人を目指しておった。だが何をやってもスベりつづけ……だれも笑ってくれなんだ。", en: "...Long ago, I too dreamed of being a comedian. But every joke I told bombed... Not one person laughed." },
         { s: "maou", ja: "だから決めたのだ。だれも笑わぬ宇宙なら、わしもスベらずにすむ、と。", en: "So I decided: in a universe where no one laughs, I can never bomb again." },
-        { s: "pyon", ja: "スベるんがこわいんは、うちもいっしょや。でもな、スベった話は、あとでいちばんウケんねん！", en: "I'm scared of bombing too. But you know what? The stories about bombing get the biggest laughs later!" },
+        { s: "pyon", ja: "スベるんがこわいんは、吾輩もいっしょじゃ。ほやけどな、スベった話は、あとでいちばんウケるんじょ！", en: "I'm scared of bombing too. But you know what? The stories about bombing get the biggest laughs later!" },
         { s: "yana", ja: "解析完了です。ぴょんぴーさんだけ笑いをうばわれなかった理由は……スベっても自分で笑っているから、でした。", en: "Analysis complete. The reason only Pyon-P kept his laughter is... he laughs at his own jokes even when they bomb." },
-        { s: "pyon", ja: "それ、ほめてる！？ ……まあええわ。魔王、あんたも自分で笑ってみ。", en: "Is that a compliment!? ...Eh, fine. Demon Lord, try laughing at yourself for once." },
-        { s: "pyon", ja: "ほな聞いて。『魔王星の夜が明けたら……まおう（もう）朝やん！』", en: "So listen up. \"When night ends on the Demon Star... it's a brand new DEMON-ing!\"" },
+        { s: "pyon", ja: "ほれ、ほめとん！？ ……まあええわ。魔王、あんたも自分で笑ってみ。", en: "Is that a compliment!? ...Eh, fine. Demon Lord, try laughing at yourself for once." },
+        { s: "pyon", ja: "ほな聞いてだ。『魔王星の夜が明けたら……まおう（もう）朝じゃ！』", en: "So listen up. \"When night ends on the Demon Star... it's a brand new DEMON-ing!\"" },
         { s: "maou", fx: "shake", ja: "…………ぷっ。ふ、ふはは！ ふははははは！ く、くだらん！ くだらなすぎる！！", en: "............Pfft. Heh, ha ha! HAHAHAHA! That's... that's so dumb! SO dumb!!" },
         { s: "narr", fx: "flash", ja: "魔王が笑ったしゅんかん、\nワライスターの光が、宇宙じゅうに降りそそいだ。", en: "The moment the Demon Lord laughed,\nthe light of the Warai Star rained down across the universe." },
         { s: "maou", ja: "……すまなかった。笑いは、みなに返そう。わしは、どうつぐなえばよい。", en: "...I am sorry. I will return the laughter to everyone. How can I make amends?" },
-        { s: "pyon", ja: "ほな、あしたのフェス見に来て。いちばん前の席で、いちばんでかい声で笑うこと。それでチャラや！", en: "Then come to the Fest tomorrow. Front row, loudest laugh in the house. Do that and we're even!" },
+        { s: "pyon", ja: "ほな、あしたのフェス見に来てだ。いちばん前の席で、いちばんでかい声で笑うこと。ほれでチャラじゃ！", en: "Then come to the Fest tomorrow. Front row, loudest laugh in the house. Do that and we're even!" },
         { s: "narr", bg: "stage", music: "ending", ja: "そして、次の日。\n『銀河お笑いフェス』は、予定どおり幕をあけた。", en: "And the next day,\nthe Galaxy Comedy Fest opened right on schedule." },
-        { s: "pyon", aud: true, ja: "どうもー！ ムーニアンズです！ いやー、きのうちょっと宇宙すくってきましてね。", en: "Hello, hello! We're the Moonians! So, funny story: I kinda saved the universe yesterday." },
-        { s: "ran", aud: true, fx: "shake", ja: "なんでやねん！！ 言い方かるいわ！", en: "NO WAY!! You can't say it that casually!" },
+        { s: "pyon", aud: true, ja: "どうもー！ ムーニアンズです！ いやー、吾輩、きのうちょっと宇宙すくってきましてね。", en: "Hello, hello! We're the Moonians! So, funny story: I kinda saved the universe yesterday." },
+        { s: "ran", aud: true, fx: "shake", ja: "なんでなっ！！ 言い方かるすぎますよ、先輩！", en: "NO WAY!! You can't say it that casually!" },
         { s: "narr", aud: true, ja: "客席には、約束どおり、月あめキング、ドーム司令官、クリスタルイエティ、\nマンタクイーン、ロボットキング——そして、いちばん前に魔王のすがたがあった。", en: "In the audience, just as promised, sat the Moon Candy King, the Dome Commander, the Crystal Yeti,\nthe Manta Queen, the Robot King... and in the very front row, the Demon Lord." },
         { s: "maou", aud: true, ja: "ふはは！ いいぞー！ もっとやれー！", en: "Hahaha! More! MORE!" },
         { s: "luva", aud: true, ja: "ふふ。次は地球の大舞台だね、ふたりとも。", en: "Hehe. Next up is the big stage on Earth, you two." },
-        { s: "pyon", aud: true, ja: "よっしゃ！ 次は地球で、てっぺん獲るで！", en: "Alright! Next, we're taking the top spot on Earth!" },
-        { s: "ran", aud: true, ja: "その前にネタ合わせや！", en: "Rehearsal first!" },
+        { s: "pyon", aud: true, ja: "よっしゃ！ 次は地球で、てっぺん獲るじょ！", en: "Alright! Next, we're taking the top spot on Earth!" },
+        { s: "ran", aud: true, ja: "その前にネタ合わせです、先輩！", en: "Rehearsal first!" },
         { s: "narr", bg: "finale", ja: "宇宙に笑顔がもどった。\n魔王は次の年、フェスの新人コーナーに出て、ちゃんとスベって、ちゃんと笑われたそうだ。", en: "Smiles returned to the universe.\nThe next year, the Demon Lord entered the Fest's newcomer slot, bombed properly, and was laughed with properly." },
         { s: "narr", ja: "ムーニアンズの挑戦は、まだまだつづく——。", en: "And the Moonians' journey has only just begun..." }
       ]
@@ -1669,8 +1669,8 @@
     if (atTitle) {
       h1.textContent = t("title");
       p.textContent = t("controls");
-      // タイトルはいつも「はじめから」と「ロード」の2つ
-      startButton.textContent = L("ロード", "Load");
+      // タイトルはいつも「はじめから」と「つづきから」の2つ
+      startButton.textContent = L("つづきから", "Continue");
     }
     if (newBtn) {
       newBtn.textContent = data.cleared ? L("強くてはじめから", "New Game+") : L("はじめから", "New Game");
