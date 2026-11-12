@@ -1934,7 +1934,8 @@ function updatePlayer(dt) {
   p.swimming = false;
   const movingLeft = keys.has("ArrowLeft") || keys.has("KeyA") || gamepadState.left;
   const movingRight = keys.has("ArrowRight") || keys.has("KeyD") || gamepadState.right;
-  const wantsJump = keys.has("Space") || keys.has("ArrowUp") || keys.has("KeyW") || gamepadState.jump;
+  // ジャンプは A（Space）だけ。十字キーの上下はねらう向きに使う
+  const wantsJump = keys.has("Space") || gamepadState.jump;
   const dxInput = (movingRight ? 1 : 0) - (movingLeft ? 1 : 0);
   const doubleTapRun = isDoubleTapRunActive(dxInput);
   const wantsRun = isRunHeld(dxInput) || doubleTapRun;
@@ -1982,8 +1983,10 @@ function updatePlayer(dt) {
   }
   if (p.vy >= 0) p.jumpHeld = false;
 
+  p.aim = playerAimAngle(p, dxInput);
   if (wantsShoot && hasEquippedWeapon() && state.gun.cooldown <= 0) {
-    shootBeam("player", p.x + p.w / 2 + p.facing * 24, p.y + 28, p.facing);
+    const muzzle = playerMuzzle(p);
+    shootBeam("player", muzzle.x, muzzle.y, p.facing, p.aim);
     state.gun.cooldown = weaponStage().cooldown;
   }
 
@@ -2023,8 +2026,10 @@ function updateSwimmingPlayer(dt) {
   if (dx < 0) p.facing = -1;
   if (dx > 0) p.facing = 1;
 
+  p.aim = playerAimAngle(p, dxInput);
   if (wantsShoot && hasEquippedWeapon() && state.gun.cooldown <= 0) {
-    shootBeam("player", p.x + p.w / 2 + p.facing * 24, p.y + 28, p.facing);
+    const muzzle = playerMuzzle(p);
+    shootBeam("player", muzzle.x, muzzle.y, p.facing, p.aim);
     state.gun.cooldown = weaponStage().cooldown;
   }
 
@@ -2914,24 +2919,51 @@ function playSfx(name, x = state?.player?.x ?? 0) {
   }
 }
 
-function shootBeam(owner, x, y, dir) {
+// 十字キーでねらう向き（8方向）。左右だけなら向いている方、上下は空中でも地上でもOK。
+// 地上で下だけを押したときは、足もとではなく前ななめ下をねらう
+function playerAimAngle(p, dxInput = 0) {
+  const up = keys.has("ArrowUp") || keys.has("KeyW") || gamepadState.up;
+  const down = keys.has("ArrowDown") || keys.has("KeyS") || gamepadState.down;
+  const vy = up && !down ? -1 : down && !up ? 1 : 0;
+  let vx = dxInput;
+  if (!vx && !vy) vx = p.facing || 1;
+  if (!vx && vy > 0 && p.grounded && !p.swimming) vx = p.facing || 1;
+  return Math.atan2(vy, vx);
+}
+
+// 銃をにぎる肩の位置と、銃口の位置
+function playerShoulder(p) {
+  return { x: p.x + p.w / 2 + (p.facing || 1) * 4, y: p.y + 30 };
+}
+
+function playerMuzzle(p) {
+  const s = playerShoulder(p);
+  const a = p.aim ?? (p.facing < 0 ? Math.PI : 0);
+  return { x: s.x + Math.cos(a) * 30, y: s.y + Math.sin(a) * 30 };
+}
+
+function shootBeam(owner, x, y, dir, aimAngle = null) {
   if (owner === "player" && !hasEquippedWeapon()) return;
   const stage = owner === "player" ? weaponStage() : enemyWeaponStage(owner);
   const beamSpeed = owner === "player" ? stage.speed : stage.speed * 0.5;
+  const base = aimAngle ?? (dir >= 0 ? 0 : Math.PI);
   playSfx("laser", x);
-  if (owner === "player") FX.muzzle(x, y, dir, stage.colors);
+  if (owner === "player") FX.muzzle(x, y, Math.cos(base) >= -0.01 ? 1 : -1, stage.colors);
   if (stage.pattern === "homing") {
     shootHomingMissiles(owner, x, y, dir, stage);
     return;
   }
-  const angles = weaponAngles(stage, dir);
+  const angles = weaponAngles(stage, dir, base);
   for (let i = 0; i < angles.length; i++) {
     const angle = angles[i];
     const side = i - (angles.length - 1) / 2;
-    const offsetY = stage.pattern === "forward" ? side * stage.spread : 0;
+    const offset = stage.pattern === "forward" ? side * stage.spread : 0;
+    // ならんで出る弾は、ねらう向きに対して横にずらす
+    const offsetX = -Math.sin(base) * offset;
+    const offsetY = Math.cos(base) * offset;
     state.beams.push({
       owner,
-      x,
+      x: x + offsetX,
       y: y + offsetY,
       w: stage.width,
       h: stage.height,
@@ -2981,14 +3013,14 @@ function shootHomingMissiles(owner, x, y, dir, stage) {
   }
 }
 
-function weaponAngles(stage, dir) {
-  const facing = dir >= 0 ? 0 : Math.PI;
+function weaponAngles(stage, dir, base = null) {
+  const facing = base ?? (dir >= 0 ? 0 : Math.PI);
   const spreadAngles = (count, arc) => Array.from({ length: count }, (_, i) => facing + (i - (count - 1) / 2) * arc);
   if (stage.pattern === "radial") return Array.from({ length: stage.count }, (_, i) => i * Math.PI * 2 / stage.count);
-  if (stage.pattern === "both") return [0, Math.PI];
-  if (stage.pattern === "bothSpread") return [-0.16, 0.16, Math.PI - 0.16, Math.PI + 0.16];
+  if (stage.pattern === "both") return [facing, facing + Math.PI];
+  if (stage.pattern === "bothSpread") return [facing - 0.16, facing + 0.16, facing + Math.PI - 0.16, facing + Math.PI + 0.16];
   if (stage.pattern === "fan") return spreadAngles(stage.count, 0.16);
-  if (stage.pattern === "cross") return [facing, facing - 0.36, facing + 0.36, -Math.PI / 2, Math.PI / 2, facing + Math.PI];
+  if (stage.pattern === "cross") return [facing, facing - 0.36, facing + 0.36, facing - Math.PI / 2, facing + Math.PI / 2, facing + Math.PI];
   if (stage.pattern === "crown") return [facing, ...spreadAngles(stage.count - 1, 0.13).map(a => a - 0.45)];
   if (stage.pattern === "wave") return spreadAngles(stage.count, 0.08);
   if (stage.pattern === "spread") return spreadAngles(stage.count, 0.09);
@@ -3384,7 +3416,11 @@ function updateBeams(dt) {
     b.distance += Math.hypot(stepX, stepY);
     b.life -= dt;
     if (b.distance >= b.range) b.life = 0;
-    const beamRect = rect(b.x, b.y, b.w, b.h);
+    // たてに飛ぶ弾は当たり判定もたて長にする
+    const upright = Math.abs(b.vy ?? 0) > Math.abs(b.vx);
+    const beamRect = upright
+      ? rect(b.x + b.w / 2 - b.h / 2, b.y + b.h / 2 - b.w / 2, b.h, b.w)
+      : rect(b.x, b.y, b.w, b.h);
     if (b.owner === "player") {
       FX.beamTrail(b);
       for (const block of blocks) {
@@ -7286,14 +7322,33 @@ function drawPlayer() {
 function drawPlayerBody(p) {
   if (hasEquippedWeapon() && state.weaponPower >= 16) drawBackCannon(p);
   if (p.invincible > 0 && state.mode !== "respawning" && Math.floor(performance.now() / 90) % 2) return;
-  if (Gimmick.drawPlayerPose(p)) return;
-  if (pyompySprite.complete && pyompySprite.naturalWidth > 0) {
-    drawPlayerSprite(p);
-    if (hasEquippedWeapon()) drawRayGun(p.x + p.w / 2 + p.facing * 25, p.y + 34, -p.facing, 0.7, state.weaponPower);
+  const pose = Gimmick.drawPlayerPose(p);
+  if (pose) {
+    // 撃つポーズの絵には銃が描かれていないので、のばした手に銃を持たせる
+    if (pose === "poseShoot" && hasEquippedWeapon()) {
+      const f = p.facing || 1;
+      drawRayGun(p.x + p.w / 2 + f * 34, p.y + 14, -f, 0.7, state.weaponPower);
+    }
     return;
   }
-  drawPlayerFallback(p);
-  if (hasEquippedWeapon()) drawRayGun(p.x + p.w / 2 + p.facing * 25, p.y + 34, -p.facing, 0.7, state.weaponPower);
+  if (pyompySprite.complete && pyompySprite.naturalWidth > 0) drawPlayerSprite(p);
+  else drawPlayerFallback(p);
+  if (hasEquippedWeapon()) drawAimedGun(p);
+}
+
+// ねらっている向きに銃を回して持たせる（8方向）
+function drawAimedGun(p) {
+  const f = p.facing || 1;
+  const a = p.aim ?? (f < 0 ? Math.PI : 0);
+  // 右向きを基準にした角度（左向きのときは左右を反転して考える）
+  const rel = f > 0 ? a : Math.PI - a;
+  const s = playerShoulder(p);
+  ctx.save();
+  ctx.translate(s.x, s.y + 4);
+  ctx.scale(f, 1);
+  ctx.rotate(clampAngle(rel));
+  drawRayGun(21, 0, -1, 0.7, state.weaponPower);
+  ctx.restore();
 }
 
 function drawCrescentRespawnSprite(p) {
@@ -7730,7 +7785,7 @@ function handleKeyDown(code, event = { repeat: false }) {
   if (FX.transitioning() && (state.mode === "worldMap" || state.mode === "title" || state.mode === "ended")) return;
   if (!event.repeat && (code === "ArrowLeft" || code === "KeyA")) registerMoveTap(-1);
   if (!event.repeat && (code === "ArrowRight" || code === "KeyD")) registerMoveTap(1);
-  if (!event.repeat && (code === "Space" || code === "ArrowUp" || code === "KeyW")) queueStompBoost();
+  if (!event.repeat && code === "Space") queueStompBoost();
   if (state.mode === "bossIntro" || state.mode === "bossOutro") {
     if (!event.repeat && ["Enter", "Space", "KeyX", "KeyY", "KeyJ", "KeyZ", "KeyA"].includes(code)) advanceBossIntro();
     return;

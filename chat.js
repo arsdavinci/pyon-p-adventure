@@ -115,7 +115,15 @@
         : [["yana", "のぼりステージです。落ちても下の道にもどるだけ。あせらずどうぞ。", "A climbing stage. If you fall you just land on the lower path, so take your time."]];
     }
     if (w === 0 && a === 0) return [controlsHint(), dashHint()];
-    if (w === 0 && a === 1) return [["yana", "ブロックは下からたたくか、光線銃でうつとアイテムが出ます。", "Hit blocks from below or shoot them to get items."]];
+    if (w === 0 && a === 1) {
+      const pc = typeof controlMode !== "undefined" && controlMode === "pc";
+      return [
+        ["yana", "ブロックは下からたたくか、光線銃でうつとアイテムが出ます。", "Hit blocks from below or shoot them to get items."],
+        pc
+          ? ["yana", "↑↓をおしながら撃つと、上やななめ、空中なら真下にも撃てますよ。", "Hold ↑ or ↓ while firing to shoot up, diagonally, or straight down in midair."]
+          : ["yana", "十字キーの上下をおしながら撃つと、上やななめ、空中なら真下にも撃てますよ。", "Hold up or down on the D-pad while firing to shoot up, diagonally, or straight down in midair."]
+      ];
+    }
     if (w === 0 && a === 3) return [["yana", "ダッシュボタンで速く走れます。敵をふんだ瞬間にジャンプすると、大ジャンプです。", "Hold dash to run. Press jump right as you stomp an enemy for a super jump."]];
     if (a === 0) {
       return [[

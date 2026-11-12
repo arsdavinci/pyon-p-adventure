@@ -142,11 +142,11 @@
     if (state.mode === "stageClear") key = "poseVictory";
     else if (p.invincible > 0.55 && state.mode === "playing") key = "poseHurt";
     else if (p.swimming) key = "poseSwim";
-    else if (hasEquippedWeapon() && state.gun.cooldown > 0 && p.grounded && Math.abs(p.vx) < 60) key = "poseShoot";
+    else if (hasEquippedWeapon() && state.gun.cooldown > 0 && p.grounded && Math.abs(p.vx) < 60 && Math.abs(Math.sin(p.aim ?? 0)) < 0.2) key = "poseShoot";
     const im = key && sprite(key);
     if (!im) return false;
     drawStanding(im, p.x + p.w / 2, p.y + p.h + 6, key === "poseSwim" ? 84 : 92, p.facing < 0);
-    return true;
+    return key;
   }
 
   const phaseBlock = (x, y, w, h, phase) => ({ x, y, w, h, phase, broken: false });
