@@ -5435,7 +5435,8 @@ function drawBigStatBar(label, value, max, x, y, width) {
 }
 
 function drawInventoryWeaponCard() {
-  const r = { x: 20, y: 118, w: 410, h: 474 };
+  const r = { x: 20, y: 118, w: 410, h: inventoryBodyHeight() };
+  const extra = r.h - 474; // たてに広いときは、絵やバーの間を少しあける
   drawUiPanel(r);
   const slot = inventorySlots()[state.inventorySelection];
   const ja = language === "ja";
@@ -5455,7 +5456,8 @@ function drawInventoryWeaponCard() {
   const stage = weaponStage(power);
   const nextPower = nextFusionPower(power);
   const cx = r.x + r.w / 2;
-  drawWeaponIcon(cx, r.y + 74, power, 2.1, 1);
+  drawWeaponIcon(cx, r.y + 74 + extra * 0.2, power, 2.1 + extra / 400, 1);
+  ctx.translate(0, extra * 0.45);
   ctx.fillStyle = "#5a3d9a";
   let nameSize = 34;
   ctx.font = `900 ${nameSize}px ${FX.FONT}`;
@@ -5475,6 +5477,7 @@ function drawInventoryWeaponCard() {
   drawBigStatBar(t("rapid"), Math.round((1 / stage.cooldown) * 10), 80, bx, r.y + 336, bw);
 
   // 合成すると何になるか
+  ctx.translate(0, extra * 0.45);
   ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
   ctx.strokeStyle = "#d6c8ff";
   ctx.lineWidth = 2;
@@ -5545,7 +5548,7 @@ function drawInventoryScreen() {
   drawInventoryTopBar();
   drawInventoryWeaponCard();
   for (const slot of inventorySlotRects()) drawInventorySlot(slot);
-  drawInventoryCommentBar();
+  if (!inventoryTalkBelow()) drawInventoryCommentBar();
   drawInventoryMessage();
   drawGamepadInventoryGhost();
   if (state.inventoryGrab) drawDraggedInventoryItem();
@@ -6477,6 +6480,16 @@ function drawItemCase(x, y, w, h) {
   for (const slot of inventorySlotRects()) drawInventorySlot(slot);
 }
 
+// 下に会話の欄がある端末（スマホのたて持ち）では、コメントはそっちに出して、
+// そうび画面の中のコメント欄はなくす。空いたぶんマスをたてに大きくする
+function inventoryTalkBelow() {
+  return typeof Handheld !== "undefined" && Handheld.active() && Handheld.commOn();
+}
+
+function inventoryBodyHeight() {
+  return inventoryTalkBelow() ? 588 : 474;
+}
+
 function inventorySlotRects() {
   const slots = inventorySlots();
   const rects = [];
@@ -6485,13 +6498,14 @@ function inventorySlotRects() {
   const size = 150;
   const gapX = 13;
   const gapY = 12;
+  const slotH = (inventoryBodyHeight() - gapY * 2) / 3;
   clampInventoryScroll();
   for (let i = 0; i < VISIBLE_INVENTORY_ITEMS; i++) {
     const col = i % 5;
     const row = Math.floor(i / 5);
     const index = state.inventoryScroll + i;
     const item = slots[index] || null;
-    rects.push({ ...(item || {}), empty: !item, index, x: startX + col * (size + gapX), y: startY + row * (size + gapY), w: size, h: size });
+    rects.push({ ...(item || {}), empty: !item, index, x: startX + col * (size + gapX), y: startY + row * (slotH + gapY), w: size, h: slotH });
   }
   return rects;
 }

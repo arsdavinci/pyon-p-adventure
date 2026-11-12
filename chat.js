@@ -22,6 +22,7 @@
   let idleT = 12;
   let pollT = 0;
   let weaponKey = "";
+  let invText = null;
   let flags = {};
   const lastAt = {};
   let clock = 0;
@@ -429,6 +430,33 @@
       pollT = 0.25;
       poll();
       refreshWeapon();
+    }
+    // そうび画面では、えらんでいるものの説明を会話の欄に出す
+    if (state.mode === "inventory" && commOn) {
+      const slot = inventorySlots()[state.inventorySelection];
+      const text = inventoryFocusComment(slot?.power).replace(/^ぴょんぴー「/, "").replace(/」$/, "");
+      if (text !== invText) {
+        invText = text;
+        const e = dom();
+        e.speaker.textContent = L("ぴょんぴー", "Pyon-P");
+        e.speaker.style.color = SPEAKERS.pyon.color;
+        e.avatar.dataset.speaker = "pyon";
+        e.avatar.style.borderColor = SPEAKERS.pyon.color;
+        e.avatar.style.backgroundImage = "";
+        e.avatar.style.backgroundPosition = "";
+        e.avatar.style.backgroundSize = "";
+        e.avatar.textContent = "";
+        e.text.textContent = text;
+      }
+      return;
+    }
+    if (invText !== null) {
+      // そうび画面をとじたら、もとの会話にもどす
+      invText = null;
+      renderedCount = -1;
+      const e = dom();
+      if (cur) renderSpeaker();
+      else if (e.text) e.text.textContent = "";
     }
     if (state.mode === "playing") {
       idleT -= dt;
