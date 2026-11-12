@@ -16,7 +16,7 @@
   };
   const CROP_MAX = SRC.CROP_TOP + SRC.CROP_BOTTOM;
   const FIXED = SRC.HOLE_T + (SRC.HOLE_W * 9) / 16 + SRC.HUD + SRC.HOLE_B + SRC.CTRL_H - SRC.OVERLAP;
-  const BLEED = 1.16; // 本体の外側のふちを画面の外に出して、ゲーム画面を大きく見せる（画面のまわりの枠は残る）
+  const BLEED = 1.0; // 本体の横はばを画面の横はばにぴったり合わせる（左右が見切れないように）
   const COMM_MIN = 120; // 会話だけ出せる高さ
   const COMM_FULL = 236; // 会話＋そうび中の武器を出せる高さ
   const COMM_TARGET = 200;
@@ -79,23 +79,10 @@
     return { t: n(cs.paddingTop), r: n(cs.paddingRight), b: n(cs.paddingBottom), l: n(cs.paddingLeft) };
   }
 
-  // ホーム画面から開いたアプリ（スタンドアロン）かどうか
-  function isStandalone() {
-    return navigator.standalone === true ||
-      Boolean(window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
-  }
-
-  // iPhone のホーム画面アプリでは innerHeight が画面より短く返ることがあり、
-  // そのぶん本体の下にすき間ができていた。アプリのときだけ画面そのものの高さを使う
+  // ページが使える高さ。iPhone のホーム画面アプリでは画面の下はしの帯に描けないので、
+  // 画面そのものの高さではなく、ページに渡された高さに収める
   function fullHeight() {
-    const h = Math.max(window.innerHeight, document.documentElement.clientHeight || 0);
-    if (!isStandalone() || !window.screen) return h;
-    const portrait = window.innerHeight >= window.innerWidth;
-    const screenH = portrait
-      ? Math.max(screen.width, screen.height)
-      : Math.min(screen.width, screen.height);
-    // 画面より大きすぎる値や、ずれが大きすぎるときは使わない
-    return screenH > h && screenH - h < 160 ? screenH : h;
+    return Math.max(window.innerHeight, document.documentElement.clientHeight || 0);
   }
 
   function layout() {
@@ -116,17 +103,7 @@
       commSrc = 0;
       delete document.body.dataset.commSize;
       for (const name of ["--u", "--gb-x", "--gb-y", "--gb-screen-h"]) shell.style.removeProperty(name);
-      shell.style.removeProperty("height");
-      shell.style.removeProperty("bottom");
       return;
-    }
-    // ホーム画面アプリでは、本体の入れ物を画面いっぱいの高さにする（下のすき間をなくす）
-    if (viewH > window.innerHeight + 1) {
-      shell.style.height = `${viewH}px`;
-      shell.style.bottom = "auto";
-    } else {
-      shell.style.removeProperty("height");
-      shell.style.removeProperty("bottom");
     }
 
     const uWide = (availW * BLEED) / SRC.W; // 横幅いっぱいに使ったときの倍率
