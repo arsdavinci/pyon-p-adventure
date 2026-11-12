@@ -46,8 +46,8 @@ const SEA_GATE_PERIOD = 4.0;
 const SEA_GATE_W = 84;
 const MAX_WEAPON_POWER = 26;
 // 17〜25 はロボット「ムーニアン・メカ」Lv1〜9。🌙Lv8 と ⭐Lv8 を合体させると Lv1 ができる。
-// ロボットどうしを合体させると、ロボットの数だけレベルが上がる（Lv3 + Lv2 → Lv5）。
-// ロボット10台ぶん（Lv10）になると、空を飛べる戦闘機「ムーニアン・ファイター」(26) になる
+// ロボットを2台合体させると、空を飛べる戦闘機「ムーニアン・ファイター」(26) になる。
+// （18〜25 のロボット Lv2〜9 は、前のセーブデータとの互換のためだけに残っている）
 const MECH_POWER = 17;
 const MECH_TOP = 25;
 const FIGHTER_POWER = 26;
@@ -2702,6 +2702,7 @@ function beginCourse(index) {
   const snapshot = campaignKeep;
   state = newState();
   restoreCampaignSnapshot(snapshot);
+  for (const p of state.inventoryItems ?? []) if (p) markDex(p);
   // エリアが何個もあるステージは、時間を長めにする
   if (courses[index].areas) state.time = 520;
   state.mode = "playing";
@@ -4144,8 +4145,10 @@ function damageEnemy(e, amount = 1) {
   e.alive = false;
   e.defeated = 0.42;
   playSfx("enemyDefeat", e.x + e.w / 2);
-  if (e.weaponPower) spawnWeaponDrop(e.x + e.w / 2, e.y + 8, e.weaponPower);
+  const dropPower = enemyDropPower(e);
+  if (dropPower) spawnWeaponDrop(e.x + e.w / 2, e.y + 8, dropPower, !e.stolenWeapon);
   e.weaponPower = 0;
+  e.stolenWeapon = false;
   dropGunFromEnemy(e);
   state.score += e.boss ? 500 : 5;
   if (e.boss && courses[currentCourse]?.bossStage) {
@@ -4163,8 +4166,10 @@ function stunEnemy(e) {
   e.alert = 1;
   e.vx = 0;
   if (e.weaponPower) {
-    spawnWeaponDrop(e.x + e.w / 2, e.y + 8, e.weaponPower);
+    const dropPower = enemyDropPower(e);
+    if (dropPower) spawnWeaponDrop(e.x + e.w / 2, e.y + 8, dropPower, !e.stolenWeapon);
     e.weaponPower = 0;
+    e.stolenWeapon = false;
   }
   if (state.gun.holder === e.id) {
     state.gun.holder = null;
@@ -4962,7 +4967,8 @@ function weaponLevelLabel(power = state?.weaponPower ?? 1, space = false) {
 function fusionResult(a, b) {
   if (!a || !b) return null;
   if ((a === MOON_TOP && b === STAR_TOP) || (a === STAR_TOP && b === MOON_TOP)) return MECH_POWER;
-  if (isMechPower(a) && isMechPower(b)) return Math.min(FIGHTER_POWER, MECH_POWER - 1 + (a - MECH_POWER + 1) + (b - MECH_POWER + 1));
+  // ロボット2台を合体させると、戦闘機になる
+  if (isMechPower(a) && isMechPower(b)) return FIGHTER_POWER;
   if (a === b) return nextFusionPower(a);
   return null;
 }
@@ -5006,7 +5012,94 @@ function canFusePower(power) {
   return nextFusionPower(power) !== null || power === MOON_TOP || power === STAR_TOP || isMechPower(power);
 }
 
+// ---------- 武器の出かた ----------
+// ・ワールドごとに、出るレベルの上限がある（合成してようやく目標のレベルに届くように）
+//   ワールド1：Lv1 だけ → 集めて合成で Lv3 / ワールド2：〜Lv3 → Lv5 / ワールド3：〜Lv5 → Lv7
+//   ワールド4：〜Lv7 → 月Lv8 / ワールド5：月〜8・星〜7 → 星Lv8（ロボット） / ワールド6：〜Lv8
+// ・Lv2 より上は「一度でも合成して作った（持った）ことのある武器」だけが出る（つくった武器ずかん）
+// ・レベルが高いほど出にくい。持っている武器と同じものが出やすい
+const DROP_CAP = { moon: [1, 3, 5, 7, 8, 8], star: [1, 3, 5, 7, 7, 8] };
+const DEX_POWERS = [...Array.from({ length: STAR_TOP }, (_, i) => i + 1), MECH_POWER, FIGHTER_POWER];
+
+function weaponDex() {
+  const d = Story.data;
+  if (!d.dex || typeof d.dex !== "object") d.dex = {};
+  return d.dex;
+}
+
+function markDex(power) {
+  const v = Math.floor(power ?? 0);
+  if (!v || !DEX_POWERS.includes(v)) return;
+  const dex = weaponDex();
+  if (dex[v]) return;
+  dex[v] = true;
+  Story.persist();
+}
+
+function dexCount() {
+  const dex = weaponDex();
+  return DEX_POWERS.filter(p => dex[p]).length;
+}
+
+function dropWorld() {
+  return clamp(courses[currentCourse]?.worldIndex ?? 0, 0, 5);
+}
+
+function dropAllowed(power) {
+  if (!power || power > STAR_TOP) return false;
+  const attr = weaponAttribute(power);
+  const rank = weaponRank(power);
+  return rank <= DROP_CAP[attr][dropWorld()] && (rank === 1 || !!weaponDex()[power]);
+}
+
+// いちばん多く持っている武器（同じ数なら、そうび中の武器）
+function favoriteWeapon() {
+  const counts = {};
+  for (const p of state?.inventoryItems ?? []) if (p && p <= STAR_TOP) counts[p] = (counts[p] ?? 0) + 1;
+  let best = null;
+  for (const [p, n] of Object.entries(counts)) {
+    const v = Number(p);
+    if (!best || n > counts[best] || (n === counts[best] && v === state.weaponPower)) best = v;
+  }
+  return best;
+}
+
+function pickDropPower(attrOnly = null) {
+  const fav = favoriteWeapon();
+  // 半分くらいは、持っている武器と同じもの（合成しやすいように）
+  if (fav && dropAllowed(fav) && (!attrOnly || weaponAttribute(fav) === attrOnly) && Math.random() < 0.5) return fav;
+  const list = [];
+  for (const attr of attrOnly ? [attrOnly] : ["moon", "star"]) {
+    for (let rank = 1; rank <= WEAPON_ATTRIBUTE_SIZE; rank++) {
+      const power = attr === "star" ? WEAPON_ATTRIBUTE_SIZE + rank : rank;
+      if (dropAllowed(power)) list.push({ power, weight: Math.pow(0.5, rank - 1) });
+    }
+  }
+  const total = list.reduce((s, it) => s + it.weight, 0);
+  let roll = Math.random() * total;
+  for (const it of list) {
+    roll -= it.weight;
+    if (roll <= 0) return it.power;
+  }
+  return attrOnly === "star" ? WEAPON_ATTRIBUTE_SIZE + 1 : 1;
+}
+
+// 敵が自分で持っていた銃：たまにだけ落とす。落とすのは、今のワールドで出てよい武器（同じ月・星の種類）
+// ぴょんぴーからうばった銃は、そのまま返す
+function enemyDropPower(e) {
+  const power = e.weaponPower ?? 0;
+  if (!power) return 0;
+  if (e.stolenWeapon) return power;
+  if (!e.boss && Math.random() > 0.35) return 0;
+  const attr = power <= STAR_TOP ? weaponAttribute(power) : null;
+  return pickDropPower(attr);
+}
+
 function randomWeaponDropPower() {
+  return pickDropPower();
+}
+
+function oldRandomWeaponDropPower() {
   const totalSnacks = state ? state.kakiTotal + state.peaTotal : 0;
   const balance = totalSnacks > 0 ? 1 - Math.abs(state.kakiTotal - state.peaTotal) / totalSnacks : 0;
   const difficulty = courses[currentCourse]?.difficulty ?? 1;
@@ -5043,6 +5136,7 @@ function addWeaponStock(power = 1) {
     return false;
   }
   state.inventoryItems[emptyIndex] = powerValue;
+  markDex(powerValue);
   syncWeaponInventoryFromItems();
   playSfx("powerUp", state.player.x + state.player.w / 2);
   if (state.weaponPower > 0 && !state.weaponInventory[state.weaponPower - 1]) {
@@ -5198,6 +5292,7 @@ function fuseInventoryItems(fromIndex, toIndex) {
   if (!power || !nextPower) return;
   state.inventoryItems[fromIndex] = null;
   state.inventoryItems[toIndex] = nextPower;
+  markDex(nextPower);
   syncWeaponInventoryFromItems();
   if (state.weaponPower > 0 && !state.weaponInventory[state.weaponPower - 1]) {
     state.weaponPower = 0;
@@ -5733,6 +5828,14 @@ function breakBlock(block) {
   spawnBlockPoof(block.x + block.w / 2, block.y + block.h / 2);
   FX.blockBreak(block.x + block.w / 2, block.y + block.h / 2);
   playSfx("break", block.x);
+  if (block.item === "power" && Math.random() < 0.5) {
+    // 武器ブロックの半分は、柿ピーがはじける（武器は出にくい）
+    for (let i = 0; i < 4; i++) {
+      const c = coin(block.x + block.w / 2 + (i - 1.5) * 34, block.y - 40 - (i % 2) * 24, i % 2 ? "pea" : "kaki");
+      state.coinItems.push({ ...c, taken: false });
+    }
+    return;
+  }
   if (block.item) spawnItem(block.x + block.w / 2, block.y - 12, block.item);
 }
 
@@ -5779,10 +5882,29 @@ function spawnExplosion(x, y, radius = 70, colors = ["#ffffff", "#fff3a4", "#ff8
   });
 }
 
+// レアな武器：Lv3 以上か、そのワールドで出る中でいちばん高いレベル（Lv1 しか出ないワールドはのぞく）
+function isRareDrop(power) {
+  if (!power || power > STAR_TOP) return false;
+  const rank = weaponRank(power);
+  const cap = DROP_CAP[weaponAttribute(power)][dropWorld()];
+  return rank >= 3 || (cap > 1 && rank === cap);
+}
+
+function announceRareDrop(x, y, power) {
+  if (!isRareDrop(power)) return;
+  FX.floater(x, y - 30, language === "ja" ? "レア！" : "RARE!", { color: "#fff3a4", stroke: "#ff5f9e", size: 30, life: 1.4 });
+  FX.radial(x, y, 14, { type: "star", speed: [120, 300], life: [0.5, 0.9], r: [5, 9], colors: FX.GOLD, spin: 10 });
+  playTone({ freq: 880, endFreq: 1760, duration: 0.18, type: "triangle", gain: 0.05 });
+  playTone({ start: 0.14, freq: 1320, endFreq: 2200, duration: 0.22, type: "sine", gain: 0.04 });
+}
+
 function spawnItem(x, y, type) {
+  const weaponPower = type === "power" ? randomWeaponDropPower() : null;
+  if (weaponPower) announceRareDrop(x, y, weaponPower);
   state.items.push({
     x, y, type,
-    weaponPower: type === "power" ? randomWeaponDropPower() : null,
+    weaponPower,
+    rare: !!weaponPower && isRareDrop(weaponPower),
     w: 28, h: 28,
     vx: 70,
     vy: -420,
@@ -5791,10 +5913,12 @@ function spawnItem(x, y, type) {
   });
 }
 
-function spawnWeaponDrop(x, y, weaponPower) {
+function spawnWeaponDrop(x, y, weaponPower, fresh = false) {
+  if (fresh) announceRareDrop(x, y, weaponPower);
   state.items.push({
     x, y, type: "power",
     weaponPower,
+    rare: fresh && isRareDrop(weaponPower),
     w: 28, h: 28,
     vx: -90 + Math.random() * 180,
     vy: -500,
@@ -6051,8 +6175,10 @@ function damagePlayer(fell = false, sourceEnemy = null, canStealWeapon = false) 
     const playerPower = state.weaponPower;
     const enemyPower = sourceEnemy.weaponPower ?? 0;
     if (enemyPower === 0 || playerPower > enemyPower || (sourceEnemy.boss && playerPower >= enemyPower)) {
-      if (enemyPower > 0) spawnWeaponDrop(sourceEnemy.x + sourceEnemy.w / 2, sourceEnemy.y + 8, enemyPower);
+      const ownDrop = enemyPower > 0 ? enemyDropPower(sourceEnemy) : 0;
+      if (ownDrop) spawnWeaponDrop(sourceEnemy.x + sourceEnemy.w / 2, sourceEnemy.y + 8, ownDrop, !sourceEnemy.stolenWeapon);
       sourceEnemy.weaponPower = removeEquippedWeaponForSteal();
+      sourceEnemy.stolenWeapon = true;
       state.gun.holder = sourceEnemy.id;
       Chat.event("stolen");
       sourceEnemy.gunCooldown = sourceEnemy.boss ? 0.2 : 0.5;
@@ -7603,6 +7729,7 @@ function drawInventoryWeaponCard() {
   const stage = weaponStage(power);
   const nextPower = nextFusionPower(power);
   const cx = r.x + r.w / 2;
+  drawDexBadge(r.x + r.w - 18, r.y + 16);
   drawWeaponIcon(cx, r.y + 74 + extra * 0.2, power, weaponIconFitScale(power, r.w - 150, 2.1 + extra / 400), 1);
   ctx.translate(0, extra * 0.45);
   ctx.fillStyle = "#5a3d9a";
@@ -7647,6 +7774,26 @@ function drawInventoryWeaponCard() {
     ctx.textAlign = "center";
     ctx.fillText(t("finalEvolution"), cx, r.y + 427);
   }
+  ctx.restore();
+}
+
+// つくった武器ずかん（今までに手に入れた・合成した武器の数）
+function drawDexBadge(right, top) {
+  const text = `${language === "ja" ? "ずかん" : "Dex"} ${dexCount()}/${DEX_POWERS.length}`;
+  ctx.save();
+  ctx.font = `900 18px ${FX.FONT}`;
+  const w = ctx.measureText(text).width + 24;
+  ctx.fillStyle = "rgba(255, 243, 164, 0.95)";
+  ctx.strokeStyle = "#ff8db7";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(right - w, top, w, 30, 15);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#c0266d";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, right - w / 2, top + 16);
   ctx.restore();
 }
 
@@ -9852,6 +9999,14 @@ function drawItems() {
       ctx.restore();
     } else {
       const dropPower = item.weaponPower ?? 1;
+      if (item.rare) {
+        // レアな武器は、まわりがキラキラ光る
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.globalAlpha = 0.6 + Math.sin(performance.now() / 120) * 0.25;
+        ctx.drawImage(FX.glowSprite("#ffd85a"), item.x + item.w / 2 - 40, item.y + item.h / 2 - 40, 80, 80);
+        ctx.restore();
+      }
       const nextPower = previewWeaponPowerAfterPickup(dropPower);
       drawRayGun(item.x + item.w / 2, item.y + item.h / 2, 1, 0.88, dropPower);
       ctx.fillStyle = "#fff3a4";
