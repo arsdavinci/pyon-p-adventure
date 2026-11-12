@@ -12,25 +12,25 @@
   // ---------- 追加画像（あれば自動で使う。なくても動く） ----------
   const OPTIONAL = {
     portraitPyon: "assets/portrait-pyonpy.png",
-    portraitRan: "assets/portrait-ranpyon.png",
-    portraitLuva: "assets/portrait-luva.png",
+    portraitRan: "assets/portrait-ranpyon.webp",
+    portraitLuva: "assets/portrait-luva.webp",
     cardLuva: "assets/portrait-luva-card.jpg",
-    portraitYana: "assets/portrait-yanabis.png",
-    portraitRan_smile: "assets/portrait-ranpyon-smile.png",
-    portraitRan_surprise: "assets/portrait-ranpyon-surprise.png",
-    portraitRan_trouble: "assets/portrait-ranpyon-trouble.png",
-    portraitYana_smile: "assets/portrait-yanabis-smile.png",
-    portraitYana_surprise: "assets/portrait-yanabis-surprise.png",
-    portraitYana_trouble: "assets/portrait-yanabis-trouble.png",
-    cgCity: "assets/cg-opening-city.png",
-    cgDuo: "assets/cg-opening-duo.png",
-    cgDark: "assets/cg-opening-dark.png",
-    cgDepart: "assets/cg-opening-depart.png",
-    cgLaugh: "assets/cg-ending-laugh.png",
-    cgStage: "assets/cg-ending-stage.png",
-    cgFinale: "assets/cg-ending-finale.png",
-    titleKey: "assets/title-keyvisual.png",
-    waraiStar: "assets/item-warai-star.png"
+    portraitYana: "assets/portrait-yanabis.webp",
+    portraitRan_smile: "assets/portrait-ranpyon-smile.webp",
+    portraitRan_surprise: "assets/portrait-ranpyon-surprise.webp",
+    portraitRan_trouble: "assets/portrait-ranpyon-trouble.webp",
+    portraitYana_smile: "assets/portrait-yanabis-smile.webp",
+    portraitYana_surprise: "assets/portrait-yanabis-surprise.webp",
+    portraitYana_trouble: "assets/portrait-yanabis-trouble.webp",
+    cgCity: "assets/cg-opening-city.webp",
+    cgDuo: "assets/cg-opening-duo.webp",
+    cgDark: "assets/cg-opening-dark.webp",
+    cgDepart: "assets/cg-opening-depart.webp",
+    cgLaugh: "assets/cg-ending-laugh.webp",
+    cgStage: "assets/cg-ending-stage.webp",
+    cgFinale: "assets/cg-ending-finale.webp",
+    titleKey: "assets/title-keyvisual.webp",
+    waraiStar: "assets/item-warai-star.webp"
   };
   const img = {};
   for (const [key, src] of Object.entries(OPTIONAL)) {
@@ -1637,23 +1637,43 @@
     const audio = new Audio();
     audio.loop = true;
     audio.preload = "auto";
-    tr = fileTracks[name] = { audio, ready: false, missing: false };
+    tr = fileTracks[name] = { audio, ready: false, missing: false, vol: 0, gain: null };
+    // iPhone/iPad では audio.volume が変えられず、フェードアウトが終わらずに前の曲が鳴り続けるので、
+    // WebAudio の GainNode を通して音量を操作する（ゲーム全体のミュートもここに効く）
+    try {
+      const ac = getAudioContext();
+      const out = audioOut();
+      if (ac && out && ac.createMediaElementSource) {
+        tr.gain = ac.createGain();
+        tr.gain.gain.value = 0;
+        ac.createMediaElementSource(audio).connect(tr.gain).connect(out);
+      }
+    } catch (_) {
+      tr.gain = null;
+    }
     audio.addEventListener("canplaythrough", () => { tr.ready = true; }, { once: true });
     audio.addEventListener("error", () => { tr.missing = true; }, { once: true });
     audio.src = `assets/bgm/${name}.mp3`;
     return tr;
   }
 
+  function setFileVol(tr, v) {
+    tr.vol = v;
+    if (tr.gain) tr.gain.gain.value = v;
+    else tr.audio.volume = v;
+  }
+
+  // 音量は tr.vol で数える（audio.volume を読み返さない）ので、どの端末でも必ず止まる
   function fadeFile(tr, to, stopAfter) {
     clearInterval(tr.fade);
     tr.fade = setInterval(() => {
-      const v = tr.audio.volume + Math.sign(to - tr.audio.volume) * 0.06;
+      const v = tr.vol + Math.sign(to - tr.vol) * 0.06;
       if (Math.abs(to - v) <= 0.06) {
-        tr.audio.volume = to;
+        setFileVol(tr, to);
         clearInterval(tr.fade);
         if (stopAfter) tr.audio.pause();
       } else {
-        tr.audio.volume = Math.min(1, Math.max(0, v));
+        setFileVol(tr, Math.min(1, Math.max(0, v)));
       }
     }, 30);
   }
@@ -1674,7 +1694,7 @@
       if (useFile) {
         Bgm.stop(0.3);
         tr.audio.currentTime = 0;
-        tr.audio.volume = 0;
+        setFileVol(tr, 0);
         tr.audio.play().catch(() => { tr.missing = true; });
         fadeFile(tr, duck ? 0.2 : 0.6, false);
         filePlaying = tr;
