@@ -402,15 +402,24 @@
   renderStatus();
 
   // ---------- ことば ----------
+  // せっていのボタンの割り当てに合わせて「A ジャンプ B ダッシュ X Y こうげき」を作る
+  function buttonGuide(chip, ja) {
+    const map = typeof Settings !== "undefined" ? Settings.data.buttons : { A: "jump", B: "dash", X: "attack", Y: "attack" };
+    return ["jump", "dash", "attack"].map(action => {
+      const btns = ["A", "B", "X", "Y"].filter(b => map[b] === action);
+      if (!btns.length) return "";
+      const name = typeof Settings !== "undefined" ? Settings.actionLabel(action, ja ? "ja" : "en") : action;
+      return `<span>${btns.map(b => chip(b.toLowerCase(), b)).join("")}${name}</span>`;
+    }).join("");
+  }
+
   function refresh() {
     const ja = typeof language === "undefined" || language === "ja";
     if (guide) {
       const chip = (cls, label) => `<b class="gb-chip ${cls}">${label}</b>`;
       guide.innerHTML = `
         <div class="gb-guide-title">
-          <span>${chip("a", "A")}${ja ? "ジャンプ" : "Jump"}</span>
-          <span>${chip("b", "B")}${ja ? "ダッシュ" : "Dash"}</span>
-          <span>${chip("x", "X")}${chip("y", "Y")}${ja ? "こうげき" : "Shoot"}</span>
+          ${buttonGuide(chip, ja)}
           <span>${chip("pill", "SELECT")}${ja ? "そうび・合成" : "Equip / Fuse"}</span>
           <span>${chip("pill", "START")}${ja ? "ポーズ" : "Pause"}</span>
         </div>

@@ -56,7 +56,7 @@ const Voice = (() => {
     if (!entry || my !== token) return;
     const url = `assets/voice/${stage}/${encodeURIComponent(entry.file || `${fnv(text)}.mp3`)}?v=${entry.v || 0}`;
     const buf = await buffer(url);
-    const out = typeof audioOut === "function" ? audioOut() : null;
+    const out = typeof voiceOut === "function" ? voiceOut() : typeof audioOut === "function" ? audioOut() : null;
     if (!buf || !out || my !== token) return;
     const src = getAudioContext().createBufferSource();
     const gain = getAudioContext().createGain();

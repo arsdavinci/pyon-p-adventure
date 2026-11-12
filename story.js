@@ -1671,6 +1671,8 @@
       p.textContent = t("controls");
       // タイトルはいつも「はじめから」と「つづきから」の2つ
       startButton.textContent = L("つづきから", "Continue");
+      const settingsBtn = document.querySelector("#settingsButton");
+      if (settingsBtn) settingsBtn.textContent = L("せってい", "Settings");
     }
     if (newBtn) {
       newBtn.textContent = data.cleared ? L("強くてはじめから", "New Game+") : L("はじめから", "New Game");
@@ -1732,7 +1734,7 @@
         tr.gain = ac.createGain();
         tr.gain.gain.value = 0;
         // 効果音のコンプレッサーを通すと、大きい曲で効果音が小さくなるので、曲は直接スピーカーへ
-        ac.createMediaElementSource(audio).connect(tr.gain).connect(ac.destination);
+        ac.createMediaElementSource(audio).connect(tr.gain).connect(typeof bgmOut === "function" ? bgmOut() : ac.destination);
       }
     } catch (_) {
       tr.gain = null;

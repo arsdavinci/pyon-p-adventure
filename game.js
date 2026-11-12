@@ -2557,7 +2557,7 @@ function maybePlayWorldIntro(worldIndex) {
 function toggleSound() {
   soundEnabled = !soundEnabled;
   localStorage.setItem("pyonpSound", soundEnabled ? "on" : "off");
-  if (audioMaster && audioCtx) audioMaster.gain.setTargetAtTime(soundEnabled ? 1 : 0, audioCtx.currentTime, 0.04);
+  if (audioMaster && audioCtx) applyVolumes();
   Story.refreshTitleUi();
 }
 
@@ -4653,19 +4653,41 @@ function getAudioContext() {
   return audioCtx;
 }
 
+// 効果音（audioMaster）とセリフ（voiceBus）は同じコンプレッサーを通る。BGM は bgmOut() から直接スピーカーへ
+let voiceBus = null;
+let bgmBus = null;
 function audioOut() {
   const ctxAudio = getAudioContext();
   if (!ctxAudio) return null;
   if (!audioMaster) {
     audioMaster = ctxAudio.createGain();
-    audioMaster.gain.value = soundEnabled ? 1 : 0;
+    audioMaster.gain.value = soundEnabled ? Settings.level("sfx") : 0;
     const comp = ctxAudio.createDynamicsCompressor();
     comp.threshold.value = -14;
     comp.ratio.value = 6;
     audioMaster.connect(comp);
     comp.connect(ctxAudio.destination);
+    voiceBus = ctxAudio.createGain();
+    voiceBus.gain.value = soundEnabled ? Settings.level("voice") : 0;
+    voiceBus.connect(comp);
   }
   return audioMaster;
+}
+
+function voiceOut() {
+  audioOut();
+  return voiceBus;
+}
+
+function bgmOut() {
+  const ctxAudio = getAudioContext();
+  if (!ctxAudio) return null;
+  if (!bgmBus) {
+    bgmBus = ctxAudio.createGain();
+    bgmBus.gain.value = Settings.level("bgm");
+    bgmBus.connect(ctxAudio.destination);
+  }
+  return bgmBus;
 }
 
 function unlockAudio() {
@@ -4681,6 +4703,8 @@ function unlockAudio() {
     source.start(0);
     audioUnlocked = ctxAudio.state === "running";
   } catch (_) {}
+  // せっていの音量をのせる（BGM のプログラム演奏にも）
+  try { applyVolumes(); } catch (_) {}
 }
 
 function playTone({ start = 0, freq = 440, endFreq = freq, duration = 0.12, type = "sine", gain = 0.08, pan = 0 }) {
@@ -6442,6 +6466,7 @@ function draw() {
     }
   }
   if (mode === "title" && state.saveMenu) drawSaveMenu();
+  if (mode === "title" && state.settingsMenu) drawSettingsMenu();
   Chat.drawToast();
   FX.drawFlashes();
   FX.drawTransition();
@@ -8236,6 +8261,193 @@ function openSaveMenu(loadOnly = false) {
   if (loadOnly) slots.forEach((slot, i) => { if (slot && (!slots[sel] || slot.savedAt > slots[sel].savedAt)) sel = i; });
   state.saveMenu = { tab: loadOnly ? 1 : 0, sel, confirm: null, choice: 0, slots, note: "", noteUntil: 0, loadOnly };
   playSfx("decide");
+}
+
+// ---------- せってい画面（タイトルの「せってい」から） ----------
+// 音のオン・オフ、BGM・セリフ・効果音の大きさ（0〜10）、A/B/X/Y ボタンの役目
+const SETTINGS_ROWS = ["sound", "bgm", "voice", "sfx", "A", "B", "X", "Y", "reset", "close"];
+
+function openSettingsMenu() {
+  if (!state || state.mode !== "title") return;
+  state.settingsMenu = { sel: 0 };
+  overlay.classList.add("hidden");
+  playSfx("decide");
+}
+
+function closeSettingsMenu() {
+  state.settingsMenu = null;
+  playSfx("cancel");
+  overlay.classList.remove("hidden");
+  Story.refreshTitleUi();
+  if (typeof Handheld !== "undefined") Handheld.refresh();
+}
+
+// いまの音量を、BGM・セリフ・効果音それぞれのつまみにのせる
+function applyVolumes() {
+  const ac = getAudioContext();
+  if (!ac) return;
+  audioOut();
+  const on = soundEnabled ? 1 : 0;
+  // 音が止まっているあいだ（まだタップしていない等）は、なめらかな変化が進まないので、そのまま値を入れる
+  const setGain = (node, v) => {
+    if (!node) return;
+    if (ac.state !== "running") {
+      node.gain.cancelScheduledValues(0);
+      node.gain.value = v;
+    } else {
+      node.gain.setTargetAtTime(v, ac.currentTime, 0.04);
+    }
+  };
+  setGain(audioMaster, on * Settings.level("sfx"));
+  setGain(voiceBus, on * Settings.level("voice"));
+  setGain(bgmOut(), Settings.level("bgm"));
+  if (window.Bgm?.setVolume) Bgm.setVolume(0.6 * Settings.level("bgm"));
+}
+
+function settingsChange(row, dir) {
+  if (row === "sound") {
+    toggleSound();
+  } else if (row === "bgm" || row === "voice" || row === "sfx") {
+    Settings.setLevel(row, Settings.data[row] + dir);
+    applyVolumes();
+  } else if (Settings.BUTTONS.includes(row)) {
+    Settings.cycleButton(row, dir);
+  } else {
+    return;
+  }
+  playSfx("cursor");
+  // セリフの大きさを変えたら、ためしに声を流す
+  if (row === "voice" && typeof Voice !== "undefined") Voice.play("chat", "柿ピーのピーは、ぴょんぴーのピーじょ。知らんけど。");
+}
+
+function settingsActivate(row) {
+  if (row === "close") return closeSettingsMenu();
+  if (row === "reset") {
+    Settings.reset();
+    applyVolumes();
+    playSfx("decide");
+    return;
+  }
+  settingsChange(row, 1);
+}
+
+function handleSettingsKey(code) {
+  const m = state.settingsMenu;
+  if (!m) return;
+  const row = SETTINGS_ROWS[m.sel];
+  if (code === "ArrowUp" || code === "KeyW") { m.sel = (m.sel + SETTINGS_ROWS.length - 1) % SETTINGS_ROWS.length; playSfx("cursor"); }
+  else if (code === "ArrowDown" || code === "KeyS") { m.sel = (m.sel + 1) % SETTINGS_ROWS.length; playSfx("cursor"); }
+  else if (code === "ArrowLeft" || code === "KeyA") settingsChange(row, -1);
+  else if (code === "ArrowRight" || code === "KeyD") settingsChange(row, 1);
+  else if (["Space", "Enter", "KeyX", "KeyY", "KeyJ", "KeyZ"].includes(code)) settingsActivate(row);
+  else if (["Escape", "KeyB", "Backspace", "Select"].includes(code)) closeSettingsMenu();
+}
+
+// 画面いっぱいに2列（左：音、右：ボタン）。下に「もどす」「とじる」
+function settingsLayout() {
+  return { x: 30, y: 16, w: canvas.width - 60, h: canvas.height - 32 };
+}
+
+function settingsRowRect(i) {
+  const colW = 570;
+  const left = canvas.width / 2 - colW - 12;
+  const right = canvas.width / 2 + 12;
+  if (i < 4) return { x: left, y: 104 + i * 104, w: colW, h: 88 };
+  if (i < 8) return { x: right, y: 104 + (i - 4) * 104, w: colW, h: 88 };
+  return { x: i === 8 ? left : right, y: 530, w: colW, h: 84 };
+}
+
+function handleSettingsPointer(px, py) {
+  const m = state.settingsMenu;
+  if (!m) return;
+  SETTINGS_ROWS.forEach((row, i) => {
+    const r = settingsRowRect(i);
+    if (px < r.x || px > r.x + r.w || py < r.y || py > r.y + r.h) return;
+    m.sel = i;
+    if (row === "close" || row === "reset" || row === "sound") return settingsActivate(row);
+    // 左半分の ◀ / 右半分の ▶
+    const mid = r.x + 210 + (r.w - 270) / 2;
+    settingsChange(row, px < mid ? -1 : 1);
+  });
+}
+
+function drawSettingsMenu() {
+  const m = state.settingsMenu;
+  if (!m) return;
+  const ja = language === "ja";
+  const L = settingsLayout();
+  const h = L.h;
+  ctx.save();
+  ctx.fillStyle = "rgba(40, 26, 96, 0.55)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "rgba(255, 248, 253, 0.97)";
+  ctx.strokeStyle = "#c8b2ff";
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.roundRect(L.x, L.y, L.w, h, 26);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#7f67c8";
+  ctx.font = `900 46px ${FX.FONT}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(ja ? "せってい" : "Settings", L.x + L.w / 2, L.y + 46);
+  const label = {
+    sound: ja ? "音" : "Sound", bgm: "BGM", voice: ja ? "セリフ" : "Voices", sfx: ja ? "効果音" : "Effects",
+    A: ja ? "A ボタン" : "A button", B: ja ? "B ボタン" : "B button", X: ja ? "X ボタン" : "X button", Y: ja ? "Y ボタン" : "Y button",
+    reset: ja ? "はじめの設定にもどす" : "Reset to default", close: ja ? "とじる" : "Close"
+  };
+  SETTINGS_ROWS.forEach((row, i) => {
+    const r = settingsRowRect(i);
+    const on = m.sel === i;
+    ctx.fillStyle = on ? "#fff3a4" : "rgba(239, 230, 255, 0.7)";
+    ctx.strokeStyle = on ? "#ff8db7" : "rgba(200, 178, 255, 0.7)";
+    ctx.lineWidth = on ? 4 : 2;
+    ctx.beginPath();
+    ctx.roundRect(r.x, r.y, r.w, r.h, 16);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#5a3d9a";
+    ctx.font = `900 36px ${FX.FONT}`;
+    if (row === "reset" || row === "close") {
+      ctx.textAlign = "center";
+      ctx.fillText(label[row], r.x + r.w / 2, r.y + r.h / 2 + 1);
+      return;
+    }
+    ctx.textAlign = "left";
+    ctx.fillText(label[row], r.x + 24, r.y + r.h / 2 + 1);
+    const vx = r.x + 210;
+    const vw = r.w - 270;
+    ctx.textAlign = "center";
+    if (row === "sound") {
+      ctx.fillStyle = soundEnabled ? "#3fbf7f" : "#c0266d";
+      ctx.fillText(soundEnabled ? "ON" : "OFF", vx + vw / 2, r.y + r.h / 2 + 1);
+    } else if (row === "bgm" || row === "voice" || row === "sfx") {
+      const v = Settings.data[row];
+      ctx.fillText("◀", vx, r.y + r.h / 2 + 1);
+      ctx.fillText("▶", vx + vw, r.y + r.h / 2 + 1);
+      const bx = vx + 30;
+      const bw = vw - 60;
+      for (let k = 0; k < 10; k++) {
+        ctx.fillStyle = k < v ? "#ff8db7" : "rgba(200, 178, 255, 0.45)";
+        ctx.beginPath();
+        ctx.roundRect(bx + k * (bw / 10) + 2, r.y + 12, bw / 10 - 4, r.h - 24, 4);
+        ctx.fill();
+      }
+      ctx.fillStyle = "#5a3d9a";
+      ctx.font = `900 30px ${FX.FONT}`;
+      ctx.fillText(String(v), vx + vw + 32, r.y + r.h / 2 + 1);
+    } else {
+      ctx.fillText("◀", vx, r.y + r.h / 2 + 1);
+      ctx.fillText("▶", vx + vw, r.y + r.h / 2 + 1);
+      ctx.fillText(Settings.actionLabel(Settings.data.buttons[row], language), vx + vw / 2, r.y + r.h / 2 + 1);
+    }
+  });
+  ctx.fillStyle = "#9b86d6";
+  ctx.font = `800 28px ${FX.FONT}`;
+  ctx.textAlign = "center";
+  ctx.fillText(ja ? "↑↓ でえらぶ　←→ でかえる　A できめる　B でもどる" : "↑↓ choose  ←→ change  A select  B back", L.x + L.w / 2, L.y + h - 36);
+  ctx.restore();
 }
 
 function closeSaveMenu() {
@@ -11620,9 +11832,12 @@ function updateGamepad() {
   const dpadRight = Boolean(pad.buttons[15]?.pressed);
   const dpadUp = Boolean(pad.buttons[12]?.pressed);
   const dpadDown = Boolean(pad.buttons[13]?.pressed);
-  const jumpPressed = Boolean(pad.buttons[0]?.pressed);
-  const runPressed = Boolean(pad.buttons[1]?.pressed || pad.buttons[5]?.pressed);
-  const shootPressed = Boolean(pad.buttons[2]?.pressed || pad.buttons[3]?.pressed);
+  const phys = { A: Boolean(pad.buttons[0]?.pressed), B: Boolean(pad.buttons[1]?.pressed), X: Boolean(pad.buttons[2]?.pressed), Y: Boolean(pad.buttons[3]?.pressed) };
+  // ゲーム中は、せっていのボタンの割り当てで読みかえる（メニューでは A=決定、B=もどる のまま）
+  const act = inGameplay() ? Settings.padActions(phys) : { jump: phys.A, dash: phys.B, attack: phys.X || phys.Y };
+  const jumpPressed = act.jump;
+  const runPressed = act.dash || Boolean(pad.buttons[5]?.pressed);
+  const shootPressed = act.attack;
   const selectPressed = Boolean(pad.buttons[8]?.pressed);
   const startPressed = Boolean(pad.buttons[9]?.pressed);
 
@@ -11640,6 +11855,22 @@ function updateGamepad() {
     if (gamepadState.right && !gamepadState.rightLatch) registerMoveTap(1);
   }
 
+  if (state.mode === "title" && state.settingsMenu) {
+    if (gamepadState.left && !gamepadState.leftLatch) handleSettingsKey("ArrowLeft");
+    if (gamepadState.right && !gamepadState.rightLatch) handleSettingsKey("ArrowRight");
+    if (gamepadState.up && !gamepadState.upLatch) handleSettingsKey("ArrowUp");
+    if (gamepadState.down && !gamepadState.downLatch) handleSettingsKey("ArrowDown");
+    if (jumpPressed && !gamepadState.jumpLatch) handleSettingsKey("Space");
+    if (runPressed && !gamepadState.runLatch) handleSettingsKey("Escape");
+    gamepadState.leftLatch = gamepadState.left;
+    gamepadState.rightLatch = gamepadState.right;
+    gamepadState.upLatch = gamepadState.up;
+    gamepadState.downLatch = gamepadState.down;
+    gamepadState.runLatch = runPressed;
+    gamepadState.jumpLatch = jumpPressed;
+    gamepadState.shootLatch = shootPressed;
+    return;
+  }
   if (state.mode === "title" && state.saveMenu) {
     if (gamepadState.left && !gamepadState.leftLatch) handleSaveMenuKey("ArrowLeft");
     if (gamepadState.right && !gamepadState.rightLatch) handleSaveMenuKey("ArrowRight");
@@ -11776,6 +12007,10 @@ window.addEventListener("keydown", event => {
 
 // キーボードと画面のボタン（タッチ）で共通の入力処理
 function handleKeyDown(code, event = { repeat: false }) {
+  if (state?.mode === "title" && state.settingsMenu) {
+    if (!event.repeat || ["ArrowLeft", "ArrowRight", "KeyA", "KeyD"].includes(code)) handleSettingsKey(code);
+    return;
+  }
   if (state?.mode === "title" && state.saveMenu) {
     handleSaveMenuKey(code, event.repeat);
     return;
@@ -11847,7 +12082,7 @@ function handleKeyDown(code, event = { repeat: false }) {
 let titleFocusIndex = -1;
 
 function titleMenuButtons() {
-  return [document.querySelector("#newGameButton"), startButton]
+  return [document.querySelector("#newGameButton"), startButton, document.querySelector("#settingsButton")]
     .filter(button => button && !button.classList.contains("hidden"));
 }
 
@@ -11928,6 +12163,11 @@ window.addEventListener("resize", updateFullscreenButton);
 canvas.addEventListener("pointerdown", event => {
   unlockAudio();
   const pos = canvasPoint(event);
+  if (state.mode === "title" && state.settingsMenu) {
+    handleSettingsPointer(pos.x, pos.y);
+    event.preventDefault();
+    return;
+  }
   if (state.mode === "title" && state.saveMenu) {
     handleSaveMenuPointer(pos.x, pos.y);
     event.preventDefault();
@@ -12444,13 +12684,24 @@ function updateInventoryGamepadFocus(now, jumpPressed, runPressed, shootPressed)
 
 // 画面のボタン（handheld.js が呼ぶ）。キーボードと同じ処理に流すので、
 // 会話送り・ワールドマップ・そうび画面・よろず屋もボタンだけで操作できる
+// ゲーム中だけ、せっていのボタンの割り当てで読みかえる。はなすときは、押したときと同じキーをはなす
+const touchHeldCodes = {};
+function inGameplay() {
+  return state && (state.mode === "playing" || state.mode === "respawning");
+}
+
 function pressTouchControl(code) {
   unlockAudio();
-  handleKeyDown(code);
+  const mapped = Settings.mapCode(code, inGameplay());
+  touchHeldCodes[code] = mapped;
+  handleKeyDown(mapped);
 }
 
 function releaseTouchControl(code) {
-  handleKeyUp(code);
+  const mapped = touchHeldCodes[code] ?? code;
+  delete touchHeldCodes[code];
+  handleKeyUp(mapped);
+  if (mapped !== code) keys.delete(code);
 }
 
 for (const eventName of ["contextmenu", "selectstart", "dragstart"]) {
@@ -12475,6 +12726,11 @@ document.querySelector("#newGameButton")?.addEventListener("click", event => {
   unlockAudio();
   // セーブファイル（3つ）は消さずに、そのまま最初からはじめる。ファイルを消したいときはセーブ画面の X で
   startGame(true);
+});
+document.querySelector("#settingsButton")?.addEventListener("click", event => {
+  event.stopPropagation();
+  unlockAudio();
+  openSettingsMenu();
 });
 document.querySelector("#soundButton")?.addEventListener("click", event => {
   event.stopPropagation();

@@ -701,6 +701,20 @@ body[data-control-mode="mobile"][data-overlay-open="true"] .touch-controls {
   bottom: 12px;
 }
 
+.title-actions #settingsButton {
+  order: 2;
+  min-width: 150px;
+  padding: 8px 20px;
+  font-size: 1rem;
+}
+
+.title-actions #settingsButton.is-focused {
+  background: rgba(255, 255, 255, 0.92);
+  color: #5a3d9a;
+  border-color: #ffd85a;
+  box-shadow: 0 0 0 3px #ffd85a, 0 4px 0 rgba(40, 26, 96, 0.5);
+}
+
 /* 十字キーで選んでいるボタン */
 .title-actions #newGameButton.is-focused {
   background: rgba(255, 255, 255, 0.92);
@@ -1366,6 +1380,17 @@ body[data-layout="handheld"] .title-actions #soundButton {
 body[data-layout="handheld"] .title-actions #newGameButton {
   min-width: calc(230 * var(--u));
   font-size: calc(26 * var(--u));
+}
+
+/* せっていボタンは小さめ（3つめのボタン） */
+body[data-layout="handheld"] .title-actions #settingsButton {
+  min-width: calc(170 * var(--u));
+  padding: calc(5 * var(--u)) calc(16 * var(--u));
+  font-size: calc(19 * var(--u));
+}
+
+body[data-layout="handheld"] .title-actions {
+  gap: calc(9 * var(--u));
 }
 
 body[data-layout="handheld"] .primary-button {
