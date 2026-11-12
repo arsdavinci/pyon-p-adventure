@@ -1922,6 +1922,8 @@ function updatePlayer(dt) {
     FX.jump(p.x + p.w / 2, p.y + p.h);
     playSfx("jump", p.x);
     p.vy = trait === "moonFloat" ? -990 : -900;
+    // ダッシュしながらのジャンプは少し高く飛べる
+    if (wantsRun && Math.abs(p.vx) > 260) p.vy *= 1.08;
     p.grounded = false;
     p.coyote = 0;
     p.jumpHeld = true;

@@ -62,15 +62,7 @@
     return els;
   }
 
-  // ---------- ランピョンのツッコミ回復（かけらの数で変わる） ----------
-  function ranReply() {
-    const n = typeof Story !== "undefined" ? Story.shardCount() : 0;
-    if (n <= 0) return pick([["ran", "…………。", "............"], ["ran", "（ツッコミが、出てこーへん……）", "(The comeback... just won't come out...)"]]);
-    if (n <= 2) return pick([["ran", "な……なん……。", "N-no... w..."], ["ran", "……ちゃ、ちゃうやろ……？", "...Th-that's... not right...?"]]);
-    if (n <= 4) return pick([["ran", "なんで……やねん。", "No... way."], ["ran", "それは……ちゃうやろ！", "That's... not it!"]]);
-    if (n === 5) return pick([["ran", "なんでやねん！ ……言えた！", "No way! ...I said it!"], ["ran", "どないやねん！ あ、もどってきた！", "What even is that! Oh, it's coming back!"]]);
-    return pick([["ran", "なんでやねん！！", "NO WAY!!"], ["ran", "もうええわ！ ……ありがとうな。", "That's enough! ...Thanks, partner."]]);
-  }
+  // プレイ中はらんぴょんとは通信がつながっていないので、会話はぴょんぴーとヤナビスだけ
 
   const GAGS = [
     ["柿ピーのピーは、ぴょんぴーのピーやで。知らんけど。", "The 'pea' in kaki-pea stands for Pyon-P. Probably."],
@@ -89,6 +81,13 @@
       : ["yana", "十字キーで移動、Aでジャンプ、X・Yで光線銃です。階段をのぼると、空のルートに行けますよ。", "Move with the D-pad, jump with A, fire with X / Y. Climb the steps to reach the sky route."];
   }
 
+  function dashHint() {
+    const pc = typeof controlMode !== "undefined" && controlMode === "pc";
+    return pc
+      ? ["yana", "Shiftをおしたまま進むと、ダッシュで速く走れます。", "Hold Shift while moving to dash."]
+      : ["yana", "Bボタンをおしたまま進むと、ダッシュで速く走れます。", "Hold B while moving to dash."];
+  }
+
   function stageStartLines() {
     const course = courses[currentCourse];
     if (!course) return null;
@@ -101,7 +100,7 @@
         ? [["yana", "のぼりステージです。山をこえて、谷をくだって、ゴールをめざしましょう。", "A climbing stage. Go over the mountain, down the valley, and on to the goal."], ["pyon", "山あり谷あり。芸人人生みたいやな！", "Ups and downs. Just like a comedian's career!"]]
         : [["yana", "のぼりステージです。落ちても下の道にもどるだけ。あせらずどうぞ。", "A climbing stage. If you fall you just land on the lower path, so take your time."]];
     }
-    if (w === 0 && a === 0) return [controlsHint()];
+    if (w === 0 && a === 0) return [controlsHint(), dashHint()];
     if (w === 0 && a === 1) return [["yana", "ブロックは下からたたくか、光線銃でうつとアイテムが出ます。", "Hit blocks from below or shoot them to get items."]];
     if (w === 0 && a === 3) return [["yana", "ダッシュボタンで速く走れます。敵をふんだ瞬間にジャンプすると、大ジャンプです。", "Hold dash to run. Press jump right as you stomp an enemy for a super jump."]];
     if (a === 0) {
@@ -150,7 +149,7 @@
     lowHp: () => [["yana", "HPがのこり1です。むりせず、スターやハートをさがしましょう。", "Only 1 HP left. Play it safe and look for stars or hearts."]],
     death: () => [["pyon", "月まで飛ばされた〜！", "I got launched all the way to the moooon!"]],
     respawn: () => [["pyon", "三日月タクシーで復活や！ 好きなとこにおりるで。", "Back on the Crescent Taxi! I'll hop off wherever I like."]],
-    combo: () => [["pyon", "コンボや！ ノってきたで！", "Combo! I'm on a roll!"], ranReply()],
+    combo: () => [["pyon", "コンボや！ ノってきたで！", "Combo! I'm on a roll!"]],
     bossHalf: () => [["yana", "ボスの体力、のこり半分です！", "The boss is down to half health!"], ["pyon", "あとひといきや！", "Almost there!"]],
     stompBoost: () => [["pyon", "大ジャンプ！ 月までとどきそうや！", "Super jump! I could reach the moon!"]],
     timeLow: () => [["yana", "のこり時間30秒です。いそいで！", "30 seconds left. Hurry!"]],
@@ -189,13 +188,23 @@
     keyGet: () => [["pyon", "カギや！ どっかに開けるもんがあるはずやで。", "A key! There's gotta be something to open with it."]],
     switchHint: () => [["yana", "★スイッチです。下からたたくか光線銃でうつと、赤と青のブロックが入れかわります。", "A star switch. Bump it from below or shoot it to swap the red and blue blocks."]],
     switchUsed: () => [["pyon", "おっ、赤と青が入れかわった！ 頭つかうやつやな。", "Whoa, red and blue swapped! Time to use my head."]],
-    chestOpen: () => [["pyon", "宝箱あいた〜！ 大もうけや！", "The chest is open! Jackpot!"], ranReply()],
+    chestOpen: () => [["pyon", "宝箱あいた〜！ 大もうけや！", "The chest is open! Jackpot!"]],
     doorOpen: () => [["pyon", "バリア解除！ カギさまさまやな。", "Barrier down! Thank you, little key."]],
     stageClear: () => [pick([
       ["pyon", "クリアや！ おおきに！", "Stage clear! Thanks a bunch!"],
       ["pyon", "よっしゃー！ この調子やで！", "Yesss! Let's keep it up!"]
     ])],
-    gameOver: () => [["ran", "ぴょんぴー……！ まだ終わってへんで！", "Pyon-P...! It's not over yet!"]],
+    gameOver: () => [["yana", "ぴょんぴーさん……！ まだ終わっていませんよ！", "Pyon-P...! It's not over yet!"]],
+    dashTeach: () => {
+      const pc = typeof controlMode !== "undefined" && controlMode === "pc";
+      return [
+        pc
+          ? ["yana", "←か→を2回すばやくおしても、ダッシュになりますよ。", "Tapping ← or → twice quickly also starts a dash."]
+          : ["yana", "十字キーの←か→を2回すばやくタップしても、ダッシュになりますよ。", "Tapping ← or → on the D-pad twice quickly also starts a dash."],
+        ["yana", "ダッシュしながらジャンプすると、ふつうより高く飛べます。高い足場は、助走をつけてねらってください。", "Jump while dashing and you'll fly higher than usual. Get a running start for high ledges."],
+        ["pyon", "助走が大事なんは、ボケもジャンプもいっしょやな！", "A good run-up matters for jokes AND jumps!"]
+      ];
+    },
     map: () => {
       const w = courses[mapSelectedCourse]?.worldIndex ?? 0;
       const line = (MAP_STAGE_MESSAGES[language] ?? MAP_STAGE_MESSAGES.ja)[w] ?? "";
@@ -216,7 +225,7 @@
         ];
       }
       const g = pick(GAGS);
-      return [["pyon", g[0], g[1]], ranReply()];
+      return [["pyon", g[0], g[1]]];
     }
   };
 
@@ -265,6 +274,11 @@
     const p = state.player;
     const course = courses[currentCourse];
     if (state.hp <= 1) once("lowHp", "lowHp");
+    // 1-1：少し遊んだら、2回タップのダッシュとダッシュジャンプを教える（会話が終わってから）
+    if (course && course.worldIndex === 0 && course.areaIndex === 0 && !course.climbStage && !course.bossStage) {
+      flags.playT = (flags.playT ?? 0) + 0.25;
+      if (flags.playT > 12 && !queue.length && (!cur || hold > 2.5)) once("tipDash", "dashTeach");
+    }
     if (state.time < 30 && state.time > 0) once("timeLow", "timeLow");
     if (course?.trait === "underwater") {
       if ((state.oxygen ?? 100) < 25) once("o2", "oxygenLow");
@@ -484,5 +498,5 @@
   window.addEventListener("orientationchange", () => setTimeout(layout, 250));
   document.addEventListener("fullscreenchange", () => setTimeout(layout, 120));
 
-  window.Chat = { event, say, update, layout, drawToast, refresh, ranReply };
+  window.Chat = { event, say, update, layout, drawToast, refresh };
 })();
