@@ -409,7 +409,7 @@
     if (cs.shown < total) {
       cs.shown = total;
     } else {
-      playSfx("confirm");
+      playSfx("page");
       nextLine();
     }
   }
@@ -1620,6 +1620,11 @@
     if (m === "cutscene") return cs?.music || "story";
     if (m === "credits") return cr?.done ? null : "credits";
     if (m === "stageClear" || m === "bossDeath" || m === "ended" || m === "movie") return null;
+    // そうび画面（SELECT）：assets/bgm/select.mp3 があればその曲、なければステージの曲を小さく流す
+    if (m === "inventory") {
+      const sel = fileTrack("select");
+      if (sel.ready && !sel.missing) return "select";
+    }
     const course = courses[currentCourse];
     // ボス登場の場面は「The Demon Star Arrives」、戦いがはじまったら戦闘曲
     if (m === "bossIntro") return "bossAppear";
@@ -1649,7 +1654,8 @@
       if (ac && out && ac.createMediaElementSource) {
         tr.gain = ac.createGain();
         tr.gain.gain.value = 0;
-        ac.createMediaElementSource(audio).connect(tr.gain).connect(out);
+        // 効果音のコンプレッサーを通すと、大きい曲で効果音が小さくなるので、曲は直接スピーカーへ
+        ac.createMediaElementSource(audio).connect(tr.gain).connect(ac.destination);
       }
     } catch (_) {
       tr.gain = null;
@@ -1684,7 +1690,7 @@
   function syncMusic() {
     if (!window.Bgm || !audioUnlocked) return;
     const want = desiredTrack();
-    const duck = state.mode === "paused" || state.mode === "inventory";
+    const duck = state.mode === "paused" || (state.mode === "inventory" && want !== "select");
     const tr = want ? fileTrack(want) : null;
     const useFile = !!tr && tr.ready && !tr.missing;
     const key = want ? `${useFile ? "file" : "synth"}:${want}` : null;

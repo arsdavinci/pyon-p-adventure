@@ -71,7 +71,7 @@
 
   function open() {
     if (!unlocked() || state.mode !== "worldMap" || FX.transitioning()) return;
-    playSfx("confirm");
+    playSfx("decide");
     FX.startTransition({
       type: "fade", dur: 0.6,
       onMid: () => {
@@ -91,7 +91,7 @@
 
   function close() {
     if (FX.transitioning()) return;
-    playSfx("equip");
+    playSfx("cancel");
     Story.persist();
     FX.startTransition({ type: "fade", dur: 0.6, onMid: () => { state.mode = "worldMap"; lastTime = performance.now(); } });
   }
@@ -140,10 +140,10 @@
   function handleKey(code) {
     if (code === "ArrowUp" || code === "KeyW") {
       sel = (sel + ITEMS.length - 1) % ITEMS.length;
-      playSfx("equip");
+      playSfx("cursor");
     } else if (code === "ArrowDown" || code === "KeyS") {
       sel = (sel + 1) % ITEMS.length;
-      playSfx("equip");
+      playSfx("cursor");
     } else if (["Enter", "Space", "KeyX", "KeyJ", "KeyY"].includes(code)) buy();
     else if (["Escape", "Tab", "Backspace", "KeyB", "Select"].includes(code)) close();
     return true;
@@ -161,7 +161,7 @@
         if (sel === i) buy();
         else {
           sel = i;
-          playSfx("equip");
+          playSfx("cursor");
         }
         return true;
       }

@@ -432,14 +432,14 @@ function mapMove(direction) {
       mapAtShop = false;
       mapSelectedCourse = SHOP_MAP_NODE.course;
       currentCourse = mapSelectedCourse;
-      playSfx("equip", state?.player?.x ?? 480);
+      playSfx("cursor");
       updateHud();
     }
     return;
   }
   if (direction === "left" && mapSelectedCourse === SHOP_MAP_NODE.course && shopNodeAvailable()) {
     mapAtShop = true;
-    playSfx("equip", state?.player?.x ?? 480);
+    playSfx("cursor");
     return;
   }
   moveMapSelection(direction === "left" || direction === "up" ? -1 : 1);
@@ -1517,7 +1517,7 @@ function startMapCourse(index = mapSelectedCourse) {
     return;
   }
   const node = mapPointToCanvas(target);
-  playSfx("confirm");
+  playSfx("decide");
   FX.startTransition({ type: "iris", dur: 1.0, x: node.x, y: node.y, onMid: () => beginCourse(target) });
 }
 
@@ -1545,7 +1545,7 @@ function beginCourse(index) {
 function moveMapSelection(dir) {
   mapSelectedCourse = clamp(mapSelectedCourse + dir, 0, unlockedCourse);
   currentCourse = mapSelectedCourse;
-  playSfx("equip", state?.player?.x ?? 480);
+  playSfx("cursor");
   updateHud();
 }
 
@@ -1571,6 +1571,7 @@ function openInventory() {
   state.inventoryGrab = null;
   state.fusionPrompt = null;
   resetInventoryFocus();
+  playSfx("decide");
 }
 
 function closeInventory() {
@@ -1581,6 +1582,7 @@ function closeInventory() {
   state.mode = state.inventoryReturnMode === "respawning" ? "respawning" : "playing";
   state.inventoryReturnMode = null;
   lastTime = performance.now();
+  playSfx("cancel");
 }
 
 function toggleInventory() {
@@ -1594,14 +1596,14 @@ function pauseGame() {
   state.pauseReturnMode = state.mode;
   state.mode = "paused";
   pauseSelection = 0;
-  playSfx("equip", state.player.x + state.player.w / 2);
+  playSfx("decide");
 }
 
 function resumeGame() {
   if (!state || state.mode !== "paused") return;
   state.mode = state.pauseReturnMode === "respawning" ? "respawning" : "playing";
   state.pauseReturnMode = null;
-  playSfx("equip", state.player.x + state.player.w / 2);
+  playSfx("cancel");
   lastTime = performance.now();
 }
 
@@ -1768,7 +1770,7 @@ function advanceBossIntro() {
   if ((state.bossIntroStep ?? 0) === 0) {
     state.bossIntroStep = 1;
     state.bossIntroTimer = 0;
-    playSfx("equip", state.player.x + state.player.w / 2);
+    playSfx("page");
   } else {
     if (state.mode === "bossOutro") {
       completeBossStageAfterOutro();
@@ -2857,6 +2859,23 @@ function playSfx(name, x = state?.player?.x ?? 0) {
     playTone({ start: 0.56, freq: 1568, endFreq: 3136, duration: 0.32, type: "triangle", gain: 0.05, pan: 0 });
     playTone({ start: 0.56, freq: 2093, endFreq: 2093, duration: 0.36, type: "sine", gain: 0.035, pan: 0 });
     playNoise({ start: 0.52, duration: 0.36, gain: 0.025, filter: 6000 });
+  } else if (name === "cursor") {
+    // 十字キーでカーソルを動かしたとき：ピッ
+    playTone({ freq: 1320, endFreq: 1320, duration: 0.05, type: "square", gain: 0.05, pan: 0 });
+    playTone({ start: 0.012, freq: 2640, endFreq: 2640, duration: 0.03, type: "sine", gain: 0.03, pan: 0 });
+  } else if (name === "decide") {
+    // 決定：ピコッ（上がる2音）
+    playTone({ freq: 988, endFreq: 988, duration: 0.06, type: "square", gain: 0.055, pan: 0 });
+    playTone({ start: 0.06, freq: 1480, endFreq: 1480, duration: 0.11, type: "square", gain: 0.055, pan: 0 });
+    playTone({ start: 0.06, freq: 2960, endFreq: 2960, duration: 0.08, type: "sine", gain: 0.025, pan: 0 });
+  } else if (name === "cancel") {
+    // キャンセル：ポワン（下がる2音）
+    playTone({ freq: 880, endFreq: 880, duration: 0.06, type: "triangle", gain: 0.07, pan: 0 });
+    playTone({ start: 0.06, freq: 587, endFreq: 440, duration: 0.14, type: "triangle", gain: 0.07, pan: 0 });
+  } else if (name === "page") {
+    // 会話を送るとき：ポッ
+    playTone({ freq: 740, endFreq: 1100, duration: 0.06, type: "sine", gain: 0.06, pan: 0 });
+    playTone({ start: 0.02, freq: 1480, endFreq: 1480, duration: 0.04, type: "triangle", gain: 0.025, pan: 0 });
   } else if (name === "confirm") {
     playTone({ freq: 660, endFreq: 660, duration: 0.07, type: "triangle", gain: 0.045, pan: 0 });
     playTone({ start: 0.06, freq: 990, endFreq: 990, duration: 0.1, type: "triangle", gain: 0.042, pan: 0 });
@@ -3151,7 +3170,7 @@ function runInventorySort() {
   state.inventorySortCommentUntil = performance.now() + 2200;
   state.inventoryMessage = performance.now() + 1400;
   state.inventoryMessageLabel = state.inventorySortToastLabel;
-  playSfx("equip", state.player.x + state.player.w / 2);
+  playSfx("decide");
 }
 
 function totalInventoryItems(inventory = state.inventoryItems) {
@@ -5138,18 +5157,18 @@ function moveInventoryFocusArea(dir) {
   const current = INVENTORY_FOCUS_AREAS.indexOf(state.inventoryFocusArea ?? "itemList");
   const next = (current + dir + INVENTORY_FOCUS_AREAS.length) % INVENTORY_FOCUS_AREAS.length;
   state.inventoryFocusArea = INVENTORY_FOCUS_AREAS[next];
-  playSfx("equip", state.player.x + state.player.w / 2);
+  playSfx("cursor");
 }
 
 function enterInventoryFocusedArea() {
   if (state.inventoryFocusArea === "topMenu") {
     state.inventoryFocusMode = INVENTORY_FOCUS_MODES.INSIDE_TOP_MENU;
-    playSfx("equip", state.player.x + state.player.w / 2);
+    playSfx("decide");
     return;
   }
   if (state.inventoryFocusArea === "itemList") {
     state.inventoryFocusMode = INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST;
-    playSfx("equip", state.player.x + state.player.w / 2);
+    playSfx("decide");
     return;
   }
   if (state.inventoryFocusArea === "sortButton") runInventorySort();
@@ -5158,7 +5177,7 @@ function enterInventoryFocusedArea() {
 function leaveInventoryInnerFocus() {
   state.inventoryGrab = null;
   state.inventoryFocusMode = INVENTORY_FOCUS_MODES.AREA_SELECT;
-  playSfx("equip", state.player.x + state.player.w / 2);
+  playSfx("cancel");
 }
 
 function activateInventoryTopMenuButton() {
@@ -5170,19 +5189,19 @@ function activateInventoryTopMenuButton() {
   if (index === 2) {
     state.inventoryConfirmWorldMap = true;
     state.inventoryConfirmChoice = 0;
-    playSfx("equip", state.player.x + state.player.w / 2);
+    playSfx("decide");
     return;
   }
   state.inventoryMessage = performance.now() + 1000;
   state.inventoryMessageLabel = "未定ボタンです";
-  playSfx("equip", state.player.x + state.player.w / 2);
+  playSfx("decide");
 }
 
 function handleInventoryWorldMapConfirm(accept) {
   if (accept) returnToWorldMapFromInventory();
   else {
     state.inventoryConfirmWorldMap = false;
-    playSfx("equip", state.player.x + state.player.w / 2);
+    playSfx(accept ? "decide" : "cancel");
   }
 }
 
@@ -7587,7 +7606,7 @@ function updateGamepad() {
     if (startPressed && !gamepadState.startLatch) resumeGame();
     if ((gamepadState.left || gamepadState.up || gamepadState.right || gamepadState.down) && !(gamepadState.leftLatch || gamepadState.upLatch || gamepadState.rightLatch || gamepadState.downLatch)) {
       pauseSelection = 1 - pauseSelection;
-      playSfx("equip", state.player.x + state.player.w / 2);
+      playSfx("cursor");
     }
     if ((jumpPressed && !gamepadState.jumpLatch) || (shootPressed && !gamepadState.shootLatch)) choosePauseOption();
     gamepadState.leftLatch = gamepadState.left;
@@ -7652,7 +7671,7 @@ function handleKeyDown(code, event = { repeat: false }) {
     }
     if (!event.repeat && (code === "ArrowUp" || code === "ArrowDown" || code === "ArrowLeft" || code === "ArrowRight" || code === "KeyW" || code === "KeyS" || code === "KeyA" || code === "KeyD")) {
       pauseSelection = 1 - pauseSelection;
-      playSfx("equip", state.player.x + state.player.w / 2);
+      playSfx("cursor");
     }
     if (!event.repeat && (code === "Space" || code === "KeyX" || code === "KeyY" || code === "KeyJ")) choosePauseOption();
     return;
@@ -7720,7 +7739,7 @@ function moveTitleFocus(dir) {
   titleFocusIndex = next;
   Story.refreshTitleUi(); // 「セーブを消してはじめる？」の確認を取り消す
   syncTitleFocus();
-  playSfx("equip");
+  playSfx("cursor");
 }
 
 function confirmOverlay() {
@@ -7805,7 +7824,7 @@ canvas.addEventListener("pointerdown", event => {
           mapSelectedCourse = SHOP_MAP_NODE.course;
           currentCourse = mapSelectedCourse;
           mapAtShop = true;
-          playSfx("equip", state?.player?.x ?? 480);
+          playSfx("cursor");
           updateHud();
         }
         event.preventDefault();
@@ -7819,7 +7838,7 @@ canvas.addEventListener("pointerdown", event => {
         mapAtShop = false;
         mapSelectedCourse = courseIndex;
         currentCourse = courseIndex;
-        playSfx("equip", state?.player?.x ?? 480);
+        playSfx("cursor");
         updateHud();
       }
       event.preventDefault();
@@ -7949,6 +7968,7 @@ function moveInventorySelection(dir) {
   if (!state || state.mode !== "inventory") return;
   state.inventorySelection = (state.inventorySelection + dir + MAX_INVENTORY_ITEMS * 4) % MAX_INVENTORY_ITEMS;
   ensureInventorySelectionVisible();
+  playSfx("cursor");
 }
 
 function equipSelectedInventorySlot() {
@@ -7975,6 +7995,7 @@ function startInventoryGrab(gamepad = false) {
     gamepad,
     pointer: false
   };
+  playSfx("decide");
 }
 
 function updateGamepadInventoryGrabPosition() {
@@ -8023,6 +8044,7 @@ function confirmFusionPrompt() {
   if (!state.fusionPrompt) return;
   const prompt = state.fusionPrompt;
   state.fusionPrompt = null;
+  playSfx(prompt.choice === 0 ? "decide" : "cancel");
   if (prompt.choice === 0) {
     if (Number.isInteger(prompt.from) && Number.isInteger(prompt.to)) fuseInventoryItems(prompt.from, prompt.to);
     else fuseWeapons(prompt.power);
@@ -8058,7 +8080,7 @@ function handleInventoryKeyboardFocus(code, repeat = false) {
   if (state.inventoryConfirmWorldMap) {
     if (code === "ArrowLeft" || code === "ArrowRight" || code === "KeyA" || code === "KeyD") {
       state.inventoryConfirmChoice = 1 - (state.inventoryConfirmChoice ?? 0);
-      playSfx("equip", state.player.x + state.player.w / 2);
+      playSfx("cursor");
       return true;
     }
     if (code === "Enter" || code === "Space" || code === "KeyZ") {
@@ -8073,9 +8095,15 @@ function handleInventoryKeyboardFocus(code, repeat = false) {
   }
 
   if (state.fusionPrompt) {
-    if (code === "ArrowLeft" || code === "ArrowRight" || code === "KeyA" || code === "KeyD") state.fusionPrompt.choice = 1 - state.fusionPrompt.choice;
+    if (code === "ArrowLeft" || code === "ArrowRight" || code === "KeyA" || code === "KeyD") {
+      state.fusionPrompt.choice = 1 - state.fusionPrompt.choice;
+      playSfx("cursor");
+    }
     if (code === "Enter" || code === "Space" || code === "KeyZ") confirmFusionPrompt();
-    if (code === "Escape" || code === "KeyB") state.fusionPrompt = null;
+    if (code === "Escape" || code === "KeyB") {
+      state.fusionPrompt = null;
+      playSfx("cancel");
+    }
     return true;
   }
 
@@ -8107,12 +8135,12 @@ function handleInventoryKeyboardFocus(code, repeat = false) {
   if (mode === INVENTORY_FOCUS_MODES.INSIDE_TOP_MENU) {
     if (!repeat && (code === "ArrowLeft" || code === "KeyA")) {
       state.inventoryTopMenuIndex = (state.inventoryTopMenuIndex + 3) % 4;
-      playSfx("equip", state.player.x + state.player.w / 2);
+      playSfx("cursor");
       return true;
     }
     if (!repeat && (code === "ArrowRight" || code === "KeyD")) {
       state.inventoryTopMenuIndex = (state.inventoryTopMenuIndex + 1) % 4;
-      playSfx("equip", state.player.x + state.player.w / 2);
+      playSfx("cursor");
       return true;
     }
     if (!repeat && (code === "Enter" || code === "Space" || code === "KeyZ")) {
@@ -8144,7 +8172,7 @@ function updateInventoryGamepadFocus(now, jumpPressed, runPressed, shootPressed)
   if (state.inventoryConfirmWorldMap) {
     if ((gamepadState.left || gamepadState.right) && !(gamepadState.leftLatch || gamepadState.rightLatch)) {
       state.inventoryConfirmChoice = 1 - (state.inventoryConfirmChoice ?? 0);
-      playSfx("equip", state.player.x + state.player.w / 2);
+      playSfx("cursor");
     }
     if (jumpPressed && !gamepadState.jumpLatch) handleInventoryWorldMapConfirm((state.inventoryConfirmChoice ?? 0) === 0);
     if (runPressed && !gamepadState.runLatch) handleInventoryWorldMapConfirm(false);
@@ -8180,7 +8208,7 @@ function updateInventoryGamepadFocus(now, jumpPressed, runPressed, shootPressed)
       gamepadState.inventoryMoveDelay = 0;
     } else if (freshMove || now >= gamepadState.inventoryMoveDelay) {
       state.inventoryTopMenuIndex = (state.inventoryTopMenuIndex + moveDir + 4) % 4;
-      playSfx("equip", state.player.x + state.player.w / 2);
+      playSfx("cursor");
       gamepadState.inventoryMoveDelay = now + (freshMove ? 230 : 140);
     }
     if (jumpPressed && !gamepadState.jumpLatch) activateInventoryTopMenuButton();
@@ -8242,12 +8270,14 @@ document.querySelector("#newGameButton")?.addEventListener("click", event => {
     return;
   }
   button.dataset.armed = "1";
+  playSfx("decide");
   button.textContent = language === "ja" ? "セーブを消してはじめる？" : "Erase save and start?";
 });
 document.querySelector("#soundButton")?.addEventListener("click", event => {
   event.stopPropagation();
   unlockAudio();
   toggleSound();
+  playSfx("decide");
 });
 Story.refreshTitleUi();
 Chat.layout();
