@@ -10336,7 +10336,8 @@ canvas.addEventListener("pointerup", event => {
   }
   if (target && !target.empty) {
     state.inventorySelection = target.index;
-    equipWeapon(target.power - 1);
+    if (target.index !== grab.from && grab.moved) explainNoFuse(grab.power, target.power);
+    else equipWeapon(target.power - 1);
   }
 });
 
@@ -10459,6 +10460,30 @@ function releaseInventoryGrab() {
     return;
   }
   if (target.index === grab.from) equipWeapon(target.power - 1);
+  else explainNoFuse(grab.power, target.power);
+}
+
+// 合成できない組み合わせのとき、理由をぴょんぴーが説明する
+function explainNoFuse(a, b) {
+  if (!a || !b || a === b && nextFusionPower(a) === null && !isMechPower(a)) {
+    if (a && a === b) showFuseHint("最高レベルどうしは、もう合成できないよ。🌙Lv8 と ⭐Lv8 ならロボットになるよ！", "Max level");
+    return;
+  }
+  const ta = weaponAttribute(a);
+  const tb = weaponAttribute(b);
+  if (ta !== tb && ta !== "mech" && tb !== "mech") {
+    showFuseHint("月の武器と星の武器は、別の種類！ 同じ種類の、同じ武器どうしでしか合成できないよ。（🌙Lv8 と ⭐Lv8 だけは特別にロボットになるよ）", "🌙 と ⭐ は別の種類");
+  } else {
+    showFuseHint("ちがう武器どうしは合成できないよ。同じ武器を2つ重ねてね！", "同じ武器どうしで合成");
+  }
+}
+
+function showFuseHint(comment, toast) {
+  state.inventorySortComment = `ぴょんぴー「${comment}」`;
+  state.inventorySortCommentUntil = performance.now() + 4200;
+  state.inventoryMessage = performance.now() + 1800;
+  state.inventoryMessageLabel = toast;
+  playSfx("locked");
 }
 
 function handleInventoryAction() {

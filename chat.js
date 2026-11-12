@@ -153,7 +153,7 @@
     canFuse: name => firstTime("tipFuseHowTo") ? [
       ["yana", `${name}が2つそろいました。同じ光線銃を2つ合成すると、1つ上の新しい光線銃が生まれます。`, `You now have two ${name}s. Fuse two of the same ray gun to create the next, stronger one.`],
       ...fuseHowTo(),
-      ["yana", "合成をくり返すと、全部で16種類まで進化しますよ。", "Keep fusing and they evolve through 16 types in all."],
+      ["yana", "月の武器🌙と星の武器⭐は別の種類です。同じ種類の、同じ武器どうしでしか合成できません。合成をくり返すと、それぞれ Lv8 まで進化しますよ。", "Moon 🌙 and star ⭐ weapons are different types; only the exact same weapon can be fused. Each line evolves up to Lv8."],
       ["pyon", "配合みたいなもんやな。ええやん、いっちょ育てたろ！", "Like breeding, huh. Nice. Let's raise a monster of a gun!"]
     ] : [
       ["yana", `${name}が2つそろいました。装備画面で、同じ光線銃どうしを重ねると合成できます。`, `You have two ${name}s. Stack them in the equipment screen to fuse.`]
