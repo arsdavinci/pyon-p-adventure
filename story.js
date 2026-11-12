@@ -11,7 +11,7 @@
 
   // ---------- 追加画像（あれば自動で使う。なくても動く） ----------
   const OPTIONAL = {
-    portraitPyon: "assets/portrait-pyonpy.png",
+    portraitPyon: "assets/pyonpy-victory.png",
     portraitRan: "assets/portrait-ranpyon.webp",
     portraitLuva: "assets/portrait-luva.webp",
     cardLuva: "assets/portrait-luva-card.jpg",
@@ -779,7 +779,7 @@
       ctx.drawImage(image, -w / 2, -h * anchorY, w, h);
     };
     if (id === "pyon") {
-      if (ok(img.portraitPyon)) fit(img.portraitPyon, 430);
+      if (ok(img.portraitPyon)) fit(img.portraitPyon, 440);
       else if (ok(pyompyJump)) ctx.drawImage(pyompyJump, -0.478 * 540, -0.86 * 540, 540, 540);
     } else if (id === "maou") {
       if (ok(bossThemeImages[5])) fit(bossThemeImages[5], 410, 0.98);
@@ -821,9 +821,26 @@
     text: document.querySelector("#gbStoryText"),
     key: ""
   };
+  storyBox.skip = document.querySelector("#gbStorySkip");
+  storyBox.skip?.addEventListener("pointerdown", event => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (state?.mode !== "cutscene" || !cs) return;
+    // 1回目のタップで選ぶ、選ばれているときにもう一度タップでスキップ
+    if (cs.skipFocused) { if (!FX.transitioning()) finish(); }
+    else setSkipFocus(true);
+  });
+  function setSkipFocus(on) {
+    if (!cs || !!cs.skipFocused === on) return;
+    cs.skipFocused = on;
+    storyBox.skip?.classList.toggle("is-focused", on);
+    if (storyBox.skip) storyBox.skip.textContent = on ? L("スキップ？ A で決定", "Skip? Press A") : L("スキップ ▶▶", "Skip ▶▶");
+    if (typeof playSfx === "function") playSfx("cursor");
+  }
   storyBox.el?.addEventListener("pointerdown", event => {
     event.preventDefault();
     if (state?.mode !== "cutscene") return;
+    if (cs?.skipFocused) { setSkipFocus(false); return; }
     if (typeof unlockAudio === "function") unlockAudio();
     advanceCutscene();
   });
@@ -885,17 +902,27 @@
     const boxH = 172;
     const boxY = H - boxH - 34;
     const narr = !sp.side;
+    // スマホ（吹き出しが画面の外）のときは、立ち絵を画面の下まで下げる
+    const footY = useStoryBox() ? H + 6 : boxY + 44;
     if (!hasCg || !narr) {
       const left = cs.slots.left;
       const right = cs.slots.right;
-      if (left && !(narr && hasCg)) drawPortrait(left.id, 236, boxY + 44, cs.active === "left", left.appear * (narr ? 0.7 : 1), false, left.face);
-      if (right && !(narr && hasCg)) drawPortrait(right.id, W - 236, boxY + 44, cs.active === "right", right.appear * (narr ? 0.7 : 1), true, right.face);
+      if (left && !(narr && hasCg)) drawPortrait(left.id, 236, footY, cs.active === "left", left.appear * (narr ? 0.7 : 1), false, left.face);
+      if (right && !(narr && hasCg)) drawPortrait(right.id, W - 236, footY, cs.active === "right", right.appear * (narr ? 0.7 : 1), true, right.face);
     }
 
     // テキストボックス
-    if (useStoryBox()) renderStoryBox(ln, sp, narr);
+    if (useStoryBox()) {
+      renderStoryBox(ln, sp, narr);
+      // 新しい会話がはじまったら、スキップの選択を元にもどす
+      const on = !!cs.skipFocused;
+      if (storyBox.skip && storyBox.skip.classList.contains("is-focused") !== on) {
+        storyBox.skip.classList.toggle("is-focused", on);
+        storyBox.skip.textContent = on ? L("スキップ？ A で決定", "Skip? Press A") : L("スキップ ▶▶", "Skip ▶▶");
+      }
+    }
     else drawCanvasTextBox(ln, sp, narr, boxX, boxY, boxW, boxH);
-    drawSkipButton();
+    if (!useStoryBox()) drawSkipButton();
   }
 
   function drawCanvasTextBox(ln, sp, narr, boxX, boxY, boxW, boxH) {
@@ -974,19 +1001,20 @@
   function drawSkipButton() {
     const r = skipRect();
     ctx.save();
+    const on = !!cs?.skipFocused;
     ctx.globalAlpha = 0.88;
-    ctx.fillStyle = "rgba(255,255,255,0.16)";
-    ctx.strokeStyle = "rgba(255,255,255,0.7)";
+    ctx.fillStyle = on ? "#fff3a4" : "rgba(255,255,255,0.16)";
+    ctx.strokeStyle = on ? "#ff8db7" : "rgba(255,255,255,0.7)";
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.roundRect(r.x, r.y, r.w, r.h, 20);
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = on ? "#5a3d9a" : "#ffffff";
     ctx.font = `800 16px ${FX.FONT}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(L("スキップ ▶▶ (Esc)", "SKIP ▶▶ (Esc)"), r.x + r.w / 2, r.y + r.h / 2 + 1);
+    ctx.fillText(on ? L("スキップ？ A で決定", "Skip? Press A") : L("スキップ ▶▶ (Esc)", "SKIP ▶▶ (Esc)"), r.x + r.w / 2, r.y + r.h / 2 + 1);
     ctx.restore();
   }
 
@@ -1505,9 +1533,15 @@
     }
     if (mode === "shop") return Shop.handleKey(code);
     if (mode === "cutscene") {
-      if (code === "Escape") {
+      // 十字キーで「スキップ」をえらぶ → A で決定。もう一度十字キーでやめる
+      if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "KeyA", "KeyD", "KeyW", "KeyS"].includes(code)) {
+        setSkipFocus(!cs?.skipFocused);
+      } else if (code === "Escape") {
         if (!FX.transitioning()) finish();
-      } else if (CONFIRM.includes(code)) advanceCutscene();
+      } else if (CONFIRM.includes(code)) {
+        if (cs?.skipFocused) { if (!FX.transitioning()) finish(); }
+        else advanceCutscene();
+      }
       return true;
     }
     if (mode === "stageClear") {
