@@ -127,7 +127,7 @@
     if (w === 0 && a === 3) return [["yana", "ダッシュボタンで速く走れます。敵をふんだ瞬間にジャンプすると、大ジャンプです。", "Hold dash to run. Press jump right as you stomp an enemy for a super jump."]];
     if (a === 0) {
       return [[
-        ["yana", "マグマの柱は、ふき出す前に光ります。光ったらはなれて。", "Lava pillars glow before they erupt. Step back when you see the glow."],
+        ["yana", "マグマの柱は、ふき出す前に地面が赤く光ります。ふき出すと石もふってくるので、地面の影と「！」を見てよけてください。", "The ground glows red before a lava pillar erupts. Rocks rain down afterwards, so watch for shadows and \"!\" marks."],
         ["yana", "氷はすべります。はやめにブレーキをかけましょう。", "Ice is slippery. Start braking early."],
         ["yana", "上下にも泳げます。深いところにもアイテムがありますよ。", "You can swim up and down. There are items in the deep, too."],
         ["yana", "ベルトコンベアは向きに注意。動く床はタイミングを見て。", "Mind the conveyor direction, and time your jumps onto moving platforms."],

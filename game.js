@@ -2151,14 +2151,180 @@ function updateOxygen(dt) {
   }
 }
 
+// マグマの柱：ふき出す1秒前から地面が光って「！」が出る（LAVA_WARN_AT 〜 LAVA_ERUPT_AT が前ぶれ）
+const LAVA_WARN_AT = 1.55;
+const LAVA_ERUPT_AT = 2.55;
+const LAVA_END_AT = 3.35;
+// ふん石：柱がふき出すと石が舞い上がり、影が出てから落ちてくる
+const ROCK_RISE = 0.7; // 舞い上がる時間
+const ROCK_WARN = 1.3; // 影が出てから地面に落ちるまで
+const ROCK_FALL = 0.5; // そのうち、実際に石が見えて落ちてくる時間
+const ROCK_SIZE = 46;
+
 function updateLavaGeysers(dt) {
   const p = state.player;
   for (const g of state.lavaGeysers ?? []) {
+    const wasActive = g.active;
     g.timer = ((g.timer ?? 0) + dt) % g.period;
-    g.active = g.timer > 2.55 && g.timer < 3.35;
+    g.active = g.timer > LAVA_ERUPT_AT && g.timer < LAVA_END_AT;
+    if (g.active && !wasActive) eruptLavaRocks(g);
     if (!g.active) continue;
     const jet = { x: g.x, y: (g.baseY ?? canvas.height) - g.h, w: g.w, h: g.h };
     if (hit(p, jet)) damagePlayer(false, null, false);
+  }
+  updateLavaRocks(dt);
+}
+
+// x の真上から落ちてきた石が最初に当たる足場の高さ（なければ null ＝ 穴に落ちていく）
+function lavaRockLandingY(x) {
+  let top = null;
+  for (const s of platforms.concat(blocks.filter(b => !b.broken))) {
+    if (x < s.x || x > s.x + s.w) continue;
+    if (top === null || s.y < top) top = s.y;
+  }
+  return top;
+}
+
+function eruptLavaRocks(g) {
+  const course = courses[currentCourse];
+  if (course?.bossStage) return;
+  const p = state.player;
+  const cx = g.x + g.w / 2;
+  // 画面の近くでふき出したときだけ石を飛ばす
+  if (Math.abs(cx - (p.x + p.w / 2)) > 900) return;
+  state.lavaRocks ??= [];
+  const offsets = [-(150 + Math.random() * 230), 150 + Math.random() * 230];
+  // 1つはプレイヤーの近くをねらう（ちゃんとよける遊びになるように）
+  const near = p.x + p.w / 2 - cx;
+  if (Math.abs(near) < 620 && Math.abs(near) > 90) offsets.push(near + (Math.random() - 0.5) * 60);
+  else offsets.push((Math.random() < 0.5 ? -1 : 1) * (330 + Math.random() * 200));
+  offsets.forEach((offset, i) => {
+    const tx = clamp(cx + offset, 60, WORLD_WIDTH - 60);
+    state.lavaRocks.push({
+      fromX: cx,
+      fromY: (g.baseY ?? canvas.height) - g.h * 0.55,
+      tx,
+      landY: lavaRockLandingY(tx),
+      t: -i * 0.28, // 少しずつずらして落とす
+      spin: Math.random() * 6,
+      done: false
+    });
+  });
+  playSfx("explosion", cx);
+  FX.shake(0.18);
+}
+
+function lavaRockRect(rock) {
+  // 落ちているあいだの石の位置（影が出ている時間の最後の ROCK_FALL 秒）
+  const fallT = rock.t - ROCK_RISE - (ROCK_WARN - ROCK_FALL);
+  if (fallT < 0) return null;
+  const k = clamp(fallT / ROCK_FALL, 0, 1);
+  const startY = (state.cameraY ?? 0) - 90;
+  const endY = (rock.landY ?? worldBottom() + 200) - ROCK_SIZE;
+  const y = startY + (endY - startY) * k * k;
+  return { x: rock.tx - ROCK_SIZE / 2, y, w: ROCK_SIZE, h: ROCK_SIZE };
+}
+
+function updateLavaRocks(dt) {
+  const rocks = state.lavaRocks;
+  if (!rocks?.length) return;
+  for (const rock of rocks) {
+    rock.t += dt;
+    rock.spin += dt * 7;
+    const r = lavaRockRect(rock);
+    if (r && hit(state.player, r)) damagePlayer(false, null, false);
+    if (rock.t >= ROCK_RISE + ROCK_WARN) {
+      rock.done = true;
+      if (rock.landY !== null) {
+        spawnBlockPoof(rock.tx, rock.landY - 8);
+        playSfx("break", rock.tx);
+        FX.shake(0.1);
+      }
+    }
+  }
+  state.lavaRocks = rocks.filter(rock => !rock.done);
+}
+
+function drawLavaRockShape(x, y, size, spin) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(spin);
+  const glow = ctx.createRadialGradient(0, 0, size * 0.2, 0, 0, size * 0.95);
+  glow.addColorStop(0, "rgba(255, 170, 60, 0.75)");
+  glow.addColorStop(1, "rgba(255, 90, 40, 0)");
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, size * 0.95, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#6b3a35";
+  ctx.strokeStyle = "#ff8a3d";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  const pts = [1, 0.78, 0.96, 0.72, 1, 0.8, 0.92, 0.7];
+  for (let i = 0; i < pts.length; i++) {
+    const a = (i / pts.length) * Math.PI * 2;
+    const r = (size / 2) * pts[i];
+    if (i === 0) ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+    else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#ffb04a";
+  ctx.beginPath();
+  ctx.arc(-size * 0.12, -size * 0.1, size * 0.1, 0, Math.PI * 2);
+  ctx.arc(size * 0.16, size * 0.12, size * 0.07, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawLavaRocks() {
+  const now = performance.now() / 1000;
+  for (const rock of state.lavaRocks ?? []) {
+    if (rock.t < 0) continue;
+    if (rock.t < ROCK_RISE) {
+      // 火口から舞い上がる
+      const k = rock.t / ROCK_RISE;
+      const x = rock.fromX + (rock.tx - rock.fromX) * k * 0.35;
+      const y = rock.fromY - (rock.fromY - ((state.cameraY ?? 0) - 90)) * (1 - (1 - k) * (1 - k));
+      drawLavaRockShape(x, y, ROCK_SIZE * 0.8, rock.spin);
+      continue;
+    }
+    const warn = clamp((rock.t - ROCK_RISE) / ROCK_WARN, 0, 1);
+    if (rock.landY !== null) {
+      // 落ちる場所の影：だんだん大きく、こくなる
+      const blink = 0.75 + Math.sin(now * (10 + warn * 22)) * 0.25;
+      ctx.save();
+      ctx.fillStyle = `rgba(90, 20, 30, ${(0.25 + warn * 0.45) * blink})`;
+      ctx.beginPath();
+      ctx.ellipse(rock.tx, rock.landY + 2, 16 + warn * 26, 5 + warn * 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = `rgba(255, 90, 60, ${0.5 + warn * 0.5})`;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(rock.tx, rock.landY + 2, 20 + warn * 30, 7 + warn * 8, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      // 上に「！」のしるし
+      const my = rock.landY - 96 + Math.sin(now * 9) * 4;
+      ctx.fillStyle = "#ff3d5a";
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(rock.tx, my + 30);
+      ctx.lineTo(rock.tx - 17, my);
+      ctx.lineTo(rock.tx + 17, my);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "900 17px Segoe UI, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("!", rock.tx, my + 11);
+      ctx.restore();
+    }
+    const r = lavaRockRect(rock);
+    if (r) drawLavaRockShape(r.x + r.w / 2, r.y + r.h / 2, ROCK_SIZE, rock.spin);
   }
 }
 
@@ -4767,8 +4933,37 @@ function drawStageHazards() {
     return;
   }
   for (const g of state.lavaGeysers ?? []) {
-    const warmup = g.timer > 2.1 && g.timer <= 2.55;
+    const warmup = g.timer > LAVA_WARN_AT && g.timer <= LAVA_ERUPT_AT;
     if (!g.active && !warmup) continue;
+    const base = g.baseY ?? canvas.height;
+    if (warmup) {
+      // 前ぶれ：地面が赤く光って、だんだん速く点めつし、「！」が出る
+      const k = (g.timer - LAVA_WARN_AT) / (LAVA_ERUPT_AT - LAVA_WARN_AT);
+      const blink = 0.6 + Math.sin(performance.now() / 1000 * (10 + k * 26)) * 0.4;
+      const gx = g.x + g.w / 2;
+      const groundY = lavaRockLandingY(gx) ?? GROUND_Y;
+      ctx.fillStyle = `rgba(255, 80, 50, ${(0.3 + k * 0.5) * blink})`;
+      ctx.beginPath();
+      ctx.ellipse(gx, groundY + 2, g.w * (0.5 + k * 0.35), 9 + k * 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#ff3d5a";
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 3;
+      const my = groundY - 104 + Math.sin(performance.now() / 110) * 4;
+      ctx.beginPath();
+      ctx.moveTo(gx, my + 34);
+      ctx.lineTo(gx - 20, my);
+      ctx.lineTo(gx + 20, my);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "900 19px Segoe UI, system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("!", gx, my + 12);
+      void base;
+    }
     const alpha = g.active ? 0.86 : 0.34;
     const x = g.x;
     const y = (g.baseY ?? canvas.height) - g.h;
@@ -4787,6 +4982,7 @@ function drawStageHazards() {
       ctx.fill();
     }
   }
+  drawLavaRocks();
   ctx.restore();
 }
 
