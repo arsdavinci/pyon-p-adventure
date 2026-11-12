@@ -77,6 +77,8 @@
       onMid: () => {
         state.mode = "shop";
         sel = 0;
+        tab = 0;
+        page = 0;
         const first = !Story.data.seen.shopVisit;
         Story.data.seen.shopVisit = true;
         say(first
@@ -133,18 +135,101 @@
   }
 
   function rowRect(i) {
-    return { x: 520, y: 96 + i * 66, w: 716, h: 58 };
+    return { x: 520, y: 140 + i * 66, w: 716, h: 58 };
+  }
+
+  // ---------- 武器を売る ----------
+  // 上のタブで「買う」「売る」を切りかえる。売ると柿の種とピーナッツが同じ数ずつもらえる
+  let tab = 0; // 0 = 買う, 1 = 売る
+  let page = 0;
+  const SELL_ROWS = 6;
+  const tabRect = i => ({ x: 520 + i * 230, y: 84, w: 220, h: 48 });
+
+  // 1つ売ったときにもらえる数（月は Lv×3、星は Lv×6）
+  const sellPrice = power => weaponRank(power) * (weaponAttribute(power) === "star" ? 6 : 3);
+
+  // 売れる武器の一覧（もっている武器を種類ごとにまとめる）
+  function sellList() {
+    const w = wallet();
+    const inv = w.weaponInventory ?? [];
+    const list = [];
+    for (let power = 1; power <= MAX_WEAPON_POWER; power++) {
+      if ((inv[power - 1] ?? 0) > 0) list.push({ power, count: inv[power - 1] });
+    }
+    return list;
+  }
+
+  function sellRowCount() {
+    return Math.min(SELL_ROWS, Math.max(0, sellList().length - page * SELL_ROWS));
+  }
+
+  function sell() {
+    const list = sellList();
+    const entry = list[page * SELL_ROWS + sel];
+    if (!entry) {
+      playSfx("locked");
+      say("売れる武器がないで。", "You have no weapons to sell.");
+      return;
+    }
+    const w = wallet();
+    // そうび中の武器が最後の1つなら売らない（手ぶらにならないように）
+    if (entry.count <= 1 && w.weaponPower === entry.power && w.hasGun) {
+      playSfx("locked");
+      say("それはそうび中の最後の1つやろ。手ぶらになってまうで。", "That's the last one you have equipped. You'd be empty-handed!");
+      return;
+    }
+    const price = sellPrice(entry.power);
+    const items = w.inventoryItems ?? [];
+    let idx = -1;
+    for (let i = items.length - 1; i >= 0; i--) if (items[i] === entry.power) { idx = i; break; }
+    if (idx >= 0) items[idx] = null;
+    w.weaponInventory[entry.power - 1] = Math.max(0, (w.weaponInventory[entry.power - 1] ?? 0) - 1);
+    w.kakiTotal = (w.kakiTotal ?? 0) + price;
+    w.peaTotal = (w.peaTotal ?? 0) + price;
+    if (state) {
+      state.kakiTotal = w.kakiTotal;
+      state.peaTotal = w.peaTotal;
+      state.weaponInventory = [...w.weaponInventory];
+      state.inventoryItems = [...items];
+    }
+    playSfx("pickup");
+    say(`${weaponName(entry.power)}、買い取ったで！ 柿の種とピーナッツ ${price} 個ずつや。`,
+      `I'll take that ${weaponName(entry.power)}! Here's ${price} of each.`);
+    Story.persist();
+    const rows = sellRowCount();
+    if (!rows && page > 0) page -= 1;
+    sel = Math.min(sel, Math.max(0, sellRowCount() - 1));
+  }
+
+  function switchTab(next) {
+    if (next === tab) return;
+    tab = next;
+    sel = 0;
+    page = 0;
+    playSfx("cursor");
+    if (tab === 1) say("いらん武器があったら買い取るで。強い武器ほど高う買うで。", "Got weapons you don't need? I'll buy them. The stronger, the better the price.");
   }
   const backRect = () => ({ x: 34, y: 20, w: 170, h: 46 });
 
   function handleKey(code) {
-    if (code === "ArrowUp" || code === "KeyW") {
-      sel = (sel + ITEMS.length - 1) % ITEMS.length;
+    const rows = tab === 0 ? ITEMS.length : sellRowCount();
+    const pages = Math.max(1, Math.ceil(sellList().length / SELL_ROWS));
+    if (code === "ArrowLeft" || code === "KeyA") {
+      if (tab === 1 && page > 0) { page -= 1; sel = 0; playSfx("cursor"); }
+      else switchTab(0);
+    } else if (code === "ArrowRight" || code === "KeyD") {
+      if (tab === 1 && page < pages - 1) { page += 1; sel = 0; playSfx("cursor"); }
+      else switchTab(1);
+    } else if ((code === "ArrowUp" || code === "KeyW") && rows) {
+      sel = (sel + rows - 1) % rows;
       playSfx("cursor");
-    } else if (code === "ArrowDown" || code === "KeyS") {
-      sel = (sel + 1) % ITEMS.length;
+    } else if ((code === "ArrowDown" || code === "KeyS") && rows) {
+      sel = (sel + 1) % rows;
       playSfx("cursor");
-    } else if (["Enter", "Space", "KeyX", "KeyJ", "KeyY"].includes(code)) buy();
+    } else if (["Enter", "Space", "KeyX", "KeyJ", "KeyY"].includes(code)) {
+      if (tab === 0) buy();
+      else sell();
+    }
     else if (["Escape", "Tab", "Backspace", "KeyB", "Select"].includes(code)) close();
     return true;
   }
@@ -155,10 +240,18 @@
       close();
       return true;
     }
-    for (let i = 0; i < ITEMS.length; i++) {
+    for (let i = 0; i < 2; i++) {
+      const r = tabRect(i);
+      if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) {
+        switchTab(i);
+        return true;
+      }
+    }
+    const rows = tab === 0 ? ITEMS.length : sellRowCount();
+    for (let i = 0; i < rows; i++) {
       const r = rowRect(i);
       if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) {
-        if (sel === i) buy();
+        if (sel === i) (tab === 0 ? buy() : sell());
         else {
           sel = i;
           playSfx("cursor");
@@ -242,6 +335,54 @@
     ctx.restore();
   }
 
+  function drawSellList() {
+    const list = sellList();
+    const rows = list.slice(page * SELL_ROWS, page * SELL_ROWS + SELL_ROWS);
+    if (!rows.length) {
+      ctx.fillStyle = "rgba(255, 248, 253, 0.9)";
+      ctx.beginPath();
+      ctx.roundRect(520, 140, 716, 120, 14);
+      ctx.fill();
+      ctx.fillStyle = "#8b82b3";
+      ctx.font = `900 22px ${FX.FONT}`;
+      ctx.textAlign = "center";
+      ctx.fillText(L("売れる武器がないよ", "No weapons to sell"), 878, 200);
+      return;
+    }
+    const w = wallet();
+    rows.forEach((entry, i) => {
+      const r = rowRect(i);
+      const active = i === sel;
+      const locked = entry.count <= 1 && w.weaponPower === entry.power && w.hasGun;
+      ctx.fillStyle = active ? "#fffbe0" : "rgba(255, 248, 253, 0.9)";
+      ctx.strokeStyle = active ? "#4fc3dc" : "#c8b2ff";
+      ctx.lineWidth = active ? 5 : 2;
+      ctx.beginPath();
+      ctx.roundRect(r.x - (active ? 8 : 0), r.y, r.w + (active ? 8 : 0), r.h, 14);
+      ctx.fill();
+      ctx.stroke();
+      drawWeaponIcon(r.x + 44, r.y + r.h / 2, entry.power, weaponIconFitScale(entry.power, 72, 0.9), 1);
+      ctx.textAlign = "left";
+      ctx.font = `900 21px ${FX.FONT}`;
+      ctx.fillStyle = locked ? "#9a8fc0" : "#4d4773";
+      ctx.fillText(`${weaponName(entry.power)}  ${weaponLevelLabel(entry.power)}`, r.x + 96, r.y + 20);
+      ctx.font = `700 15px ${FX.FONT}`;
+      ctx.fillStyle = "#8b82b3";
+      ctx.fillText(locked ? L(`もってる数 ${entry.count}（そうび中なので売れない）`, `Owned ${entry.count} (equipped)`) : L(`もってる数 ${entry.count}`, `Owned ${entry.count}`), r.x + 96, r.y + 43);
+      ctx.textAlign = "right";
+      ctx.font = `900 22px ${FX.FONT}`;
+      ctx.fillStyle = locked ? "#b3a9d6" : "#2f9e6a";
+      ctx.fillText(`+${sellPrice(entry.power)} ${L("ずつ", "each")}`, r.x + r.w - 18, r.y + r.h / 2);
+    });
+    const pages = Math.max(1, Math.ceil(list.length / SELL_ROWS));
+    if (pages > 1) {
+      ctx.fillStyle = "#ffffff";
+      ctx.font = `900 18px ${FX.FONT}`;
+      ctx.textAlign = "center";
+      ctx.fillText(`◀ ${page + 1} / ${pages} ▶`, 878, rowRect(SELL_ROWS).y + 14);
+    }
+  }
+
   function draw() {
     const W = canvas.width;
     const H = canvas.height;
@@ -302,8 +443,26 @@
 
     drawKeeper(250, H - 150);
 
+    // 買う ／ 売る のタブ
+    for (let i = 0; i < 2; i++) {
+      const r = tabRect(i);
+      const on = tab === i;
+      ctx.fillStyle = on ? (i === 0 ? "#ff8db7" : "#7fd6ea") : "rgba(255, 248, 253, 0.85)";
+      ctx.strokeStyle = on ? "#ffffff" : "#c8b2ff";
+      ctx.lineWidth = on ? 4 : 2;
+      ctx.beginPath();
+      ctx.roundRect(r.x, r.y, r.w, r.h, 20);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = on ? "#ffffff" : "#7f67c8";
+      ctx.font = `900 22px ${FX.FONT}`;
+      ctx.textAlign = "center";
+      ctx.fillText(i === 0 ? L("買う", "Buy") : L("売る", "Sell"), r.x + r.w / 2, r.y + r.h / 2 + 1);
+    }
+    if (tab === 1) drawSellList();
+
     // 商品リスト
-    ITEMS.forEach((it, i) => {
+    if (tab === 0) ITEMS.forEach((it, i) => {
       const r = rowRect(i);
       const active = i === sel;
       const got = !it.repeat && has(it.id);
@@ -360,7 +519,7 @@
     ctx.fillStyle = "#ffffff";
     ctx.font = `800 15px ${FX.FONT}`;
     ctx.textAlign = "right";
-    ctx.fillText(L("↑↓ えらぶ ／ 決定で買う ／ Esc でもどる", "Up/Down: choose  /  Confirm: buy  /  Esc: back"), W - 44, H - 18);
+    ctx.fillText(L("←→ 買う／売る ／ ↑↓ えらぶ ／ 決定 ／ B でもどる", "←→ Buy/Sell  /  ↑↓ choose  /  Confirm  /  B: back"), W - 44, H - 18);
     ctx.restore();
   }
 

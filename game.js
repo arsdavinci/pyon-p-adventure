@@ -1374,6 +1374,12 @@ function isUnderwaterStage() {
 
 function startGame(fresh = false) {
   if (FX.transitioning()) return;
+  // 「つづきから」：セーブファイルがあれば、どのファイルから始めるか選ぶ画面を出す
+  if (!fresh && state?.mode === "title" && !state.saveMenu && readSaveSlots().some(Boolean)) {
+    openSaveMenu(true);
+    overlay.classList.add("hidden");
+    return;
+  }
   const resume = !fresh && Story.hasSave();
   playSfx("gameStart");
   FX.startTransition({
@@ -4364,6 +4370,7 @@ function draw() {
     if (state.itemFullPrompt > 0) drawItemFullPrompt();
     if (mode === "inventory") drawInventoryScreen();
   }
+  if (mode === "title" && state.saveMenu) drawSaveMenu();
   Chat.drawToast();
   FX.drawFlashes();
   FX.drawTransition();
@@ -6092,14 +6099,23 @@ function readSaveSlots() {
   return Array.from({ length: SAVE_SLOT_COUNT }, (_, i) => (list[i] && typeof list[i] === "object" && list[i].data ? list[i] : null));
 }
 
-function openSaveMenu() {
-  state.saveMenu = { tab: 0, sel: 0, confirm: null, choice: 0, slots: readSaveSlots(), note: "", noteUntil: 0 };
+function openSaveMenu(loadOnly = false) {
+  const slots = readSaveSlots();
+  // ロードだけのときは、いちばん新しいファイルを最初に選んでおく
+  let sel = 0;
+  if (loadOnly) slots.forEach((slot, i) => { if (slot && (!slots[sel] || slot.savedAt > slots[sel].savedAt)) sel = i; });
+  state.saveMenu = { tab: loadOnly ? 1 : 0, sel, confirm: null, choice: 0, slots, note: "", noteUntil: 0, loadOnly };
   playSfx("decide");
 }
 
 function closeSaveMenu() {
+  const fromTitle = state.saveMenu?.loadOnly;
   state.saveMenu = null;
   playSfx("cancel");
+  if (fromTitle) {
+    overlay.classList.remove("hidden");
+    Story.refreshTitleUi();
+  }
 }
 
 function saveMenuNote(text) {
@@ -6190,7 +6206,10 @@ function handleSaveMenuKey(code, repeat = false) {
     else if (back) saveMenuAnswer(false);
     return true;
   }
-  if (left || right) {
+  if ((left || right) && menu.loadOnly) {
+    menu.onClose = !menu.onClose;
+    playSfx("cursor");
+  } else if (left || right) {
     // ←→ で「セーブする → ロードする → とじる」の順に動く
     const pos = ((menu.onClose ? 2 : menu.tab) + (right ? 1 : 2)) % 3;
     menu.onClose = pos === 2;
@@ -6231,6 +6250,7 @@ function handleSaveMenuPointer(x, y) {
     return true;
   }
   for (let i = 0; i < lay.tabs.length; i++) {
+    if (menu.loadOnly) break;
     if (inside(lay.tabs[i]) && menu.tab !== i) {
       menu.tab = i;
       menu.onClose = false;
@@ -6288,7 +6308,7 @@ function drawSaveMenu() {
   ctx.font = font(34);
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  ctx.fillText(saveText("セーブ ／ ロード", "SAVE / LOAD"), win.x + 44, win.y + 48);
+  ctx.fillText(menu.loadOnly ? saveText("どのファイルからはじめる？", "Continue from which file?") : saveText("セーブ ／ ロード", "SAVE / LOAD"), win.x + 44, win.y + 48);
   ctx.fillStyle = "#8f8ad0";
   ctx.font = font(16, 800);
   ctx.textAlign = "right";
@@ -6297,6 +6317,7 @@ function drawSaveMenu() {
   // タブ
   const tabLabels = [saveText("セーブする", "Save"), saveText("ロードする", "Load")];
   for (let i = 0; i < 2; i++) {
+    if (menu.loadOnly && i === 0) continue;
     const r = lay.tabs[i];
     const on = menu.tab === i && !menu.onClose;
     panel(r, on ? (i === 0 ? "#ff8db7" : "#7fd6ea") : menu.tab === i ? "rgba(255, 243, 164, 0.6)" : "rgba(255,255,255,0.75)", on ? "#ffffff" : "#c8b2ff", on ? 4 : 2, 18);
@@ -8913,7 +8934,21 @@ function updateGamepad() {
     if (gamepadState.right && !gamepadState.rightLatch) registerMoveTap(1);
   }
 
-  if (!overlay.classList.contains("hidden")) {
+  if (state.mode === "title" && state.saveMenu) {
+    if (gamepadState.left && !gamepadState.leftLatch) handleSaveMenuKey("ArrowLeft");
+    if (gamepadState.right && !gamepadState.rightLatch) handleSaveMenuKey("ArrowRight");
+    if (gamepadState.up && !gamepadState.upLatch) handleSaveMenuKey("ArrowUp");
+    if (gamepadState.down && !gamepadState.downLatch) handleSaveMenuKey("ArrowDown");
+    if (jumpPressed && !gamepadState.jumpLatch) handleSaveMenuKey("Space");
+    if (runPressed && !gamepadState.runLatch) handleSaveMenuKey("Escape");
+    gamepadState.leftLatch = gamepadState.left;
+    gamepadState.rightLatch = gamepadState.right;
+    gamepadState.upLatch = gamepadState.up;
+    gamepadState.downLatch = gamepadState.down;
+    gamepadState.runLatch = runPressed;
+    gamepadState.jumpLatch = jumpPressed;
+    return;
+  } else if (!overlay.classList.contains("hidden")) {
     const anyStartPressed = jumpPressed || shootPressed || runPressed || startPressed || selectPressed;
     const anyStartLatched = gamepadState.jumpLatch || gamepadState.shootLatch || gamepadState.runLatch || gamepadState.startLatch || gamepadState.selectLatch;
     if (state.mode === "title" && gamepadState.up && !gamepadState.upLatch) moveTitleFocus(-1);
@@ -9032,6 +9067,10 @@ window.addEventListener("keydown", event => {
 
 // キーボードと画面のボタン（タッチ）で共通の入力処理
 function handleKeyDown(code, event = { repeat: false }) {
+  if (state?.mode === "title" && state.saveMenu) {
+    handleSaveMenuKey(code, event.repeat);
+    return;
+  }
   if (code === "KeyM" && !event.repeat) toggleSound();
   if (Story.isStoryMode(state.mode)) {
     if (!event.repeat) Story.handleKey(code);
@@ -9176,6 +9215,11 @@ window.addEventListener("resize", updateFullscreenButton);
 canvas.addEventListener("pointerdown", event => {
   unlockAudio();
   const pos = canvasPoint(event);
+  if (state.mode === "title" && state.saveMenu) {
+    handleSaveMenuPointer(pos.x, pos.y);
+    event.preventDefault();
+    return;
+  }
   if (Story.isStoryMode(state.mode)) {
     Story.handlePointer(pos.x, pos.y);
     event.preventDefault();

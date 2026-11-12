@@ -1718,14 +1718,23 @@
     }, 30);
   }
 
+  let preloaded = false;
+
   function syncMusic() {
     if (!window.Bgm || !audioUnlocked) return;
     const want = desiredTrack();
-    fileTrack("stageClear"); // 先に読み込んでおく（クリアした瞬間に鳴らせるように）
+    // ぜんぶの曲を先に読み込んでおく（切りかえの瞬間に、すぐ鳴らせるように）
+    if (!preloaded) {
+      preloaded = true;
+      for (const name of ["title", "opening", "story", "select", "map", "bossAppear", "boss", "finalBoss", "ending", "credits", "stageClear",
+        "world0", "world1", "world2", "world3", "world4", "world5"]) fileTrack(name);
+    }
     const duck = state.mode === "paused" || (state.mode === "inventory" && want !== "select");
     const tr = want ? fileTrack(want) : null;
     const useFile = !!tr && tr.ready && !tr.missing;
-    const key = want ? `${useFile ? "file" : "synth"}:${want}` : null;
+    // 曲のファイルを読みこみ中は、前のプログラムの曲を鳴らさず、静かに待つ
+    const loading = !!tr && !tr.ready && !tr.missing;
+    const key = want ? `${useFile ? "file" : loading ? "wait" : "synth"}:${want}` : null;
     if (key !== lastWant) {
       lastWant = key;
       if (fileJingle && want) { fadeFile(fileJingle, 0, true); fileJingle = null; }
@@ -1740,7 +1749,7 @@
         tr.audio.play().catch(() => { tr.missing = true; });
         fadeFile(tr, duck ? 0.2 : 0.6, false);
         filePlaying = tr;
-      } else if (want) {
+      } else if (want && !loading) {
         Bgm.play(want);
       } else {
         Bgm.stop(0.4);
