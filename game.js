@@ -237,7 +237,13 @@ pyompyRun.src = "assets/pyompy-run-6.png";
 const pyompyCrescentRespawn = new Image();
 pyompyCrescentRespawn.src = "assets/pyonpy-crescent-respawn.png";
 const worldMapImage = new Image();
-worldMapImage.src = "assets/world-map.png";
+// 軽いWebPを使う。読みこみに失敗したら、少し待ってもう一度読みこむ（iPhoneで地図が出ないことがあった）
+worldMapImage.src = "assets/world-map.webp";
+let worldMapRetries = 0;
+worldMapImage.onerror = () => {
+  if (worldMapRetries++ > 5) return;
+  setTimeout(() => { worldMapImage.src = `assets/world-map.webp?r=${Date.now()}`; }, 800 * worldMapRetries);
+};
 const pastelBackground = new Image();
 pastelBackground.src = `assets/pastel-space-background.png?v=${BACKGROUND_ASSET_VERSION}`;
 const pastelBackground2 = new Image();
@@ -2275,7 +2281,8 @@ function updatePlayer(dt) {
   if (!movingLeft && !movingRight) p.vx *= slippery ? 0.985 : FRICTION;
 
   if (p.grounded) p.airJumped = false;
-  if (wantsJump && !p.jumpWas && !p.grounded && (p.coyote ?? 0) <= 0 && !p.airJumped && Shop.has("double")) {
+  const canDoubleJump = Shop.has("double") || (hasEquippedWeapon() && isMechPower(state.weaponPower));
+  if (wantsJump && !p.jumpWas && !p.grounded && (p.coyote ?? 0) <= 0 && !p.airJumped && canDoubleJump) {
     p.vy = trait === "moonFloat" ? -880 : -800;
     p.airJumped = true;
     p.jumpHeld = true;

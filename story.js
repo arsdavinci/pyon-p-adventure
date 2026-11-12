@@ -310,11 +310,20 @@
     v.preload = "auto";
     v.muted = typeof soundEnabled !== "undefined" && !soundEnabled;
     v.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#120a2a;z-index:5;";
-    hint.textContent = L("タップ / Esc でスキップ", "Tap / Esc to skip");
-    hint.style.cssText = "position:absolute;left:14px;top:12px;z-index:6;padding:6px 14px;border-radius:99px;background:rgba(18,10,42,.55);color:#fff;font:800 13px system-ui;pointer-events:none;";
+    const hintText = on => on ? L("▶ スキップ（A で決定）", "▶ Skip (press A)") : L("十字キーで スキップをえらぶ", "D-pad: select Skip");
+    hint.textContent = hintText(false);
+    const hintStyle = on => `position:absolute;left:14px;top:12px;z-index:6;padding:8px 18px;border-radius:99px;font:900 15px system-ui;cursor:pointer;` +
+      (on ? "background:#fff3a4;color:#5a3d9a;border:3px solid #ff8db7;box-shadow:0 0 14px #ffd85a;" : "background:rgba(18,10,42,.55);color:#fff;border:2px solid rgba(255,255,255,.5);");
+    hint.style.cssText = hintStyle(false);
+    // スキップボタンは、タップすると選ばれ、選ばれているときにもう一度タップでスキップ
+    hint.addEventListener("click", event => {
+      event.stopPropagation();
+      if (movie?.skipFocused) finish();
+      else movie?.focusSkip();
+    });
     v.addEventListener("error", finish);
     v.addEventListener("ended", finish);
-    v.addEventListener("click", finish);
+    // 画面をタップしただけではスキップしない（スキップボタンだけ）
     v.addEventListener("canplay", () => {
       if (done || started) return;
       started = true;
@@ -326,7 +335,16 @@
         v.play().catch(finish);
       });
     });
-    movie = { finish };
+    movie = {
+      finish,
+      skipFocused: false,
+      focusSkip(on = true) {
+        this.skipFocused = on;
+        hint.textContent = hintText(on);
+        hint.style.cssText = hintStyle(on);
+        if (on && typeof playSfx === "function") playSfx("cursor");
+      }
+    };
     v.src = `assets/video/${id}.mp4`;
     v.load();
   }
@@ -1476,7 +1494,11 @@
   function handleKey(code) {
     const mode = state.mode;
     if (mode === "movie") {
-      if (movie && (code === "Escape" || CONFIRM.includes(code))) movie.finish();
+      // うっかりスキップしないように：十字キーで「スキップ」を選んでから、決定でスキップ
+      if (!movie) return true;
+      if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "KeyA", "KeyD", "KeyW", "KeyS"].includes(code)) movie.focusSkip();
+      else if (movie.skipFocused && (code === "Escape" || CONFIRM.includes(code))) movie.finish();
+      else movie.focusSkip(false);
       return true;
     }
     if (mode === "shop") return Shop.handleKey(code);
@@ -1499,10 +1521,7 @@
 
   function handlePointer(x, y) {
     const mode = state.mode;
-    if (mode === "movie") {
-      if (movie) movie.finish();
-      return true;
-    }
+    if (mode === "movie") return true; // 画面のタップではスキップしない（右上のスキップボタンで）
     if (mode === "shop") return Shop.handlePointer(x, y);
     if (mode === "cutscene") {
       const r = skipRect();
