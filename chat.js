@@ -13,6 +13,8 @@
   };
 
   let els = null;
+  let stolenBag = [];
+  let stolenLast = null;
   let commOn = false;
   let queue = [];
   let quietT = 0;
@@ -193,11 +195,37 @@
           ["pyon", "ほな、ふんだろ。……こっちが悪者みたいじゃな。", "Fine, stomping it is. ...Now I feel like the bad guy."]
         ];
       }
-      return [pick([
+      // 2回目からは、この順に1回ずつ → 4回目にヤナビスとのかけあい → そのあとは短いひとことを順番を混ぜて回す
+      const seen = typeof Story !== "undefined" ? Story.data.seen : {};
+      const n = seen.stolenN ?? 0;
+      seen.stolenN = n + 1;
+      if (typeof Story !== "undefined") Story.persist();
+      const ONCE = [
         ["pyon", "また取られた！ それ、吾輩のじょ！ 返してだ！", "Stolen again! That's MINE! Give it back!"],
         ["pyon", "どろぼー！ 光線銃どろぼーがおるじょー！", "Thief! We've got a ray gun thief over here!"],
         ["pyon", "なんで敵のほうが装備ととのっとるんよ！", "Why is the enemy better equipped than me!?"]
-      ])];
+      ];
+      if (n < ONCE.length) return [ONCE[n]];
+      if (n === ONCE.length) {
+        return [
+          ["pyon", "武器使わんと拳で戦えんのか！", "Can't you fight with your fists instead of stealing weapons!?"],
+          ["yana", "『お前や！』、、とハッキリ敵の心の声が聞こえました。私そんな能力ないんですが", "\"Says YOU!\" ...I clearly heard the enemy think that. I don't even have that ability."]
+        ];
+      }
+      if (!stolenBag.length) {
+        stolenBag = [
+          ["pyon", "もーームカつくーー！！", "Ugh, this is SO annoying!!"],
+          ["pyon", "武器盗んなや！", "Quit stealing my weapon!"],
+          ["pyon", "盗られた！はらたつ！", "Stolen! That makes me so mad!"],
+          ["pyon", "返せや！", "Give it back!"],
+          ["pyon", "盗られた！これどうにかならんのほんま！", "Stolen again! Can't something be done about this!?"]
+        ].sort(() => Math.random() - 0.5);
+        // 前の回の最後と同じセリフが、続けて出ないようにする
+        if (stolenLast && stolenBag[stolenBag.length - 1][1] === stolenLast) stolenBag.unshift(stolenBag.pop());
+      }
+      const line = stolenBag.pop();
+      stolenLast = line[1];
+      return [line];
     },
     stomp: () => {
       if (firstTime("tipStomp")) {
