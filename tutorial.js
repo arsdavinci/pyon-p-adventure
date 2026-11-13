@@ -225,7 +225,7 @@
     switch (phase) {
       case "approach":
       case "thiefCome":
-        if (gap(enemy) <= NEAR && state.player.grounded) {
+        if (gap(enemy) <= NEAR && state.player.grounded && !Chat.busy()) {
           phase = phase === "approach" ? "waitJump" : "thiefWait";
           say(phase === "waitJump" ? "now" : "stolenNow");
           playSfx("cursor");
@@ -299,6 +299,14 @@
     switch (phase) {
       case "approach":
       case "thiefCome":
+        // ヤナビスの説明を言い終わるまでは、少し手前で待つ（「いまです！」で説明を切らないように）
+        if (Chat.busy() && gap(e) <= NEAR + 120) {
+          e.vx = 0;
+          e.gunCooldown = 99;
+          e.vy += GRAVITY * dt;
+          moveEnemyAndCollide(e, dt);
+          return true;
+        }
         walkToward(e, dt, 120);
         return true;
       case "thiefBack": {
