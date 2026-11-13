@@ -745,8 +745,9 @@
         name: L("店主 モチまる", "Mochimaru"),
         color: "#ff5f9e",
         avatar: ok(art.keeper) ? art.keeper.src : "",
-        size: "250%",
-        pos: "50% 16%",
+        // 丸い顔アイコン：背中の荷物ではなく、顔（絵の 横60%・たて55% あたり）を見せる
+        size: "200%",
+        pos: "66% 50%",
         initial: L("モ", "M"),
         text: [...L(line[0], line[1])].slice(0, Math.floor(lineT * (language === "ja" ? 40 : 70))).join(""),
         modes: ["shop"]
