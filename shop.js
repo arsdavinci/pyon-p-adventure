@@ -4,7 +4,7 @@
   "use strict";
 
   const L = (ja, en) => (language === "ja" ? ja : en);
-  const UNLOCK_COURSE = 2; // 1-1 と 1-2 をクリアすると開店
+  const UNLOCK_COURSE = 4; // 1-4 までクリアして、1-5 が開くと開店（マップの月あめのお店が出るとき）
 
   // price は「ルナコイン何枚」か。from は「ステージがいくつ開いたら店にならぶか」（なければ最初から）
   const ITEMS = [

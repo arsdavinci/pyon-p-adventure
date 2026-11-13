@@ -1068,7 +1068,8 @@ function makeCourse(worldIndex, areaIndex, layout = areaIndex, seed = null) {
       final: finalStage,
       bossKind: worldIndex,
       weaponPower: bossPower,
-      hp: finalStage ? 420 : Math.round((96 + worldIndex * 34) * 1.6),
+      // 最初のボスは、ムーンポッパー（いちばん弱い武器）でも時間内に倒せるくらいに
+      hp: finalStage ? 420 : Math.round((96 + worldIndex * 34) * (worldIndex === 0 ? 1.25 : 1.6)),
       w: finalStage ? 190 : 96 + worldIndex * 10,
       h: finalStage ? 172 : 96 + worldIndex * 10
     }));
@@ -1708,7 +1709,8 @@ function makeCaveArea(base, worldIndex, areaIndex, difficulty, seed) {
   const rnd = seededRandom(seed + 77);
   for (let x = 700; x < caveEnd - 500; x += 380 + rnd() * 260) {
     let floor = Infinity;
-    for (const p of P) if (p.y > ceilY && x + 120 > p.x && x < p.x + p.w) floor = Math.min(floor, p.y);
+    // 岩の左右少し先までの、いちばん高い床を見る（となりの足場へジャンプでのぼる高さを残す）
+    for (const p of P) if (p.y > ceilY && x + 120 + 170 > p.x && x - 170 < p.x + p.w) floor = Math.min(floor, p.y);
     const h = floor - 190 - ceilY;
     // ★・カギ・コインのある場所にはさげない
     const busy = c.rewardSpots.concat(c.keySpots, c.coins).some(r => r.x > x - 60 && r.x < x + 180);
@@ -1976,6 +1978,8 @@ function makeMazeArea(base, worldIndex, areaIndex, difficulty, mazeSeed = worldI
     // 足場はかべぎわに（横からとび乗って、そこから上の階へ）
     const sx = gapRight ? MAZE_W - 120 : 0;
     platforms.push(rect(sx, y + 122, 120, 26));
+    // その手前に、低いふみ台（かべぎわの足場の真下にもぐって頭をぶつけずに、2段でのぼれる）
+    platforms.push(rect(gapRight ? MAZE_W - 330 : 240, y + MAZE_FLOOR_H - 64, 90, 64));
   }
   let keySpot = null;
   for (let k = 0; k < floors; k++) {
@@ -2014,7 +2018,14 @@ function makeMazeArea(base, worldIndex, areaIndex, difficulty, mazeSeed = worldI
       foe.enemyKind = worldIndex;
       if (!spikes.some(sp => ex + 42 > sp.x - 30 && ex < sp.x + sp.w + 30 && sp.y === y - 22)) enemies.push(foe);
     }
-    if (k % 2 === 1) blocks.push(breakable(MAZE_W / 2 - 24 + (k - 2) * 90, y - 150, k === 1 ? "hp" : "power"));
+    if (k % 2 === 1) {
+      // アイテムブロックは、トゲの真上（とびこえる道のじゃま）をさけて置く
+      const nearSpike = bx => spikes.some(sp => sp.y === y - 22 && bx + 48 > sp.x - 120 && bx < sp.x + sp.w + 120);
+      const tries = [0, 200, -200, 400, -400, 600, -600, 800, -800].map(d => MAZE_W / 2 - 24 + (k - 2) * 90 + d)
+        .filter(bx => bx > 380 && bx < MAZE_W - 430);
+      const bx = tries.find(b => !nearSpike(b));
+      if (bx !== undefined) blocks.push(breakable(bx, y - 150, k === 1 ? "hp" : "power"));
+    }
   }
   if (!keySpot) keySpot = { x: MAZE_W / 2, y: floorY(1) - 150 };
   const topFloor = floors - 1;
@@ -3294,6 +3305,8 @@ function beginCourse(index) {
   for (const p of state.inventoryItems ?? []) if (p) markDex(p);
   // エリアが何個もあるステージは、時間を長めにする
   if (courses[index].areas) state.time = 520;
+  // ボス戦は、弱い武器でも落ちついて戦えるように長め
+  else if (courses[index].bossStage) state.time = 180;
   state.mode = "playing";
   pendingCourseStart = false;
   overlay.classList.add("hidden");
@@ -7665,7 +7678,10 @@ function drawWorldMapPanel() {
   ctx.font = `900 38px ${FX.FONT}`;
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
-  ctx.fillText(`${stageLabel(mapSelectedCourse)}  ${Story.worldName(world)}${course.bossStage ? `  ${t("boss")}` : course.climbStage ? (language === "ja" ? "  のぼりステージ" : "  Climb") : ""}`, 50, canvas.height - 134);
+  // ステージの名前（どんな場所か）も出す。ボスはボスの名前
+  const recipeName = stageRecipe(course.worldIndex, course.areaIndex)?.title;
+  const placeName = course.bossStage ? `  ${t("boss")} ${Story.bossName(course.worldIndex)}` : recipeName ? `  ${language === "ja" ? recipeName[0] : recipeName[1]}` : "";
+  ctx.fillText(`${stageLabel(mapSelectedCourse)}  ${Story.worldName(world)}${placeName}`, 50, canvas.height - 134);
   // 下の会話欄に同じセリフが出ているときは、ここには出さない（読む場所を1つにする）
   const talkBelow = typeof Handheld !== "undefined" && Handheld.active() && Handheld.commOn();
   ctx.fillStyle = "#4d4773";

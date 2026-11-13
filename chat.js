@@ -270,7 +270,7 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
       const text = line.replace(/^ぴょんぴー「|」$|^Pyon-P: "|"$/g, "");
       if (typeof Shop !== "undefined" && Shop.unlocked() && firstTime("tipShop")) {
         return [
-          ["yana", "1-3から左へのびる道の先に『よろず屋 つきのわ』が開店しました。集めたルナコインで、便利な道具が買えますよ。", "The Tsukinowa General Store has opened at the end of the path left of 1-3. Spend your kaki seeds and peanuts on handy gear."],
+          ["yana", "1-5から下へのびる道の先に『よろず屋 つきのわ』が開店しました。集めたルナコインで、便利な道具が買えますよ。", "The Tsukinowa General Store has opened at the end of the path below 1-5. Spend your Luna Coins on handy gear."],
           ["pyon", "2段ジャンプシューズ……たっか！ いつか買うたるけん！", "Double-Jump Shoes... so expensive! I'll buy them someday!"]
         ];
       }
