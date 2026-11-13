@@ -13,7 +13,8 @@
   };
 
   let els = null;
-  let stolenBag = [];
+const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "bossOutro"];
+    let stolenBag = [];
   let stolenLast = null;
   let commOn = false;
   let queue = [];
@@ -582,6 +583,9 @@
       release();
     }
     if (state.mode === "playing") ambient(dt);
+    // 会話シーン・ムービー・ボス戦の会話のあいだは、ふだんの会話を次へ進めない
+    // （進めると、その声で会話シーンの声が止まってしまう。のこりは、終わってから流す）
+    if (QUIET_MODES.includes(state.mode)) return;
     if (!cur && queue.length) {
       cur = queue.shift();
       if (typeof Voice !== "undefined") Voice.play("chat", cur[1]);
