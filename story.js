@@ -206,7 +206,7 @@
     world0: {
       music: "select",
       lines: [
-        { s: "yana", bg: "world0", ja: "はじめまして。AGIの人工知能パートナー、ヤナビスです。道案内も作戦も、まかしてほしいんじょ。……あ、阿波弁がうつりました。", en: "Nice to meet you. I am Yanabisu, your AGI partner. Directions, strategy, leave it all to me, y'know. ...Oh dear, your accent is rubbing off on me." },
+        { s: "yana", bg: "world0", ja: "はじめまして。AGIの人工知能パートナー、ヤナビスです。道案内も作戦も、まかしてほしいんじょ。……あ、月西弁がうつりました。", en: "Nice to meet you. I am Yanabisu, your AGI partner. Directions, strategy, leave it all to me, y'know. ...Oh dear, your accent is rubbing off on me." },
         { s: "yana", ja: "最初のかけらは『月あめ平原』に反応があります。敵は上からふむとピヨります。そのすきに光線銃でやっつけましょう。", en: "The first shard is somewhere in Moon Candy Field. Stomp enemies from above to stun them, then finish them with your ray gun." },
         { s: "yana", ja: "光線銃は、同じものを2つ集めると合体して強くなります。SELECT（Tabキー）で装備画面をひらけますよ。", en: "Collect two of the same ray gun and they fuse into a stronger one. Press SELECT (Tab) to open the equipment screen." },
         { s: "pyon", ja: "オッケー！ ほな、吾輩、いっちょ行ってくるじょ！", en: "Got it! Alright, let's do this!" }

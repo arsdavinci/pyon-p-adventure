@@ -8,8 +8,8 @@ window.STAGE_TALK = [
     talks: [
       [
         ["yana", "ぴょんぴーさん、月あめって何味なんですか？", "Pyon-P, what flavor is moon candy?"],
-        ["pyon", "すだち味じゃ。月の名産品ぞ。", "Sudachi citrus. A Moon specialty."],
-        ["yana", "月で、すだち……？ 徳島の名産では？", "Sudachi... on the Moon? Isn't that from Tokushima?"],
+        ["pyon", "月すだち味じゃ。月西の名産品ぞ。", "Moon-sudachi citrus. A Moon-West specialty."],
+        ["yana", "月すだち……？ 地球のすだちとは、ちがうんですか？", "Moon-sudachi...? Is it different from the Earth kind?"],
         ["pyon", "細かいこと気にしたら、ネタにならんのじょ。", "Sweat the details and you'll never get a joke out of it."]
       ],
       [
@@ -61,10 +61,10 @@ window.STAGE_TALK = [
         ["yana", "なるほど……合理的です。", "I see... very logical."]
       ],
       [
-        ["pyon", "ヤナビス、阿波おどり知っとる？", "Yanabisu, do you know the Awa Odori dance?"],
-        ["yana", "『踊る阿呆に見る阿呆』ですね。", "'Fools who dance and fools who watch.'"],
-        ["pyon", "同じ阿呆なら？", "If we're all fools anyway?"],
-        ["yana", "……踊らにゃ損々、です。", "...You might as well dance."],
+        ["pyon", "ヤナビス、月おどり知っとる？", "Yanabisu, do you know the Moon Dance?"],
+        ["yana", "『踊るへっぽこ、観るぽんこつ』ですね。", "'Dancing dorks and watching klutzes.'"],
+        ["pyon", "へっぽこつんつん？", "Dork-dork, tap-tap?"],
+        ["yana", "……踊らな損そん、です。", "...Gotta dance or you lose out."],
         ["pyon", "ノリええでないか！", "Look at you go!"]
       ]
     ]
@@ -74,7 +74,7 @@ window.STAGE_TALK = [
     talks: [
       [
         ["yana", "ボスの反応が近いです。準備はいいですか？", "A boss signal is close. Are you ready?"],
-        ["pyon", "準備運動に、阿波おどりでもしとこか。", "Let me warm up with a little Awa Odori."],
+        ["pyon", "準備運動に、月おどりでもしとこか。", "Let me warm up with a little Moon Dance."],
         ["yana", "それは準備運動なんですか？", "Is that a warm-up?"]
       ],
       [
@@ -204,7 +204,7 @@ window.STAGE_TALK = [
     solo: ["pyon", "氷の中に、なんか閉じこめられとる……？ むかしの宇宙人のおやつでないか？", "Something's frozen in the ice...? Some ancient alien's snack?"],
     talks: [
       [
-        ["yana", "わたし、ここで阿波弁をひとつ覚えました。『ひやい』です。", "I learned an Awa word here. 'Hiyai.'"],
+        ["yana", "わたし、ここで月西弁をひとつ覚えました。『ひやい』です。", "I learned a Moon-West word here. 'Hiyai.'"],
         ["pyon", "おっ、冷たいって意味じゃな。使いこなしとるでないか。", "Oh, it means cold. You've got it down."],
         ["yana", "ここ、ひやいですけん。", "It's real hiyai here, y'know."],
         ["pyon", "……うつりすぎじゃ。", "...You're picking it up too much."]
@@ -258,8 +258,8 @@ window.STAGE_TALK = [
         ["yana", "データでは知っていました。でも、見るのはちがいます。", "I knew it from data. But seeing it is different."]
       ],
       [
-        ["pyon", "鳴門のうず潮って知っとる？", "Know the Naruto whirlpools?"],
-        ["yana", "徳島の名所ですね。", "A famous Tokushima sight."],
+        ["pyon", "月鳴門のうず潮って知っとる？", "Know the Moon-Naruto whirlpools?"],
+        ["yana", "月西の名所ですね。", "A famous Moon-West sight."],
         ["pyon", "ここにもうず潮あったら、吾輩、目ぇ回すじょ。", "If there were whirlpools here, I'd get dizzy."],
         ["yana", "もう回っていませんか？", "Aren't you already?"]
       ]
@@ -486,7 +486,7 @@ window.STAGE_TALK = [
       [
         ["yana", "ぴょんぴーさん、最初に会ったときのこと、覚えていますか？", "Pyon-P, do you remember when we first met?"],
         ["pyon", "『まかしてほしいんじょ』って言うとったじゃろ。", "You said 'leave it to me, y'know.'"],
-        ["yana", "あれは、阿波弁がうつったんです。", "That was the Awa dialect rubbing off."],
+        ["yana", "あれは、月西弁がうつったんです。", "That was the Moon-West dialect rubbing off."],
         ["pyon", "最初の一言から、うつっとったんか。", "From your very first line?"]
       ],
       [
@@ -543,7 +543,7 @@ window.STAGE_TALK = [
         ["pyon", "なあ、ルーヴァさん、今ごろ何しとるかの。", "I wonder what Luva-san is doing right now."],
         ["yana", "フェスの準備をして、待ってくれているはずです。", "Preparing for the Fest and waiting for us, surely."],
         ["pyon", "楽屋にぶどうまんじゅう、用意しといてくれとるかな。", "Think there'll be kaki-pea in our dressing room?"],
-        ["yana", "たぶん、すだちです。", "Probably sudachi."]
+        ["yana", "たぶん、月すだちです。", "Probably moon-sudachi."]
       ]
     ]
   },
