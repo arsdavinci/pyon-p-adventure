@@ -507,9 +507,95 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
     e.panel.classList.add("comm-pop");
   }
 
+  // ---------- そうびの欄の右：買った道具（つける／はずす）と、かばんのぶどうまんじゅう ----------
+  let gearKey = "";
+  let gearBox = null;
+  function gearSay(ja, en) {
+    const p = state?.player;
+    if (p && typeof FX !== "undefined") FX.floater(p.x + p.w / 2, p.y - 26, L(ja, en), { color: "#ffffff", stroke: "#7f67c8", size: 22, life: 1.3 });
+    const e = dom();
+    if (e.hint) { e.hint.textContent = L(ja, en); e.hint.classList.add("comm-hint-hot"); }
+    weaponKey = null; // 少ししたら、いつものヒントにもどす
+    gearHintUntil = clock + 2.2;
+  }
+  let gearHintUntil = 0;
+  function refreshGear() {
+    if (typeof Shop === "undefined" || !Shop.gearList) return;
+    const e = dom();
+    const host = e.panel?.querySelector(".comm-weapon");
+    if (!host) return;
+    if (!gearBox) {
+      gearBox = document.createElement("div");
+      gearBox.className = "comm-gear";
+      host.appendChild(gearBox);
+      gearBox.addEventListener("pointerdown", event => event.preventDefault());
+      gearBox.addEventListener("click", event => {
+        const b = event.target.closest("button[data-gear]");
+        if (!b) return;
+        event.stopPropagation();
+        b.blur();
+        unlockAudio();
+        const id = b.dataset.gear;
+        if (id === "manju") {
+          const r = Shop.useManju();
+          if (r === true) gearSay("ぶどうまんじゅう、もぐもぐ！", "Munch munch, Grape Manju!");
+          else if (r === "full") { playSfx("locked"); gearSay("いまは満タンじゃ。あとで食べるじょ", "Already full. Saving it for later."); }
+          else { playSfx("locked"); gearSay("ステージの中で食べられるじょ", "You can eat it during a stage."); }
+        } else {
+          const on = Shop.toggleGear(id);
+          playSfx(on ? "equip" : "cursor");
+          gearSay(`${Shop.itemName(id)}：${on ? "つけた" : "はずした"}`, `${Shop.itemName(id)}: ${on ? "on" : "off"}`);
+        }
+        gearKey = "";
+        refreshGear();
+      });
+    }
+    const gear = Shop.gearList();
+    const manju = Shop.manjuCount();
+    const key = `${manju}|${gear.map(it => `${it.id}${Shop.has(it.id) ? 1 : 0}`).join(",")}|${language}`;
+    if (key === gearKey) return;
+    gearKey = key;
+    gearBox.textContent = "";
+    const add = (id, label, desc, extra) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.dataset.gear = id;
+      b.title = `${label}
+${desc}`;
+      b.setAttribute("aria-label", label);
+      const img = document.createElement("img");
+      img.alt = "";
+      img.src = Shop.itemIcon(id);
+      b.appendChild(img);
+      extra(b);
+      gearBox.appendChild(b);
+    };
+    if (manju > 0) {
+      add("manju", Shop.itemName("manju"), L("タップで食べる（ライフとHPが満タン）", "Tap to eat (full lives and HP)"), b => {
+        const n = document.createElement("i");
+        n.textContent = `×${manju}`;
+        b.appendChild(n);
+      });
+    }
+    for (const it of gear) {
+      add(it.id, Shop.itemName(it.id), `${Shop.itemDesc(it.id)}
+${L("タップで つける／はずす", "Tap to put on / take off")}`, b => {
+        if (!Shop.has(it.id)) {
+          b.classList.add("is-off");
+          const n = document.createElement("i");
+          n.textContent = "OFF";
+          b.appendChild(n);
+        }
+      });
+    }
+    gearBox.hidden = !gearBox.childElementCount;
+  }
+
   function refreshWeapon(force = false) {
     const e = dom();
     if (!e.panel || !state) return;
+    refreshGear();
+    if (gearHintUntil > clock) return;
     const equipped = hasEquippedWeapon();
     const power = equipped ? state.weaponPower : 0;
     const stock = power ? (state.weaponInventory[power - 1] ?? 0) : 0;

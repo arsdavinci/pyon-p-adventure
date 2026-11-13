@@ -522,7 +522,7 @@ const SHOP_MAP_NODES = [
   { x: 465, y: 592, course: 6, world: 1, dir: "down", via: [[500, 562]] },                        // 火星：道ばたの車
   { x: 708, y: 372, course: 12, world: 2, dir: "up", via: [[745, 405]] },                         // 氷：ドームの入口
   { x: 928, y: 690, course: 20, world: 3, dir: "left", via: [] },                                 // 海：下の泡の家
-  { x: 1262, y: 268, course: 25, world: 4, dir: "right", via: [[1215, 248]] },                    // メカ：列車
+  { x: 1262, y: 268, course: 25, world: 4, dir: "up", via: [[1215, 248]] },                       // メカ：列車（右は次のステージへの道と同じ向きなので、お店は↑）
   { x: 1605, y: 478, course: 29, world: 5, dir: "right", via: [] }                                // 魔王星：ランタンの家
 ];
 
@@ -602,7 +602,36 @@ function mapMove(direction) {
     playSfx("cursor");
     return;
   }
-  moveMapSelection(direction === "left" || direction === "up" ? -1 : 1);
+  // 見た目の向きで動く：となりのステージ（前と次）のうち、押した向きにあるほうへ
+  const dir = mapStepFor(direction);
+  if (dir) moveMapSelection(dir);
+}
+
+// 押した向き（上下左右）に、前のステージ・次のステージのどちらがあるか。-1／1、どちらもなければ 0
+function mapStepFor(direction) {
+  const want = { left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1] }[direction];
+  const here = MAP_NODE_POINTS[mapSelectedCourse];
+  if (!want || !here) return 0;
+  let best = 0;
+  let bestScore = 0.3; // ななめ 70度くらいまでなら、その向きとみなす
+  for (const step of [-1, 1]) {
+    const to = mapSelectedCourse + step;
+    if (to < 0 || to > unlockedCourse || !MAP_NODE_POINTS[to]) continue;
+    // 道が曲がっていることがあるので、道にそって少し進んだ先（70）の向きを見る
+    const road = step > 0 ? mapLinkPoints(to) : mapLinkPoints(mapSelectedCourse).slice().reverse();
+    let ahead = road[road.length - 1];
+    let walked = 0;
+    for (let i = 1; i < road.length; i++) {
+      walked += Math.hypot(road[i].x - road[i - 1].x, road[i].y - road[i - 1].y);
+      if (walked >= 70) { ahead = road[i]; break; }
+    }
+    const dx = ahead.x - here.x;
+    const dy = ahead.y - here.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const score = (dx * want[0] + dy * want[1]) / len;
+    if (score > bestScore) { bestScore = score; best = step; }
+  }
+  return best;
 }
 
 function confirmMapSelection() {

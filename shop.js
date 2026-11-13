@@ -9,8 +9,8 @@
   // price は「ルナコイン何枚」か。from は「ステージがいくつ開いたら店にならぶか」（なければ最初から）
   const ITEMS = [
     { id: "manju", from: 0, price: 20, repeat: true, color: "#c8a2e8", mark: "🍇", file: "item-budou-manju",
-      ja: ["ぶどうまんじゅう", "ぴょんぴーの大好物。その場でライフとHPが満タンになる。何度でも買える。"],
-      en: ["Grape Manju", "Pyon-P's favorite treat. Fully restores lives and HP right now. Buy as often as you like."] },
+      ja: ["ぶどうまんじゅう", "ぴょんぴーの大好物。かばんに入れておいて、好きなときに食べるとライフとHPが満タン。何度でも買える。"],
+      en: ["Grape Manju", "Pyon-P's favorite treat. Keep it in your bag and eat it any time to fully restore lives and HP."] },
     { id: "double", from: 0, price: 200, color: "#d9ffd6", mark: "✦",
       ja: ["2段ジャンプシューズ", "空中でもう1回ジャンプできる。空ルートもらくらく。"],
       en: ["Double-Jump Shoes", "Jump once more in mid-air. Sky routes become a breeze."] },
@@ -92,7 +92,39 @@
     if (!d.shop || typeof d.shop !== "object") d.shop = {};
     return d.shop;
   };
-  const has = id => typeof Story !== "undefined" && !!owned()[id];
+  // 買った道具は「つけている」ときだけ効く。そうびの欄で、はずしたり つけなおしたりできる
+  const offMap = () => {
+    const d = Story.data;
+    if (!d.shopOff || typeof d.shopOff !== "object") d.shopOff = {};
+    return d.shopOff;
+  };
+  const owns = id => typeof Story !== "undefined" && !!owned()[id];
+  const has = id => owns(id) && !offMap()[id];
+  const MANJU_MAX = 9;
+  const manjuCount = () => (typeof Story !== "undefined" ? Math.max(0, Story.data.manjuStock | 0) : 0);
+  // そうびの欄にならべる道具（買ったもの。まんじゅうと金の像はのぞく）
+  const gearList = () => ITEMS.filter(it => it.id !== "manju" && it.id !== "statue" && owns(it.id));
+  function toggleGear(id) {
+    if (!owns(id)) return null;
+    const off = offMap();
+    if (off[id]) delete off[id];
+    else off[id] = true;
+    Story.persist();
+    return !off[id];
+  }
+  // かばんのぶどうまんじゅうを1つ食べる（ステージの中・そうび画面・ポーズ中）
+  function useManju() {
+    if (manjuCount() <= 0 || !state || !["playing", "inventory", "paused"].includes(state.mode)) return false;
+    if (state.lives >= MAX_LIVES && state.hp >= MAX_HP) return "full";
+    Story.data.manjuStock = manjuCount() - 1;
+    Story.persist();
+    const p = state.player;
+    eatBudouManju({ x: p.x, y: p.y, w: p.w, h: p.h });
+    return true;
+  }
+  const itemName = id => { const it = ITEMS.find(x => x.id === id); return it ? L(it.ja[0], it.en[0]) : id; };
+  const itemDesc = id => { const it = ITEMS.find(x => x.id === id); return it ? L(it.ja[1], it.en[1]) : ""; };
+  const itemIcon = id => { const it = ITEMS.find(x => x.id === id); return `assets/${it?.file ?? `shop-item-${id}`}.png`; };
   const unlocked = () => unlockedCourse >= UNLOCK_COURSE;
 
   function wallet() {
@@ -189,7 +221,7 @@
   function buy() {
     const it = stock()[sel];
     const w = wallet();
-    if (!it.repeat && has(it.id)) {
+    if (!it.repeat && owns(it.id)) {
       playSfx("locked");
       say("それはもう持ってるで。だいじに使いや。", "You already own that one. Take good care of it.");
       return;
@@ -206,11 +238,16 @@
     state.kakiTotal = w.kakiTotal;
     state.peaTotal = 0;
     if (it.id === "manju") {
-      w.lives = MAX_LIVES;
-      w.hp = MAX_HP;
-      state.lives = MAX_LIVES;
-      state.hp = MAX_HP;
-      say("ぶどうまんじゅう、おまち！ 元気まんたんやな。", "One Grape Manju, coming up! You're good as new.");
+      // その場で食べずに、かばんへ（そうびの欄から、好きなときに食べる）
+      if (manjuCount() >= MANJU_MAX) {
+        w.kakiTotal += it.price;
+        state.kakiTotal = w.kakiTotal;
+        playSfx("locked");
+        say(`かばんがもう いっぱいや。${MANJU_MAX}個までやで。`, `Your bag is full. ${MANJU_MAX} at most.`);
+        return;
+      }
+      Story.data.manjuStock = manjuCount() + 1;
+      say(`ぶどうまんじゅう、おまち！ かばんに入れといたで（${manjuCount()}個）。`, `One Grape Manju! It's in your bag (${manjuCount()}).`);
     } else {
       owned()[it.id] = true;
       say(it.id === "statue" ? "……ほんまに買うたん！？ うちの店の家宝やで。大事にしてや！" : it.id === "boots" ? "これで、ふつうのゲームみたいに遊べるで。" : "おおきに！ ええ買いもんしたな。",
@@ -556,7 +593,7 @@
     if (tab === 0) stock().forEach((it, i) => {
       const r = rowRect(i);
       const active = i === sel;
-      const got = !it.repeat && has(it.id);
+      const got = !it.repeat && owns(it.id);
       const afford = pairs() >= it.price;
       ctx.globalAlpha = 1;
       ctx.fillStyle = active ? "#fffbe0" : "rgba(255, 248, 253, 0.9)";
@@ -667,5 +704,5 @@
     return false;
   }
 
-  window.Shop = { ITEMS, has, unlocked, open, openInStage, close, update, draw, handleKey, handlePointer, drawMapButton, mapPointer };
+  window.Shop = { ITEMS, has, owns, gearList, toggleGear, manjuCount, useManju, itemName, itemDesc, itemIcon, unlocked, open, openInStage, close, update, draw, handleKey, handlePointer, drawMapButton, mapPointer };
 })();
