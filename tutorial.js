@@ -353,6 +353,8 @@
     enemy = e;
     e.tutorialSafe = true;
     phase = "stolenTalk";
+    // いつもの「うばわれた」の説明（はじめての1回）も、もう言ったことにする
+    if (typeof Story !== "undefined") Story.data.seen.tipStolen = true;
     talkSaid = false;
     return true;
   }
