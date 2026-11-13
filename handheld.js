@@ -171,16 +171,31 @@
   const LAND = { W: 2400, H: 1200, DPAD: 330 / 280, ABXY: 1.12, SMALL: 1.55 };
   const LAND_VARS = ["--uL", "--uD", "--uA", "--uS"];
 
-  // 本体の絵は、ぜんぶ入れなくてよい。上の肩ボタン（y32）から画面の下の小窓（y1110）までを高さいっぱいに、
-  // 横は十字キー（x140）から B ボタン（x2310）までが入れば、本体のはしは画面の外やホームバーの下に出てもよい
-  const LAND_CORE = { y0: 32, y1: 1110, x0: 140, x1: 2310 };
+  // 本体の絵は、ぜんぶ入れなくてよい。画面のふちの上（y120・肩ボタンは見切れてよい）から画面の下の小窓（y1100）までを
+  // 高さいっぱいに、横は十字キー（x140）から B ボタン（x2310）までが入れば、本体のはしは画面の外に出てもよい
+  const LAND_CORE = { y0: 120, y1: 1100, x0: 140, x1: 2310 };
+
+  // iPhone の切りかき（ダイナミックアイランド）がどちら側か。90＝左、-90/270＝右。わからなければ両方
+  function notchSide(safe) {
+    if (!(safe.l > 0 || safe.r > 0)) return "none";
+    const a = typeof screen !== "undefined" && screen.orientation && typeof screen.orientation.angle === "number"
+      ? screen.orientation.angle : (typeof window.orientation === "number" ? window.orientation : null);
+    if (a === 90) return "left";
+    if (a === -90 || a === 270) return "right";
+    return "both";
+  }
+
   function layoutLand(safe) {
     const availW = window.innerWidth;
     const availH = fullHeight();
-    // ボタンは、iPhone の切りかき（安全エリア）に 20px までなら入ってよい
-    const sideRoom = availW - Math.max(0, safe.l - 20) - Math.max(0, safe.r - 20);
-    const u = Math.min(availH / (LAND_CORE.y1 - LAND_CORE.y0), sideRoom / (LAND_CORE.x1 - LAND_CORE.x0));
-    const x = availW / 2 - (LAND.W / 2) * u;
+    // ボタンを置いてよい横のはんい。切りかきのある側だけよける（切りかきの見た目は安全エリアより少しせまい）
+    const side = notchSide(safe);
+    const EDGE = 6;
+    const left = side === "left" || side === "both" ? Math.max(EDGE, safe.l - 12) : EDGE;
+    const right = availW - (side === "right" || side === "both" ? Math.max(EDGE, safe.r - 12) : EDGE);
+    const coreW = LAND_CORE.x1 - LAND_CORE.x0;
+    const u = Math.min(availH / (LAND_CORE.y1 - LAND_CORE.y0), (right - left) / coreW);
+    const x = (left + right) / 2 - ((LAND_CORE.x0 + LAND_CORE.x1) / 2) * u;
     const y = availH / 2 - ((LAND_CORE.y0 + LAND_CORE.y1) / 2) * u;
     commSrc = 0;
     delete document.body.dataset.commSize;
@@ -481,6 +496,8 @@
   window.addEventListener("load", () => { layout(); setTimeout(layout, 400); setTimeout(layout, 1200); });
   window.addEventListener("pageshow", () => setTimeout(layout, 100));
   window.addEventListener("orientationchange", () => setTimeout(layout, 250));
+  // 横向きのまま180度まわしたとき（切りかきが反対側へ）。大きさは変わらないので resize は来ない
+  try { screen.orientation?.addEventListener("change", () => setTimeout(layout, 250)); } catch (_) {}
   window.visualViewport?.addEventListener("resize", layout);
   document.addEventListener("fullscreenchange", () => setTimeout(layout, 120));
 
