@@ -1,4 +1,4 @@
-const CACHE_NAME = "pyon-p-adventure-v116";
+const CACHE_NAME = "pyon-p-adventure-v117";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -26,6 +26,7 @@ const APP_SHELL = [
   "./assets/gb-frame-mid.webp",
   "./assets/gb-frame-bot.webp",
   "./assets/gb-controls.webp",
+  "./assets/gb-land.webp",
   "./assets/gb-cap-a.webp",
   "./assets/gb-cap-b.webp",
   "./assets/gb-cap-x.webp",

@@ -102,10 +102,18 @@
     // たて長の画面ならゲーム機のかたち。PC で「スマホ／タブレット」をえらんだときも、
     // 横長の窓のままゲーム機のかたちで見せる（高さに合わせて小さくして、まん中に置く）
     const pcPreview = mobile && autoDetect() === "pc";
-    isActive = mobile && (availH > availW * 1.05 || pcPreview);
+    // 横長のゲーム機（スマホ・タブレットを横にしたとき）。PC では「タブレット」をえらぶと横長、「スマホ」はたて長
+    const land = mobile && (pcPreview ? manualMode() === "ipad" : !(availH > availW * 1.05));
+    isActive = mobile;
     document.body.dataset.layout = isActive ? "handheld" : "classic";
+    document.body.dataset.orient = isActive && land ? "land" : "port";
     // PC でゲーム機のかたちを見ているときは、PC にもどせるように切りかえボタンを出しておく
     document.body.dataset.pcPreview = isActive && pcPreview ? "1" : "0";
+    if (isActive && land) {
+      layoutLand(safe);
+      return;
+    }
+    for (const name of LAND_VARS) shell.style.removeProperty(name);
     if (!isActive) {
       commSrc = 0;
       delete document.body.dataset.commSize;
@@ -155,6 +163,31 @@
     shell.style.setProperty("--gb-screen-h", `${screenH}px`);
     document.body.dataset.comm = comm > 0 ? "on" : "off";
     document.body.dataset.commSize = comm >= COMM_FULL ? "full" : "chat";
+  }
+
+  // ---------- 横長のゲーム機（assets/gb-land.webp・2400×1200） ----------
+  // 画面の穴：x528〜1872・y180〜1020（16:10）。ゲーム画面（16:9）と、その下のステージ・時間の欄が入る。
+  // ボタンは、たて長のときと同じ部品（押すと動くキャップ）を、絵のボタンの上に大きさを合わせて重ねる
+  const LAND = { W: 2400, H: 1200, DPAD: 330 / 280, ABXY: 1.12, SMALL: 1.55 };
+  const LAND_VARS = ["--uL", "--uD", "--uA", "--uS"];
+
+  function layoutLand(safe) {
+    const availW = window.innerWidth;
+    const availH = fullHeight() - safe.t - safe.b;
+    const u = Math.min(availW / LAND.W, availH / LAND.H);
+    const x = (availW - LAND.W * u) / 2;
+    const y = safe.t + (availH - LAND.H * u) / 2;
+    commSrc = 0;
+    delete document.body.dataset.commSize;
+    document.body.dataset.comm = "off";
+    shell.style.setProperty("--u", `${u}px`);
+    shell.style.setProperty("--uL", `${u}px`);
+    shell.style.setProperty("--uD", `${u * LAND.DPAD}px`);
+    shell.style.setProperty("--uA", `${u * LAND.ABXY}px`);
+    shell.style.setProperty("--uS", `${u * LAND.SMALL}px`);
+    shell.style.setProperty("--gb-x", `${x}px`);
+    shell.style.setProperty("--gb-y", `${y}px`);
+    shell.style.removeProperty("--gb-screen-h");
   }
 
   // ---------- ダブルタップ・ピンチでのズームを止める ----------

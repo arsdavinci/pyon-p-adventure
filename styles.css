@@ -1856,3 +1856,82 @@ body[data-layout="handheld"] .gb-story.is-done .gb-story-next {
 @keyframes gb-story-next {
   50% { transform: translateY(calc(5 * var(--u))); }
 }
+
+/* ---------- 横長のゲーム機（スマホ・タブレットを横にしたとき／PC で「タブレット」） ----------
+   本体の絵 assets/gb-land.webp（2400×1200）。--uL が絵の1ドット。画面の穴は x528〜1872・y180〜1020 */
+body[data-layout="handheld"][data-orient="land"] .gb-screen {
+  left: var(--gb-x);
+  top: var(--gb-y);
+  width: calc(2400 * var(--uL));
+  height: calc(1200 * var(--uL));
+  padding: calc(180 * var(--uL)) calc(528 * var(--uL));
+}
+
+body[data-layout="handheld"][data-orient="land"] .gb-screen::before {
+  display: none;
+}
+
+body[data-layout="handheld"][data-orient="land"] .gb-frame-art {
+  background: url("assets/gb-land.webp") center / 100% 100% no-repeat;
+}
+
+body[data-layout="handheld"][data-orient="land"] .game-wrap {
+  border-radius: calc(22 * var(--uL)) calc(22 * var(--uL)) 0 0;
+}
+
+body[data-layout="handheld"][data-orient="land"] .hud {
+  height: calc(84 * var(--uL));
+  padding: 0 calc(28 * var(--uL));
+  border-radius: 0 0 calc(22 * var(--uL)) calc(22 * var(--uL));
+  font-size: calc(32 * var(--uL));
+  background: #1d1540;
+}
+
+body[data-layout="handheld"][data-orient="land"] .comm-panel,
+body[data-layout="handheld"][data-orient="land"] .gb-guide {
+  display: none !important;
+}
+
+body[data-layout="handheld"][data-orient="land"] .touch-controls {
+  left: var(--gb-x);
+  top: var(--gb-y);
+  width: calc(2400 * var(--uL));
+  height: calc(1200 * var(--uL));
+}
+
+body[data-layout="handheld"][data-orient="land"] .gb-controls-art {
+  display: none;
+}
+
+/* 十字キー（絵の中心 301,501） */
+body[data-layout="handheld"][data-orient="land"] .touch-dpad {
+  --u: var(--uD);
+  left: calc(301 * var(--uL) - 170 * var(--uD));
+  top: calc(501 * var(--uL) - 170 * var(--uD));
+}
+
+/* A / B / X / Y（4つのまん中 2117,496） */
+body[data-layout="handheld"][data-orient="land"] .touch-actions {
+  --u: var(--uA);
+  left: calc(2117.5 * var(--uL) - 200 * var(--uA));
+  top: calc(496 * var(--uL) - 200 * var(--uA));
+}
+
+/* SELECT（300,792）・START（2100,792） */
+body[data-layout="handheld"][data-orient="land"] .touch-small {
+  --u: var(--uS);
+  top: calc(792 * var(--uL) - 58 * var(--uS));
+}
+
+body[data-layout="handheld"][data-orient="land"] .touch-small[data-key="Select"] { left: calc(300 * var(--uL) - 100 * var(--uS)); }
+body[data-layout="handheld"][data-orient="land"] .touch-small[data-key="Enter"] { left: calc(2100 * var(--uL) - 100 * var(--uS)); }
+
+/* 画面の下の白い小窓に、電池とWi-Fi */
+body[data-layout="handheld"][data-orient="land"] .gb-status {
+  left: calc(1004 * var(--uL));
+  top: calc(1042 * var(--uL));
+  width: calc(392 * var(--uL));
+  height: calc(56 * var(--uL));
+  z-index: 2;
+  font-size: calc(26 * var(--uL));
+}
