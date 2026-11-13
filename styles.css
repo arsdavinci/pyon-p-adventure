@@ -1670,8 +1670,20 @@ body[data-layout="handheld"] .touch-small.is-pressed::after {
   display: none;
 }
 
-body[data-layout="handheld"][data-comm="on"][data-game-mode="cutscene"] .gb-story {
+body[data-layout="handheld"][data-comm="on"][data-game-mode="cutscene"] .gb-story,
+body[data-layout="handheld"][data-comm="on"][data-game-mode="bossIntro"] .gb-story,
+body[data-layout="handheld"][data-comm="on"][data-game-mode="bossOutro"] .gb-story {
   display: flex;
+}
+
+/* ボス戦の前後の会話では、下の会話の欄と銃の情報はかくして、会話シーンと同じ吹き出しだけにする */
+body[data-layout="handheld"][data-game-mode="bossIntro"] .comm-panel,
+body[data-layout="handheld"][data-game-mode="bossOutro"] .comm-panel {
+  display: none;
+}
+body[data-layout="handheld"][data-game-mode="bossIntro"] .gb-story-skip,
+body[data-layout="handheld"][data-game-mode="bossOutro"] .gb-story-skip {
+  display: none;
 }
 
 body[data-layout="handheld"] .gb-story {
@@ -1696,29 +1708,6 @@ body[data-layout="handheld"] .gb-story {
   touch-action: none;
 }
 
-/* 会話シーンも、ステージ中の会話の欄と同じく「顔 ＋ 名前 ＋ セリフ」で出す */
-body[data-layout="handheld"] .gb-story {
-  flex-direction: row;
-  align-items: center;
-  gap: calc(14 * var(--u));
-}
-body[data-layout="handheld"] .gb-story .comm-avatar {
-  width: calc(88 * var(--u));
-  border-width: calc(5 * var(--u));
-  font-size: calc(40 * var(--u));
-}
-body[data-layout="handheld"] .gb-story-body {
-  flex: 1 1 0;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: calc(6 * var(--u));
-}
-body[data-layout="handheld"] .gb-story.is-narration .comm-avatar {
-  display: none;
-}
-
 body[data-layout="handheld"] .gb-story.is-narration {
   background: rgba(30, 18, 70, 0.92);
   box-shadow: none;
@@ -1736,12 +1725,13 @@ body[data-layout="handheld"] .gb-story.is-pop {
 }
 
 body[data-layout="handheld"] #gbStoryName {
-  /* 名前は、ステージ中の会話の欄と同じく、色つきの小さな文字で */
   align-self: flex-start;
-  color: var(--speaker);
-  font-size: calc(20 * var(--u));
+  padding: calc(3 * var(--u)) calc(18 * var(--u));
+  border-radius: 999px;
+  background: var(--speaker);
+  color: #ffffff;
+  font-size: calc(24 * var(--u));
   font-weight: 900;
-  letter-spacing: 0.04em;
 }
 
 body[data-layout="handheld"] .gb-story.is-narration #gbStoryName {

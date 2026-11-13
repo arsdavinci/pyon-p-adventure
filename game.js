@@ -7551,18 +7551,18 @@ function drawBossIntroOverlay() {
   // 下に会話の欄がある端末では、セリフはそっちに出す（ほかの会話と同じ出し方）
   const shownNow = Math.floor(timer * (language === "ja" ? 36 : 64));
   if (typeof Handheld !== "undefined" && Handheld.active() && Handheld.commOn()) {
-    const pic = bossAttackImages[kind]?.complete && bossAttackImages[kind].naturalWidth > 0 ? bossAttackImages[kind] : bossThemeImages[kind];
-    Chat.show({
+    // 会話シーンと同じ見た目：左にぴょんぴー、右にボスの立ち絵。セリフは下の吹き出し
+    const pic = bossThemeImages[kind]?.complete && bossThemeImages[kind].naturalWidth > 0 ? bossThemeImages[kind] : bossAttackImages[kind];
+    const appear = clamp(timer / 0.4, 0, 1);
+    Story.drawTalkPortrait("pyon", "left", showingPyon, (state.bossIntroStep ?? 0) === 1 ? 1 : 0.999);
+    Story.drawTalkPortrait("boss", "right", !showingPyon, (state.bossIntroStep ?? 0) === 0 ? appear : 1, pic);
+    const all = [...text];
+    Story.talkBox({
       key: `boss:${outro}:${kind}:${state.bossIntroStep ?? 0}`,
-      who: showingPyon ? "pyon" : "boss",
       name: speaker,
       color: accent,
-      avatar: showingPyon ? "" : pic?.src,
-      size: "190%",
-      pos: "50% 40%",
-      initial: "!",
-      text: [...text].slice(0, shownNow).join(""),
-      modes: ["bossIntro", "bossOutro"]
+      text: all.slice(0, shownNow).join(""),
+      done: shownNow >= all.length
     });
     ctx.restore();
     return;
