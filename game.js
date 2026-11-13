@@ -3966,6 +3966,20 @@ function updatePlayer(dt) {
   if (!movingLeft && !movingRight) p.vx *= slippery ? 0.985 : FRICTION;
 
   if (p.grounded) p.airJumped = false;
+  // 着地したら（はじき上げられた直後の、まだ地面にいる1コマはのぞく）、または点滅が終わったら、なし
+  if ((p.grounded && p.vy >= 0) || p.invincible <= 0) p.hurtJump = false;
+  // ダメージで点滅しているあいだは、空中でも1回ふつうのジャンプができる
+  if (wantsJump && !p.jumpWas && !p.grounded && (p.coyote ?? 0) <= 0 && p.hurtJump && !p.crouch) {
+    p.hurtJump = false;
+    p.vy = trait === "moonFloat" ? -990 : -900;
+    if (hasEquippedWeapon() && isMechPower(state.weaponPower)) p.vy *= 1.3;
+    if (Shop.has("moonJump")) p.vy *= 1.08;
+    p.jumpHeld = true;
+    p.jumpWas = true;
+    spawnJumpSmoke(p.x + p.w / 2, p.y + p.h);
+    FX.jump(p.x + p.w / 2, p.y + p.h);
+    playSfx("jump", p.x);
+  }
   const canDoubleJump = Shop.has("double") || (hasEquippedWeapon() && isMechPower(state.weaponPower));
   if (wantsJump && !p.jumpWas && !p.grounded && (p.coyote ?? 0) <= 0 && !p.airJumped && canDoubleJump) {
     p.vy = trait === "moonFloat" ? -880 : -800;
@@ -4832,7 +4846,8 @@ function damageEnemy(e, amount = 1) {
 function stunEnemy(e) {
   if (e.boss && courses[currentCourse]?.bossStage && (!state.bossIntroPlayed || state.mode === "bossIntro")) return;
   if (!e.boss) Chat.event("stomp");
-  e.stun = e.boss ? 0.35 : 2;
+  // ふんでピヨらせたら、少し長めに動けなくする（2秒では短すぎた）
+  e.stun = e.boss ? 0.35 : 3.5;
   e.alert = 1;
   e.vx = 0;
   if (e.weaponPower) {
@@ -7030,6 +7045,9 @@ function damagePlayer(fell = false, sourceEnemy = null, canStealWeapon = false) 
     p.invincible = Shop.has("cushion") ? 2.7 : 1.35;
     p.vx = sourceEnemy ? (p.x < sourceEnemy.x ? -260 : 260) : -p.facing * 220;
     p.vy = -360;
+    // はじき飛ばされて空中にいても、点滅中（無敵のあいだ）に1回だけ、ふつうのジャンプができる
+    // （トゲの穴などで、はねて→落ちて→またダメージ…から抜け出せるように）
+    p.hurtJump = true;
     return;
   }
   if (!fell && Shop.has("charm") && !state.charmUsed) {
@@ -11618,8 +11636,15 @@ function drawMoonianNova(colors) {
 function drawEnemies() {
   for (const e of state.enemies) {
     if (!e.alive && e.defeated <= 0) continue;
+    // ピヨりが終わる少し前（のこり0.7秒）から、ぷるぷるふるえて「もうすぐ起きる」と知らせる
+    const waking = e.alive && !e.boss && e.stun > 0 && e.stun < 0.7;
+    if (waking) {
+      ctx.save();
+      ctx.translate(Math.sin(performance.now() / 28) * 2.5, 0);
+    }
     if (e.boss) drawBossAlien(e);
     else drawPastelAlien(e);
+    if (waking) ctx.restore();
     // ピヨっているあいだは点滅させず、頭の上に星を回す
     if (e.alive && e.stun > 0) drawDizzyStars(e);
   }
@@ -12488,16 +12513,18 @@ function drawCrescentRespawnSprite(p) {
 
   const bob = Math.sin(performance.now() / 145) * 4;
   if (pyompyCrescentRespawn.complete && pyompyCrescentRespawn.naturalWidth > 0) {
-    const drawW = 146;
+    // すわったぴょんぴーが、立っているときの絵（高さ82）より少し小さく見える大きさ（前は146で大きすぎた）
+    const drawW = 104;
     const drawH = drawW * (pyompyCrescentRespawn.naturalHeight / pyompyCrescentRespawn.naturalWidth);
     const dx = p.x + p.w / 2 - drawW / 2;
-    const dy = p.y + p.h - drawH + 38 + bob;
+    // 月の下のはし（絵の高さの85%あたり）が、足もとの少し下にくるように
+    const dy = p.y + p.h + 16 - drawH * 0.85 + bob;
     ctx.save();
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
     ctx.globalAlpha = 0.9 + Math.sin(performance.now() / 95) * 0.08;
     ctx.shadowColor = "rgba(255, 243, 164, 0.65)";
-    ctx.shadowBlur = 18;
+    ctx.shadowBlur = 13;
     if ((p.facing ?? 1) < 0) {
       ctx.translate(dx + drawW, dy);
       ctx.scale(-1, 1);
