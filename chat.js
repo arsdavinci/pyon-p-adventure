@@ -68,10 +68,10 @@
   // プレイ中はらんぴょんとは通信がつながっていないので、会話はぴょんぴーとヤナビスだけ
 
   const GAGS = [
-    ["柿ピーのピーは、ぴょんぴーのピーじょ。知らんけど。", "The 'pea' in kaki-pea stands for Pyon-P. Probably."],
+    ["ぶどうまんじゅうの『ぶ』は、ぶっちぎりの『ぶ』じょ。知らんけど。", "The 'pea' in kaki-pea stands for Pyon-P. Probably."],
     ["吾輩の耳、アンテナでないじょ。……たまに電波入るけど。", "My ears aren't antennas. ...They do pick up radio sometimes."],
-    ["宇宙で食べる月見バーガーは、だいたい月見えんのじゃ。", "You can never actually see the moon when eating a moon-viewing burger in space."],
-    ["ジャンプ力のひみつ？ にんじんでない、柿ピーじゃ！", "The secret to my jumps? Not carrots. Kaki-pea snacks!"],
+    ["月で食べる月見バーガーは、地面見ながら食う", "You can never actually see the moon when eating a moon-viewing burger in space."],
+    ["ジャンプ力のひみつ？ にんじんでない、ぶどうまんじゅうじゃ！", "The secret to my jumps? Not carrots. Kaki-pea snacks!"],
     ["星がきれいじゃなあ……って、あれ敵のビームでないか！", "What pretty stars... wait, those are enemy beams!"],
     ["もふもふは正義じゃ。これ、月の憲法第1条な。", "Fluffiness is justice. That's Article 1 of the Moon constitution."],
     ["帰ったら餃子じゃな。宇宙すくったあとの餃子は格別じょ。", "Dumplings when I get home. Nothing beats post-universe-saving dumplings."]
@@ -139,7 +139,7 @@
     }
     return [pick([
       ["pyon", "よっしゃ、行くじょ！", "Alright, here we go!"],
-      ["pyon", "ここも柿ピーのにおいがするじょ！", "I can smell kaki-pea snacks around here!"],
+      ["pyon", "ここもルナコインがいっぱい落ちとるじょ！", "I can smell kaki-pea snacks around here!"],
       ["pyon", "らんぴょん、見とってよ！", "Watch me, Ranpyon!"],
       ["pyon", "空のルートも見のがしたらいかんじょ。", "Don't miss the sky route up there."]
     ])];
@@ -175,7 +175,7 @@
       ["pyon", "耳はやめて、耳は！", "Not the ears! Anything but the ears!"]
     ])],
     lowHp: () => [["yana", "HPがのこり1です。むりせず、スターやハートをさがしましょう。", "Only 1 HP left. Play it safe and look for stars or hearts."]],
-    death: () => [["pyon", "月まで飛ばされた〜！", "I got launched all the way to the moooon!"]],
+    death: () => [["pyon", "月まで飛ばされもたわ〜！", "I got launched all the way to the moooon!"]],
     respawn: () => [["pyon", "三日月タクシーで復活じゃ！ 好きなとこにおりるじょ。", "Back on the Crescent Taxi! I'll hop off wherever I like."]],
     combo: () => [["pyon", "コンボじゃ！ ノってきたじょ！", "Combo! I'm on a roll!"]],
     bossHalf: () => [["yana", "ボスの体力、のこり半分です！", "The boss is down to half health!"], ["pyon", "あとひといきじゃ！", "Almost there!"]],
@@ -196,7 +196,7 @@
       return [pick([
         ["pyon", "また取られた！ それ、吾輩のじょ！ 返してだ！", "Stolen again! That's MINE! Give it back!"],
         ["pyon", "どろぼー！ 光線銃どろぼーがおるじょー！", "Thief! We've got a ray gun thief over here!"],
-        ["pyon", "なんで敵のほうが装備ととのっとんな！", "Why is the enemy better equipped than me!?"]
+        ["pyon", "なんで敵のほうが装備ととのっとるんよ！", "Why is the enemy better equipped than me!?"]
       ])];
     },
     stomp: () => {
@@ -239,7 +239,7 @@
       const text = line.replace(/^ぴょんぴー「|」$|^Pyon-P: "|"$/g, "");
       if (typeof Shop !== "undefined" && Shop.unlocked() && firstTime("tipShop")) {
         return [
-          ["yana", "1-3から左へのびる道の先に『よろず屋 つきのわ』が開店しました。集めた柿の種とピーナッツで、便利な道具が買えますよ。", "The Tsukinowa General Store has opened at the end of the path left of 1-3. Spend your kaki seeds and peanuts on handy gear."],
+          ["yana", "1-3から左へのびる道の先に『よろず屋 つきのわ』が開店しました。集めたルナコインで、便利な道具が買えますよ。", "The Tsukinowa General Store has opened at the end of the path left of 1-3. Spend your kaki seeds and peanuts on handy gear."],
           ["pyon", "2段ジャンプシューズ……たっか！ いつか買うたるけん！", "Double-Jump Shoes... so expensive! I'll buy them someday!"]
         ];
       }

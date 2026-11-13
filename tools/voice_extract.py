@@ -94,10 +94,9 @@ def chat_lines() -> list[tuple[str, str, str, int]]:
     # そうび画面：武器ごとのひとこと（武器の名前 + きまった言い方）と、はじめての合成の案内
     src = (ROOT / "game.js").read_text(encoding="utf-8")
     names = re.findall(r'"([^"]+)"', re.search(r"const WEAPON_NAMES_JA = \[(.*?)\];", src, re.S).group(1))
-    classic = re.search(r'commentClassic: "([^"]+)"', src).group(1)
-    experimental = re.search(r'commentExperimental: "([^"]+)"', src).group(1)
-    for n, name in enumerate(names, 1):
-        rows.append(("pyon", name + (classic if n <= 5 else experimental), "game.js", 0))
+    comments = re.findall(r'"([^"]+)"', re.search(r"const WEAPON_COMMENTS_JA = \[(.*?)\];", src, re.S).group(1))
+    for c in comments:
+        rows.append(("pyon", c, "game.js", 0))
     for key in ("A", "Space"):
         for m in re.finditer(r'if \(g\.step === \d\) return `([^`]+)`|return `(「はい」[^`]+)`', src):
             rows.append(("yana", (m.group(1) or m.group(2)).replace("${a}", key), "game.js", 0))

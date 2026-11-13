@@ -48,7 +48,7 @@ window.STAGE_TALK = [
       [
         ["pyon", "なあヤナビス、フェスで一番ウケるネタってなんじゃと思う？", "Yanabisu, what kind of bit do you think kills at the Fest?"],
         ["yana", "データによると、『あるあるネタ』の成功率が高いです。", "According to my data, relatable observational bits do best."],
-        ["pyon", "宇宙人のあるある、むずいじょ……。", "Relatable for aliens? That's tough..."]
+        ["pyon", "宇宙人のあるある、伝わるかなぁ……。", "Relatable for aliens? That's tough..."]
       ]
     ]
   },
@@ -185,7 +185,7 @@ window.STAGE_TALK = [
     ]
   },
   { // 3-2
-    solo: ["pyon", "クリスタルがキラキラしとる。……これ全部売ったら、柿ピー何袋買えるんじゃろ。", "The crystals are sparkling. ...How many bags of kaki-pea could I buy if I sold them all?"],
+    solo: ["pyon", "クリスタルがキラキラしとる。……これ全部売ったら、ぶどうまんじゅう何個買えるんじゃろ。", "The crystals are sparkling. ...How many bags of kaki-pea could I buy if I sold them all?"],
     talks: [
       [
         ["yana", "ぴょんぴーさん、すべって転ぶのも芸になりませんか？", "Pyon-P, couldn't slipping and falling be part of your act?"],
@@ -304,7 +304,7 @@ window.STAGE_TALK = [
         ["yana", "クラゲは、脳がない生き物なんですよ。", "Jellyfish don't have brains, you know."],
         ["pyon", "脳なしでも、あんなにきれいに光れるんか。", "They glow that pretty without a brain?"],
         ["yana", "ぴょんぴーさんにも、希望がありますね。", "So there's hope for you too, Pyon-P."],
-        ["pyon", "どういう意味じゃ！", "What's that supposed to mean?!"]
+        ["pyon", "それどういう意味じゃ！", "What's that supposed to mean?!"]
       ],
       [
         ["pyon", "ヤナビス、海の中で歌うと、声どうなるん？", "Yanabisu, what happens if you sing underwater?"],
@@ -374,7 +374,7 @@ window.STAGE_TALK = [
       [
         ["pyon", "ヤナビス、ここの機械、何つくっとるん？", "Yanabisu, what are these machines making?"],
         ["yana", "どうやら、ロボットの部品です。", "Robot parts, it seems."],
-        ["pyon", "ほな、吾輩用の柿ピー自動販売機もつくってくれんかの。", "Think they'd make me a kaki-pea vending machine?"],
+        ["pyon", "ほな、吾輩用のぶどうまんじゅう自動販売機もつくってくれんかの。", "Think they'd make me a kaki-pea vending machine?"],
         ["yana", "注文票、出してみましょうか。", "Shall I submit an order form?"]
       ]
     ]
@@ -542,7 +542,7 @@ window.STAGE_TALK = [
       [
         ["pyon", "なあ、ルーヴァさん、今ごろ何しとるかの。", "I wonder what Luva-san is doing right now."],
         ["yana", "フェスの準備をして、待ってくれているはずです。", "Preparing for the Fest and waiting for us, surely."],
-        ["pyon", "楽屋に柿ピー、用意しといてくれとるかな。", "Think there'll be kaki-pea in our dressing room?"],
+        ["pyon", "楽屋にぶどうまんじゅう、用意しといてくれとるかな。", "Think there'll be kaki-pea in our dressing room?"],
         ["yana", "たぶん、すだちです。", "Probably sudachi."]
       ]
     ]
