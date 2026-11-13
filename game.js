@@ -86,6 +86,19 @@ const WEAPON_DROP_RATES = [
   { power: 4, chance: 0.03 },
   { power: 5, chance: 0.02 }
 ];
+// ダメージを受けたときの、ぴょんぴーのさけび声（声だけ・文字は出さない）。ランダムに順番に回す
+const HURT_CRIES = ["いた！", "う！", "いちち！", "うわ！", "あたたた！", "うへ！", "あうち！"];
+let hurtCryBag = [];
+function playHurtCry() {
+  if (typeof Voice === "undefined") return;
+  // ほかのセリフをしゃべっている最中は、じゃましない
+  if (Voice.busy && Voice.busy()) return;
+  if (!hurtCryBag.length) {
+    hurtCryBag = HURT_CRIES.slice().sort(() => Math.random() - 0.5);
+  }
+  Voice.play("chat", hurtCryBag.pop());
+}
+
 // そうび画面で、ぴょんぴーが武器ごとに言うひとこと（WEAPON_NAMES_JA と同じ順）
 const WEAPON_COMMENTS_JA = [
   "ムーンポッパー！ ポンッと一発、まっすぐ届けるじょ！",
@@ -5235,11 +5248,15 @@ function playSfx(name, x = state?.player?.x ?? 0) {
   lastSfxAt[name] = now;
   const pan = clamp(((x - (state?.camera ?? 0)) / canvas.width) * 2 - 1, -0.8, 0.8);
   if (name === "laser") {
-    playTone({ freq: 920, endFreq: 1720, duration: 0.105, type: "triangle", gain: 0.055, pan });
-    playTone({ start: 0.018, freq: 1850, endFreq: 1280, duration: 0.07, type: "sine", gain: 0.035, pan });
+    // 光線銃を撃つ音：ピュンッ（スマホのスピーカーでも聞こえるように、少し低めの芯の音も足す）
+    playTone({ freq: 920, endFreq: 1720, duration: 0.105, type: "triangle", gain: 0.11, pan });
+    playTone({ start: 0.018, freq: 1850, endFreq: 1280, duration: 0.07, type: "sine", gain: 0.07, pan });
+    playTone({ freq: 520, endFreq: 300, duration: 0.07, type: "square", gain: 0.035, pan });
   } else if (name === "enemyHit") {
-    playTone({ freq: 620, endFreq: 260, duration: 0.12, type: "square", gain: 0.045, pan });
-    playNoise({ duration: 0.08, gain: 0.025, filter: 1900 });
+    // 弾が敵に当たった音：バシッ
+    playTone({ freq: 620, endFreq: 260, duration: 0.12, type: "square", gain: 0.1, pan });
+    playTone({ freq: 1400, endFreq: 900, duration: 0.05, type: "triangle", gain: 0.07, pan });
+    playNoise({ duration: 0.09, gain: 0.07, filter: 1900 });
   } else if (name === "stompBoost") {
     playTone({ freq: 760, endFreq: 1480, duration: 0.14, type: "triangle", gain: 0.06, pan });
     playTone({ start: 0.055, freq: 1220, endFreq: 2040, duration: 0.16, type: "sine", gain: 0.042, pan });
@@ -5249,8 +5266,11 @@ function playSfx(name, x = state?.player?.x ?? 0) {
     playTone({ start: 0.075, freq: 820, endFreq: 1320, duration: 0.14, type: "triangle", gain: 0.05, pan });
     playNoise({ duration: 0.16, gain: 0.03, filter: 2600 });
   } else if (name === "playerDamage") {
-    playTone({ freq: 520, endFreq: 160, duration: 0.22, type: "sawtooth", gain: 0.06, pan });
-    playNoise({ duration: 0.12, gain: 0.035, filter: 900 });
+    // ダメージを受けた音：ドスッ＋ピヨン
+    playTone({ freq: 520, endFreq: 160, duration: 0.22, type: "sawtooth", gain: 0.11, pan });
+    playTone({ freq: 140, endFreq: 60, duration: 0.18, type: "sine", gain: 0.16, pan });
+    playNoise({ duration: 0.14, gain: 0.08, filter: 900 });
+    playTone({ start: 0.12, freq: 900, endFreq: 1500, duration: 0.12, type: "triangle", gain: 0.05, pan });
   } else if (name === "death") {
     playTone({ freq: 440, endFreq: 180, duration: 0.32, type: "triangle", gain: 0.07, pan });
     playTone({ start: 0.11, freq: 320, endFreq: 120, duration: 0.3, type: "sine", gain: 0.052, pan });
@@ -6818,7 +6838,14 @@ function damagePlayer(fell = false, sourceEnemy = null, canStealWeapon = false) 
   if (state.hp > 0) {
     playSfx("playerDamage", p.x + p.w / 2);
     FX.playerHurt(p.x + p.w / 2, p.y + p.h / 2);
-    Chat.event("hurt");
+    // 「いったぁ！」などの文字のセリフは、はじめてのときだけ。そのあとは声だけのさけび声
+    if (!Story.data.seen.hurtTalk) {
+      Story.data.seen.hurtTalk = true;
+      Story.persist();
+      Chat.event("hurt");
+    } else {
+      playHurtCry();
+    }
     p.invincible = Shop.has("cushion") ? 2.7 : 1.35;
     p.vx = sourceEnemy ? (p.x < sourceEnemy.x ? -260 : 260) : -p.facing * 220;
     p.vy = -360;
