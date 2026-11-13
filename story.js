@@ -386,6 +386,22 @@
     v.addEventListener("playing", () => { if (movie) movie.playing = true; });
     movie = {
       finish,
+      // 「タイトルにもどる？」を聞いているあいだは、動画を止めてかくす
+      hold(on) {
+        v.style.visibility = on ? "hidden" : "";
+        hint.style.visibility = on ? "hidden" : "";
+        try { if (on) v.pause(); else if (started) v.play().catch(() => {}); } catch (_) {}
+      },
+      // タイトルへもどるとき：つづき（onEnd）を呼ばずに、動画だけ片づける
+      abort() {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        try { v.pause(); } catch (_) {}
+        v.remove();
+        hint.remove();
+        movie = null;
+      },
       pct: 0,
       playing: false,
       since: performance.now(),
@@ -2156,6 +2172,8 @@
     get data() { return data; },
     talkBox, drawTalkPortrait,
     movieLoading,
+    movieHold: on => movie?.hold(on),
+    movieAbort: () => movie?.abort(),
     img, ok,
     worldName, bossName,
     persist, hasSave, resetSave, applyToGame, shardCount, starTotals,

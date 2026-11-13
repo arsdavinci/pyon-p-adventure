@@ -7404,12 +7404,14 @@ function drawGameWorld() {
 function openTitleAsk() {
   if (!state || state.titleAsk || FX.transitioning()) return;
   state.titleAsk = { choice: 1 }; // はじめは「いいえ」（うっかり押してももどらない）
+  if (state.mode === "movie") Story.movieHold(true);
   playSfx("decide");
 }
 
 function closeTitleAsk() {
   if (!state?.titleAsk) return;
   state.titleAsk = null;
+  if (state.mode === "movie") Story.movieHold(false);
   playSfx("cancel");
 }
 
@@ -7418,6 +7420,7 @@ function confirmTitleAsk() {
   if (state.titleAsk.choice !== 0) return closeTitleAsk();
   state.titleAsk = null;
   playSfx("decide");
+  if (state.mode === "movie") Story.movieAbort();
   if (typeof Voice !== "undefined") Voice.stop();
   FX.startTransition({ type: "fade", dur: 0.6, onMid: () => { Story.returnToTitle(); lastTime = performance.now(); } });
 }
@@ -13374,7 +13377,9 @@ function handleKeyDown(code, event = { repeat: false }) {
   }
   if (Story.isStoryMode(state.mode)) {
     // 会話シーン・エンディングでは SELECT（Tab）で「タイトルにもどる？」
-    if (!event.repeat && (code === "Select" || code === "Tab") && (state.mode === "cutscene" || state.mode === "credits")) {
+    if (!event.repeat && (((code === "Select" || code === "Tab") && (state.mode === "cutscene" || state.mode === "credits")) ||
+      // 動画のあいだは START（Enter）でも
+      (state.mode === "movie" && (code === "Enter" || code === "Select" || code === "Tab")))) {
       openTitleAsk();
       return;
     }
