@@ -179,7 +179,7 @@
         { s: "luva", ja: "かけらがもどらなければ、宇宙から笑顔が消えてしまう。……だれも笑えないままでは、3日後のフェスも開けない。", en: "Unless the shards return, smiles will vanish from the universe. ...And if no one can laugh, the Fest three days from now cannot be held." },
         { s: "luva", ja: "らんぴょんは笑いをうばわれて動けない。AGIの人工知能パートナー、ヤナビスが案内する。行けるのは、きみだけだ。", en: "Ranpyon has lost his laughter and cannot go. Yanabisu, your AGI partner, will guide you. You are the only one who can do this." },
         { s: "pyon", ja: "なんで吾輩だけ平気なんじゃろ……まあええわ！ 吾輩らの夢の舞台、つぶさせはせんじょ！", en: "Why am I the only one who's fine... eh, whatever! Nobody's wrecking our dream stage!" },
-        { s: "ran", ja: "ぴょんぴー先輩……お願いします。僕の『なんでなっ！』、取り返してきてください。", en: "Pyon-P... please. Bring my \"No way!\" back." },
+        { s: "ran", face: "trouble", ja: "ぴょんぴー先輩……お願いします。僕の『なんでなっ！』、取り返してきてください。", en: "Pyon-P... please. Bring my \"No way!\" back." },
         { s: "pyon", bg: "depart", ja: "まかしとき！ 柿ピー食べたら百人力じゃ。ほな、ちょっと宇宙すくってくるけん！", en: "Leave it to me! A handful of kaki-pea snacks and I'm unstoppable. Be right back, just gotta save the universe!" },
         { s: "narr", ja: "こうして、ぴょんぴーの大冒険がはじまった。", en: "And so, Pyon-P's great adventure began." }
       ]
