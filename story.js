@@ -75,7 +75,8 @@
 
   // ---------- セーブ ----------
   function blank() {
-    return { unlocked: 0, completed: [], keep: null, stars: {}, seen: {}, cleared: false, best: 0 };
+    // 最初から、ぶどうまんじゅうを1つ持っている
+    return { unlocked: 0, completed: [], keep: null, stars: {}, seen: {}, cleared: false, best: 0, manjuStock: 1, starterManju: true };
   }
 
   function readSave() {
@@ -87,6 +88,8 @@
       if (!d.stars || typeof d.stars !== "object") d.stars = {};
       if (!d.seen || typeof d.seen !== "object") d.seen = {};
       if (d.keep && (!Array.isArray(d.keep.weaponInventory) || !Array.isArray(d.keep.inventoryItems))) d.keep = null;
+      // 前からのセーブにも、はじめの1つをおまけで入れる（1回だけ）
+      if (!raw.includes('"starterManju"')) { d.manjuStock = Math.max(1, d.manjuStock | 0); d.starterManju = true; }
       return d;
     } catch (_) {
       return blank();

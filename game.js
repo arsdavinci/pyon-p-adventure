@@ -3468,6 +3468,7 @@ function returnToWorldMapFromInventory() {
 
 function openInventory() {
   if (!state || (state.mode !== "playing" && state.mode !== "respawning" && state.mode !== "worldMap")) return;
+  state.inventoryTabFocus = false;
   if (state.mode === "worldMap") {
     if (FX.transitioning() || mapInputLockTimer > 0) return;
     // マップでは、今の持ち物（次のステージに持っていくもの）を開く
@@ -5639,6 +5640,15 @@ function playSfx(name, x = state?.player?.x ?? 0) {
     playTone({ start: 0.055, freq: 1174, endFreq: 1760, duration: 0.13, type: "sine", gain: 0.06, pan });
     playTone({ start: 0.14, freq: 1760, endFreq: 2637, duration: 0.16, type: "triangle", gain: 0.046, pan });
     playNoise({ start: 0.03, duration: 0.18, gain: 0.02, filter: 6200 });
+  } else if (name === "equipSet") {
+    // 装備したとき：カチャッ（はまる音）＋キラーン（2つの音が上がる）
+    playNoise({ duration: 0.035, gain: 0.07, filter: 3800 });
+    playTone({ freq: 260, endFreq: 150, duration: 0.07, type: "sine", gain: 0.12, pan });
+    playTone({ start: 0.03, freq: 1760, endFreq: 1700, duration: 0.05, type: "square", gain: 0.03, pan });
+    playTone({ start: 0.07, freq: 1318, endFreq: 1318, duration: 0.14, type: "triangle", gain: 0.075, pan });
+    playTone({ start: 0.15, freq: 1976, endFreq: 1976, duration: 0.26, type: "triangle", gain: 0.07, pan });
+    playTone({ start: 0.15, freq: 2637, endFreq: 2637, duration: 0.3, type: "sine", gain: 0.035, pan });
+    playNoise({ start: 0.14, duration: 0.26, gain: 0.02, filter: 7000 });
   } else if (name === "equip") {
     playTone({ freq: 420, endFreq: 840, duration: 0.11, type: "triangle", gain: 0.045, pan });
     playTone({ start: 0.055, freq: 980, endFreq: 1380, duration: 0.12, type: "sine", gain: 0.04, pan });
@@ -6110,7 +6120,7 @@ function equipWeapon(index) {
   state.gun.holder = "player";
   state.inventorySelection = equippedSlot;
   ensureInventorySelectionVisible();
-  playSfx("equip", state.player.x + state.player.w / 2);
+  playSfx("equipSet", state.player.x + state.player.w / 2);
   spawnBlockPoof(state.player.x + state.player.w / 2, state.player.y + 18);
 }
 
@@ -9353,6 +9363,7 @@ function inventoryFocusTopMenu() {
 
   state.inventoryFocusMode = INVENTORY_FOCUS_MODES.INSIDE_TOP_MENU;
   state.inventoryFocusArea = "topMenu";
+  state.inventoryTabFocus = false;
   state.inventoryTopMenuIndex = clamp((state.inventorySelection - (state.inventoryScroll ?? 0)) % 5, 0, 3);
   playSfx("cursor");
 }
@@ -10436,6 +10447,24 @@ function drawInventoryKindTabs() {
   inventoryTabRects().forEach((r, i) => {
     const on = (i === 1) === gearTab;
     ctx.save();
+    // 十字キーでタブをえらんでいるときは、今のタブを光らせて ◀ ▶ を出す
+    if (on && state.inventoryTabFocus && state.inventoryFocusMode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST) {
+      const pulse = 0.55 + Math.sin(performance.now() / 160) * 0.35;
+      ctx.save();
+      ctx.strokeStyle = `rgba(255, 216, 90, ${pulse})`;
+      ctx.lineWidth = 7;
+      ctx.beginPath();
+      ctx.roundRect(r.x - 5, r.y - 5, r.w + 10, r.h + 10, [24, 24, 8, 8]);
+      ctx.stroke();
+      ctx.fillStyle = "#ffb43d";
+      ctx.font = `900 30px ${FX.FONT}`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      const first = inventoryTabRects()[0], last = inventoryTabRects()[1];
+      ctx.fillText("◀", first.x - 20, r.y + r.h / 2);
+      ctx.fillText("▶", last.x + last.w + 20, r.y + r.h / 2);
+      ctx.restore();
+    }
     ctx.fillStyle = on ? (i === 0 ? "#7fd6ea" : "#ff8db7") : "rgba(255, 255, 255, 0.72)";
     ctx.strokeStyle = on ? "#ffffff" : "#c8b2ff";
     ctx.lineWidth = on ? 4 : 2;
@@ -10458,7 +10487,7 @@ function drawInventoryKindTabs() {
     ctx.font = `800 18px ${FX.FONT}`;
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.fillText(ja ? "Q / R でタブ切りかえ" : "Q / R: switch tab", 846, 118 + INV_TAB_H / 2);
+    ctx.fillText(ja ? "Q / R でタブ切りかえ" : "Q / R: switch tab", 866, 118 + INV_TAB_H / 2);
     ctx.restore();
   }
 }
@@ -10474,7 +10503,7 @@ function useInventoryGear(id) {
   }
   const r = Shop.toggleGear(id);
   if (!r) return;
-  playSfx(r.on ? "equip" : "cursor");
+  playSfx(r.on ? "equipSet" : "cursor");
   const name = Shop.itemName(id);
   if (language === "ja") {
     say(r.on ? (r.removed.length ? `${name}をはいたじょ！ くつは1足だけじゃけん、${Shop.itemName(r.removed[0])}はぬいだじょ。` : `${name}、つけたじょ！`) : `${name}、はずしたじょ。`);
@@ -13792,6 +13821,7 @@ canvas.addEventListener("pointerdown", event => {
     }
     const slot = inventorySlotAt(pos.x, pos.y);
     if (slot) {
+      state.inventoryTabFocus = false;
       const gear = slot.empty && !fuseLessonOn() ? slot.gear ?? null : null;
       if (gear) {
         if (state.inventorySelection === slot.index) useInventoryGear(gear);
@@ -14159,12 +14189,33 @@ function handleInventoryKeyboardFocus(code, repeat = false) {
     return true;
   }
 
+  // 上の「武器／どうぐ」タブをえらんでいるとき：←→で切りかえ、↓か A で中へ、↑で上のメニューへ
+  if (mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST && state.inventoryTabFocus) {
+    if (!repeat && (code === "ArrowLeft" || code === "KeyA")) switchInventoryTab("weapons");
+    else if (!repeat && (code === "ArrowRight" || code === "KeyD")) switchInventoryTab("gear");
+    else if (!repeat && (code === "ArrowDown" || code === "KeyS" || code === "Enter" || code === "Space" || code === "KeyZ")) {
+      state.inventoryTabFocus = false;
+      playSfx("cursor");
+    } else if (!repeat && (code === "ArrowUp" || code === "KeyW")) {
+      state.inventoryTabFocus = false;
+      inventoryFocusTopMenu();
+    } else if (!repeat && (code === "Escape" || code === "KeyB")) {
+      state.inventoryTabFocus = false;
+      playSfx("cursor");
+    }
+    return true;
+  }
+
   if (mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST) {
     if (code === "ArrowLeft" || code === "KeyA") moveInventorySelection(-1);
     if (code === "ArrowRight" || code === "KeyD") moveInventorySelection(1);
     if (code === "ArrowUp" || code === "KeyW") {
       if (inventoryAtTopRow()) {
-        if (!repeat) inventoryFocusTopMenu();
+        // いちばん上の段から↑で、まず「武器／どうぐ」タブへ（からっぽでも行ける）
+        if (!repeat) {
+          if (fuseLessonOn()) fuseLessonNudge();
+          else { state.inventoryTabFocus = true; playSfx("cursor"); }
+        }
       } else moveInventorySelection(-5);
     }
     if (code === "ArrowDown" || code === "KeyS") moveInventorySelection(5);
