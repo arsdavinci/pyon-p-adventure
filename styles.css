@@ -2027,3 +2027,115 @@ body[data-layout="handheld"] .comm-weapon .comm-gear button img,
   width: 100%;
   height: 100%;
 }
+
+/* ---------- ゲーム機の下の小窓：音量メーター（左右になぞって 0〜100） ---------- */
+body[data-layout="handheld"] .gb-volume {
+  pointer-events: auto;
+  touch-action: none;
+  cursor: ew-resize;
+  gap: calc(12 * var(--u));
+  padding: 0 calc(24 * var(--u));
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 0%, #2a1f5a 0%, #150f30 70%);
+  box-shadow: inset 0 0 0 calc(2 * var(--u)) rgba(158, 239, 255, 0.18), inset 0 calc(-6 * var(--u)) calc(14 * var(--u)) rgba(255, 141, 220, 0.12);
+  transition: box-shadow 160ms ease-out;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+body[data-layout="handheld"] .gb-volume.is-dragging {
+  box-shadow: inset 0 0 0 calc(3 * var(--u)) rgba(158, 239, 255, 0.75), 0 0 calc(18 * var(--u)) rgba(158, 239, 255, 0.55);
+}
+
+.gb-vol-icon {
+  flex: none;
+  width: calc(38 * var(--u));
+  height: calc(32 * var(--u));
+  overflow: visible;
+  fill: none;
+  stroke: #9eefff;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 calc(5 * var(--u)) rgba(120, 230, 255, 0.85));
+}
+
+.gb-vol-icon .gb-vol-body { fill: rgba(158, 239, 255, 0.35); }
+.gb-vol-icon .gb-vol-x { display: none; stroke: #ff8db7; }
+.gb-volume[data-level="0"] .gb-vol-w1,
+.gb-volume[data-level="0"] .gb-vol-w2,
+.gb-volume[data-level="1"] .gb-vol-w2 { display: none; }
+.gb-volume[data-level="0"] .gb-vol-x { display: inline; }
+
+.gb-vol-meter {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: calc(170 * var(--u));
+  height: calc(36 * var(--u));
+  display: flex;
+  align-items: flex-end;
+  gap: calc(4 * var(--u));
+}
+
+.gb-vol-meter i {
+  flex: 1 1 0;
+  height: var(--h);
+  border-radius: calc(3 * var(--u));
+  background: rgba(158, 239, 255, 0.14);
+  transition: background 90ms linear, box-shadow 90ms linear;
+}
+
+.gb-vol-meter i.on {
+  background: linear-gradient(180deg, #ffffff 0%, var(--c) 45%);
+  box-shadow: 0 0 calc(7 * var(--u)) var(--c);
+}
+
+/* 左ほど低く・青く、右ほど高く・ピンク（月の夜空のネオン） */
+.gb-vol-meter i:nth-child(1)  { --h: 26%;  --c: #7fe9ff; }
+.gb-vol-meter i:nth-child(2)  { --h: 32%;  --c: #86defe; }
+.gb-vol-meter i:nth-child(3)  { --h: 39%;  --c: #8fd2fd; }
+.gb-vol-meter i:nth-child(4)  { --h: 45%;  --c: #9ac5fc; }
+.gb-vol-meter i:nth-child(5)  { --h: 52%;  --c: #a7b8fb; }
+.gb-vol-meter i:nth-child(6)  { --h: 58%;  --c: #b5abfa; }
+.gb-vol-meter i:nth-child(7)  { --h: 65%;  --c: #c39ff8; }
+.gb-vol-meter i:nth-child(8)  { --h: 71%;  --c: #d094f2; }
+.gb-vol-meter i:nth-child(9)  { --h: 78%;  --c: #dc8aea; }
+.gb-vol-meter i:nth-child(10) { --h: 84%;  --c: #e782df; }
+.gb-vol-meter i:nth-child(11) { --h: 92%;  --c: #f17bd2; }
+.gb-vol-meter i:nth-child(12) { --h: 100%; --c: #ff74c4; }
+
+.gb-vol-num {
+  flex: none;
+  min-width: 2.4em;
+  text-align: right;
+  font-size: calc(27 * var(--u));
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: #e9fbff;
+  text-shadow: 0 0 calc(8 * var(--u)) rgba(120, 230, 255, 0.85);
+}
+
+.gb-volume[data-level="0"] .gb-vol-num {
+  color: #ffc4de;
+  text-shadow: 0 0 calc(8 * var(--u)) rgba(255, 141, 183, 0.85);
+}
+
+/* 横長のゲーム機：小窓が低いので少し小さく */
+body[data-layout="handheld"][data-orient="land"] .gb-volume {
+  gap: calc(10 * var(--uL));
+  padding: 0 calc(22 * var(--uL));
+}
+
+body[data-layout="handheld"][data-orient="land"] .gb-vol-icon {
+  width: calc(32 * var(--uL));
+  height: calc(26 * var(--uL));
+}
+
+body[data-layout="handheld"][data-orient="land"] .gb-vol-meter {
+  height: calc(30 * var(--uL));
+  max-width: calc(230 * var(--uL));
+}
+
+body[data-layout="handheld"][data-orient="land"] .gb-vol-num {
+  font-size: calc(24 * var(--uL));
+}

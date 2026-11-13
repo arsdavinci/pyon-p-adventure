@@ -28,10 +28,7 @@
   const dpad = document.querySelector(".touch-dpad");
   const actions = document.querySelector(".touch-actions");
   const guide = document.querySelector("#gbGuide");
-  const statusText = document.querySelector("#gbStatusText");
-  const statusBattery = document.querySelector("#gbBattery");
-  const statusFill = document.querySelector("#gbBatteryFill");
-  const statusWifi = document.querySelector("#gbWifi");
+  const volBox = document.querySelector("#gbVolume");
 
   let isActive = false;
   let commSrc = 0;
@@ -419,45 +416,64 @@
     actions.addEventListener("pointercancel", up);
   }
 
-  // ---------- 下の小窓（電池・時計・通信） ----------
-  let battery = null;
-
-  function clockText() {
-    const now = new Date();
-    return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  // ---------- 下の小窓：音量メーター（指で左右になぞると 0〜100） ----------
+  function renderVolume() {
+    if (!volBox || typeof Settings === "undefined" || !Settings.master) return;
+    const on = typeof soundEnabled === "undefined" || soundEnabled;
+    const v = on ? Settings.master() : 0;
+    const bars = volBox.querySelectorAll(".gb-vol-meter i");
+    const lit = Math.round((v / 100) * bars.length);
+    bars.forEach((b, i) => b.classList.toggle("on", i < lit));
+    const num = volBox.querySelector("#gbVolNum");
+    if (num) num.textContent = on ? String(v) : "OFF";
+    volBox.dataset.level = v === 0 ? "0" : v < 40 ? "1" : "2";
+    volBox.setAttribute("aria-valuenow", String(v));
   }
 
-  function renderStatus() {
-    if (!statusText) return;
-    if (battery) {
-      const pct = Math.round(battery.level * 100);
-      statusText.textContent = `${pct}%`;
-      if (statusBattery) {
-        statusBattery.hidden = false;
-        statusBattery.classList.toggle("is-low", pct <= 20 && !battery.charging);
-        statusBattery.classList.toggle("is-charging", battery.charging);
+  if (volBox) {
+    const meter = volBox.querySelector(".gb-vol-meter");
+    let dragging = null;
+    let lastTick = -1;
+    const setFrom = clientX => {
+      const r = meter.getBoundingClientRect();
+      // メーターの少し外まで、0 と 100 にとどくように
+      const v = Math.round(Math.max(0, Math.min(1, (clientX - r.left + 4) / (r.width + 8))) * 100);
+      if (typeof soundEnabled !== "undefined" && !soundEnabled && v > 0 && typeof toggleSound === "function") toggleSound();
+      Settings.setMaster(v);
+      try { applyVolumes(); } catch (_) {}
+      renderVolume();
+      const tick = Math.round(v / 10);
+      if (tick !== lastTick) {
+        lastTick = tick;
+        if (typeof playSfx === "function" && v > 0) playSfx("cursor");
+        buzz();
       }
-      if (statusFill) statusFill.style.width = `${Math.max(6, pct)}%`;
-    } else {
-      // 電池残量を取れないブラウザ（iPhone など）では時計を出す
-      statusText.textContent = clockText();
-      if (statusBattery) statusBattery.hidden = true;
-    }
-    if (statusWifi) statusWifi.classList.toggle("is-off", navigator.onLine === false);
+    };
+    volBox.addEventListener("pointerdown", event => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (typeof unlockAudio === "function") unlockAudio();
+      dragging = event.pointerId;
+      lastTick = Math.round(Settings.master() / 10);
+      try { volBox.setPointerCapture(event.pointerId); } catch (_) {}
+      volBox.classList.add("is-dragging");
+      setFrom(event.clientX);
+    });
+    volBox.addEventListener("pointermove", event => {
+      if (dragging !== event.pointerId) return;
+      event.preventDefault();
+      setFrom(event.clientX);
+    });
+    const end = event => {
+      if (dragging !== event.pointerId) return;
+      dragging = null;
+      volBox.classList.remove("is-dragging");
+    };
+    volBox.addEventListener("pointerup", end);
+    volBox.addEventListener("pointercancel", end);
   }
-
-  if (navigator.getBattery) {
-    navigator.getBattery().then(found => {
-      battery = found;
-      battery.addEventListener("levelchange", renderStatus);
-      battery.addEventListener("chargingchange", renderStatus);
-      renderStatus();
-    }).catch(() => {});
-  }
-  window.addEventListener("online", renderStatus);
-  window.addEventListener("offline", renderStatus);
-  setInterval(renderStatus, 20000);
-  renderStatus();
+  setInterval(renderVolume, 500); // ♪ ON/OFF や せってい画面で変えたときにも合わせる
+  renderVolume();
 
   // ---------- ことば ----------
   // せっていのボタンの割り当てに合わせて「A ジャンプ B ダッシュ X Y こうげき」を作る

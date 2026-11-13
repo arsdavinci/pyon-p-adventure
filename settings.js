@@ -31,7 +31,7 @@ const Settings = (() => {
   const KEY = "pyonpSettings";
   const BUTTONS = ["A", "B", "X", "Y"];
   const ACTIONS = ["jump", "dash", "attack"];
-  const DEFAULT = { bgm: 10, voice: 10, sfx: 10, buttons: { A: "jump", B: "dash", X: "attack", Y: "attack" } };
+  const DEFAULT = { master: 100, bgm: 10, voice: 10, sfx: 10, buttons: { A: "jump", B: "dash", X: "attack", Y: "attack" } };
   // ゲーム中に、そのボタンが出すキー（キーボードと同じ処理に流す）
   const ACTION_CODE = { jump: "Space", dash: "KeyB", attack: "KeyX" };
   // 画面のボタンがもともと出すキー → どのボタンか
@@ -51,6 +51,8 @@ const Settings = (() => {
       if (!saved || typeof saved !== "object") return fresh();
       const d = { ...fresh(), ...saved, buttons: { ...DEFAULT.buttons, ...(saved.buttons || {}) } };
       for (const k of ["bgm", "voice", "sfx"]) d[k] = Math.max(0, Math.min(10, Math.round(Number(d[k]) || 0)));
+      d.master = Math.max(0, Math.min(100, Math.round(Number(d.master ?? 100))));
+      if (!isFinite(d.master)) d.master = 100;
       for (const b of BUTTONS) if (!ACTIONS.includes(d.buttons[b])) d.buttons[b] = DEFAULT.buttons[b];
       return d;
     } catch (_) {
@@ -64,8 +66,13 @@ const Settings = (() => {
     try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (_) {}
   }
 
-  // 0〜10 → 音量の倍率
-  const level = k => data[k] / 10;
+  // 0〜10 → 音量の倍率（ゲーム機の下の小窓の「全体の音量」0〜100 をかける）
+  const level = k => (data[k] / 10) * (data.master / 100);
+  const master = () => data.master;
+  function setMaster(v) {
+    data.master = Math.max(0, Math.min(100, Math.round(v)));
+    save();
+  }
 
   // ゲーム中だけ、ボタンの割り当てをかえる（メニューでは A=決定、B=もどる のまま）
   function mapCode(code, inGame) {
@@ -124,6 +131,6 @@ const Settings = (() => {
 
   return {
     get data() { return data; },
-    BUTTONS, ACTIONS, level, mapCode, padActions, setButton, cycleButton, setLevel, reset, actionLabel, save
+    BUTTONS, ACTIONS, level, master, setMaster, mapCode, padActions, setButton, cycleButton, setLevel, reset, actionLabel, save
   };
 })();
