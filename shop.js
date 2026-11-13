@@ -116,7 +116,7 @@
     return removed;
   }
   // そうびの欄・持ち物にならべる道具（買ったもの。まんじゅうと金の像はのぞく）
-  const gearList = () => { normalizeShoes(); return ITEMS.filter(it => it.id !== "manju" && it.id !== "statue" && owns(it.id)); };
+  const gearList = () => { normalizeShoes(); return ITEMS.filter(it => it.id !== "manju" && it.id !== "statue" && it.id !== "strap" && owns(it.id)); };
   // つける／はずす。{ on: つけたか, removed: いっしょにぬいだくつ }
   function toggleGear(id) {
     if (!owns(id)) return null;
@@ -164,7 +164,8 @@
   let shopWorld = null;
   let inStage = null;
   // ステージが進むほど、品ぞろえがふえる
-  const stock = () => ITEMS.filter(it => (it.world === undefined || it.world === shopWorld) && unlockedCourse >= (it.from ?? 0));
+  // 「ぜったいはなさんストラップ」は、1-1 のあとはうばわれないので売らない
+  const stock = () => ITEMS.filter(it => it.id !== "strap" && (it.world === undefined || it.world === shopWorld) && unlockedCourse >= (it.from ?? 0));
 
   // ステージの中のよろず屋：いまの持ち物でお買い物して、終わったらステージにもどる
   function openInStage() {
