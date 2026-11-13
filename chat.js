@@ -15,6 +15,8 @@
   let els = null;
   let commOn = false;
   let queue = [];
+  let quietT = 0;
+  let voiced = false;
   let cur = null;
   let shown = 0;
   let hold = 0;
@@ -269,7 +271,8 @@
     if (urgent) {
       queue = lines.slice();
       cur = null;
-    } else if (queue.length + (cur && hold < 1.2 ? 1 : 0) < 3) {
+    } else if (lines.length >= 3 || queue.length + (cur && hold < 1.2 ? 1 : 0) < 3) {
+      // 長い話（3行以上）は、いま話している行を切らずに、あとにつづける
       queue.push(...lines);
     }
   }
@@ -285,7 +288,7 @@
     const builder = BUILDERS[name];
     if (!builder) return;
     const lines = builder(arg);
-    say(lines, !!URGENT[name] || (lines && lines.length >= 3));
+    say(lines, !!URGENT[name]);
     idleT = Math.max(idleT, 9);
   }
 
@@ -470,6 +473,8 @@
       if (typeof Voice !== "undefined") Voice.play("chat", cur[1]);
       shown = 0;
       hold = 0;
+      quietT = 0;
+      voiced = false;
       renderedCount = -1;
       renderSpeaker();
     }
@@ -480,7 +485,11 @@
       shown = Math.min(total, shown + dt * (language === "ja" ? 38 : 70));
     } else {
       hold += dt;
-      if (queue.length && hold > 1.9 + total * 0.045) cur = null;
+      // 声があるときは、最後までしゃべり終わってから少し間をあけて次へ。声がないときは読む時間だけ待つ
+      const talking = typeof Voice !== "undefined" && Voice.busy && Voice.busy();
+      if (talking) { quietT = 0; if (Voice.playing()) voiced = true; }
+      else quietT += dt;
+      if (queue.length && !talking && quietT > 0.6 && (voiced || hold > 1.9 + total * 0.045)) cur = null;
     }
     const count = Math.floor(shown);
     if (cur && count !== renderedCount) {

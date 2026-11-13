@@ -47,11 +47,18 @@ const Voice = (() => {
     }
   }
 
+  // 声を読みこみ中か、しゃべっている最中なら true（会話の欄は、しゃべり終わるまで次へ進まない）
+  let loading = 0;
   async function play(stage, text) {
     stop();
     if (typeof language !== "undefined" && language !== "ja") return;
     if (!stage || !text) return;
     const my = token;
+    loading = my;
+    try { await playInner(stage, text, my); } finally { if (loading === my) loading = 0; }
+  }
+
+  async function playInner(stage, text, my) {
     const entry = (await manifest(stage))[fnv(text)];
     if (!entry || my !== token) return;
     const url = `assets/voice/${stage}/${encodeURIComponent(entry.file || `${fnv(text)}.mp3`)}?v=${entry.v || 0}`;
@@ -74,5 +81,5 @@ const Voice = (() => {
     manifest(stage);
   }
 
-  return { play, stop, preload, fnv, playing: () => !!current };
+  return { play, stop, preload, fnv, playing: () => !!current, busy: () => !!current || (loading !== 0 && loading === token) };
 })();
