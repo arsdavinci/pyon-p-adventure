@@ -10855,7 +10855,7 @@ function drawItems() {
       ctx.globalAlpha = 0.45 + Math.sin(performance.now() / 160) * 0.2;
       ctx.drawImage(FX.glowSprite("#d7a8ff"), item.x + item.w / 2 - 36, item.y + item.h / 2 - 36 + bob, 72, 72);
       ctx.restore();
-      drawBudouManju(item.x + item.w / 2, item.y + item.h / 2 + bob, 44);
+      drawBudouManju(item.x + item.w / 2, item.y + item.h / 2 + bob - 8, 62);
     } else if (item.type === "hp") {
       ctx.save();
       ctx.translate(item.x + item.w / 2, item.y + item.h / 2);
@@ -10969,7 +10969,7 @@ function drawKakipi(x, y, type) {
 
 function drawLunaCoin(x, y, r) {
   if (lunaCoinImage.complete && lunaCoinImage.naturalWidth > 0) {
-    ctx.drawImage(lunaCoinImage, x - r * 1.25, y - r * 1.25, r * 2.5, r * 2.5);
+    ctx.drawImage(lunaCoinImage, x - r * 1.1, y - r * 1.1, r * 2.2, r * 2.2);
     return;
   }
   ctx.save();
