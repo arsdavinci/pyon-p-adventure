@@ -4088,8 +4088,37 @@ function updatePlayer(dt) {
     state.lastSafe = { x: p.x, y: p.y + p.h };
   }
 
+  // もう はい上がれないとわかったら、落ちきる前に「さいならーーー」
+  if (p.grounded) state.pitDoomSaid = false;
+  else if (!state.pitDoomSaid && p.vy > 150 && pitIsHopeless(p, trait)) {
+    state.pitDoomSaid = true;
+    Chat.event("fallPit");
+  }
   if (p.y > worldBottom() + 100) damagePlayer(true);
   updateCamera(dt);
+}
+
+// 落ちている最中に、もう助からないか：まわり（走って行けるはんい）に、足もとより下か、ジャンプでとどく高さの足場がひとつもない
+function pitIsHopeless(p, trait) {
+  const feet = p.y + p.h;
+  const canAir = !p.airJumped && (Shop.has("double") || (hasEquippedWeapon() && isMechPower(state.weaponPower)));
+  // 2段ジャンプが残っていれば、その高さぶん上の足場までとどく（少しよゆうを引く）
+  const g = trait === "moonFloat" ? GRAVITY * 0.78 : GRAVITY;
+  const v = trait === "moonFloat" ? 880 : 800;
+  const reach = canAir ? (v * v) / (2 * g) * 0.85 : 0;
+  const bottom = worldBottom();
+  // 落ちきるまでに走って横へ行けるはんい（まだ高いところにいるほど広い）
+  const fallTime = Math.sqrt((2 * Math.max(0, bottom - feet)) / g);
+  const side = 120 + 360 * fallTime;
+  const L = p.x - side;
+  const R = p.x + p.w + side;
+  const solids = platforms.concat(blocks.filter(b => !b.broken), state.springs ?? []);
+  for (const q of solids) {
+    if (q.x + q.w < L || q.x > R) continue;
+    if (q.y >= bottom) continue;
+    if (q.y >= feet - reach) return false;
+  }
+  return feet > (courses[currentCourse]?.ceilingY ?? -Infinity);
 }
 
 const STAND_H = 54;
@@ -7151,7 +7180,9 @@ function startDeathFall(fell = false, timeUp = false) {
     // 穴に落ちたとき：はね上がらずに、そのまま下へ落ちていきながら「さいならーーー」
     p.vy = Math.max(p.vy, 200);
     state.deathTimer = 1.2;
-    Chat.event("fallPit");
+    // 落ちている途中で、もう言っていたら言いなおさない
+    if (!state.pitDoomSaid) Chat.event("fallPit");
+    state.pitDoomSaid = false;
     return;
   }
   p.vy = -720;
