@@ -7548,6 +7548,26 @@ function drawBossIntroOverlay() {
   ctx.strokeText(banner, W / 2, 33 * slide);
   ctx.fillText(banner, W / 2, 33 * slide);
 
+  // 下に会話の欄がある端末では、セリフはそっちに出す（ほかの会話と同じ出し方）
+  const shownNow = Math.floor(timer * (language === "ja" ? 36 : 64));
+  if (typeof Handheld !== "undefined" && Handheld.active() && Handheld.commOn()) {
+    const pic = bossAttackImages[kind]?.complete && bossAttackImages[kind].naturalWidth > 0 ? bossAttackImages[kind] : bossThemeImages[kind];
+    Chat.show({
+      key: `boss:${outro}:${kind}:${state.bossIntroStep ?? 0}`,
+      who: showingPyon ? "pyon" : "boss",
+      name: speaker,
+      color: accent,
+      avatar: showingPyon ? "" : pic?.src,
+      size: "190%",
+      pos: "50% 40%",
+      initial: "!",
+      text: [...text].slice(0, shownNow).join(""),
+      modes: ["bossIntro", "bossOutro"]
+    });
+    ctx.restore();
+    return;
+  }
+
   const boxW = W - 500;
   const boxH = 150;
   const boxX = 236;

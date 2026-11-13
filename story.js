@@ -1037,8 +1037,24 @@
     el: document.querySelector("#gbStory"),
     name: document.querySelector("#gbStoryName"),
     text: document.querySelector("#gbStoryText"),
+    avatar: document.querySelector("#gbStoryAvatar"),
     key: ""
   };
+
+  // 下の吹き出しの顔（ステージ中の会話の欄と同じ出し方）
+  function storyAvatar(ln, sp) {
+    const id = ln.s;
+    const face = ln.face || null;
+    const src = key => ok(img[key]) ? img[key].src : "";
+    const base = { who: id, color: sp.color, initial: L((sp.ja || "?")[0], (sp.en || "?")[0]) };
+    if (id === "pyon") return base;
+    if (id === "ran") return { ...base, avatar: faceImage("portraitRan", face)?.src || src("portraitRan") };
+    if (id === "luva") return { ...base, avatar: src("portraitLuva") ? faceImage("portraitLuva", face).src : src("cardLuva") };
+    if (id === "yana") return { ...base, avatar: src("portraitYana") ? faceImage("portraitYana", face).src : Story.yanabisIcon() };
+    if (id === "kaguya") return { ...base, avatar: src("portraitKaguya"), pos: "50% 20%" };
+    if (id === "maou") return { ...base, avatar: ok(bossThemeImages[5]) ? bossThemeImages[5].src : "", size: "170%", pos: "50% 34%" };
+    return { ...base, initial: "？" };
+  }
   storyBox.skip = document.querySelector("#gbStorySkip");
   storyBox.skip?.addEventListener("pointerdown", event => {
     event.preventDefault();
@@ -1079,6 +1095,7 @@
     storyBox.el.classList.toggle("is-done", done);
     storyBox.el.style.setProperty("--speaker", narr ? "#c8b2ff" : sp.color);
     storyBox.name.textContent = narr ? "" : L(sp.ja, sp.en);
+    if (fresh && !narr && storyBox.avatar && typeof Chat !== "undefined") Chat.paintAvatar(storyBox.avatar, storyAvatar(ln, sp));
     storyBox.text.textContent = [...lineText(ln)].slice(0, shown).join("").replace(/\n/g, language === "ja" ? "" : " ");
     if (fresh) {
       storyBox.el.classList.remove("is-pop");

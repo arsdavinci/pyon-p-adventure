@@ -597,8 +597,21 @@
       }
     });
 
-    // 店主のセリフ
-    if (line) {
+    // 店主のセリフ（下に会話の欄がある端末では、そっちに出す）
+    const below = line && typeof Handheld !== "undefined" && Handheld.active() && Handheld.commOn() &&
+      Chat.show({
+        key: "shop:" + line[0],
+        who: "keeper",
+        name: L("店主 モチまる", "Mochimaru"),
+        color: "#ff5f9e",
+        avatar: ok(art.keeper) ? art.keeper.src : "",
+        size: "250%",
+        pos: "50% 16%",
+        initial: L("モ", "M"),
+        text: [...L(line[0], line[1])].slice(0, Math.floor(lineT * (language === "ja" ? 40 : 70))).join(""),
+        modes: ["shop"]
+      });
+    if (line && !below) {
       const text = L(line[0], line[1]);
       const shown = [...text].slice(0, Math.floor(lineT * (language === "ja" ? 40 : 70))).join("");
       ctx.fillStyle = "rgba(255, 248, 253, 0.97)";

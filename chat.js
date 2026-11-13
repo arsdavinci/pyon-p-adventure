@@ -364,6 +364,46 @@
     }
   }
 
+  // ---------- 外から出すセリフ ----------
+  // ボス戦の前後・お店など、ふだんの会話とちがう場面のセリフも、同じ下の欄に同じ出し方で出す。
+  // o = { key, who, name, color, avatar（絵のURL）, size, pos, initial, text, modes（この場面のあいだだけ） }
+  let ext = null;
+  function paintAvatar(el, o) {
+    if (!el) return;
+    el.dataset.speaker = o.who || "";
+    el.style.borderColor = o.color || "";
+    const pic = o.who === "pyon" ? "" : (o.avatar || "");
+    el.style.backgroundImage = pic ? `url("${pic}")` : "";
+    el.style.backgroundSize = pic ? (o.size || "230%") : "";
+    el.style.backgroundPosition = pic ? (o.pos || "50% 24%") : "";
+    el.textContent = pic || o.who === "pyon" ? "" : (o.initial || "");
+    el.style.color = o.color || "";
+  }
+  function show(o) {
+    const e = dom();
+    if (!e.panel || !commOn) return false;
+    if (!ext || ext.key !== o.key) {
+      e.speaker.textContent = o.name;
+      e.speaker.style.color = o.color;
+      paintAvatar(e.avatar, o);
+      e.panel.classList.remove("comm-pop");
+      void e.panel.offsetWidth;
+      e.panel.classList.add("comm-pop");
+    }
+    ext = o;
+    if (e.text.textContent !== o.text) e.text.textContent = o.text;
+    return true;
+  }
+  function release() {
+    if (!ext) return;
+    ext = null;
+    renderedCount = -1;
+    const e = dom();
+    if (cur) renderSpeaker();
+    else if (e.text) { e.text.textContent = ""; e.speaker.textContent = ""; e.avatar.style.backgroundImage = ""; e.avatar.textContent = ""; }
+  }
+  const usingPanel = () => commOn;
+
   // ---------- 表示 ----------
   function renderSpeaker() {
     const e = dom();
@@ -508,6 +548,11 @@
       if (cur) renderSpeaker();
       else if (e.text) e.text.textContent = "";
     }
+    // ボス戦の前後・お店のセリフを出しているあいだは、ふだんの会話を出さない
+    if (ext) {
+      if (!ext.modes || ext.modes.includes(state.mode)) return;
+      release();
+    }
     if (state.mode === "playing") ambient(dt);
     if (!cur && queue.length) {
       cur = queue.shift();
@@ -612,5 +657,5 @@
     return voiced ? quietT < 0.6 : hold < 1.2 + total * 0.045;
   }
 
-  window.Chat = { event, say, update, layout, drawToast, refresh, busy };
+  window.Chat = { event, say, update, layout, drawToast, refresh, busy, show, release, paintAvatar, usingPanel };
 })();
