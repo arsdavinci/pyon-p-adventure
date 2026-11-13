@@ -1,4 +1,4 @@
-const CACHE_NAME = "pyon-p-adventure-v86";
+const CACHE_NAME = "pyon-p-adventure-v87";
 const APP_SHELL = [
   "./",
   "./index.html",
