@@ -8,8 +8,8 @@ window.STAGE_TALK = [
     talks: [
       [
         ["yana", "ぴょんぴーさん、月あめって何味なんですか？", "Pyon-P, what flavor is moon candy?"],
-        ["pyon", "月すだち味じゃ。月西の名産品ぞ。", "Moon-sudachi citrus. A Moon-West specialty."],
-        ["yana", "月すだち……？ 地球のすだちとは、ちがうんですか？", "Moon-sudachi...? Is it different from the Earth kind?"],
+        ["pyon", "つだち味じゃ。月西の名産品ぞ。", "Tsudachi citrus. A Moon-West specialty."],
+        ["yana", "つだち……？ 地球のすだちとは、ちがうんですか？", "Tsudachi...? Is it different from Earth's sudachi?"],
         ["pyon", "細かいこと気にしたら、ネタにならんのじょ。", "Sweat the details and you'll never get a joke out of it."]
       ],
       [
@@ -258,9 +258,9 @@ window.STAGE_TALK = [
         ["yana", "データでは知っていました。でも、見るのはちがいます。", "I knew it from data. But seeing it is different."]
       ],
       [
-        ["pyon", "月鳴門のうず潮って知っとる？", "Know the Moon-Naruto whirlpools?"],
+        ["pyon", "月門のうず流星って知っとる？", "Know the swirling meteors of Tsukimon Gate?"],
         ["yana", "月西の名所ですね。", "A famous Moon-West sight."],
-        ["pyon", "ここにもうず潮あったら、吾輩、目ぇ回すじょ。", "If there were whirlpools here, I'd get dizzy."],
+        ["pyon", "ここにもうず流星あったら、吾輩、目ぇ回すじょ。", "If there were swirling meteors here, I'd get dizzy."],
         ["yana", "もう回っていませんか？", "Aren't you already?"]
       ]
     ]
@@ -543,7 +543,7 @@ window.STAGE_TALK = [
         ["pyon", "なあ、ルーヴァさん、今ごろ何しとるかの。", "I wonder what Luva-san is doing right now."],
         ["yana", "フェスの準備をして、待ってくれているはずです。", "Preparing for the Fest and waiting for us, surely."],
         ["pyon", "楽屋にぶどうまんじゅう、用意しといてくれとるかな。", "Think there'll be kaki-pea in our dressing room?"],
-        ["yana", "たぶん、月すだちです。", "Probably moon-sudachi."]
+        ["yana", "たぶん、つだちです。", "Probably tsudachi."]
       ]
     ]
   },
