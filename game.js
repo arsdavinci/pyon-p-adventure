@@ -2537,6 +2537,7 @@ function enterArea(to, spawnX) {
         mine.opened.forEach(i => { if (level.doors[i]) level.doors[i].locked = false; });
       }
       state.stageStarsGot = Object.entries(memo).filter(([n]) => Number(n) !== to).reduce((sum, [, m]) => sum + (m.stars?.length ?? 0), 0);
+      unarmFirstStageEnemies();
       // 決まった武器をおく（1回目に入ったときだけ）と、練習部屋の説明
       const area = courses[currentCourse];
       if (area.fixedDrops && !memo[to]?.dropsGiven) {
@@ -3003,6 +3004,7 @@ function announceStage() {
   }
   Chat.event("stageStart");
   Tutorial.stageStart();
+  unarmFirstStageEnemies();
 }
 
 function maybePlayWorldIntro(worldIndex) {
@@ -5745,10 +5747,26 @@ function pickDropPower(attrOnly = null) {
 
 // 敵が自分で持っていた銃：たまにだけ落とす。落とすのは、今のワールドで出てよい武器（同じ月・星の種類）
 // ぴょんぴーからうばった銃は、そのまま返す
+// 1-1 では、合成の練習部屋で はじめて合成するまで、新しい光線銃は手に入らない
+// （「2つそろった、合成しましょう」は、練習部屋に入ってから）
+function firstWeaponsLocked() {
+  return currentCourse === 0 && !courses[0]?.tutorial && !fuseGuideDone();
+}
+
+// 1-1 の外の道の敵は、練習部屋で合成するまで光線銃を持たない
+function unarmFirstStageEnemies() {
+  if (!firstWeaponsLocked()) return;
+  for (const e of state.enemies) {
+    if (e.boss || e.stolenWeapon || state.gun.holder === e.id) continue;
+    e.weaponPower = 0;
+  }
+}
+
 function enemyDropPower(e) {
   const power = e.weaponPower ?? 0;
   if (!power) return 0;
   if (e.stolenWeapon) return power;
+  if (firstWeaponsLocked()) return 0;
   if (!e.boss && Math.random() > 0.35) return 0;
   const attr = power <= STAR_TOP ? weaponAttribute(power) : null;
   return pickDropPower(attr);
@@ -6538,7 +6556,7 @@ function breakBlock(block) {
 }
 
 function spawnBlockContents(block, k) {
-  if (block.item === "power" && Math.random() < 0.5) {
+  if (block.item === "power" && (Math.random() < 0.5 || firstWeaponsLocked())) {
     // 武器ブロックの半分は、ルナコインがはじける（武器は出にくい）
     for (let i = 0; i < 4; i++) {
       const c = coin(block.x + block.w / 2 + (i - 1.5) * 34 + k * 20, block.y - 40 - (i % 2) * 24 - k * 40, i % 2 ? "pea" : "kaki");
