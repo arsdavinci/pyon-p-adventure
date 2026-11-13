@@ -2673,6 +2673,27 @@ function drawDoors() {
       ctx.fillText(label, d.x + d.w / 2, d.y - 28);
       ctx.restore();
     }
+    // 「敵を全部たおす」部屋の出口には、のこりの数を出す（あと何体かわかるように）
+    if (d.needsClear) {
+      const left = state.enemies.filter(e => e.alive && !e.boss).length;
+      ctx.save();
+      ctx.font = `900 20px ${FX.FONT}`;
+      const label = left > 0 ? (language === "ja" ? `のこり ${left} たい` : `${left} left`) : (language === "ja" ? "とびら オープン！" : "Door open!");
+      const lw = ctx.measureText(label).width + 24;
+      ctx.fillStyle = left > 0 ? "#ffd1ed" : "#c9f6ff";
+      ctx.strokeStyle = left > 0 ? "#ff5f9e" : "#3f62c8";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      // 扉の絵（上にはみ出す）よりも上に出す
+      ctx.roundRect(d.x + d.w / 2 - lw / 2, d.y - 96, lw, 32, 12);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = left > 0 ? "#c0266d" : "#3f62c8";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(label, d.x + d.w / 2, d.y - 79);
+      ctx.restore();
+    }
     const usedArt = art.complete && art.naturalWidth > 0;
     if (usedArt) {
       const w = d.w + 40;
