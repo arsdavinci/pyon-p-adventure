@@ -669,6 +669,34 @@ body[data-control-mode="mobile"][data-overlay-open="true"] .touch-controls {
   filter: drop-shadow(0 10px 18px rgba(40, 24, 96, 0.4));
 }
 
+/* PC・横長の画面：大きさはブラウザの窓ではなく、ゲーム画面のわく（overlay）に合わせる。
+   言葉と端末の切りかえは、上の左右のすみへ（まん中の縦の場所を空けて、下のボタンが見切れないように） */
+body:not([data-layout="handheld"]) .overlay {
+  container-type: size;
+}
+
+body:not([data-layout="handheld"]) .overlay > .language-switch {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+}
+
+body:not([data-layout="handheld"]) .overlay > .control-switch {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+@supports (height: 1cqh) {
+  body:not([data-layout="handheld"]) .brand-logo.title-logo {
+    max-height: min(330px, 42cqh);
+  }
+
+  body:not([data-layout="handheld"]) .title-actions {
+    gap: clamp(6px, 1.6cqh, 12px);
+  }
+}
+
 .game-title.hidden {
   display: none;
 }
