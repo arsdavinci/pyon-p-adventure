@@ -6091,6 +6091,8 @@ function addWeaponStock(power = 1) {
     return false;
   }
   state.inventoryItems[emptyIndex] = powerValue;
+  // はじめてさわる光線銃か（図鑑にまだのっていないか）
+  const firstTouch = !weaponDex()[powerValue];
   markDex(powerValue);
   syncWeaponInventoryFromItems();
   playSfx("powerUp", state.player.x + state.player.w / 2);
@@ -6108,7 +6110,7 @@ function addWeaponStock(power = 1) {
   }
   spawnBlockPoof(state.player.x + state.player.w / 2, state.player.y + 18);
   FX.weaponGet(state.player.x + state.player.w / 2, state.player.y + 10, `${weaponName(powerValue)} ${weaponLevelLabel(powerValue)}`, false);
-  Chat.event("weaponGet", weaponName(powerValue));
+  Chat.event("weaponGet", { name: weaponName(powerValue), power: powerValue, isNew: firstTouch });
   return true;
 }
 
