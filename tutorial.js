@@ -72,6 +72,8 @@
   let talkSaid = false;
   let backT = 0;
   let airT = 0;
+  let bounceT = 0;
+  let bounceNext = null;
 
   const seen = key => !!(typeof Story !== "undefined" && Story.data.seen[key]);
   const mark = key => {
@@ -283,6 +285,13 @@
         backT += dt;
         if (gap(enemy) >= 300 || backT > 2.2) phase = "thiefCome";
         return false;
+      case "stompBounce": {
+        // 跳ねあがって、上へのいきおいがなくなるころ（いちばん高いところの少し前）で止める
+        bounceT += dt;
+        const p = state.player;
+        if (bounceT > 0.12 && (p.vy > -140 || bounceT > 0.45)) phase = bounceNext;
+        return false;
+      }
       case "regainTalk":
         if (talkDone("regained")) {
           mark("tutorialSteal");
@@ -346,12 +355,17 @@
   // 敵を踏んだとき
   function onStomp(e) {
     if (e !== enemy) return;
+    // 踏んだら、すぐには止めない。ぴょんぴーが少し跳ねあがって、敵が見えるところで止める
     if (phase === "air" || phase === "approach" || phase === "waitJump") {
-      phase = "talkStomp";
-      e.stun = 2;
+      phase = "stompBounce";
+      bounceNext = "talkStomp";
+      bounceT = 0;
+      e.stun = 3;
     } else if (phase === "thiefAir" || phase === "autoJump" || phase === "thiefCome" || phase === "thiefWait" || phase === "thiefBack") {
       e.tutorialSafe = false;
-      phase = "regainTalk";
+      phase = "stompBounce";
+      bounceNext = "regainTalk";
+      bounceT = 0;
     }
   }
 
@@ -379,6 +393,7 @@
       case "thiefWait":
       case "thiefAir":
       case "autoJump":
+      case "stompBounce":
         return { move: false, jump: false, shoot: false };
       case "shoot":
         return { move: true, jump: false, shoot: true };
