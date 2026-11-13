@@ -536,5 +536,7 @@
     ctx.restore();
   }
 
-  window.Tutorial = { LINES, stageStart, update, moveEnemy, onStomp, onStolen, lock, consumeJump, muteChat, draw, reset, active: () => !!phase };
+  window.Tutorial = { LINES, stageStart, update, moveEnemy, onStomp, onStolen, lock, consumeJump, muteChat, draw, reset, active: () => !!phase,
+    // チュートリアル中の、練習の相手ではない敵（終わるまでかくしておく）
+    hidesEnemy: e => !!phase && !!enemy && e !== enemy && !e.boss };
 })();

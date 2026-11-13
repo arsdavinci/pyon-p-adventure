@@ -4890,6 +4890,14 @@ function updateEnemies(dt) {
       continue;
     }
     if (!e.alive) continue;
+    // チュートリアルが終わるまで、練習の相手いがいの敵は出てこない（その場でかくれて待つ）
+    e.tutorialHidden = Tutorial.hidesEnemy(e);
+    if (e.tutorialHidden) {
+      e.vx = 0;
+      e.alert = 0;
+      e.gunCooldown = Math.max(e.gunCooldown ?? 0, 1);
+      continue;
+    }
     if (e.boss && courses[currentCourse]?.bossStage && !state.bossIntroPlayed) {
       e.vx = 0;
       e.vy += isUnderwaterStage() ? 0 : GRAVITY * dt;
@@ -6486,7 +6494,7 @@ function updateBeams(dt) {
         continue;
       }
       for (const e of state.enemies) {
-        if (!e.alive || !hit(beamRect, e)) continue;
+        if (!e.alive || e.tutorialHidden || !hit(beamRect, e)) continue;
         if (b.bubble) {
           // 空気鉄砲：ダメージはなく、ひよらせるだけ（うばわれた武器は落とす）
           stunEnemy(e);
@@ -12153,6 +12161,7 @@ function drawMoonianNova(colors) {
 function drawEnemies() {
   for (const e of state.enemies) {
     if (!e.alive && e.defeated <= 0) continue;
+    if (e.tutorialHidden) continue;
     // ピヨりが終わる少し前（のこり0.7秒）から、ぷるぷるふるえて「もうすぐ起きる」と知らせる
     const waking = e.alive && !e.boss && e.stun > 0 && e.stun < 0.7;
     if (waking) {
