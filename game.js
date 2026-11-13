@@ -363,7 +363,7 @@ const flyerImages = [
   "assets/enemy-mars-bee.png",
   "assets/enemy-crystal-bird.png",
   "assets/enemy-ocean-puffer.png",
-  "assets/enemy-ring-ufo.png",
+  "assets/enemy-mecha-ring-ufo.png",
   "assets/enemy-demon-lantern.png"
 ].map(src => {
   const img = new Image();
@@ -375,7 +375,7 @@ const flyerHurtImages = [
   "assets/enemy-mars-bee-hurt.png",
   "assets/enemy-crystal-bird-hurt.png",
   "assets/enemy-ocean-puffer-hurt.png",
-  "assets/enemy-ring-ufo-hurt.png",
+  "assets/enemy-mecha-ring-ufo-hurt.png",
   "assets/enemy-demon-lantern-hurt.png"
 ].map(src => {
   const img = new Image();
