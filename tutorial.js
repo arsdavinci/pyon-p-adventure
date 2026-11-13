@@ -239,6 +239,8 @@
     const a = aDown();
     const aFresh = a && !aWas;
     aWas = a;
+    // 会話のあいだは、A で次のセリフへ（ジャンプを待っているときはのぞく）
+    if (aFresh && phase !== "waitJump" && phase !== "thiefWait" && Chat.busy()) Chat.next();
     if (enemy && !state.enemies.includes(enemy)) { reset(); return false; }
 
     switch (phase) {

@@ -810,6 +810,23 @@ ${L("タップで つける／はずす", "Tap to put on / take off")}`, b => {
   window.addEventListener("orientationchange", () => setTimeout(layout, 250));
   document.addEventListener("fullscreenchange", () => setTimeout(layout, 120));
 
+  // 次のセリフへ進める（チュートリアル中に A を押したとき）。
+  // 次がなければ、今の文を全部出して声を止め、「言い終わった」ことにする
+  function next() {
+    if (!cur) return false;
+    if (typeof Voice !== "undefined" && Voice.stop) Voice.stop();
+    if (queue.length) {
+      cur = null;
+    } else {
+      shown = [...pcKeys(L(cur[1], cur[2]))].length;
+      voiced = true;
+      quietT = 1;
+      hold = 99;
+      renderedCount = -1;
+    }
+    return true;
+  }
+
   // 会話がまだ続いている（文字を出している・声がしゃべっている・読む時間）なら true
   function busy() {
     if (queue.length) return true;
@@ -820,5 +837,5 @@ ${L("タップで つける／はずす", "Tap to put on / take off")}`, b => {
     return voiced ? quietT < 0.6 : hold < 1.2 + total * 0.045;
   }
 
-  window.Chat = { event, say, update, layout, drawToast, refresh, busy, show, release, paintAvatar, usingPanel };
+  window.Chat = { event, say, update, layout, drawToast, refresh, busy, next, show, release, paintAvatar, usingPanel };
 })();
