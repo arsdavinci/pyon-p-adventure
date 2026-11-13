@@ -6,37 +6,37 @@
   const L = (ja, en) => (language === "ja" ? ja : en);
   const UNLOCK_COURSE = 2; // 1-1 と 1-2 をクリアすると開店
 
-  // price は「ルナコイン何枚」か
+  // price は「ルナコイン何枚」か。from は「ステージがいくつ開いたら店にならぶか」（なければ最初から）
   const ITEMS = [
-    { id: "manju", price: 20, repeat: true, color: "#c8a2e8", mark: "🍇", file: "item-budou-manju",
+    { id: "manju", from: 0, price: 20, repeat: true, color: "#c8a2e8", mark: "🍇", file: "item-budou-manju",
       ja: ["ぶどうまんじゅう", "ぴょんぴーの大好物。その場でライフとHPが満タンになる。何度でも買える。"],
       en: ["Grape Manju", "Pyon-P's favorite treat. Fully restores lives and HP right now. Buy as often as you like."] },
-    { id: "cushion", price: 80, color: "#ffd1ed", mark: "☁",
-      ja: ["ふわふわクッション", "ダメージを受けたあとの無敵時間が2倍になる。"],
-      en: ["Fluffy Cushion", "Doubles your invincibility time after taking a hit."] },
-    { id: "magnet", price: 120, color: "#9ee8ff", mark: "U",
-      ja: ["コインじしゃく", "近くのルナコインが勝手に集まってくる。"],
-      en: ["Coin Magnet", "Nearby Luna Coins fly to you on their own."] },
-    { id: "strap", price: 160, color: "#c8b2ff", mark: "∞",
-      ja: ["ぜったいはなさんストラップ", "敵に光線銃をうばわれなくなる。"],
-      en: ["Never-Let-Go Strap", "Enemies can no longer steal your ray gun."] },
-    { id: "key", price: 200, color: "#ffd85a", mark: "♪",
-      ja: ["あいかぎ", "どのステージも、カギを1本持った状態で始まる。"],
-      en: ["Spare Key", "Start every stage already holding one key."] },
-    { id: "boots", price: 300, color: "#ff8db7", mark: "▼",
-      ja: ["ふつうのゲームのくつ", "ふむだけで敵を倒せる。そう、ふつうのゲームみたいに。"],
-      en: ["Normal-Game Boots", "Stomping actually beats enemies. You know, like in a normal game."] },
-    { id: "double", price: 500, color: "#d9ffd6", mark: "✦",
+    { id: "double", from: 0, price: 200, color: "#d9ffd6", mark: "✦",
       ja: ["2段ジャンプシューズ", "空中でもう1回ジャンプできる。空ルートもらくらく。"],
       en: ["Double-Jump Shoes", "Jump once more in mid-air. Sky routes become a breeze."] },
-    { id: "statue", price: 1999, color: "#fff3a4", mark: "★",
+    { id: "cushion", from: 0, price: 80, color: "#ffd1ed", mark: "☁",
+      ja: ["ふわふわクッション", "ダメージを受けたあとの無敵時間が2倍になる。"],
+      en: ["Fluffy Cushion", "Doubles your invincibility time after taking a hit."] },
+    { id: "magnet", from: 5, price: 120, color: "#9ee8ff", mark: "U",
+      ja: ["コインじしゃく", "近くのルナコインが勝手に集まってくる。"],
+      en: ["Coin Magnet", "Nearby Luna Coins fly to you on their own."] },
+    { id: "strap", from: 8, price: 160, color: "#c8b2ff", mark: "∞",
+      ja: ["ぜったいはなさんストラップ", "敵に光線銃をうばわれなくなる。"],
+      en: ["Never-Let-Go Strap", "Enemies can no longer steal your ray gun."] },
+    { id: "key", from: 12, price: 200, color: "#ffd85a", mark: "♪",
+      ja: ["あいかぎ", "どのステージも、カギを1本持った状態で始まる。"],
+      en: ["Spare Key", "Start every stage already holding one key."] },
+    { id: "boots", from: 17, price: 300, color: "#ff8db7", mark: "▼",
+      ja: ["ふつうのゲームのくつ", "ふむだけで敵を倒せる。そう、ふつうのゲームみたいに。"],
+      en: ["Normal-Game Boots", "Stomping actually beats enemies. You know, like in a normal game."] },
+    { id: "statue", from: 24, price: 1999, color: "#fff3a4", mark: "★",
       ja: ["黄金のぶどうまんじゅう像", "とくに効果はない。でも、すごい。"],
       en: ["Golden Grape Manju Statue", "Does nothing in particular. But it is magnificent."] },
     // ---- そのワールドのステージの中のお店でしか買えない ----
-    { id: "moonJump", world: 0, price: 120, color: "#fff3a4", mark: "☾",
+    { id: "moonJump", from: 5, world: 0, price: 120, color: "#fff3a4", mark: "☾",
       ja: ["月あめジャンプ", "ジャンプが少し高くなる。月あめのふわふわパワー。"],
       en: ["Moon Candy Jump", "Your jumps go a little higher. Fluffy moon-candy power."] },
-    { id: "charm", world: 0, price: 300, color: "#ffd1ed", mark: "♥",
+    { id: "charm", from: 5, world: 0, price: 300, color: "#ffd1ed", mark: "♥",
       ja: ["うさみみお守り", "ステージで1回だけ、やられてもその場で復活できる。"],
       en: ["Bunny-Ear Charm", "Once per stage, get back up on the spot instead of going down."] },
     { id: "heatCape", world: 1, price: 200, color: "#ff9a6b", mark: "♨",
@@ -110,7 +110,8 @@
   // ならぶ商品：どこでも買える物 ＋（ステージの中のお店なら）そのワールドだけの物
   let shopWorld = null;
   let inStage = null;
-  const stock = () => ITEMS.filter(it => it.world === undefined || it.world === shopWorld);
+  // ステージが進むほど、品ぞろえがふえる
+  const stock = () => ITEMS.filter(it => (it.world === undefined || it.world === shopWorld) && unlockedCourse >= (it.from ?? 0));
 
   // ステージの中のよろず屋：いまの持ち物でお買い物して、終わったらステージにもどる
   function openInStage() {
@@ -146,12 +147,17 @@
         page = 0;
         const first = !Story.data.seen.shopVisit;
         Story.data.seen.shopVisit = true;
+        // 前に来たときより品がふえていたら、それを知らせる
+        const seenKey = "shopStock" + (shopWorld ?? "");
+        const count = stock().length;
+        const more = !first && count > (Story.data.seen[seenKey] ?? count);
+        Story.data.seen[seenKey] = count;
         say(first
           ? "まいど〜！ よろず屋『つきのわ』へようこそ。お代はルナコインでいただくで。"
-          : "まいど〜！ 今日はなに買うてく？",
+          : more ? "まいど〜！ 新しい品が入ったで。見てってや！" : "まいど〜！ 今日はなに買うてく？",
         first
           ? "Welcome to Tsukinowa General Store! I take payment in Luna Coins."
-          : "Welcome back! What'll it be today?");
+          : more ? "Welcome back! New stock just came in. Take a look!" : "Welcome back! What'll it be today?");
       }
     });
   }
