@@ -216,6 +216,18 @@
       state.enemies = state.enemies.filter(e => e.boss || e.x < door.x - 500 || e.x > wallX + 900 || e === enemy);
     }
     const p = state.player;
+    // 「ポータルです！」のあいだは、カメラがポータル（扉）をまん中に映す。言い終わったら、ぴょんぴーにもどる
+    if (state.cameraLook) {
+      const look = state.cameraLook;
+      look.t += dt;
+      p.vx = 0;
+      if (look.t > 1.6 && (!Chat.busy() || look.t > 9)) {
+        state.cameraLook = null;
+        return false;
+      }
+      updateCamera(dt);
+      return true;
+    }
     if (gatePush) {
       // ヤナビスが飛んできて、ぴょんぴーを扉まで押していく
       gatePush.t += dt;
@@ -251,7 +263,10 @@
         if (gateCount >= 5) {
           Chat.say(LINES.gate5, true);
           gatePush = { yx: state.camera + VIEW_W + 80, t: 0, said: false };
-        } else Chat.say(LINES[`gate${gateCount}`], true);
+        } else {
+          Chat.say(LINES[`gate${gateCount}`], true);
+          state.cameraLook = { x: door.x + door.w / 2, y: door.y + door.h / 2, t: 0 };
+        }
       }
     } else if (p.x + p.w < wallX - 80) gateTouching = false;
     return false;

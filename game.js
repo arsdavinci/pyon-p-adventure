@@ -3103,6 +3103,16 @@ function updateCamera(dt, snap = false) {
     const lookDown = keys.has("ArrowDown") || keys.has("KeyS") || gamepadState.down;
     if (lookDown && p.grounded) targetY = Math.max(targetY, Math.min(camY + 12, p.y - 60));
   }
+  // ポータルを見せるときは、そこを画面のまん中に
+  if (state.cameraLook && !snap) {
+    const look = state.cameraLook;
+    const lx = clamp(look.x - VIEW_W / 2, 0, WORLD_WIDTH - VIEW_W);
+    state.camera += (lx - state.camera) * Math.min(1, dt * 3.2);
+    targetY = look.y - VIEW_H * 0.55;
+    targetY = clamp(targetY, minY, maxY);
+    state.cameraY = camY + (targetY - camY) * Math.min(1, dt * 3.2);
+    return;
+  }
   targetY = clamp(targetY, minY, maxY);
   if (snap) {
     state.camera = targetX;
