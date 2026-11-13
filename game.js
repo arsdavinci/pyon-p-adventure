@@ -929,7 +929,68 @@ const MAP_WORLD_FOG_ZONES = [
   { x: 1515, y: 450, rx: 255, ry: 380, rotate: 0.07, color: "rgba(200, 178, 255, 0.78)" }
 ];
 
+// ---------- ステージごとの「つくり」 ----------
+// 同じ星の中で、にたステージが続かないように、ステージごとに
+//   kinds = 外の道に出てくる地形の種類（なければ全部まぜる）
+//   rooms = 外の道のあとに入る部屋（順番どおり）
+//   title = ステージが始まるときに出る名前
+// を決める。ちがう星どうしは、にていてもよい。
+const STAGE_RECIPES = [
+  // 月あめ平原
+  [
+    { title: ["はじめての道", "First Steps"], rooms: ["winding"] },
+    { title: ["空の島わたり", "Sky Islands"], kinds: ["islands", "mover", "pits", "shelf"], rooms: ["shaftUp"] },
+    { title: ["月あめ山のぼり", "Candy Mountain"] }, // 山のぼりステージ
+    { title: ["とりでのたたかい", "Fortress Fight"], kinds: ["pillars", "tower", "flat", "cliff"], rooms: ["arena", "cave"] }
+  ],
+  // 火星ネオンコロニー
+  [
+    { title: ["マグマの谷とび", "Lava Leaps"], kinds: ["pits", "valley", "stairs", "flat"], rooms: ["shaftDown"] },
+    { title: ["地下トンネルたんけん", "Tunnel Dive"], kinds: ["tunnel", "crawlway", "pillars", "flat"], rooms: ["cave", "maze"] },
+    { title: ["トゲトゲ台地", "Spike Plateau"], kinds: ["spikeField", "shelf", "tower"], rooms: ["winding"] },
+    { title: ["火山のぼり", "Volcano Climb"], kinds: ["cliff", "stairs", "islands", "mover"], rooms: ["shaftUp", "arena"] }
+  ],
+  // クリスタル氷星
+  [
+    { title: ["つるつる大すべり", "Slip and Slide"], kinds: ["pits", "stairs", "flat", "valley"], rooms: ["winding"] },
+    { title: ["氷の浮き島", "Frozen Isles"], kinds: ["islands", "mover", "shelf"], rooms: ["shaftUp"] },
+    { title: ["クリスタルの迷路", "Crystal Maze"], kinds: ["tunnel", "crawlway", "pillars", "spikeField"], rooms: ["maze", "cave"] },
+    { title: ["氷のとりで", "Ice Fortress"], kinds: ["tower", "cliff", "flat", "pillars"], rooms: ["arena", "shaftDown"] }
+  ],
+  // 星の海（泳ぐステージ：sea = 岩の門のならび方）
+  [
+    { title: ["はじめての海", "First Swim"], sea: "wide" },
+    { title: ["ジグザグ岩", "Zigzag Reef"], sea: "zigzag" },
+    { title: ["ぱくぱく門", "Snapping Gates"], sea: "timing" },
+    { title: ["ふたご岩", "Twin Rocks"], sea: "pairs" },
+    { title: ["門のウェーブ", "Gate Wave"], sea: "wave" },
+    { title: ["せまい海みち", "Narrow Strait"], sea: "narrow" }
+  ],
+  // リングメカ工場
+  [
+    { title: ["トロッコ大ぼうそう", "Runaway Cart"], kinds: ["cart", "mover", "flat", "pits"], rooms: ["winding"] },
+    { title: ["うごく足場の空", "Moving Sky"], kinds: ["islands", "mover", "shelf", "pits"], rooms: ["shaftUp"] },
+    { title: ["工場の迷路", "Factory Maze"], kinds: ["tunnel", "crawlway", "pillars", "spikeField"], rooms: ["maze", "arena"] },
+    { title: ["メカの塔", "Mecha Tower"], kinds: ["tower", "cliff", "stairs", "valley"], rooms: ["shaftDown", "cave"] }
+  ],
+  // 魔王星
+  [
+    { title: ["トゲの荒野", "Thorn Wastes"], kinds: ["spikeField", "shelf", "pits"], rooms: ["winding"] },
+    { title: ["やみの浮き島", "Shadow Isles"], kinds: ["islands", "mover", "cliff"], rooms: ["shaftUp"] },
+    { title: ["魔王の地下道", "Demon Tunnels"], kinds: ["tunnel", "crawlway", "pillars", "flat"], rooms: ["cave", "maze"] },
+    { title: ["手下の大軍", "Minion Army"], kinds: ["flat", "pillars", "tower"], rooms: ["arena", "arena"] },
+    { title: ["ならくの穴", "The Abyss"], kinds: ["cliff", "stairs", "valley"], rooms: ["shaftDown", "shaftUp"] },
+    { title: ["まよいの城", "Castle of Confusion"], kinds: ["pits", "mover", "valley", "shelf"], rooms: ["maze", "winding"] },
+    { title: ["魔王城への道", "Road to the Demon Castle"], rooms: ["cave", "arena", "shaftUp"] }
+  ]
+];
+
+function stageRecipe(worldIndex, areaIndex) {
+  return STAGE_RECIPES[worldIndex]?.[areaIndex] ?? null;
+}
+
 function makeCourse(worldIndex, areaIndex, layout = areaIndex, seed = null) {
+  const recipe = stageRecipe(worldIndex, areaIndex);
   const difficulty = STAGE_START_INDICES[worldIndex] + areaIndex + 1;
   const bossStage = areaIndex === stageAreaCount(worldIndex) - 1;
   const finalStage = worldIndex === STAGE_THEMES.length - 1 && bossStage;
@@ -960,7 +1021,7 @@ function makeCourse(worldIndex, areaIndex, layout = areaIndex, seed = null) {
   if (climb) platforms = climb.platforms;
   // ふつうのステージは、区間をつないだ、その場所だけの通路にする
   const chunk = !bossStage && !finalStage && trait !== "underwater" && !climb
-    ? buildChunkCourse({ seed: seed ?? (STAGE_START_INDICES[worldIndex] + areaIndex) * 3, difficulty, trait, endX: 3500, worldEnd: 3900 })
+    ? buildChunkCourse({ seed: seed ?? (STAGE_START_INDICES[worldIndex] + areaIndex) * 3, difficulty, trait, endX: 3500, worldEnd: 3900, kinds: recipe?.kinds ?? CHUNK_KINDS })
     : null;
   // 外の道は 3900 まで。その先は高いかべ
   if (chunk) chunk.platforms.push(rect(3900, -1200, WORLD_WIDTH - 3900 + 200, canvas.height + 1248));
@@ -1027,7 +1088,7 @@ function makeCourse(worldIndex, areaIndex, layout = areaIndex, seed = null) {
     oxygenItem(2060, 88),
     oxygenItem(3520, 104)
   ] : [];
-  const seaGates = trait === "underwater" && !bossStage ? buildSeaGates(areaIndex, difficulty, seed ?? (STAGE_START_INDICES[worldIndex] + areaIndex) * 3) : [];
+  const seaGates = trait === "underwater" && !bossStage ? buildSeaGates(areaIndex, difficulty, seed ?? (STAGE_START_INDICES[worldIndex] + areaIndex) * 3, recipe?.sea ?? null) : [];
   const pitGeysers = chunk && trait === "marsLava"
     ? chunk.pitXs.filter((_, i, a) => a.length <= 4 || i % Math.ceil(a.length / 4) === 0).slice(0, 4).map((x, i) => lavaGeyser(x - 36, (i * 1.1 + 0.5) % 4.2))
     : null;
@@ -1568,9 +1629,12 @@ function buildChunkCourse({ seed, difficulty, trait, endX = 4860, worldEnd = WOR
     const j = Math.floor(rnd() * (i + 1));
     [order[i], order[j]] = [order[j], order[i]];
   }
-  if (factory) order.splice(Math.floor(rnd() * order.length), 0, "mover");
-  // どのステージにも、ほふく前進でくぐる場所をひとつ（はじめのほうに置くので、はみ出して消えない）
-  order.splice(Math.floor(rnd() * 2), 0, "crawlway");
+  const custom = kinds !== CHUNK_KINDS; // ステージごとに地形をしぼった道
+  if (factory && !order.includes("mover")) order.splice(Math.floor(rnd() * order.length), 0, "mover");
+  // ほふく前進でくぐる場所：全部まぜる道ではひとつ（はじめのほうに置く）。しぼった道では、えらんだときだけ
+  if (!custom) order.splice(Math.floor(rnd() * 2), 0, "crawlway");
+  // トロッコは長いので、えらんだときはいちばんはじめに
+  if (custom && order.includes("cart")) { order.splice(order.indexOf("cart"), 1); order.unshift("cart"); }
   // メカのワールドは、はじめのほうにトロッコ
   if (factory && kinds === CHUNK_KINDS) order.splice(Math.floor(rnd() * 2), 0, "cart");
   // 旗の前に、地面へもどる階段と平地が入るように、区間はここまでにおさめる（はみ出したらやり直し）
@@ -2189,8 +2253,11 @@ function buildStageAreas(index) {
       const j = Math.floor(rnd() * (i + 1));
       [kinds[i], kinds[j]] = [kinds[j], kinds[i]];
     }
-    const picked = [];
+    let picked = [];
     for (const k of kinds) if (!picked.includes(k) && picked.length < 3) picked.push(k);
+    // ステージごとに決めた部屋があれば、そっちを使う（同じ星の中でかぶらないように決めてある）
+    const recipe = stageRecipe(worldIndex, areaIndex);
+    if (recipe?.rooms) picked = recipe.rooms.slice();
     picked.forEach((k, i) => {
       const sd = seedFor(1 + i);
       areas.push(k === "winding" ? makeWindingArea(base, worldIndex, diff, sd)
@@ -2925,7 +2992,10 @@ function announceStage() {
   const p = state.player;
   updateCamera(0, true);
   const tag = course.finalStage ? "  FINAL" : course.bossStage ? "  BOSS" : "";
-  FX.showCard(Story.worldName(course.worldIndex), `STAGE ${stageLabel()}${tag}`, { accent: course.theme?.accent });
+  // ステージごとの名前（そのステージがどんな場所か、ひとことで）
+  const recipeTitle = stageRecipe(course.worldIndex, course.areaIndex)?.title;
+  const stageName = recipeTitle && !course.bossStage ? `  ${language === "ja" ? recipeTitle[0] : recipeTitle[1]}` : "";
+  FX.showCard(Story.worldName(course.worldIndex), `STAGE ${stageLabel()}${tag}${stageName}`, { accent: course.theme?.accent });
   if (!FX.transitioning()) FX.startTransition({ type: "iris", half: true, dur: 1.1 });
   if (FX.S.transition) {
     FX.S.transition.x = (p.x + p.w / 2 - state.camera) * ZOOM;
@@ -6168,9 +6238,52 @@ function updateBeams(dt) {
 // ---------- 星の海：岩のかべと、開いたりとじたりする岩の門 ----------
 // 門はすき間を泳いで通る。とじる前に先が赤く光るので、開いているうちに通りぬける。はさまれるとダメージ
 
-function buildSeaGates(areaIndex, difficulty, seed = areaIndex) {
+function buildSeaGates(areaIndex, difficulty, seed = areaIndex, style = null) {
   // 門の数・場所・すき間の高さは、エリアごとにちがう
   const rnd = seededRandom(seed + 500);
+  if (style) {
+    // ステージごとの、門のならび方
+    const gates = [];
+    const gate = (x, frac, gapH, moving, phase = 0) => gates.push({
+      x: Math.round(clamp(x, 900, 4560)), w: SEA_GATE_W, frac: clamp(frac, 0.12, 0.88), gapH, moving, phase: phase % SEA_GATE_PERIOD
+    });
+    const spread = (n, i) => 980 + i * ((4500 - 980) / Math.max(1, n - 1));
+    const movingGap = Math.max(150, 200 - difficulty * 2);
+    if (style === "wide") {
+      // 門は少なく、動かない。すき間は広い
+      const n = 3 + Math.floor(rnd() * 2);
+      for (let i = 0; i < n; i++) gate(spread(n, i) + (rnd() - 0.5) * 200, 0.2 + rnd() * 0.6, 210, false);
+    } else if (style === "zigzag") {
+      // 動かない門がたくさん。すき間が上・下・上・下と入れかわる
+      const n = 7;
+      for (let i = 0; i < n; i++) gate(spread(n, i), (i % 2 ? 0.84 : 0.16) + (rnd() - 0.5) * 0.08, 160, false);
+    } else if (style === "timing") {
+      // ぜんぶ開いたりとじたりする門。タイミングを見て通る
+      const n = 5;
+      for (let i = 0; i < n; i++) gate(spread(n, i) + (rnd() - 0.5) * 160, 0.15 + rnd() * 0.7, movingGap, true, rnd() * SEA_GATE_PERIOD);
+    } else if (style === "pairs") {
+      // 2まいひと組の岩。あいだのせまい水路を、たてに泳いでぬける
+      const n = 3;
+      for (let i = 0; i < n; i++) {
+        const x = 1150 + i * 1350 + (rnd() - 0.5) * 160;
+        const up = rnd() < 0.5;
+        gate(x, up ? 0.18 : 0.82, 165, false);
+        gate(x + 250, up ? 0.82 : 0.18, 165, false);
+      }
+    } else if (style === "wave") {
+      // 動く門が、はしから順番に開いていく。波に乗って一気にぬける
+      const n = 7;
+      for (let i = 0; i < n; i++) gate(spread(n, i), 0.3 + rnd() * 0.4, Math.max(170, movingGap), true, SEA_GATE_PERIOD - i * 0.55 + 8);
+    } else {
+      // せまいすき間がつづく。ところどころ動く門
+      const n = 6;
+      for (let i = 0; i < n; i++) {
+        const moving = i % 3 === 2;
+        gate(spread(n, i) + (rnd() - 0.5) * 140, 0.14 + rnd() * 0.72, moving ? movingGap : 132, moving, i * 1.1);
+      }
+    }
+    return gates;
+  }
   const count = clamp(3 + Math.floor(rnd() * 3) + Math.floor(difficulty / 12), 3, 7);
   const gates = [];
   for (let i = 0; i < count; i++) {
