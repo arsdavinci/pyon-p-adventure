@@ -1297,8 +1297,7 @@ body[data-layout="handheld"] .gb-guide {
 
 body[data-game-mode="title"] .gb-guide-title,
 body[data-game-mode="cutscene"] .gb-guide-story,
-body[data-game-mode="credits"] .gb-guide-story,
-body[data-game-mode="movie"] .gb-guide-story {
+body[data-game-mode="credits"] .gb-guide-story {
   display: flex;
 }
 

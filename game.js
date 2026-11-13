@@ -6906,6 +6906,7 @@ function draw() {
   if (mode === "movie") {
     ctx.fillStyle = "#120a2a";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawMovieLoading();
   } else if (mode === "worldMap" || mapInventory) drawWorldMapScreen();
   else if (mode === "cutscene") Story.drawCutscene();
   else if (mode === "credits") Story.drawCredits();
@@ -7916,6 +7917,56 @@ function drawItemFullPrompt() {
   ctx.fillStyle = "#4d4773";
   ctx.font = "800 16px Segoe UI, system-ui, sans-serif";
   ctx.fillText("装備画面で融合して、空きを作ってね。", x + w / 2, y + 64);
+  ctx.restore();
+}
+
+// 動画が始まるまでの「よみこみ中」画面（はねるぴょんぴーの耳の月と、進みぐあいのバー）
+function drawMovieLoading() {
+  const info = Story.movieLoading();
+  if (!info) return;
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  const t = performance.now() / 1000;
+  ctx.save();
+  // ゆっくり光る星
+  for (let i = 0; i < 40; i++) {
+    const x = (i * 197.3) % canvas.width;
+    const y = (i * 113.7) % canvas.height;
+    ctx.globalAlpha = 0.25 + 0.35 * Math.sin(t * 2 + i);
+    ctx.fillStyle = "#fff3c4";
+    ctx.fillRect(x, y, 3, 3);
+  }
+  ctx.globalAlpha = 1;
+  // はねる3つの月
+  for (let i = 0; i < 3; i++) {
+    const y = cy - 40 - Math.abs(Math.sin(t * 4 + i * 0.7)) * 26;
+    ctx.fillStyle = ["#ffd85a", "#ff8db7", "#8fe3ff"][i];
+    ctx.beginPath();
+    ctx.arc(cx - 60 + i * 60, y, 16, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "900 34px system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const dots = ".".repeat(1 + (Math.floor(t * 2.5) % 3));
+  ctx.fillText((language === "ja" ? "ムービーを よみこみ中" : "Loading movie") + dots, cx, cy + 34);
+  // 進みぐあい（わからないときは、行ったり来たりする光）
+  const w = 420, h = 14, x = cx - w / 2, y = cy + 78;
+  ctx.fillStyle = "rgba(255,255,255,0.18)";
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, 7);
+  ctx.fill();
+  ctx.fillStyle = "#ff8db7";
+  ctx.beginPath();
+  if (info.pct > 0.02) ctx.roundRect(x, y, Math.max(h, w * info.pct), h, 7);
+  else ctx.roundRect(x + (w - 110) * (0.5 + 0.5 * Math.sin(t * 2.4)), y, 110, h, 7);
+  ctx.fill();
+  if (info.t > 6) {
+    ctx.fillStyle = "rgba(255,255,255,0.7)";
+    ctx.font = "700 20px system-ui, sans-serif";
+    ctx.fillText(language === "ja" ? "回線がゆっくりみたい。もう少し待ってね" : "Slow connection. Just a moment...", cx, cy + 128);
+  }
   ctx.restore();
 }
 

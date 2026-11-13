@@ -346,8 +346,21 @@
         v.play().catch(finish);
       });
     });
+    // 読みこみのようす（動画が始まるまで、画面に「よみこみ中」を出す）
+    const progress = () => {
+      try {
+        if (!movie || !v.duration || !isFinite(v.duration) || !v.buffered.length) return;
+        movie.pct = Math.max(movie.pct, Math.min(1, v.buffered.end(v.buffered.length - 1) / v.duration));
+      } catch (_) {}
+    };
+    v.addEventListener("progress", progress);
+    v.addEventListener("loadedmetadata", progress);
+    v.addEventListener("playing", () => { if (movie) movie.playing = true; });
     movie = {
       finish,
+      pct: 0,
+      playing: false,
+      since: performance.now(),
       skipFocused: false,
       focusSkip(on = true) {
         this.skipFocused = on;
@@ -1537,7 +1550,8 @@
     const mode = state.mode;
     if (mode === "movie") {
       // うっかりスキップしないように：十字キーで「スキップ」を選んでから、決定でスキップ
-      if (!movie) return true;
+      // 動画が始まる前（よみこみ中）は、スキップの操作はうけつけない
+      if (!movie || !movie.playing) return true;
       if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "KeyA", "KeyD", "KeyW", "KeyS"].includes(code)) movie.focusSkip();
       else if (movie.skipFocused && (code === "Escape" || CONFIRM.includes(code))) movie.finish();
       else movie.focusSkip(false);
@@ -1859,8 +1873,15 @@
     }
   }
 
+  // 動画のよみこみ中なら { pct, t }、始まったら null
+  function movieLoading() {
+    if (!movie || movie.playing) return null;
+    return { pct: movie.pct, t: (performance.now() - movie.since) / 1000 };
+  }
+
   window.Story = {
     get data() { return data; },
+    movieLoading,
     img, ok,
     worldName, bossName,
     persist, hasSave, resetSave, applyToGame, shardCount, starTotals,
