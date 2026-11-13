@@ -171,12 +171,17 @@
   const LAND = { W: 2400, H: 1200, DPAD: 330 / 280, ABXY: 1.12, SMALL: 1.55 };
   const LAND_VARS = ["--uL", "--uD", "--uA", "--uS"];
 
+  // 本体の絵は、ぜんぶ入れなくてよい。上の肩ボタン（y32）から画面の下の小窓（y1110）までを高さいっぱいに、
+  // 横は十字キー（x140）から B ボタン（x2310）までが入れば、本体のはしは画面の外やホームバーの下に出てもよい
+  const LAND_CORE = { y0: 32, y1: 1110, x0: 140, x1: 2310 };
   function layoutLand(safe) {
     const availW = window.innerWidth;
-    const availH = fullHeight() - safe.t - safe.b;
-    const u = Math.min(availW / LAND.W, availH / LAND.H);
-    const x = (availW - LAND.W * u) / 2;
-    const y = safe.t + (availH - LAND.H * u) / 2;
+    const availH = fullHeight();
+    // ボタンは、iPhone の切りかき（安全エリア）に 20px までなら入ってよい
+    const sideRoom = availW - Math.max(0, safe.l - 20) - Math.max(0, safe.r - 20);
+    const u = Math.min(availH / (LAND_CORE.y1 - LAND_CORE.y0), sideRoom / (LAND_CORE.x1 - LAND_CORE.x0));
+    const x = availW / 2 - (LAND.W / 2) * u;
+    const y = availH / 2 - ((LAND_CORE.y0 + LAND_CORE.y1) / 2) * u;
     commSrc = 0;
     delete document.body.dataset.commSize;
     document.body.dataset.comm = "off";
