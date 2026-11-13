@@ -89,6 +89,11 @@
   let autoShoot = 0; // 0 = まだ / 1 = 言い終わるのを待つ / 2 = ヤナビスが X を押している
   let autoT = 0;
   let bounceNext = null;
+  // どの場面でも止まったままにならないための見はり
+  let phaseT = 0;
+  let lastPhase = null;
+  let missN = 0;
+  let farT = 0;
 
   const seen = key => !!(typeof Story !== "undefined" && Story.data.seen[key]);
   const mark = key => {
@@ -102,6 +107,7 @@
   function reset() {
     if (autoShoot === 2) keys.delete("KeyX");
     nagN = 0; nagT = 0; nagWant = false; autoShoot = 0; autoT = 0;
+    phaseT = 0; lastPhase = null; missN = 0; farT = 0;
     phase = null;
     enemy = null;
     jumpQueued = false;
@@ -133,6 +139,25 @@
     e.gunCooldown = 99;
     e.vy += GRAVITY * dt;
     moveEnemyAndCollide(e, dt);
+  }
+
+  // 敵を、ぴょんぴーの前（向いている側）の、同じ高さの地面におく（とどかない場所から呼びもどす）
+  function bringEnemyNear(e, dist) {
+    const p = state.player;
+    const solids = platforms.concat(blocks.filter(b => !b.broken));
+    for (const side of [p.facing || 1, -(p.facing || 1)]) {
+      const x = side > 0 ? p.x + p.w + dist : p.x - dist - e.w;
+      const y = p.y + p.h - e.h;
+      const box = { x, y, w: e.w, h: e.h };
+      if (solids.some(s => hit(box, s))) continue;
+      e.x = x;
+      e.y = y;
+      e.vx = 0;
+      e.vy = 0;
+      spawnBlockPoof(e.x + e.w / 2, e.y + e.h / 2);
+      return true;
+    }
+    return false;
   }
 
   function gap(e) {
@@ -242,6 +267,18 @@
     // 会話のあいだは、A で次のセリフへ（ジャンプを待っているときはのぞく）
     if (aFresh && phase !== "waitJump" && phase !== "thiefWait" && Chat.busy()) Chat.next();
     if (enemy && !state.enemies.includes(enemy)) { reset(); return false; }
+    if (phase !== lastPhase) { lastPhase = phase; phaseT = 0; }
+    phaseT += dt;
+    // 見はり：会話の場面が長すぎる（会話が止まっている）ときは、先へ進める
+    if ((phase === "talkStomp" || phase === "talkDone" || phase === "stolenTalk" || phase === "regainTalk") && phaseT > 25) {
+      Chat.next();
+      talkSaid = true;
+    }
+    // 見はり：敵がとどかない場所（穴の下・かべの向こう）にいるときは、ぴょんぴーの前に呼びもどす
+    if (enemy && enemy.alive && (phase === "approach" || phase === "thiefCome") && phaseT > 9 && !Chat.busy()) {
+      bringEnemyNear(enemy, NEAR - 30);
+      phaseT = 0;
+    }
 
     switch (phase) {
       case "approach":
@@ -266,7 +303,19 @@
       case "thiefAir":
         // 踏めずに着地したら、もう一度（敵がまた歩いてくる）
         airT += dt;
-        if (airT > 0.3 && state.player.grounded) phase = phase === "air" ? "approach" : "autoJump";
+        if (airT > 0.3 && state.player.grounded) {
+          missN += 1;
+          // 何回も踏めなかったら、踏めたことにして先へ（止まったままにしない）
+          if (missN >= 3) {
+            missN = 0;
+            const wasAir = phase === "air";
+            stunEnemy(enemy);
+            onStomp(enemy);
+            if (phase === "air" || phase === "thiefAir") phase = wasAir ? "talkStomp" : "regainTalk";
+            return false;
+          }
+          phase = phase === "air" ? "approach" : "autoJump";
+        }
         return false;
       case "talkStomp":
         if (talkDone("stomped")) {
@@ -282,6 +331,22 @@
           autoShoot = 0;
           phase = "talkDone";
           return true;
+        }
+        // 敵がとどかないほど遠い・穴に落ちた・かべの向こう → ぴょんぴーの前に呼びもどす
+        {
+          const pl = state.player;
+          const lost = enemy.y > worldBottom() + 40 || Math.abs((enemy.y + enemy.h) - (pl.y + pl.h)) > 160;
+          farT = gap(enemy) > 200 || lost ? farT + dt : 0;
+          if (farT > (autoShoot ? 0.6 : 2.5) && pl.grounded) {
+            bringEnemyNear(enemy, 140);
+            farT = 0;
+          }
+        }
+        // ヤナビスが撃ちはじめて4秒たっても倒れないときは、そのまま倒す（どんなときも止まらない）
+        if (autoShoot === 2 && autoT > 4) {
+          keys.delete("KeyX");
+          damageEnemy(enemy, 99);
+          return false;
         }
         // ヤナビスが代わりに撃つときは、いつも敵のほうを向く（敵が後ろにいると、ずっと外れてしまう）
         if (autoShoot) {
@@ -333,7 +398,7 @@
         return true;
       case "autoJump":
         // 地面に立ったら、自動でジャンプ（敵がぴょんぴーの下に来る）
-        if (state.player.grounded) {
+        if (state.player.grounded || phaseT > 3) {
           jumpQueued = true;
           airT = 0;
           phase = "thiefAir";
@@ -401,7 +466,9 @@
         e.stun = Math.max(e.stun, 0.6);
         const p = state.player;
         const away = e.x + e.w / 2 >= p.x + p.w / 2 ? 1 : -1;
-        e.vx = gap(e) < 110 ? away * 260 : 0;
+        // 近すぎるとはなれ、遠すぎるとふらふら近づく（光線銃がとどくきょりにいる）
+        e.vx = gap(e) < 110 ? away * 260 : gap(e) > 170 ? -away * 160 : 0;
+        e.allowDrop = false;
         e.vy += GRAVITY * dt;
         moveEnemyAndCollide(e, dt);
         return true;
