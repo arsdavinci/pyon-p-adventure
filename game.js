@@ -4975,13 +4975,14 @@ function damageEnemy(e, amount = 1) {
   e.alive = false;
   e.defeated = 0.42;
   playSfx("enemyDefeat", e.x + e.w / 2);
+  const hadStolen = !!e.stolenWeapon;
   const dropPower = enemyDropPower(e);
   if (dropPower) spawnWeaponDrop(e.x + e.w / 2, e.y + 8, dropPower, !e.stolenWeapon);
   // ごくたまに、たおした敵がぶどうまんじゅうを落とす
   else if (!e.boss && Math.random() < 0.015) spawnItem(e.x + e.w / 2, e.y + 8, "manju");
   e.weaponPower = 0;
   e.stolenWeapon = false;
-  dropGunFromEnemy(e);
+  dropGunFromEnemy(e, hadStolen);
   state.score += e.boss ? 500 : 5;
   if (e.boss && courses[currentCourse]?.bossStage) {
     beginBossDeath(e);
@@ -4998,17 +4999,14 @@ function stunEnemy(e) {
   e.stun = e.boss ? 0.35 : 3.5;
   e.alert = 1;
   e.vx = 0;
+  const hadStolen = !!e.stolenWeapon;
   if (e.weaponPower) {
     const dropPower = enemyDropPower(e);
     if (dropPower) spawnWeaponDrop(e.x + e.w / 2, e.y + 8, dropPower, !e.stolenWeapon);
     e.weaponPower = 0;
     e.stolenWeapon = false;
   }
-  if (state.gun.holder === e.id) {
-    state.gun.holder = null;
-    state.gun.x = e.x + e.w / 2;
-    state.gun.y = e.y + e.h - 8;
-  }
+  dropGunFromEnemy(e, hadStolen);
   spawnBlockPoof(e.x + e.w / 2, e.y + 8);
 }
 
@@ -6918,7 +6916,8 @@ function spawnWeaponDrop(x, y, weaponPower, fresh = false) {
     // 水の中では、たおした場所でふわっと止まって、そこからゆっくりしずむ
     vx: isUnderwaterStage() ? 0 : -90 + Math.random() * 180,
     vy: isUnderwaterStage() ? 0 : -500,
-    life: 9,
+    // 取りもどした自分の武器（fresh でない）は、消えずに残る
+    life: fresh ? 9 : 9999,
     grounded: false
   });
 }
@@ -7012,8 +7011,10 @@ function pusherAwayFromPlayer(item) {
   return itemCenter < playerCenter ? -130 : 130;
 }
 
-function dropGunFromEnemy(enemy) {
+function dropGunFromEnemy(enemy, stolen = false) {
   if (state.gun.holder !== enemy.id) return;
+  // うばわれた武器は、もう落とし物（取りもどす武器）として出しているので、地面の銃は出さない（2つにふえてしまう）
+  if (stolen) { state.gun.holder = "inventory"; return; }
   state.gun.holder = null;
   state.gun.x = enemy.x + enemy.w / 2;
   state.gun.y = enemy.y + enemy.h - 8;
