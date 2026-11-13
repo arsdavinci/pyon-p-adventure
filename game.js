@@ -5899,7 +5899,7 @@ function enemyDropPower(e) {
   if (!power) return 0;
   if (e.stolenWeapon) return power;
   if (firstWeaponsLocked()) return 0;
-  if (!e.boss && Math.random() > 0.35) return 0;
+  // 武器を持っている敵をたおしたら、その武器はかならず落とす（前は 35% だけで、ほかは消えていた）
   const attr = power <= STAR_TOP ? weaponAttribute(power) : null;
   return pickDropPower(attr);
 }
@@ -6795,8 +6795,9 @@ function spawnWeaponDrop(x, y, weaponPower, fresh = false) {
     weaponPower,
     rare: fresh && isRareDrop(weaponPower),
     w: 28, h: 28,
-    vx: -90 + Math.random() * 180,
-    vy: -500,
+    // 水の中では、たおした場所でふわっと止まって、そこからゆっくりしずむ
+    vx: isUnderwaterStage() ? 0 : -90 + Math.random() * 180,
+    vy: isUnderwaterStage() ? 0 : -500,
     life: 9,
     grounded: false
   });
@@ -6809,7 +6810,8 @@ function updateItems(dt) {
       // 水の中：ふわふわ浮かびながら、ゆっくりしずむ。底についたらそこでとまる。武器は消えない
       if (item.type !== "power") item.life -= dt;
       // 出てきたときの勢いも水がやわらげる（上へ飛んでいきすぎない）
-      item.vy = clamp(item.vy + 140 * dt, -90, 38);
+      // 武器はとくにゆっくり（ひろいに行けるように）
+      item.vy = clamp(item.vy + (item.type === "power" ? 40 : 140) * dt, -90, item.type === "power" ? 22 : 38);
       item.vx *= Math.pow(0.2, dt);
       item.x += (item.vx + Math.sin(performance.now() / 600 + item.x * 0.01) * 14) * dt;
       item.y += item.vy * dt;

@@ -195,7 +195,8 @@
     const moving = Math.hypot(p.vx, p.vy) > 40;
     const f = frames[Math.floor(FX.S.time * (moving ? 11 : 5)) % frames.length];
     const maxW = Math.max(...frames.map(fr => fr.w));
-    const s = 104 / maxW;
+    // 泳ぐ絵は横長なので、立っているとき（高さ約80）と同じくらいに見える 84 に（104 では大きすぎた）
+    const s = 84 / maxW;
     const w = f.w * s;
     const h = f.h * s;
     const cx = p.x + p.w / 2;
