@@ -74,7 +74,7 @@ def story_lines() -> dict[str, list[tuple[str, str, int]]]:
 
 def chat_lines() -> list[tuple[str, str, str, int]]:
     rows = []
-    for f in ("chat.js", "tutorial.js", "game.js", "gimmicks.js", "shop.js"):
+    for f in ("chat.js", "stagetalk.js", "tutorial.js", "game.js", "gimmicks.js", "shop.js"):
         for i, t in enumerate((ROOT / f).read_text(encoding="utf-8").splitlines(), 1):
             for m in re.finditer(r'\[\s*"(pyon|ran|yana|luva)",\s*' + STR + r'\s*,', t):
                 rows.append((m.group(1), unq(m.group(2)), f, i))

@@ -264,6 +264,36 @@
     Story.data.seen[key] = true;
     return true;
   }
+  // ---- ステージごとのひとりごと（1つ）と、ヤナビスとのなにげない会話（2つ）。一度言ったら、もう言わない ----
+  // ステージに入って、ひとりごと → 会話 → 会話 の順。だれもしゃべっていない静かなときにだけ流す
+  let stageT = 0;
+  let lastAmbientAt = 0;
+  const AMBIENT_AT = [14, 40, 75]; // ステージに入ってからの秒数（これより前には流さない）
+  const AMBIENT_GAP = 20; // ひとつ流したら、つぎまで最低これだけあける
+
+  function ambient(dt) {
+    stageT += dt;
+    if (typeof STAGE_TALK === "undefined" || typeof Story === "undefined") return;
+    if (typeof Tutorial !== "undefined" && Tutorial.muteChat()) return;
+    if (queue.length || (cur && (shown < [...L(cur[1], cur[2])].length || hold < 4))) return;
+    if (state.arena || (typeof Voice !== "undefined" && Voice.busy && Voice.busy())) return;
+    if (stageT - lastAmbientAt < AMBIENT_GAP && lastAmbientAt > 0) return;
+    const data = STAGE_TALK[currentCourse];
+    if (!data) return;
+    const items = [["solo", [data.solo]], ["talk0", data.talks?.[0]], ["talk1", data.talks?.[1]]];
+    for (let k = 0; k < items.length; k++) {
+      const [name, lines] = items[k];
+      const key = `amb${currentCourse}_${name}`;
+      if (!lines || Story.data.seen[key]) continue;
+      if (stageT < AMBIENT_AT[k]) return;
+      Story.data.seen[key] = true;
+      Story.persist();
+      lastAmbientAt = stageT;
+      say(lines);
+      return;
+    }
+  }
+
   const URGENT = { stageStart: 1, map: 1, gameOver: 1, bossHalf: 1, stolen: 1, canFuse: 1 };
 
   function say(lines, urgent = false) {
@@ -283,6 +313,8 @@
     if (name === "stageStart") {
       flags = {};
       idleT = 14;
+      stageT = 0;
+      lastAmbientAt = 0;
     }
     const cd = COOLDOWN[name] ?? 0;
     if (cd && lastAt[name] !== undefined && clock - lastAt[name] < cd) return;
@@ -476,13 +508,7 @@
       if (cur) renderSpeaker();
       else if (e.text) e.text.textContent = "";
     }
-    if (state.mode === "playing") {
-      idleT -= dt;
-      if (idleT <= 0) {
-        idleT = 18 + Math.random() * 10;
-        if (!cur || hold > 5) event("idle");
-      }
-    }
+    if (state.mode === "playing") ambient(dt);
     if (!cur && queue.length) {
       cur = queue.shift();
       if (typeof Voice !== "undefined") Voice.play("chat", cur[1]);

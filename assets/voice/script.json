@@ -1289,6 +1289,2334 @@
     "line": 252
    },
    {
+    "id": "bded2684",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ここが月あめ平原か。地面があまい匂いするじょ……なめたらあかんよな？",
+    "file": "stagetalk.js",
+    "line": 7
+   },
+   {
+    "id": "a91aaa1f",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ぴょんぴーさん、月あめって何味なんですか？",
+    "file": "stagetalk.js",
+    "line": 10
+   },
+   {
+    "id": "1daa1def",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "すだち味じゃ。月の名産品ぞ。",
+    "file": "stagetalk.js",
+    "line": 11
+   },
+   {
+    "id": "157e49ae",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "月で、すだち……？ 徳島の名産では？",
+    "file": "stagetalk.js",
+    "line": 12
+   },
+   {
+    "id": "1385482b",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "細かいこと気にしたら、ネタにならんのじょ。",
+    "file": "stagetalk.js",
+    "line": 13
+   },
+   {
+    "id": "052a8621",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ヤナビス、AGIって何の略じゃ？",
+    "file": "stagetalk.js",
+    "line": 16
+   },
+   {
+    "id": "8e48f86f",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "Artificial General Intelligence、汎用人工知能です。",
+    "file": "stagetalk.js",
+    "line": 17
+   },
+   {
+    "id": "2a5c696a",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ほな、汎用のヤナビスじゃな。",
+    "file": "stagetalk.js",
+    "line": 18
+   },
+   {
+    "id": "8806cc08",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "なんだか、はんぱもの扱いされた気がします。",
+    "file": "stagetalk.js",
+    "line": 19
+   },
+   {
+    "id": "6c0229d7",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "体がふわっと軽いじょ。月の重力、ジャンプにやさしいけん好きじゃ。",
+    "file": "stagetalk.js",
+    "line": 24
+   },
+   {
+    "id": "4f23dacf",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "らんぴょんさんとは、いつからコンビなんですか？",
+    "file": "stagetalk.js",
+    "line": 27
+   },
+   {
+    "id": "426e4209",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "月の大使館で、あいつが新人で入ってきたときからじゃ。最初は敬語がかたくてのう。",
+    "file": "stagetalk.js",
+    "line": 28
+   },
+   {
+    "id": "316423dc",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "今もかたいですよね。",
+    "file": "stagetalk.js",
+    "line": 29
+   },
+   {
+    "id": "0d4a95e6",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "……それがええんじょ。",
+    "file": "stagetalk.js",
+    "line": 30
+   },
+   {
+    "id": "f429e567",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ヤナビス、おなかすかんの？",
+    "file": "stagetalk.js",
+    "line": 33
+   },
+   {
+    "id": "b22ce8be",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "わたしは電気で動いています。",
+    "file": "stagetalk.js",
+    "line": 34
+   },
+   {
+    "id": "304a6d2c",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ほな電気ブランでも飲むか？",
+    "file": "stagetalk.js",
+    "line": 35
+   },
+   {
+    "id": "bb1b738d",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "それはお酒です。",
+    "file": "stagetalk.js",
+    "line": 36
+   },
+   {
+    "id": "b581f114",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "クレーターだらけじゃな。月のでこぼこ、近くで見たらけっこう深いじょ。",
+    "file": "stagetalk.js",
+    "line": 41
+   },
+   {
+    "id": "1c45cba4",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ぴょんぴーさんの耳、いつもピンと立っていますね。",
+    "file": "stagetalk.js",
+    "line": 44
+   },
+   {
+    "id": "be845a8d",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ツッコミを聞きのがさんためじゃ。……今は聞こえてこんけどな。",
+    "file": "stagetalk.js",
+    "line": 45
+   },
+   {
+    "id": "e9ce85b0",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "……かならず取りもどしましょう。",
+    "file": "stagetalk.js",
+    "line": 46
+   },
+   {
+    "id": "9220d18c",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "なあヤナビス、フェスで一番ウケるネタってなんじゃと思う？",
+    "file": "stagetalk.js",
+    "line": 49
+   },
+   {
+    "id": "742c6a4f",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "データによると、『あるあるネタ』の成功率が高いです。",
+    "file": "stagetalk.js",
+    "line": 50
+   },
+   {
+    "id": "54ed05d7",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "宇宙人のあるある、むずいじょ……。",
+    "file": "stagetalk.js",
+    "line": 51
+   },
+   {
+    "id": "4fba49b3",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "あのペロペロキャンディ、吾輩の顔よりでかいでないか。持って帰りたいのう。",
+    "file": "stagetalk.js",
+    "line": 56
+   },
+   {
+    "id": "a8f090e7",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "月あめ平原の『あめ』は、雨ではなく飴なんですね。",
+    "file": "stagetalk.js",
+    "line": 59
+   },
+   {
+    "id": "1222cd30",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "雨やったら、地面とけてまうけんな。",
+    "file": "stagetalk.js",
+    "line": 60
+   },
+   {
+    "id": "0776b161",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "なるほど……合理的です。",
+    "file": "stagetalk.js",
+    "line": 61
+   },
+   {
+    "id": "34fed927",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ヤナビス、阿波おどり知っとる？",
+    "file": "stagetalk.js",
+    "line": 64
+   },
+   {
+    "id": "575449fc",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "『踊る阿呆に見る阿呆』ですね。",
+    "file": "stagetalk.js",
+    "line": 65
+   },
+   {
+    "id": "cd5bd038",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "同じ阿呆なら？",
+    "file": "stagetalk.js",
+    "line": 66
+   },
+   {
+    "id": "1f6727c2",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "……踊らにゃ損々、です。",
+    "file": "stagetalk.js",
+    "line": 67
+   },
+   {
+    "id": "12418885",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ノリええでないか！",
+    "file": "stagetalk.js",
+    "line": 68
+   },
+   {
+    "id": "26fe596e",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "この先から、あまったるい気配がするじょ。王さまでもおるんかの。",
+    "file": "stagetalk.js",
+    "line": 73
+   },
+   {
+    "id": "5455ea4d",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ボスの反応が近いです。準備はいいですか？",
+    "file": "stagetalk.js",
+    "line": 76
+   },
+   {
+    "id": "a3d9f8bf",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "準備運動に、阿波おどりでもしとこか。",
+    "file": "stagetalk.js",
+    "line": 77
+   },
+   {
+    "id": "c29cab41",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "それは準備運動なんですか？",
+    "file": "stagetalk.js",
+    "line": 78
+   },
+   {
+    "id": "08f15347",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "勝ったら、月あめ食べ放題とかないかの。",
+    "file": "stagetalk.js",
+    "line": 81
+   },
+   {
+    "id": "61d1f554",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "虫歯の心配をしてください。",
+    "file": "stagetalk.js",
+    "line": 82
+   },
+   {
+    "id": "6b89649f",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "吾輩、歯みがきは1日5回じゃ。",
+    "file": "stagetalk.js",
+    "line": 83
+   },
+   {
+    "id": "7a6f7c63",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "多すぎます。",
+    "file": "stagetalk.js",
+    "line": 84
+   },
+   {
+    "id": "20f2f963",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "火星はネオンがギラギラじゃな。……それとあっつい！ 耳が焼きうさぎになるじょ。",
+    "file": "stagetalk.js",
+    "line": 90
+   },
+   {
+    "id": "2c67c571",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "火星の地面は、場所によってはとても熱いです。",
+    "file": "stagetalk.js",
+    "line": 93
+   },
+   {
+    "id": "47ce67dd",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "足のうらがあちちじゃ。",
+    "file": "stagetalk.js",
+    "line": 94
+   },
+   {
+    "id": "3cb435e0",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "マグマにはさわらないでくださいね。",
+    "file": "stagetalk.js",
+    "line": 95
+   },
+   {
+    "id": "3ae79295",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "さわったら焼きうさぎじゃ。……それ、さっき言うたな。",
+    "file": "stagetalk.js",
+    "line": 96
+   },
+   {
+    "id": "655ecc1c",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ヤナビス、あのネオンの看板、なんて書いとるん？",
+    "file": "stagetalk.js",
+    "line": 99
+   },
+   {
+    "id": "8bffa79a",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "『火星ラーメン 本日も赤い』です。",
+    "file": "stagetalk.js",
+    "line": 100
+   },
+   {
+    "id": "0e6e3232",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "辛いんか赤いんか、どっちじゃ！",
+    "file": "stagetalk.js",
+    "line": 101
+   },
+   {
+    "id": "f5e96226",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ドームの中に町があるんか。火星の人ら、楽しそうに暮らしとったんじゃろな。",
+    "file": "stagetalk.js",
+    "line": 106
+   },
+   {
+    "id": "297fb58e",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "このコロニーでは、むかし毎晩お笑いライブがあったそうです。",
+    "file": "stagetalk.js",
+    "line": 109
+   },
+   {
+    "id": "c14d4cb0",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ほんまか！ ……今は静かじゃな。",
+    "file": "stagetalk.js",
+    "line": 110
+   },
+   {
+    "id": "3278d1a3",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "笑いが、うばわれたからです。",
+    "file": "stagetalk.js",
+    "line": 111
+   },
+   {
+    "id": "fd92fe1b",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ほな、吾輩らが取りもどさなな。",
+    "file": "stagetalk.js",
+    "line": 112
+   },
+   {
+    "id": "6975a882",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "火星って、タコみたいな宇宙人おらんの？",
+    "file": "stagetalk.js",
+    "line": 115
+   },
+   {
+    "id": "6af8a06c",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "火星人がタコの形というのは、むかしの地球の想像です。",
+    "file": "stagetalk.js",
+    "line": 116
+   },
+   {
+    "id": "10eaf297",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ちょっと会いたかったのに。",
+    "file": "stagetalk.js",
+    "line": 117
+   },
+   {
+    "id": "70dadd0f",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ロケットの発射台じゃ。乗ったら一瞬で家に帰れるかの……いや、まだ帰らんけどな。",
+    "file": "stagetalk.js",
+    "line": 122
+   },
+   {
+    "id": "a5f5878f",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ぴょんぴーさん、ホームシックですか？",
+    "file": "stagetalk.js",
+    "line": 125
+   },
+   {
+    "id": "c2eeed6d",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ちがうじょ。金時豆が恋しいだけじゃ。",
+    "file": "stagetalk.js",
+    "line": 126
+   },
+   {
+    "id": "a0dbce36",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "それを、ホームシックと言います。",
+    "file": "stagetalk.js",
+    "line": 127
+   },
+   {
+    "id": "cc1f0d04",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ヤナビスって、夢見るんか？",
+    "file": "stagetalk.js",
+    "line": 130
+   },
+   {
+    "id": "f916934b",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "スリープ中に、データの整理はします。",
+    "file": "stagetalk.js",
+    "line": 131
+   },
+   {
+    "id": "ba5ca29c",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "それ、夢でないか？",
+    "file": "stagetalk.js",
+    "line": 132
+   },
+   {
+    "id": "f923eaa2",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "……そうかもしれません。今度、内容を報告します。",
+    "file": "stagetalk.js",
+    "line": 133
+   },
+   {
+    "id": "94ffba7a",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "でっかいドームじゃな。ここが火星のまん中か。ネオンの数、えげつないじょ。",
+    "file": "stagetalk.js",
+    "line": 138
+   },
+   {
+    "id": "9fdae649",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ぴょんぴーさん、汗をかいていますね。",
+    "file": "stagetalk.js",
+    "line": 141
+   },
+   {
+    "id": "6e7a7879",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "うさぎは汗かかんのじゃ。これは……心の汗じゃ。",
+    "file": "stagetalk.js",
+    "line": 142
+   },
+   {
+    "id": "31a03c89",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "つまり、暑いんですね。",
+    "file": "stagetalk.js",
+    "line": 143
+   },
+   {
+    "id": "608df6b6",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ヤナビス、好きな食べ物は？",
+    "file": "stagetalk.js",
+    "line": 146
+   },
+   {
+    "id": "bfaa0fca",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "しいて言えば、静電気です。",
+    "file": "stagetalk.js",
+    "line": 147
+   },
+   {
+    "id": "56b57d46",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "パチパチしとるやつか。わたあめみたいなもんじゃな。",
+    "file": "stagetalk.js",
+    "line": 148
+   },
+   {
+    "id": "a5906617",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ちがうと思います。",
+    "file": "stagetalk.js",
+    "line": 149
+   },
+   {
+    "id": "e61b5863",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "この奥、えらい警備がきびしいじょ。親玉のにおいがプンプンするのう。",
+    "file": "stagetalk.js",
+    "line": 154
+   },
+   {
+    "id": "bef8a0f7",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "この先にいるのはドーム司令官。ドームのバリアを使うようです。",
+    "file": "stagetalk.js",
+    "line": 157
+   },
+   {
+    "id": "1057d227",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "バリアなんか、ツッコミで割ったるわ。",
+    "file": "stagetalk.js",
+    "line": 158
+   },
+   {
+    "id": "cafe3c64",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ツッコミは、いまうばわれていますよ。",
+    "file": "stagetalk.js",
+    "line": 159
+   },
+   {
+    "id": "d6f7a83a",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "……光線銃で割ったるわ。",
+    "file": "stagetalk.js",
+    "line": 160
+   },
+   {
+    "id": "c6ca186a",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "司令官って、えらいんかの。",
+    "file": "stagetalk.js",
+    "line": 163
+   },
+   {
+    "id": "d77e84ec",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "このコロニーで一番えらいです。",
+    "file": "stagetalk.js",
+    "line": 164
+   },
+   {
+    "id": "539723dc",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ほな、まずは名刺交換からじゃな。",
+    "file": "stagetalk.js",
+    "line": 165
+   },
+   {
+    "id": "a51bd109",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "戦うつもりで行ってください。",
+    "file": "stagetalk.js",
+    "line": 166
+   },
+   {
+    "id": "06beee5d",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "さっむ！ 足もとがツルッツルじゃ。止まりたいとこで止まれんじょ！",
+    "file": "stagetalk.js",
+    "line": 172
+   },
+   {
+    "id": "8992fa2e",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "氷の上では、早めにボタンをはなすと止まりやすいです。",
+    "file": "stagetalk.js",
+    "line": 175
+   },
+   {
+    "id": "7a04a692",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "人生もそうじゃな。",
+    "file": "stagetalk.js",
+    "line": 176
+   },
+   {
+    "id": "18d5e400",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "急に深いことを言いますね。",
+    "file": "stagetalk.js",
+    "line": 177
+   },
+   {
+    "id": "d2a743d3",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ヤナビス、寒くないん？",
+    "file": "stagetalk.js",
+    "line": 180
+   },
+   {
+    "id": "fce9dfdc",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "わたしは寒さに強い設計です。",
+    "file": "stagetalk.js",
+    "line": 181
+   },
+   {
+    "id": "4cc8e932",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ずるいじょ。吾輩にもその設計わけてだ。",
+    "file": "stagetalk.js",
+    "line": 182
+   },
+   {
+    "id": "c188ecd0",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "もふもふがあるでしょう。",
+    "file": "stagetalk.js",
+    "line": 183
+   },
+   {
+    "id": "d06555cf",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "クリスタルがキラキラしとる。……これ全部売ったら、柿ピー何袋買えるんじゃろ。",
+    "file": "stagetalk.js",
+    "line": 188
+   },
+   {
+    "id": "e90a25db",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ぴょんぴーさん、すべって転ぶのも芸になりませんか？",
+    "file": "stagetalk.js",
+    "line": 191
+   },
+   {
+    "id": "022f04c6",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "転び芸は、らんぴょんのツッコミがあってこそじゃ。",
+    "file": "stagetalk.js",
+    "line": 192
+   },
+   {
+    "id": "37ec01ed",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "……そうですね。早く聞きたいです。",
+    "file": "stagetalk.js",
+    "line": 193
+   },
+   {
+    "id": "dd72ad5b",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "雪だるま、つくりたいのう。",
+    "file": "stagetalk.js",
+    "line": 196
+   },
+   {
+    "id": "713c7642",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ここの雪はクリスタルなので、かたいですよ。",
+    "file": "stagetalk.js",
+    "line": 197
+   },
+   {
+    "id": "0ef1e386",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ほな、雪だるまの彫刻じゃな。",
+    "file": "stagetalk.js",
+    "line": 198
+   },
+   {
+    "id": "5e64e9d0",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "芸術家ですね。",
+    "file": "stagetalk.js",
+    "line": 199
+   },
+   {
+    "id": "807a642f",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "氷の中に、なんか閉じこめられとる……？ むかしの宇宙人のおやつでないか？",
+    "file": "stagetalk.js",
+    "line": 204
+   },
+   {
+    "id": "25d5561e",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "わたし、ここで阿波弁をひとつ覚えました。『ひやい』です。",
+    "file": "stagetalk.js",
+    "line": 207
+   },
+   {
+    "id": "f2be1e48",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "おっ、冷たいって意味じゃな。使いこなしとるでないか。",
+    "file": "stagetalk.js",
+    "line": 208
+   },
+   {
+    "id": "172f83a4",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ここ、ひやいですけん。",
+    "file": "stagetalk.js",
+    "line": 209
+   },
+   {
+    "id": "b3b0c4d8",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "……うつりすぎじゃ。",
+    "file": "stagetalk.js",
+    "line": 210
+   },
+   {
+    "id": "4a6788fa",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "鏡みたいな氷に、吾輩がいっぱい映っとる。",
+    "file": "stagetalk.js",
+    "line": 213
+   },
+   {
+    "id": "9ee88b10",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ぴょんぴーさんが、たくさんいますね。",
+    "file": "stagetalk.js",
+    "line": 214
+   },
+   {
+    "id": "4bd51d06",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "これでコントできるじょ。全員ボケじゃけど。",
+    "file": "stagetalk.js",
+    "line": 215
+   },
+   {
+    "id": "7e4e340f",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "吐く息が白いじょ。耳の先っちょまで凍りそうじゃ。",
+    "file": "stagetalk.js",
+    "line": 220
+   },
+   {
+    "id": "aaefda86",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ぴょんぴーさん、鼻が赤くなっていますよ。",
+    "file": "stagetalk.js",
+    "line": 223
+   },
+   {
+    "id": "766d10b4",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "トナカイの代わりに、ソリでも引こか？",
+    "file": "stagetalk.js",
+    "line": 224
+   },
+   {
+    "id": "c05c581a",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ここ、すべるので引けませんよ。",
+    "file": "stagetalk.js",
+    "line": 225
+   },
+   {
+    "id": "0d83fb1e",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "なあヤナビス、フェスの持ち時間って何分じゃった？",
+    "file": "stagetalk.js",
+    "line": 228
+   },
+   {
+    "id": "a202b267",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "1組5分です。",
+    "file": "stagetalk.js",
+    "line": 229
+   },
+   {
+    "id": "e0b7a1a3",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "5分か……新ネタ、まだ半分しかできとらんのじゃ。",
+    "file": "stagetalk.js",
+    "line": 230
+   },
+   {
+    "id": "3fb1b898",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "冒険しながら考えましょう。",
+    "file": "stagetalk.js",
+    "line": 231
+   },
+   {
+    "id": "7a81d779",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "でっかい足あとじゃ……吾輩の何倍あるんじゃ。この先におるな。",
+    "file": "stagetalk.js",
+    "line": 236
+   },
+   {
+    "id": "6bc81847",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "イエティの反応です。氷を投げてくるかもしれません。",
+    "file": "stagetalk.js",
+    "line": 239
+   },
+   {
+    "id": "b5af1678",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "雪合戦なら負けんじょ。",
+    "file": "stagetalk.js",
+    "line": 240
+   },
+   {
+    "id": "6aca8f25",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "相手、氷のかたまりですよ。",
+    "file": "stagetalk.js",
+    "line": 241
+   },
+   {
+    "id": "15f20425",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "……ちょっと負けるかもしれん。",
+    "file": "stagetalk.js",
+    "line": 242
+   },
+   {
+    "id": "975494f2",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "イエティも、寒いん平気なんかな。",
+    "file": "stagetalk.js",
+    "line": 245
+   },
+   {
+    "id": "c73c73cb",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "毛がとても長いので、平気だと思います。",
+    "file": "stagetalk.js",
+    "line": 246
+   },
+   {
+    "id": "028b1928",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "もふもふ仲間じゃな。……戦いにくいのう。",
+    "file": "stagetalk.js",
+    "line": 247
+   },
+   {
+    "id": "f9d72c90",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "星の海じゃ！ 泳ぐのは得意でないけど……酸素のあわ、見のがさんようにせなな。",
+    "file": "stagetalk.js",
+    "line": 253
+   },
+   {
+    "id": "dbf34440",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "海の中はきれいですね。わたし、はじめて見ました。",
+    "file": "stagetalk.js",
+    "line": 256
+   },
+   {
+    "id": "292c2ba2",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ヤナビスにも、はじめてのことあるんか。",
+    "file": "stagetalk.js",
+    "line": 257
+   },
+   {
+    "id": "c5c0fe9a",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "データでは知っていました。でも、見るのはちがいます。",
+    "file": "stagetalk.js",
+    "line": 258
+   },
+   {
+    "id": "1d782db2",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "鳴門のうず潮って知っとる？",
+    "file": "stagetalk.js",
+    "line": 261
+   },
+   {
+    "id": "91f032b6",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "徳島の名所ですね。",
+    "file": "stagetalk.js",
+    "line": 262
+   },
+   {
+    "id": "d56304eb",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ここにもうず潮あったら、吾輩、目ぇ回すじょ。",
+    "file": "stagetalk.js",
+    "line": 263
+   },
+   {
+    "id": "5b3bfe6b",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "もう回っていませんか？",
+    "file": "stagetalk.js",
+    "line": 264
+   },
+   {
+    "id": "54e78259",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "サンゴがきれいじゃ。月の海は砂ばっかりじゃけん、こういうの新鮮じゃな。",
+    "file": "stagetalk.js",
+    "line": 269
+   },
+   {
+    "id": "de5943ff",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "お魚が、ぴょんぴーさんのうしろについてきています。",
+    "file": "stagetalk.js",
+    "line": 272
+   },
+   {
+    "id": "f011099a",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ファンじゃな。サインしたろか。",
+    "file": "stagetalk.js",
+    "line": 273
+   },
+   {
+    "id": "007dd8ff",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "たぶん、エサだと思っています。",
+    "file": "stagetalk.js",
+    "line": 274
+   },
+   {
+    "id": "02400232",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ヤナビス、泳げるん？",
+    "file": "stagetalk.js",
+    "line": 277
+   },
+   {
+    "id": "c5558c23",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "防水です。",
+    "file": "stagetalk.js",
+    "line": 278
+   },
+   {
+    "id": "39c38096",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "答えになっとらんじょ。",
+    "file": "stagetalk.js",
+    "line": 279
+   },
+   {
+    "id": "53e4be3e",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "浮かびはします。",
+    "file": "stagetalk.js",
+    "line": 280
+   },
+   {
+    "id": "10526448",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "海の底にドームがあるじょ。だれか住んどるんかの。ノックしてみたいのう。",
+    "file": "stagetalk.js",
+    "line": 285
+   },
+   {
+    "id": "f87ed76c",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ぴょんぴーさん、耳が水にゆらゆらしていますね。",
+    "file": "stagetalk.js",
+    "line": 288
+   },
+   {
+    "id": "7b624755",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "海藻とまちがわれんように、気ぃつけなな。",
+    "file": "stagetalk.js",
+    "line": 289
+   },
+   {
+    "id": "6b8bf8ba",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "少し似ています。",
+    "file": "stagetalk.js",
+    "line": 290
+   },
+   {
+    "id": "d11e1209",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "似とらんじょ！",
+    "file": "stagetalk.js",
+    "line": 291
+   },
+   {
+    "id": "7fa22390",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "なあ、らんぴょんて泳げたっけ？",
+    "file": "stagetalk.js",
+    "line": 294
+   },
+   {
+    "id": "256b7987",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "記録では、浮き輪が必要とあります。",
+    "file": "stagetalk.js",
+    "line": 295
+   },
+   {
+    "id": "e7850e60",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ほな、つれてこんでよかったかもしれんの。",
+    "file": "stagetalk.js",
+    "line": 296
+   },
+   {
+    "id": "da628f08",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "でっかいドームじゃ……中でクラゲがぷかぷかしとる。ランプみたいできれいじゃな。",
+    "file": "stagetalk.js",
+    "line": 301
+   },
+   {
+    "id": "8dcf5749",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "クラゲは、脳がない生き物なんですよ。",
+    "file": "stagetalk.js",
+    "line": 304
+   },
+   {
+    "id": "95a4923f",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "脳なしでも、あんなにきれいに光れるんか。",
+    "file": "stagetalk.js",
+    "line": 305
+   },
+   {
+    "id": "b4734ac4",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ぴょんぴーさんにも、希望がありますね。",
+    "file": "stagetalk.js",
+    "line": 306
+   },
+   {
+    "id": "e76d5482",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "どういう意味じゃ！",
+    "file": "stagetalk.js",
+    "line": 307
+   },
+   {
+    "id": "4f33bdc6",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ヤナビス、海の中で歌うと、声どうなるん？",
+    "file": "stagetalk.js",
+    "line": 310
+   },
+   {
+    "id": "e9af6ccf",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ぶくぶくになります。",
+    "file": "stagetalk.js",
+    "line": 311
+   },
+   {
+    "id": "371c65ea",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ためしたろか。……ぶくぶくぶく。",
+    "file": "stagetalk.js",
+    "line": 312
+   },
+   {
+    "id": "22f24e23",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "本当に、ぶくぶくでした。",
+    "file": "stagetalk.js",
+    "line": 313
+   },
+   {
+    "id": "f2b82377",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "サンゴの島じゃ。ここだけ光が差しとる。ちょっと休憩したいのう。",
+    "file": "stagetalk.js",
+    "line": 318
+   },
+   {
+    "id": "2480b1c7",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ぴょんぴーさん、浦島太郎って知っていますか？",
+    "file": "stagetalk.js",
+    "line": 321
+   },
+   {
+    "id": "5b85a427",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "亀に乗って竜宮城に行くやつじゃろ。",
+    "file": "stagetalk.js",
+    "line": 322
+   },
+   {
+    "id": "03f3ea98",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "帰ったら、とても時間がたっていた話です。",
+    "file": "stagetalk.js",
+    "line": 323
+   },
+   {
+    "id": "08bb0f01",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "……フェス、終わっとったらどうしよ。",
+    "file": "stagetalk.js",
+    "line": 324
+   },
+   {
+    "id": "f4f3884a",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "急ぎましょう。",
+    "file": "stagetalk.js",
+    "line": 325
+   },
+   {
+    "id": "b4da2704",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "海の中って、静かじゃな。",
+    "file": "stagetalk.js",
+    "line": 328
+   },
+   {
+    "id": "437251f5",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "笑い声がないと、もっと静かに感じます。",
+    "file": "stagetalk.js",
+    "line": 329
+   },
+   {
+    "id": "d0738d24",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "……はよ、にぎやかにしたらなな。",
+    "file": "stagetalk.js",
+    "line": 330
+   },
+   {
+    "id": "f8dd672e",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "下のほうに、もうひとつドームがあるじょ。深いとこは暗うて、ちょっとこわいの。",
+    "file": "stagetalk.js",
+    "line": 335
+   },
+   {
+    "id": "93fd25f2",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ぴょんぴーさん、こわいときはどうしているんですか？",
+    "file": "stagetalk.js",
+    "line": 338
+   },
+   {
+    "id": "c95e211f",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ネタを考えるんじゃ。こわいのも、あとで話したらウケるけん。",
+    "file": "stagetalk.js",
+    "line": 339
+   },
+   {
+    "id": "b9af2e34",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "すてきな考え方です。",
+    "file": "stagetalk.js",
+    "line": 340
+   },
+   {
+    "id": "e752fa25",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "深海魚って、顔おもろいよな。",
+    "file": "stagetalk.js",
+    "line": 343
+   },
+   {
+    "id": "93994633",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "チョウチンアンコウは、頭に明かりがついています。",
+    "file": "stagetalk.js",
+    "line": 344
+   },
+   {
+    "id": "25ba72dd",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "吾輩も耳にライトつけたら、ウケるかの。",
+    "file": "stagetalk.js",
+    "line": 345
+   },
+   {
+    "id": "aec8e4d9",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "夜道は安全になりますね。",
+    "file": "stagetalk.js",
+    "line": 346
+   },
+   {
+    "id": "0b5d2862",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "でっかい影が、上をすうっと通ったじょ……。女王さまのおでましかの。",
+    "file": "stagetalk.js",
+    "line": 351
+   },
+   {
+    "id": "c3c693cd",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "マンタクイーンの反応です。ひらひらと、すばやく動くようです。",
+    "file": "stagetalk.js",
+    "line": 354
+   },
+   {
+    "id": "61375397",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ひらひらなら、吾輩の耳も負けんじょ。",
+    "file": "stagetalk.js",
+    "line": 355
+   },
+   {
+    "id": "4fd2a222",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "何の勝負ですか。",
+    "file": "stagetalk.js",
+    "line": 356
+   },
+   {
+    "id": "0ad98183",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "女王さまって、ティアラしとるんかな。",
+    "file": "stagetalk.js",
+    "line": 359
+   },
+   {
+    "id": "0ae71b26",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "データでは、王冠のような模様があるそうです。",
+    "file": "stagetalk.js",
+    "line": 360
+   },
+   {
+    "id": "90b212e6",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "おしゃれさんじゃな。……手加減はせんけどな。",
+    "file": "stagetalk.js",
+    "line": 361
+   },
+   {
+    "id": "381a9281",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "でっかい輪っかの工場じゃ。ベルトコンベアに乗ったら、勝手に運ばれていくじょ。",
+    "file": "stagetalk.js",
+    "line": 367
+   },
+   {
+    "id": "514fef19",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ここ、わたしの親戚がいそうです。",
+    "file": "stagetalk.js",
+    "line": 370
+   },
+   {
+    "id": "fcec8da8",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ロボットの親戚か。お年玉もらえるかの。",
+    "file": "stagetalk.js",
+    "line": 371
+   },
+   {
+    "id": "1617f58a",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ネジなら、もらえるかもしれません。",
+    "file": "stagetalk.js",
+    "line": 372
+   },
+   {
+    "id": "02177b90",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ヤナビス、ここの機械、何つくっとるん？",
+    "file": "stagetalk.js",
+    "line": 375
+   },
+   {
+    "id": "2be6bfd5",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "どうやら、ロボットの部品です。",
+    "file": "stagetalk.js",
+    "line": 376
+   },
+   {
+    "id": "84c61601",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ほな、吾輩用の柿ピー自動販売機もつくってくれんかの。",
+    "file": "stagetalk.js",
+    "line": 377
+   },
+   {
+    "id": "82af463a",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "注文票、出してみましょうか。",
+    "file": "stagetalk.js",
+    "line": 378
+   },
+   {
+    "id": "849b33e0",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ガッチャンガッチャン、うるさいのう。でも、このリズム、漫才のテンポにちょうどええじょ。",
+    "file": "stagetalk.js",
+    "line": 383
+   },
+   {
+    "id": "3deccd8c",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ぴょんぴーさん、ロボットに生まれたかったと思ったことはありますか？",
+    "file": "stagetalk.js",
+    "line": 386
+   },
+   {
+    "id": "0ca7850b",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ないじょ。もふもふがなくなるけん。",
+    "file": "stagetalk.js",
+    "line": 387
+   },
+   {
+    "id": "505e782e",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "わたしは、もふもふに生まれてみたかったです。",
+    "file": "stagetalk.js",
+    "line": 388
+   },
+   {
+    "id": "66812588",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "……今度、耳さわらしたるわ。",
+    "file": "stagetalk.js",
+    "line": 389
+   },
+   {
+    "id": "f64baeac",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "なあ、ヤナビスのバッテリーって何時間もつん？",
+    "file": "stagetalk.js",
+    "line": 392
+   },
+   {
+    "id": "6df9652e",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "72時間です。",
+    "file": "stagetalk.js",
+    "line": 393
+   },
+   {
+    "id": "19cb76f6",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "フェスまで、ちょうどもつじょ！",
+    "file": "stagetalk.js",
+    "line": 394
+   },
+   {
+    "id": "69a6e5b7",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ぎりぎりですね。",
+    "file": "stagetalk.js",
+    "line": 395
+   },
+   {
+    "id": "2a743b50",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ロボットの像じゃ。ポーズかっこええのう。……吾輩のほうが、かっこええけどな。",
+    "file": "stagetalk.js",
+    "line": 400
+   },
+   {
+    "id": "02daeaa6",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "あの像、王さまロボットの若いころだそうです。",
+    "file": "stagetalk.js",
+    "line": 403
+   },
+   {
+    "id": "f6983171",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "若いころから、ポーズ決めとるんじゃな。",
+    "file": "stagetalk.js",
+    "line": 404
+   },
+   {
+    "id": "d8efdf61",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "自分の像を、自分で建てたそうです。",
+    "file": "stagetalk.js",
+    "line": 405
+   },
+   {
+    "id": "ea7db0a8",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "……ちょっとはずかしいやつじゃな。",
+    "file": "stagetalk.js",
+    "line": 406
+   },
+   {
+    "id": "9e661c19",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ヤナビス、ロボットも笑うん？",
+    "file": "stagetalk.js",
+    "line": 409
+   },
+   {
+    "id": "3a53f71d",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "笑い声のデータは、再生できます。",
+    "file": "stagetalk.js",
+    "line": 410
+   },
+   {
+    "id": "97b4003a",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ほな、ちょっと笑ってだ。",
+    "file": "stagetalk.js",
+    "line": 411
+   },
+   {
+    "id": "9a79f297",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "……ハ、ハ、ハ。",
+    "file": "stagetalk.js",
+    "line": 412
+   },
+   {
+    "id": "8328c674",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "こわいじょ！",
+    "file": "stagetalk.js",
+    "line": 413
+   },
+   {
+    "id": "4d7de998",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "上のほうにドームがあるじょ。工場の見はらし台かの。ええ眺めじゃろな。",
+    "file": "stagetalk.js",
+    "line": 418
+   },
+   {
+    "id": "59c34b59",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ぴょんぴーさん、工場見学のおみやげがあるそうです。",
+    "file": "stagetalk.js",
+    "line": 421
+   },
+   {
+    "id": "48d696d1",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "なんじゃ？",
+    "file": "stagetalk.js",
+    "line": 422
+   },
+   {
+    "id": "b219df3c",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ネジのキーホルダーです。",
+    "file": "stagetalk.js",
+    "line": 423
+   },
+   {
+    "id": "12f3dac4",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "……らんぴょんにあげよ。",
+    "file": "stagetalk.js",
+    "line": 424
+   },
+   {
+    "id": "be022a3c",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "なあヤナビス、ボケとツッコミ、どっちやりたい？",
+    "file": "stagetalk.js",
+    "line": 427
+   },
+   {
+    "id": "c1deba25",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "データ的には、ツッコミのほうが向いていると思います。",
+    "file": "stagetalk.js",
+    "line": 428
+   },
+   {
+    "id": "70a18261",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ほな、ためしに。……吾輩、実はニンジンきらいなんじゃ。",
+    "file": "stagetalk.js",
+    "line": 429
+   },
+   {
+    "id": "507994c1",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "うさぎなのに！？",
+    "file": "stagetalk.js",
+    "line": 430
+   },
+   {
+    "id": "f7595aec",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "おっ、ええツッコミじゃ！",
+    "file": "stagetalk.js",
+    "line": 431
+   },
+   {
+    "id": "d11c8944",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "輪っかの向こうに、でっかい鉄の気配じゃ。王さまロボット、待っとれよ。",
+    "file": "stagetalk.js",
+    "line": 436
+   },
+   {
+    "id": "d28032cb",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ロボットキングは、いつも自分をアップデートしているそうです。",
+    "file": "stagetalk.js",
+    "line": 439
+   },
+   {
+    "id": "fb00174c",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "吾輩も毎日アップデートしとるじょ。新ネタで。",
+    "file": "stagetalk.js",
+    "line": 440
+   },
+   {
+    "id": "4380b0a3",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ネタのほうですか。",
+    "file": "stagetalk.js",
+    "line": 441
+   },
+   {
+    "id": "90626008",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ヤナビス、王さまと戦うの、こわないん？",
+    "file": "stagetalk.js",
+    "line": 444
+   },
+   {
+    "id": "848db421",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "少し、こわいです。でも、ぴょんぴーさんがいるので。",
+    "file": "stagetalk.js",
+    "line": 445
+   },
+   {
+    "id": "e0beab37",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "……まかしとき。",
+    "file": "stagetalk.js",
+    "line": 446
+   },
+   {
+    "id": "0d2c3b5b",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ここが魔王星か……空が真っ赤じゃ。体の重さが、ぐわんぐわん変わるじょ。",
+    "file": "stagetalk.js",
+    "line": 452
+   },
+   {
+    "id": "a9da47c7",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ここまで来ましたね、ぴょんぴーさん。",
+    "file": "stagetalk.js",
+    "line": 455
+   },
+   {
+    "id": "c59332d9",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "長い旅じゃったな。月あめ平原がなつかしいじょ。",
+    "file": "stagetalk.js",
+    "line": 456
+   },
+   {
+    "id": "fa1e52e7",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "まだ数日前ですよ。",
+    "file": "stagetalk.js",
+    "line": 457
+   },
+   {
+    "id": "59ba667b",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ヤナビス、魔王って、どんな顔しとるんかの。",
+    "file": "stagetalk.js",
+    "line": 460
+   },
+   {
+    "id": "e19d4f75",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "データがありません。",
+    "file": "stagetalk.js",
+    "line": 461
+   },
+   {
+    "id": "58c3aa17",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "意外とかわいかったら、どうしよ。",
+    "file": "stagetalk.js",
+    "line": 462
+   },
+   {
+    "id": "bf819b8b",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "それでも、戦ってください。",
+    "file": "stagetalk.js",
+    "line": 463
+   },
+   {
+    "id": "ec89404e",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "でっかい輪っかが浮いとる……。魔王の星、趣味がわるいのう。",
+    "file": "stagetalk.js",
+    "line": 468
+   },
+   {
+    "id": "0a71bba0",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "この星には、うばわれた笑い声が集まっているそうです。",
+    "file": "stagetalk.js",
+    "line": 471
+   },
+   {
+    "id": "446c0f46",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ほな、どこかで宇宙中の笑い声が鳴っとるんか。",
+    "file": "stagetalk.js",
+    "line": 472
+   },
+   {
+    "id": "a88b2eec",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "……でも、だれも聞いていません。",
+    "file": "stagetalk.js",
+    "line": 473
+   },
+   {
+    "id": "6702172f",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "もったいないじょ。",
+    "file": "stagetalk.js",
+    "line": 474
+   },
+   {
+    "id": "1d4ae06a",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "なあ、魔王星にも、おいしいもんあるんかの。",
+    "file": "stagetalk.js",
+    "line": 477
+   },
+   {
+    "id": "693c4087",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "名物は『こげパン』だそうです。",
+    "file": "stagetalk.js",
+    "line": 478
+   },
+   {
+    "id": "8d1f01ee",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "名物にすな！",
+    "file": "stagetalk.js",
+    "line": 479
+   },
+   {
+    "id": "2612b16b",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "足もとがドクドク脈打っとる……。この星、生きとるみたいじゃな。",
+    "file": "stagetalk.js",
+    "line": 484
+   },
+   {
+    "id": "84ac2cab",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ぴょんぴーさん、最初に会ったときのこと、覚えていますか？",
+    "file": "stagetalk.js",
+    "line": 487
+   },
+   {
+    "id": "3c200d46",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "『まかしてほしいんじょ』って言うとったじゃろ。",
+    "file": "stagetalk.js",
+    "line": 488
+   },
+   {
+    "id": "d104c739",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "あれは、阿波弁がうつったんです。",
+    "file": "stagetalk.js",
+    "line": 489
+   },
+   {
+    "id": "f474c9d9",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "最初の一言から、うつっとったんか。",
+    "file": "stagetalk.js",
+    "line": 490
+   },
+   {
+    "id": "038978ef",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ヤナビス、旅が終わったら何するん？",
+    "file": "stagetalk.js",
+    "line": 493
+   },
+   {
+    "id": "70aa82d0",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "まだ決めていません。",
+    "file": "stagetalk.js",
+    "line": 494
+   },
+   {
+    "id": "e650672e",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "フェス、見に来だ。最前列あけとくけん。",
+    "file": "stagetalk.js",
+    "line": 495
+   },
+   {
+    "id": "64922ac5",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "……はい、ぜひ。",
+    "file": "stagetalk.js",
+    "line": 496
+   },
+   {
+    "id": "621cbb59",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "あっちにもこっちにも、トゲトゲの岩じゃ。おしりに刺さったら大ごとじょ。",
+    "file": "stagetalk.js",
+    "line": 501
+   },
+   {
+    "id": "44e02c50",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ぴょんぴーさん、らんぴょんさんのいいところを3つ言えますか？",
+    "file": "stagetalk.js",
+    "line": 504
+   },
+   {
+    "id": "a2ee5595",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "まじめ、やさしい、ツッコミがはやい。",
+    "file": "stagetalk.js",
+    "line": 505
+   },
+   {
+    "id": "d911426d",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "すぐに出ましたね。",
+    "file": "stagetalk.js",
+    "line": 506
+   },
+   {
+    "id": "aa940a55",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "……本人には言うなよ。",
+    "file": "stagetalk.js",
+    "line": 507
+   },
+   {
+    "id": "fd5db491",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "なあヤナビス、魔王の手下も、もとは笑っとったんかな。",
+    "file": "stagetalk.js",
+    "line": 510
+   },
+   {
+    "id": "ee7b1df6",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "そうかもしれません。",
+    "file": "stagetalk.js",
+    "line": 511
+   },
+   {
+    "id": "f89b04e7",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ほな、全部すんだら、みんなで笑えたらええのう。",
+    "file": "stagetalk.js",
+    "line": 512
+   },
+   {
+    "id": "81eed6d2",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ふしぎな門じゃ……。くぐったら、どこにつながっとるんかの。",
+    "file": "stagetalk.js",
+    "line": 517
+   },
+   {
+    "id": "3c438a1e",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "この門の向こうから、とても強い反応があります。",
+    "file": "stagetalk.js",
+    "line": 520
+   },
+   {
+    "id": "de4a8cfc",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ここまで来たら、もう引き返さんじょ。",
+    "file": "stagetalk.js",
+    "line": 521
+   },
+   {
+    "id": "6bc8a847",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "引き返すボタンも、ありませんしね。",
+    "file": "stagetalk.js",
+    "line": 522
+   },
+   {
+    "id": "a8ad9241",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ヤナビス、吾輩のこと、最初どう思った？",
+    "file": "stagetalk.js",
+    "line": 525
+   },
+   {
+    "id": "d416c330",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "『よくしゃべるうさぎ』です。",
+    "file": "stagetalk.js",
+    "line": 526
+   },
+   {
+    "id": "1477af81",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "今は？",
+    "file": "stagetalk.js",
+    "line": 527
+   },
+   {
+    "id": "2056b14d",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "『とてもよくしゃべるうさぎ』です。",
+    "file": "stagetalk.js",
+    "line": 528
+   },
+   {
+    "id": "62087be1",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "悪化しとるでないか！",
+    "file": "stagetalk.js",
+    "line": 529
+   },
+   {
+    "id": "3e6d7df4",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "城の階段じゃ……長いのう。エレベーターくらい、つけといてだ。",
+    "file": "stagetalk.js",
+    "line": 534
+   },
+   {
+    "id": "c7d7ede6",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "お城の階段は、全部で666段あるそうです。",
+    "file": "stagetalk.js",
+    "line": 537
+   },
+   {
+    "id": "f1ff4b9b",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "数えたん？",
+    "file": "stagetalk.js",
+    "line": 538
+   },
+   {
+    "id": "d03fe76b",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "いま、数えています。……まだ12段目です。",
+    "file": "stagetalk.js",
+    "line": 539
+   },
+   {
+    "id": "c15e959b",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "先は長いのう！",
+    "file": "stagetalk.js",
+    "line": 540
+   },
+   {
+    "id": "7342145f",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "なあ、ルーヴァさん、今ごろ何しとるかの。",
+    "file": "stagetalk.js",
+    "line": 543
+   },
+   {
+    "id": "e9f9ef3b",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "フェスの準備をして、待ってくれているはずです。",
+    "file": "stagetalk.js",
+    "line": 544
+   },
+   {
+    "id": "d6d6185e",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "楽屋に柿ピー、用意しといてくれとるかな。",
+    "file": "stagetalk.js",
+    "line": 545
+   },
+   {
+    "id": "13914df3",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "たぶん、すだちです。",
+    "file": "stagetalk.js",
+    "line": 546
+   },
+   {
+    "id": "1bb2f464",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "城の中、ひんやりしとる。……いや、吾輩が緊張しとるだけかもしれん。",
+    "file": "stagetalk.js",
+    "line": 551
+   },
+   {
+    "id": "3629c95a",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ぴょんぴーさん、手がふるえていますよ。",
+    "file": "stagetalk.js",
+    "line": 554
+   },
+   {
+    "id": "b5c0c8e9",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "武者ぶるいじゃ。……ちょっとだけ、こわいけどな。",
+    "file": "stagetalk.js",
+    "line": 555
+   },
+   {
+    "id": "7fe09281",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "わたしも、いっしょです。",
+    "file": "stagetalk.js",
+    "line": 556
+   },
+   {
+    "id": "c4646798",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ヤナビス、これ終わったら、らんぴょんに何て言お。",
+    "file": "stagetalk.js",
+    "line": 559
+   },
+   {
+    "id": "374212a5",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "『ただいま』でいいと思います。",
+    "file": "stagetalk.js",
+    "line": 560
+   },
+   {
+    "id": "aa882723",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "そうじゃな。……ほんで、ボケたろ。",
+    "file": "stagetalk.js",
+    "line": 561
+   },
+   {
+    "id": "e5e15897",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ツッコミ、返ってきますね。",
+    "file": "stagetalk.js",
+    "line": 562
+   },
+   {
+    "id": "76d3f99b",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "この門の向こうに、魔王がおる……。宇宙中の笑い、返してもらうじょ。",
+    "file": "stagetalk.js",
+    "line": 567
+   },
+   {
+    "id": "8288734e",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ぴょんぴーさん。ここまで、ありがとうございました。",
+    "file": "stagetalk.js",
+    "line": 570
+   },
+   {
+    "id": "62b99eb1",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "まだ終わっとらんじょ。お礼は、フェスのあとじゃ。",
+    "file": "stagetalk.js",
+    "line": 571
+   },
+   {
+    "id": "d44d46bd",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "……はい。",
+    "file": "stagetalk.js",
+    "line": 572
+   },
+   {
+    "id": "1f48919d",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "ヤナビス、最後にひとつボケてええか？",
+    "file": "stagetalk.js",
+    "line": 575
+   },
+   {
+    "id": "6a5e6cfb",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "どうぞ。",
+    "file": "stagetalk.js",
+    "line": 576
+   },
+   {
+    "id": "4b45ea2d",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "魔王の『ま』は、まんじゅうの『ま』じゃ。",
+    "file": "stagetalk.js",
+    "line": 577
+   },
+   {
+    "id": "43e89348",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "……ツッコミは、らんぴょんさんに取っておきます。",
+    "file": "stagetalk.js",
+    "line": 578
+   },
+   {
     "id": "fcdfc030",
     "who": "yana",
     "name": "ヤナビス",
