@@ -972,8 +972,9 @@
 
     // 枠
     if (ok(img.holoFrame)) {
-      const fw = MW * 1.16, fh = h * 1.22;
-      ctx.drawImage(img.holoFrame, -fw / 2, -fh / 2, fw, fh);
+      // 枠の絵の画面の穴は、横はばの約85%・高さの約76%（少し小さめに合わせて、画面のふちを枠でかくす）
+      const fw = MW / 0.835, fh = h / 0.74;
+      ctx.drawImage(img.holoFrame, -fw / 2, -fh / 2 + fh * 0.0146, fw, fh);
     } else {
       ctx.save();
       ctx.shadowColor = "#7ff6e6";
@@ -1002,20 +1003,20 @@
       ctx.globalAlpha = alpha;
       ctx.fillStyle = "rgba(40, 20, 90, 0.75)";
       ctx.beginPath();
-      ctx.roundRect(-120, -h / 2 - 18, 240, 34, 17);
+      ctx.roundRect(-MW / 2 + 22, -h / 2 + 16, 220, 32, 16);
       ctx.fill();
       ctx.strokeStyle = "#7ff6e6";
       ctx.lineWidth = 2;
       ctx.stroke();
       ctx.fillStyle = (time % 1) < 0.5 ? "#ff8db7" : "#ffd1ed";
       ctx.beginPath();
-      ctx.arc(-96, -h / 2 - 1, 6, 0, Math.PI * 2);
+      ctx.arc(-MW / 2 + 44, -h / 2 + 32, 6, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = "#e8fffb";
       ctx.font = `900 17px ${FX.FONT}`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(L("月の宮より 通信中", "MOON PALACE · LIVE"), 8, -h / 2 - 1);
+      ctx.fillText(L("月の宮より 通信中", "MOON PALACE · LIVE"), -MW / 2 + 140, -h / 2 + 32);
     }
     ctx.restore();
   }
