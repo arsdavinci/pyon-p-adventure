@@ -3401,6 +3401,7 @@ function openInventory() {
   }
   state.inventoryReturnMode = state.mode;
   state.mode = "inventory";
+  state.inventoryTab = "weapons";
   const equippedSlot = inventorySlots().findIndex(slot => slot?.power === state.weaponPower);
   state.inventorySelection = equippedSlot >= 0 ? equippedSlot : 0;
   ensureInventorySelectionVisible();
@@ -3435,6 +3436,7 @@ function closeInventory() {
     state.fighterTransformPending = false;
     state.fighterTransformUntil = performance.now() + 1600;
   }
+  if (inventoryGearTab()) switchInventoryTab("weapons");
   const back = state.inventoryReturnMode;
   state.mode = back === "respawning" ? "respawning" : back === "worldMap" ? "worldMap" : "playing";
   state.inventoryReturnMode = null;
@@ -6001,6 +6003,8 @@ function fuseWeapons(power) {
 }
 
 function inventorySlots() {
+  // どうぐタブを見ているあいだは、武器のマスはないものとして扱う
+  if (inventoryGearTab()) return Array(MAX_INVENTORY_ITEMS).fill(null);
   ensureInventoryItems();
   return state.inventoryItems.map((power, index) => power ? { power, copy: index } : null);
 }
@@ -6136,7 +6140,8 @@ function showItemFullPrompt() {
 }
 
 function clampInventoryScroll() {
-  const maxScroll = Math.max(0, MAX_INVENTORY_ITEMS - VISIBLE_INVENTORY_ITEMS);
+  const cells = inventoryGearTab() ? Math.ceil(Math.max(1, inventoryGearEntries().length) / VISIBLE_INVENTORY_ITEMS) * VISIBLE_INVENTORY_ITEMS : MAX_INVENTORY_ITEMS;
+  const maxScroll = Math.max(0, cells - VISIBLE_INVENTORY_ITEMS);
   const rowScroll = Math.floor((state.inventoryScroll ?? 0) / 5) * 5;
   state.inventoryScroll = clamp(rowScroll, 0, maxScroll);
 }
@@ -8734,11 +8739,12 @@ function drawInventoryWeaponCard() {
     return;
   }
   if (!slot) {
+    const gearTab = inventoryGearTab();
     ctx.fillStyle = "#9a8fc4";
     ctx.font = `900 30px ${FX.FONT}`;
-    ctx.fillText(ja ? "からっぽ" : "Empty", r.x + r.w / 2, r.y + r.h / 2 - 20);
+    ctx.fillText(gearTab && !inventoryGearEntries().length ? (ja ? "どうぐがないよ" : "No gear yet") : (ja ? "からっぽ" : "Empty"), r.x + r.w / 2, r.y + r.h / 2 - 20);
     ctx.font = `800 22px ${FX.FONT}`;
-    ctx.fillText(ja ? "武器のあるマスをえらんでね" : "Pick a slot with a ray gun", r.x + r.w / 2, r.y + r.h / 2 + 24);
+    ctx.fillText(gearTab ? (ja ? "よろず屋で買えるよ" : "Buy some at the shop") : (ja ? "武器のあるマスをえらんでね" : "Pick a slot with a ray gun"), r.x + r.w / 2, r.y + r.h / 2 + 24);
     ctx.restore();
     return;
   }
@@ -8859,6 +8865,7 @@ function drawInventoryScreen() {
   }
   drawInventoryTopBar();
   drawInventoryWeaponCard();
+  drawInventoryKindTabs();
   for (const slot of inventorySlotRects()) drawInventorySlot(slot);
   if (!inventoryTalkBelow()) drawInventoryCommentBar();
   drawInventoryMessage();
@@ -8960,7 +8967,9 @@ function drawInventoryScrollBar() {
 }
 
 function inventoryPageInfo() {
-  const totalPages = Math.ceil(MAX_INVENTORY_ITEMS / VISIBLE_INVENTORY_ITEMS);
+  const totalPages = inventoryGearTab()
+    ? Math.max(1, Math.ceil(inventoryGearEntries().length / VISIBLE_INVENTORY_ITEMS))
+    : Math.ceil(MAX_INVENTORY_ITEMS / VISIBLE_INVENTORY_ITEMS);
   const currentPage = clamp(Math.floor((state.inventoryScroll ?? 0) / VISIBLE_INVENTORY_ITEMS) + 1, 1, totalPages);
   const first = Math.min(MAX_INVENTORY_ITEMS, (state.inventoryScroll ?? 0) + 1);
   const last = Math.min(MAX_INVENTORY_ITEMS, (state.inventoryScroll ?? 0) + VISIBLE_INVENTORY_ITEMS);
@@ -10128,23 +10137,85 @@ function inventoryBodyHeight() {
   return inventoryTalkBelow() ? 588 : 474;
 }
 
-// ---------- 持ち物のマスに、買った道具とぶどうまんじゅうも置く ----------
-// 武器のマスはそのまま。あいているマスに（前から順に）まんじゅう・道具をならべる。
-// 道具をえらんで A（もう一度タップ）で、つける／はずす。まんじゅうは食べる
-function inventoryGearCells() {
-  const map = new Map();
-  if (typeof Shop === "undefined" || !Shop.gearList) return map;
-  const entries = [];
-  if (Shop.manjuCount() > 0) entries.push("manju");
-  for (const it of Shop.gearList()) entries.push(it.id);
-  const items = state.inventoryItems ?? [];
-  let k = 0;
-  for (let i = 0; i < MAX_INVENTORY_ITEMS && k < entries.length; i++) if (!items[i]) map.set(i, entries[k++]);
-  return map;
+// ---------- 持ち物画面のタブ：「武器」と「どうぐ」 ----------
+// どうぐタブには、ぶどうまんじゅう → くつ → 身につけるもの の順にならぶ。
+// えらんで A（もう一度タップ）で、つける／はずす。まんじゅうは食べる
+const INV_TAB_H = 54;
+function inventoryGearTab() {
+  return state?.inventoryTab === "gear";
+}
+
+function inventoryGearEntries() {
+  if (typeof Shop === "undefined" || !Shop.gearList) return [];
+  const gear = Shop.gearList().map(it => it.id);
+  const out = [];
+  if (Shop.manjuCount() > 0) out.push("manju");
+  out.push(...gear.filter(id => Shop.isShoe(id)), ...gear.filter(id => !Shop.isShoe(id)));
+  return out;
 }
 
 function inventoryGearAt(index) {
-  return inventoryGearCells().get(index) ?? null;
+  return inventoryGearTab() ? inventoryGearEntries()[index] ?? null : null;
+}
+
+function inventoryTabRects() {
+  return [0, 1].map(i => ({ x: 446 + i * 196, y: 118, w: 186, h: INV_TAB_H }));
+}
+
+// タブを切りかえる（武器タブのカーソル位置はおぼえておく）
+function switchInventoryTab(tab) {
+  if (!state || state.mode !== "inventory" || (state.inventoryTab ?? "weapons") === tab) return;
+  if (fuseLessonOn()) return fuseLessonNudge();
+  state.inventoryGrab = null;
+  if (tab === "gear") {
+    state.weaponTabCursor = { sel: state.inventorySelection, scroll: state.inventoryScroll };
+    state.inventoryTab = "gear";
+    state.inventorySelection = 0;
+    state.inventoryScroll = 0;
+  } else {
+    state.inventoryTab = "weapons";
+    state.inventorySelection = state.weaponTabCursor?.sel ?? 0;
+    state.inventoryScroll = state.weaponTabCursor?.scroll ?? 0;
+  }
+  state.inventoryFocusMode = INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST;
+  state.inventoryFocusArea = "itemList";
+  ensureInventorySelectionVisible();
+  playSfx("cursor");
+}
+
+function drawInventoryKindTabs() {
+  const ja = language === "ja";
+  const gearTab = inventoryGearTab();
+  const labels = ja ? ["武器", "どうぐ"] : ["Weapons", "Gear"];
+  const counts = [null, inventoryGearEntries().length];
+  inventoryTabRects().forEach((r, i) => {
+    const on = (i === 1) === gearTab;
+    ctx.save();
+    ctx.fillStyle = on ? (i === 0 ? "#7fd6ea" : "#ff8db7") : "rgba(255, 255, 255, 0.72)";
+    ctx.strokeStyle = on ? "#ffffff" : "#c8b2ff";
+    ctx.lineWidth = on ? 4 : 2;
+    ctx.beginPath();
+    ctx.roundRect(r.x, r.y, r.w, r.h, [20, 20, 6, 6]);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = on ? "#ffffff" : "#7f67c8";
+    ctx.font = `900 28px ${FX.FONT}`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const label = counts[i] ? `${labels[i]} ${counts[i]}` : labels[i];
+    ctx.fillText(label, r.x + r.w / 2, r.y + r.h / 2 + 2);
+    ctx.restore();
+  });
+  // キーボードでの切りかえ（PC だけ）
+  if (typeof controlMode !== "undefined" && controlMode === "pc") {
+    ctx.save();
+    ctx.fillStyle = "rgba(77, 71, 115, 0.75)";
+    ctx.font = `800 18px ${FX.FONT}`;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(ja ? "Q / R でタブ切りかえ" : "Q / R: switch tab", 846, 118 + INV_TAB_H / 2);
+    ctx.restore();
+  }
 }
 
 function useInventoryGear(id) {
@@ -10262,18 +10333,25 @@ function inventorySlotRects() {
   const slots = inventorySlots();
   const rects = [];
   const startX = 446;
-  const startY = 118;
+  const startY = 118 + INV_TAB_H + 8;
   const size = 150;
   const gapX = 13;
-  const gapY = 12;
-  const slotH = (inventoryBodyHeight() - gapY * 2) / 3;
+  const gapY = 10;
+  const slotH = (inventoryBodyHeight() - INV_TAB_H - 8 - gapY * 2) / 3;
   clampInventoryScroll();
+  const gearTab = inventoryGearTab();
+  const gear = gearTab ? inventoryGearEntries() : null;
   for (let i = 0; i < VISIBLE_INVENTORY_ITEMS; i++) {
     const col = i % 5;
     const row = Math.floor(i / 5);
     const index = state.inventoryScroll + i;
+    const box = { x: startX + col * (size + gapX), y: startY + row * (slotH + gapY), w: size, h: slotH };
+    if (gearTab) {
+      rects.push({ empty: true, gear: gear[index] ?? null, index, ...box });
+      continue;
+    }
     const item = slots[index] || null;
-    rects.push({ ...(item || {}), empty: !item, index, x: startX + col * (size + gapX), y: startY + row * (slotH + gapY), w: size, h: slotH });
+    rects.push({ ...(item || {}), empty: !item, index, ...box });
   }
   return rects;
 }
@@ -10306,8 +10384,7 @@ function drawInventorySlot(slot) {
     ctx.shadowBlur = 0;
   }
   if (slot.empty) {
-    const gear = inventoryGearAt(slot.index);
-    if (gear && !grabbed) drawInventoryGearSlot(slot, gear);
+    if (slot.gear) drawInventoryGearSlot(slot, slot.gear);
     ctx.restore();
     return;
   }
@@ -10674,6 +10751,7 @@ function inventoryFocusComment(power = state.weaponPower) {
     return pyonpyWeaponComment(power);
   }
   const gearHere = mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST && !power ? inventoryGearAt(state.inventorySelection) : null;
+  if (inventoryGearTab() && !gearHere && mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST) return "ぴょんぴー「どうぐは、よろず屋で買えるじょ。くつ・マント・ぶどうまんじゅうは、ここに入るけんな！」";
   if (gearHere === "manju") return "ぴょんぴー「ぶどうまんじゅうじゃ！ Aで食べたら、ライフもHPも満タンじょ！」";
   if (gearHere) return Shop.has(gearHere)
     ? `ぴょんぴー「${Shop.itemName(gearHere)}、つけとるじょ。Aではずせるじょ。」`
@@ -13440,9 +13518,15 @@ canvas.addEventListener("pointerdown", event => {
       event.preventDefault();
       return;
     }
+    const tabHit = inventoryTabRects().findIndex(r => pos.x >= r.x && pos.x <= r.x + r.w && pos.y >= r.y && pos.y <= r.y + r.h);
+    if (tabHit >= 0) {
+      switchInventoryTab(tabHit === 1 ? "gear" : "weapons");
+      event.preventDefault();
+      return;
+    }
     const slot = inventorySlotAt(pos.x, pos.y);
     if (slot) {
-      const gear = slot.empty && !fuseLessonOn() ? inventoryGearAt(slot.index) : null;
+      const gear = slot.empty && !fuseLessonOn() ? slot.gear ?? null : null;
       if (gear) {
         if (state.inventorySelection === slot.index) useInventoryGear(gear);
         else playSfx("cursor");
@@ -13555,7 +13639,12 @@ function moveInventorySelection(dir) {
   if (!state || state.mode !== "inventory") return;
   // はじめての合成：つかむまでは、光っている武器から動かない
   if (fuseLessonOn() && !state.inventoryGrab) return fuseLessonNudge();
-  state.inventorySelection = (state.inventorySelection + dir + MAX_INVENTORY_ITEMS * 4) % MAX_INVENTORY_ITEMS;
+  if (inventoryGearTab()) {
+    // どうぐタブ：ならんでいる数の中だけで動く
+    const n = Math.max(1, inventoryGearEntries().length);
+    const next = state.inventorySelection + dir;
+    state.inventorySelection = next < 0 ? (Math.abs(dir) === 1 ? n - 1 : state.inventorySelection) : next >= n ? (Math.abs(dir) === 1 ? 0 : state.inventorySelection) : next;
+  } else state.inventorySelection = (state.inventorySelection + dir + MAX_INVENTORY_ITEMS * 4) % MAX_INVENTORY_ITEMS;
   ensureInventorySelectionVisible();
   playSfx("cursor");
 }
@@ -13798,6 +13887,12 @@ function handleInventoryKeyboardFocus(code, repeat = false) {
     return true;
   }
 
+  // Q＝武器タブ、R＝どうぐタブ
+  if (!repeat && (code === "KeyQ" || code === "KeyR") && !state.inventoryConfirmWorldMap && !state.deletePrompt && !state.fusionPrompt) {
+    switchInventoryTab(code === "KeyQ" ? "weapons" : "gear");
+    return true;
+  }
+
   if (mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST) {
     if (code === "ArrowLeft" || code === "KeyA") moveInventorySelection(-1);
     if (code === "ArrowRight" || code === "KeyD") moveInventorySelection(1);
@@ -13808,10 +13903,11 @@ function handleInventoryKeyboardFocus(code, repeat = false) {
     }
     if (code === "ArrowDown" || code === "KeyS") moveInventorySelection(5);
     if (!repeat && (code === "Enter" || code === "Space" || code === "KeyZ")) startInventoryGrab(false);
-    if (!repeat && code === "KeyE") equipSelectedInventorySlot();
-    // X（C / Delete）＝すてる、Y＝せいとん
-    if (!repeat && (code === "KeyX" || code === "KeyC" || code === "Delete")) openDeletePrompt();
-    if (!repeat && code === "KeyY") runInventorySort();
+    const weaponsTab = !inventoryGearTab();
+    if (!repeat && code === "KeyE" && weaponsTab) equipSelectedInventorySlot();
+    // X（C / Delete）＝すてる、Y＝せいとん（武器タブだけ）
+    if (!repeat && weaponsTab && (code === "KeyX" || code === "KeyC" || code === "Delete")) openDeletePrompt();
+    if (!repeat && weaponsTab && code === "KeyY") runInventorySort();
     if (!repeat && (code === "Escape" || code === "KeyB")) leaveInventoryInnerFocus();
     return true;
   }
@@ -13897,7 +13993,12 @@ function updateInventoryGamepadFocus(now, jumpPressed, runPressed, shootPressed)
     }
     if (jumpPressed && !gamepadState.jumpLatch) startInventoryGrab(true);
     if (!jumpPressed && gamepadState.jumpLatch && state.inventoryGrab?.gamepad) releaseInventoryGrab();
-    if (shootPressed && !gamepadState.shootLatch) {
+    // LB（ボタン4）で 武器／どうぐ のタブを切りかえ
+    const padNow = Array.from(navigator.getGamepads ? navigator.getGamepads() : []).find(Boolean);
+    const lb = Boolean(padNow?.buttons[4]?.pressed);
+    if (lb && !gamepadState.lbLatch) switchInventoryTab(inventoryGearTab() ? "weapons" : "gear");
+    gamepadState.lbLatch = lb;
+    if (shootPressed && !gamepadState.shootLatch && !inventoryGearTab()) {
       // ゲームパッド：X（ボタン2）＝すてる、Y（ボタン3）＝せいとん
       const pad = Array.from(navigator.getGamepads ? navigator.getGamepads() : []).find(Boolean);
       if (pad?.buttons[3]?.pressed) runInventorySort();
