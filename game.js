@@ -2879,6 +2879,7 @@ function announceStage() {
     FX.S.transition.y = (p.y + p.h / 2 - state.cameraY) * ZOOM;
   }
   Chat.event("stageStart");
+  Tutorial.stageStart();
 }
 
 function maybePlayWorldIntro(worldIndex) {
@@ -3362,6 +3363,12 @@ function update(dt) {
   }
   if (state.mode !== "playing") return;
   updateGamepad();
+  // チュートリアルで画面を止めているあいだは、ほかのものを動かさない
+  if (Tutorial.update(dt)) {
+    updateParticles(dt);
+    updateHud();
+    return;
+  }
   state.itemFullPrompt = Math.max(0, (state.itemFullPrompt ?? 0) - dt);
   state.stompBoostTimer = Math.max(0, (state.stompBoostTimer ?? 0) - dt);
   state.stompLateBoostTimer = Math.max(0, (state.stompLateBoostTimer ?? 0) - dt);
@@ -3747,18 +3754,20 @@ function updatePlayer(dt) {
   }
   p.flying = false;
   p.swimming = false;
-  const movingLeft = keys.has("ArrowLeft") || keys.has("KeyA") || gamepadState.left;
-  const movingRight = keys.has("ArrowRight") || keys.has("KeyD") || gamepadState.right;
+  // チュートリアル中は、使えるボタンをしぼる
+  const tut = Tutorial.lock();
+  const movingLeft = (!tut || tut.move) && (keys.has("ArrowLeft") || keys.has("KeyA") || gamepadState.left);
+  const movingRight = (!tut || tut.move) && (keys.has("ArrowRight") || keys.has("KeyD") || gamepadState.right);
   // ジャンプは A（Space）だけ。十字キーの上下はねらう向きに使う
-  const wantsJump = keys.has("Space") || gamepadState.jump;
+  const wantsJump = (tut && !tut.jump ? !!(p.jumpHeld && !p.grounded) : (keys.has("Space") || gamepadState.jump)) || Tutorial.consumeJump();
   const dxInput = (movingRight ? 1 : 0) - (movingLeft ? 1 : 0);
   const doubleTapRun = isDoubleTapRunActive(dxInput);
   const wantsRun = isRunHeld(dxInput) || doubleTapRun;
-  const wantsShoot = keys.has("KeyX") || keys.has("KeyY") || keys.has("KeyJ") || gamepadState.shoot;
+  const wantsShoot = (!tut || tut.shoot) && (keys.has("KeyX") || keys.has("KeyY") || keys.has("KeyJ") || gamepadState.shoot);
   const trait = currentStageTrait();
   const slippery = trait === "iceSlide" && !Shop.has("spikeShoes");
   // しゃがむ（地面で↓）。しゃがんだまま←→で、ほふく前進。敵の弾は頭の上を通りすぎる
-  const wantsDown = keys.has("ArrowDown") || keys.has("KeyS") || gamepadState.down;
+  const wantsDown = (!tut || tut.move) && (keys.has("ArrowDown") || keys.has("KeyS") || gamepadState.down);
   const canCrouch = !(hasEquippedWeapon() && isRideable(state.weaponPower));
   if (wantsDown && p.grounded && canCrouch && !p.crouch) setCrouch(p, true);
   else if (p.crouch && (!wantsDown || !p.grounded || !canCrouch)) setCrouch(p, false);
@@ -4561,7 +4570,9 @@ function updateEnemies(dt) {
     e.attackAnim = Math.max(0, (e.attackAnim ?? 0) - dt);
     e.hurtAnim = Math.max(0, (e.hurtAnim ?? 0) - dt);
     e.stun = Math.max(0, (e.stun ?? 0) - dt);
-    if (e.stun > 0) {
+    if (Tutorial.moveEnemy(e, dt)) {
+      // チュートリアルの敵は、決まった動きだけ
+    } else if (e.stun > 0) {
       e.vx = 0;
       e.vy += isUnderwaterStage() ? 0 : GRAVITY * dt;
       if (isUnderwaterStage()) updateSwimmingEnemy(e, dt, true);
@@ -4577,7 +4588,7 @@ function updateEnemies(dt) {
       // 攻撃は updateBossScript の中で決まった順番に出す
     } else if (e.boss && courses[currentCourse]?.bossStage && state.bossIntroPlayed) {
       updateBossAttackPattern(e, dt);
-    } else if ((state.gun.holder === e.id || e.weaponPower) && e.gunCooldown <= 0 && enemyCanSeePlayer(e)) {
+    } else if (!e.tutorialSafe && (state.gun.holder === e.id || e.weaponPower) && e.gunCooldown <= 0 && enemyCanSeePlayer(e)) {
       const dir = state.player.x + state.player.w / 2 < e.x + e.w / 2 ? -1 : 1;
       // ふつうの敵は胸の高さで撃つ（しゃがめば頭の上を通る）
       shootBeam(e.id, e.x + e.w / 2 + dir * 22, e.boss ? e.y + 22 : e.y + e.h - 50, dir);
@@ -4590,9 +4601,10 @@ function updateEnemies(dt) {
     const stomp = p.vy > 120 && p.y + p.h - e.y < 24;
     if (stomp) {
       stunEnemy(e);
-      if (!e.boss && Shop.has("boots")) damageEnemy(e, 3);
+      if (!e.boss && Shop.has("boots") && !e.tutorialSafe) damageEnemy(e, 3);
       applyStompBounce(e, (state.stompBoostTimer ?? 0) > 0);
-    } else {
+      Tutorial.onStomp(e);
+    } else if (!e.tutorialSafe) {
       damagePlayer(false, e, true);
     }
   }
@@ -6709,7 +6721,8 @@ function damagePlayer(fell = false, sourceEnemy = null, canStealWeapon = false) 
       sourceEnemy.weaponPower = removeEquippedWeaponForSteal();
       sourceEnemy.stolenWeapon = true;
       state.gun.holder = sourceEnemy.id;
-      Chat.event("stolen");
+      // はじめてうばわれたときは、画面を止めて「踏み返せば取りもどせる」と教える
+      if (!Tutorial.onStolen(sourceEnemy)) Chat.event("stolen");
       sourceEnemy.gunCooldown = sourceEnemy.boss ? 0.2 : 0.5;
     }
   }
@@ -6930,6 +6943,7 @@ function draw() {
       drawInventoryScreen();
       drawFuseGuide();
     }
+    if (mode === "playing") Tutorial.draw();
   }
   if (mode === "title" && state.saveMenu) drawSaveMenu();
   if (mode === "title" && state.settingsMenu) drawSettingsMenu();

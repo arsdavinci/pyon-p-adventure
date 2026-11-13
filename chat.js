@@ -278,6 +278,8 @@
   }
 
   function event(name, arg) {
+    // チュートリアル中は、いつものかけあいを出さない
+    if (typeof Tutorial !== "undefined" && Tutorial.muteChat()) return;
     if (name === "stageStart") {
       flags = {};
       idleT = 14;
@@ -563,5 +565,15 @@
   window.addEventListener("orientationchange", () => setTimeout(layout, 250));
   document.addEventListener("fullscreenchange", () => setTimeout(layout, 120));
 
-  window.Chat = { event, say, update, layout, drawToast, refresh };
+  // 会話がまだ続いている（文字を出している・声がしゃべっている・読む時間）なら true
+  function busy() {
+    if (queue.length) return true;
+    if (!cur) return false;
+    const total = [...L(cur[1], cur[2])].length;
+    if (shown < total) return true;
+    if (typeof Voice !== "undefined" && Voice.busy && Voice.busy()) return true;
+    return voiced ? quietT < 0.6 : hold < 1.2 + total * 0.045;
+  }
+
+  window.Chat = { event, say, update, layout, drawToast, refresh, busy };
 })();
