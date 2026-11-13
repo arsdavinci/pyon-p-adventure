@@ -651,7 +651,7 @@ celebratory upbeat staff roll theme, instrumental kawaii pop, four-on-the-floor 
 
 ### 黄金のぶどうまんじゅう像
 ```
-【保存先】D:\Development_Game\ぴょんぴーの大冒険ssets\shop-item-statue.png
+【保存先】D:\Development\03_Game\ぴょんぴーの大冒険\assets\shop-item-statue.png
 【形式】PNG、正方形 512×512 ピクセル、背景は完全な透過
 【内容】ゲームのお店で売っている「黄金のぶどうまんじゅう像」のアイコン。金ぴかにかがやく、ぶどうまんじゅう（ぶどうの房の形に小さなおまんじゅうが4つ、串にささった和菓子）の像。紫のざぶとんの台座にのり、うしろから後光がさしている。
 【絵柄】パステルカラーのかわいいゲーム用アイテムアイコン。ふちは白で少し太め、つやのある塗り。画像いっぱいに大きく1つだけ、中央に置く。
@@ -660,7 +660,7 @@ celebratory upbeat staff roll theme, instrumental kawaii pop, four-on-the-floor 
 
 ### コインじしゃく
 ```
-【保存先】D:\Development_Game\ぴょんぴーの大冒険ssets\shop-item-magnet.png
+【保存先】D:\Development\03_Game\ぴょんぴーの大冒険\assets\shop-item-magnet.png
 【形式】PNG、正方形 512×512 ピクセル、背景は完全な透過
 【内容】ゲームのお店で売っている「コインじしゃく」のアイコン。水色とピンクのU字じしゃく。先っぽに、クリームゴールドで三日月の模様のコイン（ルナコイン）が1枚ずつくっついている。小さないなずまマーク。
 【絵柄】パステルカラーのかわいいゲーム用アイテムアイコン。ふちは白で少し太め、つやのある塗り。画像いっぱいに大きく1つだけ、中央に置く。
@@ -669,7 +669,7 @@ celebratory upbeat staff roll theme, instrumental kawaii pop, four-on-the-floor 
 
 ### 月あめジャンプ
 ```
-【保存先】D:\Development_Game\ぴょんぴーの大冒険ssets\shop-item-moonJump.png
+【保存先】D:\Development\03_Game\ぴょんぴーの大冒険\assets\shop-item-moonJump.png
 【形式】PNG、正方形 512×512 ピクセル、背景は完全な透過
 【内容】ゲームのお店で売っている「月あめジャンプ（ジャンプが少し高くなる）」のアイコン。うす黄色の三日月の形をした、ぷるぷるのあめ玉。下から小さな上向きの矢印の形のふわふわの雲。
 【絵柄】パステルカラーのかわいいゲーム用アイテムアイコン。ふちは白で少し太め、つやのある塗り。画像いっぱいに大きく1つだけ、中央に置く。
@@ -678,7 +678,7 @@ celebratory upbeat staff roll theme, instrumental kawaii pop, four-on-the-floor 
 
 ### うさみみお守り
 ```
-【保存先】D:\Development_Game\ぴょんぴーの大冒険ssets\shop-item-charm.png
+【保存先】D:\Development\03_Game\ぴょんぴーの大冒険\assets\shop-item-charm.png
 【形式】PNG、正方形 512×512 ピクセル、背景は完全な透過
 【内容】ゲームのお店で売っている「うさみみお守り（やられても1回だけ復活）」のアイコン。ピンクの布のお守り袋。上にうさぎの耳が2本ぴょこんと立っていて、まん中にハートのししゅう。むすび目は紫のひも。
 【絵柄】パステルカラーのかわいいゲーム用アイテムアイコン。ふちは白で少し太め、つやのある塗り。画像いっぱいに大きく1つだけ、中央に置く。
@@ -687,7 +687,7 @@ celebratory upbeat staff roll theme, instrumental kawaii pop, four-on-the-floor 
 
 ### たいねつマント
 ```
-【保存先】D:\Development_Game\ぴょんぴーの大冒険ssets\shop-item-heatCape.png
+【保存先】D:\Development\03_Game\ぴょんぴーの大冒険\assets\shop-item-heatCape.png
 【形式】PNG、正方形 512×512 ピクセル、背景は完全な透過
 【内容】ゲームのお店で売っている「たいねつマント（マグマとふん石のダメージ半分）」のアイコン。オレンジと赤のグラデーションのマント。すそが炎の形で、まん中に白い温泉マーク（♨）のワッペン。
 【絵柄】パステルカラーのかわいいゲーム用アイテムアイコン。ふちは白で少し太め、つやのある塗り。画像いっぱいに大きく1つだけ、中央に置く。
@@ -696,7 +696,7 @@ celebratory upbeat staff roll theme, instrumental kawaii pop, four-on-the-floor 
 
 ### 火星ドリル
 ```
-【保存先】D:\Development_Game\ぴょんぴーの大冒険ssets\shop-item-drill.png
+【保存先】D:\Development\03_Game\ぴょんぴーの大冒険\assets\shop-item-drill.png
 【形式】PNG、正方形 512×512 ピクセル、背景は完全な透過
 【内容】ゲームのお店で売っている「火星ドリル（アイテムブロックの中身が2つ）」のアイコン。赤茶色の火星カラーのハンドドリル。先は金色のらせん、持ち手はクリーム色で、横に小さな星のシール。
 【絵柄】パステルカラーのかわいいゲーム用アイテムアイコン。ふちは白で少し太め、つやのある塗り。画像いっぱいに大きく1つだけ、中央に置く。
@@ -705,7 +705,7 @@ celebratory upbeat staff roll theme, instrumental kawaii pop, four-on-the-floor 
 
 ### スパイクシューズ
 ```
-【保存先】D:\Development_Game\ぴょんぴーの大冒険ssets\shop-item-spikeShoes.png
+【保存先】D:\Development\03_Game\ぴょんぴーの大冒険\assets\shop-item-spikeShoes.png
 【形式】PNG、正方形 512×512 ピクセル、背景は完全な透過
 【内容】ゲームのお店で売っている「スパイクシューズ（氷の上ですべらない）」のアイコン。水色とミントのスニーカー1足。底に銀色の小さなスパイクがならび、かかとに雪の結晶のマーク。
 【絵柄】パステルカラーのかわいいゲーム用アイテムアイコン。ふちは白で少し太め、つやのある塗り。画像いっぱいに大きく1つだけ、中央に置く。
@@ -714,7 +714,7 @@ celebratory upbeat staff roll theme, instrumental kawaii pop, four-on-the-floor 
 
 ### こおりのたて
 ```
-【保存先】D:\Development_Game\ぴょんぴーの大冒険ssets\shop-item-iceShield.png
+【保存先】D:\Development\03_Game\ぴょんぴーの大冒険\assets\shop-item-iceShield.png
 【形式】PNG、正方形 512×512 ピクセル、背景は完全な透過
 【内容】ゲームのお店で売っている「こおりのたて（敵の弾を1回ふせぐ）」のアイコン。すきとおった水色の氷でできた、ひし形の丸っこいたて。まん中に雪の結晶、ふちは白くキラッと光る。
 【絵柄】パステルカラーのかわいいゲーム用アイテムアイコン。ふちは白で少し太め、つやのある塗り。画像いっぱいに大きく1つだけ、中央に置く。
@@ -723,7 +723,7 @@ celebratory upbeat staff roll theme, instrumental kawaii pop, four-on-the-floor 
 
 ### 大きな酸素タンク
 ```
-【保存先】D:\Development_Game\ぴょんぴーの大冒険ssets\shop-item-tank.png
+【保存先】D:\Development\03_Game\ぴょんぴーの大冒険\assets\shop-item-tank.png
 【形式】PNG、正方形 512×512 ピクセル、背景は完全な透過
 【内容】ゲームのお店で売っている「大きな酸素タンク（水の中で酸素が2倍）」のアイコン。背負うタイプのミントブルーの酸素タンク。ふとい銀の口金と、ピンクのベルト。まわりに小さな泡が3つ。
 【絵柄】パステルカラーのかわいいゲーム用アイテムアイコン。ふちは白で少し太め、つやのある塗り。画像いっぱいに大きく1つだけ、中央に置く。
@@ -732,7 +732,7 @@ celebratory upbeat staff roll theme, instrumental kawaii pop, four-on-the-floor 
 
 ### ひれ
 ```
-【保存先】D:\Development_Game\ぴょんぴーの大冒険ssets\shop-item-fins.png
+【保存先】D:\Development\03_Game\ぴょんぴーの大冒険\assets\shop-item-fins.png
 【形式】PNG、正方形 512×512 ピクセル、背景は完全な透過
 【内容】ゲームのお店で売っている「ひれ（泳ぐのが速くなる）」のアイコン。水色からラベンダーのグラデーションの足ひれ1組。ひれの先がうさぎの耳のように丸い。小さな泡が2つ。
 【絵柄】パステルカラーのかわいいゲーム用アイテムアイコン。ふちは白で少し太め、つやのある塗り。画像いっぱいに大きく1つだけ、中央に置く。
@@ -741,7 +741,7 @@ celebratory upbeat staff roll theme, instrumental kawaii pop, four-on-the-floor 
 
 ### ヘルメット
 ```
-【保存先】D:\Development_Game\ぴょんぴーの大冒険ssets\shop-item-helmet.png
+【保存先】D:\Development\03_Game\ぴょんぴーの大冒険\assets\shop-item-helmet.png
 【形式】PNG、正方形 512×512 ピクセル、背景は完全な透過
 【内容】ゲームのお店で売っている「ヘルメット（トロッコのはりに当たってもへいき）」のアイコン。クリーム色の工事用ヘルメット。前に小さなライト、横にうさぎの耳が通る穴と、歯車のマーク。
 【絵柄】パステルカラーのかわいいゲーム用アイテムアイコン。ふちは白で少し太め、つやのある塗り。画像いっぱいに大きく1つだけ、中央に置く。
@@ -750,7 +750,7 @@ celebratory upbeat staff roll theme, instrumental kawaii pop, four-on-the-floor 
 
 ### ロケットブースター
 ```
-【保存先】D:\Development_Game\ぴょんぴーの大冒険ssets\shop-item-booster.png
+【保存先】D:\Development\03_Game\ぴょんぴーの大冒険\assets\shop-item-booster.png
 【形式】PNG、正方形 512×512 ピクセル、背景は完全な透過
 【内容】ゲームのお店で売っている「ロケットブースター（ダッシュが速くなる）」のアイコン。背負うタイプの小さなピンクと白のロケット。うしろから水色とオレンジの炎が短く出ている。
 【絵柄】パステルカラーのかわいいゲーム用アイテムアイコン。ふちは白で少し太め、つやのある塗り。画像いっぱいに大きく1つだけ、中央に置く。
@@ -759,7 +759,7 @@ celebratory upbeat staff roll theme, instrumental kawaii pop, four-on-the-floor 
 
 ### ひらいしん
 ```
-【保存先】D:\Development_Game\ぴょんぴーの大冒険ssets\shop-item-rod.png
+【保存先】D:\Development\03_Game\ぴょんぴーの大冒険\assets\shop-item-rod.png
 【形式】PNG、正方形 512×512 ピクセル、背景は完全な透過
 【内容】ゲームのお店で売っている「ひらいしん（雷が当たらなくなる）」のアイコン。金色の細い棒の先に、三日月の飾り。棒に紫のリボンがまいてあり、黄色のいなずまが棒にすいこまれている。
 【絵柄】パステルカラーのかわいいゲーム用アイテムアイコン。ふちは白で少し太め、つやのある塗り。画像いっぱいに大きく1つだけ、中央に置く。
@@ -768,7 +768,7 @@ celebratory upbeat staff roll theme, instrumental kawaii pop, four-on-the-floor 
 
 ### 王さまのマント
 ```
-【保存先】D:\Development_Game\ぴょんぴーの大冒険ssets\shop-item-kingCape.png
+【保存先】D:\Development\03_Game\ぴょんぴーの大冒険\assets\shop-item-kingCape.png
 【形式】PNG、正方形 512×512 ピクセル、背景は完全な透過
 【内容】ゲームのお店で売っている「王さまのマント（受けるダメージ半分）」のアイコン。あざやかなピンクの王さまのマント。ふちは白いもこもこの毛皮に黒い点、えりに金の王冠のブローチ。
 【絵柄】パステルカラーのかわいいゲーム用アイテムアイコン。ふちは白で少し太め、つやのある塗り。画像いっぱいに大きく1つだけ、中央に置く。
