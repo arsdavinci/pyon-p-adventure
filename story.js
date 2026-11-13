@@ -1048,10 +1048,6 @@
   function skipRect() {
     return { x: 20, y: 10, w: 176, h: 40 };
   }
-  // スキップのとなり：「タイトルへ」
-  function titleRect() {
-    return { x: 206, y: 10, w: 150, h: 40 };
-  }
 
   // 携帯ゲーム機レイアウトでは、会話の吹き出しをゲーム画面の下の欄に出す
   const storyBox = {
@@ -1062,12 +1058,6 @@
   };
 
   storyBox.skip = document.querySelector("#gbStorySkip");
-  storyBox.title = document.querySelector("#gbStoryTitle");
-  storyBox.title?.addEventListener("pointerdown", event => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (state?.mode === "cutscene" || state?.mode === "credits") openTitleAsk();
-  });
   storyBox.skip?.addEventListener("pointerdown", event => {
     event.preventDefault();
     event.stopPropagation();
@@ -1311,16 +1301,6 @@
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillText(on ? pcKeys(L("スキップ？ A で決定", "Skip? Press A")) : L("スキップ ▶▶ (Esc)", "SKIP ▶▶ (Esc)"), r.x + r.w / 2, r.y + r.h / 2 + 1);
-    // タイトルへ
-    const tr = titleRect();
-    ctx.fillStyle = "rgba(255,255,255,0.16)";
-    ctx.strokeStyle = "rgba(255,255,255,0.7)";
-    ctx.beginPath();
-    ctx.roundRect(tr.x, tr.y, tr.w, tr.h, 20);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = "#ffffff";
-    ctx.fillText(L("タイトルへ (Tab)", "Title (Tab)"), tr.x + tr.w / 2, tr.y + tr.h / 2 + 1);
     ctx.restore();
   }
 
@@ -1868,9 +1848,7 @@
     if (mode === "shop") return Shop.handlePointer(x, y);
     if (mode === "cutscene") {
       const r = skipRect();
-      const tr = titleRect();
-      if (!useStoryBox() && x >= tr.x && x <= tr.x + tr.w && y >= tr.y && y <= tr.y + tr.h) openTitleAsk();
-      else if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) {
+      if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) {
         if (!FX.transitioning()) finish();
       } else advanceCutscene();
       return true;
