@@ -1102,7 +1102,8 @@
       ctx.translate(cx, footY + (1 - ease(appear)) * 70 + bob);
       ctx.globalAlpha = ease(appear) * (active ? 1 : 0.55);
       const s = active ? 1 : 0.92;
-      ctx.scale(s, s);
+      // ボスの絵は右向きなので、左右をひっくり返して、ぴょんぴーのほう（左）を向かせる
+      ctx.scale(-s, s);
       const h = 430;
       const w = h * (picture.naturalWidth / picture.naturalHeight);
       ctx.drawImage(picture, -w / 2, -h * 0.98, w, h);
