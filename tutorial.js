@@ -16,6 +16,14 @@
       ["yana", "この宇宙の敵は、踏まれてもひよるだけです。目を回しとるあいだは、さわっても平気ですけん。", "Enemies here just get dizzy when stomped. While they're dizzy, touching them is safe."],
       ["yana", "とどめは光線銃です。X か Y で撃ってみてください。", "Finish it with your ray gun. Press X or Y to shoot."]
     ],
+    // 撃つ練習で、X・Y 以外を押したり、なかなか撃たなかったりしたとき（順番に、だんだん荒くなる）
+    nag1: [["yana", "X か Y を押してください。", "Press X or Y."]],
+    nag2: [["yana", "X！と Y！ですってば！", "X! And Y! I said X and Y!"]],
+    nag3: [["yana", "えーーーくす！とー！ワイ！！！", "EEEX! AAAND! WHYYY!!!"]],
+    nag4: [["yana", "わざとですよね？", "You're doing this on purpose, aren't you?"]],
+    nag5: [["yana", "私はいいですよ。ここで何時間いても", "I don't mind. We can stay here for hours."]],
+    nag6: [["yana", "あなたの大切な時間をどうぞ無駄にしてください", "Please, go ahead and waste your precious time."]],
+    nagAuto: [["yana", "私が勝手に押します！", "Fine, I'll press it myself!"]],
     defeated: [
       ["pyon", "やったじょ！ 踏んでひよらせて、撃ってとどめじゃな。", "Got it! Stomp to make them dizzy, then shoot to finish!"],
       ["yana", "そのとおりです。ここからは、自由に進んでください。", "Exactly. From here on, go wherever you like."]
@@ -73,6 +81,13 @@
   let backT = 0;
   let airT = 0;
   let bounceT = 0;
+  // 撃つ練習で撃たないとき
+  let nagN = 0;
+  let nagT = 0;
+  let nagWant = false;
+  let wrongWas = true;
+  let autoShoot = 0; // 0 = まだ / 1 = 言い終わるのを待つ / 2 = ヤナビスが X を押している
+  let autoT = 0;
   let bounceNext = null;
 
   const seen = key => !!(typeof Story !== "undefined" && Story.data.seen[key]);
@@ -85,6 +100,8 @@
   const aDown = () => keys.has("Space") || gamepadState.jump;
 
   function reset() {
+    if (autoShoot === 2) keys.delete("KeyX");
+    nagN = 0; nagT = 0; nagWant = false; autoShoot = 0; autoT = 0;
     phase = null;
     enemy = null;
     jumpQueued = false;
@@ -257,12 +274,46 @@
           p.facing = enemy.x + enemy.w / 2 >= p.x + p.w / 2 ? 1 : -1;
         }
         return true;
-      case "shoot":
+      case "shoot": {
         if (!enemy.alive) {
+          if (autoShoot === 2) keys.delete("KeyX");
+          autoShoot = 0;
           phase = "talkDone";
           return true;
         }
+        // ヤナビスが代わりに X を押す（押したりはなしたりして、何発も撃つ）
+        if (autoShoot === 2) {
+          autoT += dt;
+          if (autoT % 0.3 < 0.12) keys.add("KeyX"); else keys.delete("KeyX");
+          return false;
+        }
+        if (autoShoot === 1) {
+          if (!Chat.busy()) { autoShoot = 2; autoT = 0; }
+          return false;
+        }
+        const p = state.player;
+        // 撃っているあいだは、なにも言わない
+        if (p.shootHeld) { nagT = 0; nagWant = false; return false; }
+        // X・Y 以外のボタン（A・B）を押した
+        const wrong = keys.has("Space") || keys.has("KeyB") || gamepadState.jump || gamepadState.run;
+        if (wrong && !wrongWas) nagWant = true;
+        wrongWas = wrong;
+        // しばらく撃たなかったときも、次のひとことへ
+        if (!Chat.busy()) nagT += dt;
+        if (nagN > 0 && nagT > 7) nagWant = true;
+        if (nagWant && !Chat.busy()) {
+          nagWant = false;
+          nagT = 0;
+          if (nagN < 6) {
+            nagN += 1;
+            say(`nag${nagN}`);
+          } else {
+            say("nagAuto");
+            autoShoot = 1;
+          }
+        }
         return false;
+      }
       case "talkDone":
         if (talkDone("defeated")) {
           mark("tutorialStomp");
@@ -396,7 +447,7 @@
       case "stompBounce":
         return { move: false, jump: false, shoot: false };
       case "shoot":
-        return { move: true, jump: false, shoot: true };
+        return autoShoot ? { move: false, jump: false, shoot: true } : { move: true, jump: false, shoot: true };
       case "talkStomp":
       case "talkDone":
       case "stolenTalk":
