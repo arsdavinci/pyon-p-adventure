@@ -2907,8 +2907,75 @@ function isUnderwaterStage() {
   return currentStageTrait() === "underwater";
 }
 
+// ---------- テスト中だけ：アプリを閉じたところから「つづきから」ではじめる ----------
+// 数秒ごとと、アプリを閉じる・かくれるときに、いまの記録を自動でとっておく。テストが終わったら false にする
+const TEST_QUICK_RESUME = true;
+const TEST_RESUME_KEY = "pyonpTestResumeV1";
+
+function writeTestResume() {
+  if (!TEST_QUICK_RESUME || !state || state.mode === "title" || state.mode === "movie") return;
+  try {
+    const data = Story.exportSave();
+    data.unlocked = unlockedCourse;
+    data.completed = [...completedCourses];
+    if (state.weaponInventory) data.keep = campaignSnapshotFromState();
+    const course = state.mode === "worldMap" ? mapSelectedCourse : currentCourse;
+    localStorage.setItem(TEST_RESUME_KEY, JSON.stringify({ savedAt: Date.now(), course, data }));
+  } catch (_) {}
+}
+
+function readTestResume() {
+  if (!TEST_QUICK_RESUME) return null;
+  try {
+    const r = JSON.parse(localStorage.getItem(TEST_RESUME_KEY) || "null");
+    return r && r.data ? r : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+if (TEST_QUICK_RESUME) {
+  setInterval(writeTestResume, 5000);
+  addEventListener("pagehide", writeTestResume);
+  document.addEventListener("visibilitychange", () => { if (document.hidden) writeTestResume(); });
+}
+
+function resumeTestSave(r) {
+  playSfx("gameStart");
+  FX.startTransition({
+    type: "fade",
+    dur: 0.9,
+    onMid: () => {
+      pendingCourseStart = false;
+      gameOverContinueAvailable = false;
+      gameOverContinueCost = 0;
+      overlay.classList.add("hidden");
+      Story.importSave(r.data);
+      const course = clamp(r.course | 0, 0, unlockedCourse);
+      currentCourse = course;
+      mapSelectedCourse = course;
+      state = newState();
+      if (campaignKeep) restoreCampaignSnapshot(campaignKeep);
+      enterWorldMap(course, true);
+      Story.refreshTitleUi();
+      lastTime = performance.now();
+    }
+  });
+}
+
 function startGame(fresh = false) {
   if (FX.transitioning()) return;
+  if (TEST_QUICK_RESUME && state?.mode === "title") {
+    if (fresh) {
+      try { localStorage.removeItem(TEST_RESUME_KEY); } catch (_) {}
+    } else {
+      const r = readTestResume();
+      if (r) {
+        resumeTestSave(r);
+        return;
+      }
+    }
+  }
   // 「つづきから」：セーブファイルがあれば、どのファイルから始めるか選ぶ画面を出す
   // 「つづきから」：セーブファイルを選ぶ画面（ファイルがなくても開いて、空っぽを見せる）
   if (!fresh && state?.mode === "title" && !state.saveMenu && (readSaveSlots().some(Boolean) || !Story.hasSave())) {
