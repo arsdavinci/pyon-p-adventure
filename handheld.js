@@ -99,8 +99,13 @@
     const viewH = fullHeight();
     const availH = viewH - safe.t - safe.b + underTop + underBottom;
     const mobile = document.body.dataset.controlMode === "mobile";
-    isActive = mobile && availH > availW * 1.05;
+    // たて長の画面ならゲーム機のかたち。PC で「スマホ／タブレット」をえらんだときも、
+    // 横長の窓のままゲーム機のかたちで見せる（高さに合わせて小さくして、まん中に置く）
+    const pcPreview = mobile && autoDetect() === "pc";
+    isActive = mobile && (availH > availW * 1.05 || pcPreview);
     document.body.dataset.layout = isActive ? "handheld" : "classic";
+    // PC でゲーム機のかたちを見ているときは、PC にもどせるように切りかえボタンを出しておく
+    document.body.dataset.pcPreview = isActive && pcPreview ? "1" : "0";
     if (!isActive) {
       commSrc = 0;
       delete document.body.dataset.commSize;

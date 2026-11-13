@@ -1375,6 +1375,15 @@ body[data-layout="handheld"][data-game-mode="title"] .overlay p {
   display: none;
 }
 
+/* PC で「スマホ／タブレット」を見ているとき：画面の左上に、端末の切りかえを出す（PC にもどせるように） */
+body[data-layout="handheld"][data-pc-preview="1"] .overlay:not(.hidden) .control-switch {
+  display: inline-flex;
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 13;
+}
+
 body[data-layout="handheld"] .language-switch {
   position: absolute;
   top: calc(12 * var(--u));
