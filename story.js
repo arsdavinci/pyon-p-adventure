@@ -23,6 +23,10 @@
     portraitYana_smile: "assets/portrait-yanabis-smile.webp",
     portraitYana_surprise: "assets/portrait-yanabis-surprise.webp",
     portraitYana_trouble: "assets/portrait-yanabis-trouble.webp",
+    portraitKaguya: "assets/portrait-kaguya.webp",
+    // ホログラムのモニター（なければプログラムで描く）
+    holoFrame: "assets/holo-monitor-frame.png",
+    holoBase: "assets/holo-projector.png",
     cgCity: "assets/cg-opening-city.webp",
     cgDuo: "assets/cg-opening-duo.webp",
     cgDark: "assets/cg-opening-dark.webp",
@@ -161,7 +165,9 @@
     luva: { ja: "ザ・ルーヴァ・セレス", en: "Za-Luva Seles", color: "#6f6aa8", side: "right" },
     yana: { ja: "ヤナビス", en: "Yanabisu", color: "#e0559f", side: "right" },
     maou: { ja: "魔王", en: "Demon Lord", color: "#c0266d", side: "right" },
-    mystery: { ja: "？？？", en: "???", color: "#5a2a78", side: "right" }
+    mystery: { ja: "？？？", en: "???", color: "#5a2a78", side: "right" },
+    // かぐや様は、まん中のホログラムのモニターに映る
+    kaguya: { ja: "かぐや様", en: "Princess Kaguya", color: "#a46ad8", side: "holo" }
   };
 
   const SCRIPTS = {
@@ -179,7 +185,16 @@
         { s: "luva", bg: "duo", face: "trouble", ja: "緊急指令だ、ぴょんぴー。笑いのエネルギー『ワライスター』が6つにくだかれ、魔王の手下たちが6つの星へ持ち去った。", en: "Emergency orders, Pyon-P. The \"Warai Star\", the energy of laughter itself, was shattered into six pieces, and the Demon Lord's followers carried them off to six planets." },
         { s: "luva", face: "trouble", ja: "かけらがもどらなければ、宇宙から笑顔が消えてしまう。……だれも笑えないままでは、3日後のフェスも開けない。", en: "Unless the shards return, smiles will vanish from the universe. ...And if no one can laugh, the Fest three days from now cannot be held." },
         { s: "luva", face: "trouble", ja: "らんぴょんは笑いをうばわれて動けない。AGIの人工知能パートナー、ヤナビスが案内する。行けるのは、きみだけだ。", en: "Ranpyon has lost his laughter and cannot go. Yanabisu, your AGI partner, will guide you. You are the only one who can do this." },
-        { s: "pyon", ja: "なんで吾輩だけ平気なんじゃろ……まあええわ！ 吾輩らの夢の舞台、つぶさせはせんじょ！", en: "Why am I the only one who's fine... eh, whatever! Nobody's wrecking our dream stage!" },
+        { s: "pyon", ja: "なんで吾輩だけ平気なんじゃろ……。て、ちょっと待ってだ。そんな責任重大なこと、吾輩ひとりでせんとあかんの？", en: "Why am I the only one who's fine... Wait, hold on. I have to handle something THAT important all by myself?" },
+        { s: "pyon", ja: "6つの星をまわるとか、めんどくさいじょ〜。吾輩、フェスのネタ考えるんでいそがしいけん、ほかの人にたのんでだ。", en: "Touring six planets? What a hassle. I'm busy writing material for the Fest, so ask someone else." },
+        { s: "luva", ja: "……そう言うと思っていたよ。ぴょんぴー、じつは、ある方からメッセージがとどいている。", en: "...I thought you might say that. Pyon-P, there's a message for you from a certain someone." },
+        { s: "kaguya", holo: "on", ja: "ぴょんぴー、聞こえていますか？ 月の宮の、かぐやです。", en: "Pyon-P, can you hear me? This is Kaguya, of the Moon Palace." },
+        { s: "pyon", face: "surprise", ja: "か、か、か、かぐや様ぁ！？", en: "P-P-P-Princess Kaguya!?" },
+        { s: "kaguya", ja: "宇宙から笑顔が消えてしまうなんて、わたくし、たえられません。……どうか、ワライスターを取りもどしてくださいませんか？", en: "I cannot bear the thought of smiles vanishing from the universe. ...Won't you please bring back the Warai Star?" },
+        { s: "kaguya", ja: "フェスの日には、あなたたちの漫才を、いちばん前の席で楽しみにしていますね。", en: "On the day of the Fest, I'll be in the front row, looking forward to your act." },
+        { s: "pyon", ja: "はいっ！！ もちろんです！ このぴょんぴー、かぐや様のためなら、宇宙のはてまでも行ってまいりますっ！", en: "Yes, Your Highness!! Of course! For you, I would go to the very edge of the universe!" },
+        { s: "ran", face: "surprise", holo: "off", ja: "……先輩、手のひら返し、早すぎません？ さっきまで『めんどくさい』言うてましたよね。", en: "...Pyon-P, isn't that a bit of a fast turnaround? A second ago you were saying it was a hassle." },
+        { s: "pyon", ja: "な、なにを言うとんじゃ！ 吾輩は、はじめから行く気まんまんじゃったじょ！", en: "Wh-what are you talking about! I was raring to go from the very start!" },
         { s: "ran", face: "trouble", ja: "ぴょんぴー先輩……お願いします。僕の『なんでなっ！』、取り返してきてください。", en: "Pyon-P... please. Bring my \"No way!\" back." },
         { s: "pyon", bg: "depart", ja: "まかしとき！ 柿ピー食べたら百人力じゃ。ほな、ちょっと宇宙すくってくるけん！", en: "Leave it to me! A handful of kaki-pea snacks and I'm unstoppable. Be right back, just gotta save the universe!" },
         { s: "narr", ja: "こうして、ぴょんぴーの大冒険がはじまった。", en: "And so, Pyon-P's great adventure began." }
@@ -412,6 +427,8 @@
       cs.bg = ln.bg;
     }
     if (ln.music) cs.music = ln.music;
+    if (ln.holo === "on") { cs.holo = { t: 0, on: true }; if (typeof playSfx === "function") playSfx("decide"); }
+    if (ln.holo === "off" && cs.holo) { cs.holo.on = false; cs.holo.t = 0; }
     const sp = SPEAKERS[ln.s] || SPEAKERS.narr;
     if (sp.side) {
       const slot = cs.slots[sp.side];
@@ -485,6 +502,7 @@
     cs.t += dt;
     cs.bgT += dt;
     cs.lineT += dt;
+    if (cs.holo) cs.holo.t += dt;
     for (const side of ["left", "right"]) {
       const slot = cs.slots[side];
       if (slot) slot.appear = Math.min(1, slot.appear + dt * 4);
@@ -835,6 +853,162 @@
     ctx.restore();
   }
 
+  // ---------- かぐや様のホログラム通信モニター ----------
+  // 枠の絵（assets/holo-monitor-frame.png）と台座（assets/holo-projector.png）があれば使い、
+  // なければプログラムで描く。ちらつき・走査線・ノイズ・ずれはプログラムで動かす。
+  const holoBuf = document.createElement("canvas");
+  function drawHoloMonitor(cx, cy, holo, speaking) {
+    const MW = 560, MH = 360;
+    // つくときは横線から上下にひらき、消えるときは横線にしぼんで消える
+    let open = holo.on ? Math.min(1, holo.t / 0.45) : Math.max(0, 1 - holo.t / 0.35);
+    if (!holo.on && open <= 0) { cs.holo = null; return; }
+    open = ease(open);
+    const h = Math.max(4, MH * open);
+    // ときどき全体がチラッと暗くなる
+    const blink = (Math.sin(time * 37) > 0.97 || Math.random() < 0.015) ? 0.55 : 1;
+    const alpha = (0.82 + Math.sin(time * 9) * 0.05) * blink;
+    ctx.save();
+    ctx.translate(cx, cy);
+
+    // 台座（光の柱が出ているプロジェクター）
+    const baseY = MH / 2 + 70;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    const beam = ctx.createLinearGradient(0, baseY, 0, -h / 2);
+    beam.addColorStop(0, `rgba(120, 255, 240, ${0.28 * open})`);
+    beam.addColorStop(1, "rgba(200, 160, 255, 0)");
+    ctx.fillStyle = beam;
+    ctx.beginPath();
+    ctx.moveTo(-70, baseY);
+    ctx.lineTo(70, baseY);
+    ctx.lineTo(MW / 2, h / 2);
+    ctx.lineTo(-MW / 2, h / 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+    if (ok(img.holoBase)) {
+      const bw = 300, bh = bw * (img.holoBase.naturalHeight / img.holoBase.naturalWidth);
+      ctx.drawImage(img.holoBase, -bw / 2, baseY - bh * 0.45, bw, bh);
+    } else {
+      ctx.fillStyle = "#e9e2ff";
+      ctx.strokeStyle = "#a98be0";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.ellipse(0, baseY + 12, 110, 26, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#7ff6e6";
+      ctx.beginPath();
+      ctx.ellipse(0, baseY + 4, 62, 12, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.globalAlpha = alpha;
+    // 画面の中（すけたラベンダーのガラス）
+    ctx.beginPath();
+    ctx.roundRect(-MW / 2, -h / 2, MW, h, 22);
+    ctx.save();
+    ctx.clip();
+    const glass = ctx.createLinearGradient(0, -MH / 2, 0, MH / 2);
+    glass.addColorStop(0, "rgba(90, 60, 170, 0.55)");
+    glass.addColorStop(1, "rgba(40, 120, 160, 0.45)");
+    ctx.fillStyle = glass;
+    ctx.fillRect(-MW / 2, -MH / 2, MW, MH);
+    // かぐや様（ときどき横にずれるノイズ）
+    const pic = img.portraitKaguya;
+    if (ok(pic) && open > 0.3) {
+      const ph = MH * 1.55;
+      const pw = ph * (pic.naturalWidth / pic.naturalHeight);
+      holoBuf.width = Math.ceil(pw);
+      holoBuf.height = Math.ceil(MH);
+      const g = holoBuf.getContext("2d");
+      g.clearRect(0, 0, holoBuf.width, holoBuf.height);
+      g.drawImage(pic, 0, -ph * 0.08 + (speaking ? Math.sin(time * 3) * 3 : 0), pw, ph);
+      // 青むらさきに色をのせる
+      g.globalCompositeOperation = "source-atop";
+      g.fillStyle = "rgba(150, 230, 255, 0.16)";
+      g.fillRect(0, 0, holoBuf.width, holoBuf.height);
+      g.globalCompositeOperation = "source-over";
+      const glitch = Math.random() < 0.06 || holo.t < 0.6;
+      const strip = 6;
+      for (let y = 0; y < MH; y += strip) {
+        const dx = glitch && Math.random() < 0.25 ? (Math.random() - 0.5) * 26 : 0;
+        ctx.drawImage(holoBuf, 0, y, holoBuf.width, strip, -pw / 2 + dx, -MH / 2 + y, pw, strip);
+      }
+      // 色ずれ（ピンクと水色のゴースト）
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.globalAlpha = alpha * 0.12;
+      ctx.drawImage(holoBuf, -pw / 2 - 4, -MH / 2);
+      ctx.drawImage(holoBuf, -pw / 2 + 4, -MH / 2);
+      ctx.restore();
+    }
+    // 走査線と、上から下へ流れる光の帯
+    ctx.fillStyle = "rgba(255, 255, 255, 0.07)";
+    const off = (time * 60) % 6;
+    for (let y = -MH / 2 + off; y < MH / 2; y += 6) ctx.fillRect(-MW / 2, y, MW, 2);
+    const bandY = ((time * 140) % (MH + 120)) - MH / 2 - 60;
+    const band = ctx.createLinearGradient(0, bandY - 40, 0, bandY + 40);
+    band.addColorStop(0, "rgba(160, 255, 245, 0)");
+    band.addColorStop(0.5, "rgba(160, 255, 245, 0.16)");
+    band.addColorStop(1, "rgba(160, 255, 245, 0)");
+    ctx.fillStyle = band;
+    ctx.fillRect(-MW / 2, bandY - 40, MW, 80);
+    // ノイズのつぶ
+    ctx.fillStyle = "rgba(255, 255, 255, 0.25)";
+    for (let i = 0; i < 26; i++) ctx.fillRect((Math.random() - 0.5) * MW, (Math.random() - 0.5) * MH, 2 + Math.random() * 6, 1.5);
+    ctx.restore();
+
+    // 枠
+    if (ok(img.holoFrame)) {
+      const fw = MW * 1.16, fh = h * 1.22;
+      ctx.drawImage(img.holoFrame, -fw / 2, -fh / 2, fw, fh);
+    } else {
+      ctx.save();
+      ctx.shadowColor = "#7ff6e6";
+      ctx.shadowBlur = 22;
+      ctx.strokeStyle = "rgba(160, 255, 245, 0.95)";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.roundRect(-MW / 2, -h / 2, MW, h, 22);
+      ctx.stroke();
+      ctx.shadowColor = "#ff8db7";
+      ctx.strokeStyle = "rgba(255, 170, 220, 0.9)";
+      ctx.lineWidth = 6;
+      const c = 46;
+      for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+        const x = sx * (MW / 2 + 10), y = sy * (h / 2 + 10);
+        ctx.beginPath();
+        ctx.moveTo(x, y - sy * c);
+        ctx.lineTo(x, y);
+        ctx.lineTo(x - sx * c, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+    // 上のラベル
+    if (open > 0.6) {
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = "rgba(40, 20, 90, 0.75)";
+      ctx.beginPath();
+      ctx.roundRect(-120, -h / 2 - 18, 240, 34, 17);
+      ctx.fill();
+      ctx.strokeStyle = "#7ff6e6";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = (time % 1) < 0.5 ? "#ff8db7" : "#ffd1ed";
+      ctx.beginPath();
+      ctx.arc(-96, -h / 2 - 1, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#e8fffb";
+      ctx.font = `900 17px ${FX.FONT}`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(L("月の宮より 通信中", "MOON PALACE · LIVE"), 8, -h / 2 - 1);
+    }
+    ctx.restore();
+  }
+
   function skipRect() {
     return { x: 20, y: 10, w: 176, h: 40 };
   }
@@ -929,6 +1103,7 @@
     const narr = !sp.side;
     // スマホ（吹き出しが画面の外）のときは、立ち絵を画面の下まで下げる
     const footY = useStoryBox() ? H + 6 : boxY + 44;
+    if (cs.holo) drawHoloMonitor(W / 2, 272, cs.holo, ln.s === "kaguya");
     if (!hasCg || !narr) {
       const left = cs.slots.left;
       const right = cs.slots.right;

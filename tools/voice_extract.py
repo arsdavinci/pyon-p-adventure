@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "assets" / "voice" / "script.json"
 
 NAMES = {"narr": "ナレーター", "pyon": "ぴょんぴー", "ran": "らんぴょん", "luva": "ザ・ルーヴァ・セレス",
-         "yana": "ヤナビス", "maou": "魔王", "mystery": "？？？"}
+         "yana": "ヤナビス", "maou": "魔王", "mystery": "？？？", "kaguya": "かぐや様"}
 
 # アフレコブースのキャスト案（声のイメージ。ブースで直してOK）
 CAST = {
@@ -32,6 +32,8 @@ CAST = {
     "yana": {"name": "ヤナビス", "description": "ぴょんぴーの相棒の、AGIの人工知能パートナー。ていねいな敬語で少し機械っぽい、すました女性の声。ときどき阿波弁がうつる",
              "gender": "女性", "age": "20代"},
     "maou": {"name": "魔王", "description": "低く太い、いばった魔王の声。じつは芸人を目指していた、どこかさみしげな老人", "gender": "男性", "age": "50代以上"},
+    "kaguya": {"name": "かぐや様", "description": "月の皇族のお姫様。ムーニアンのうさ耳の少女。上品でおっとりした、やさしいお姫様言葉（〜ですわ、〜くださいませ）。ぴょんぴーのあこがれの人",
+               "gender": "女性", "age": "10代"},
     # ？？？は正体をかくした魔王
     "mystery": {"name": "魔王", "description": "低く太い、いばった魔王の声。じつは芸人を目指していた、どこかさみしげな老人", "gender": "男性", "age": "50代以上"},
 }
