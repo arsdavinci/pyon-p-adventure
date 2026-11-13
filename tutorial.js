@@ -22,7 +22,7 @@
     ],
     stolen: [
       ["pyon", "あっ！ こいつら、吾輩の光線銃うばいやった！", "Hey! That thing stole my ray gun!"],
-      ["yana", "あわてないでください。光線銃をうばった敵を踏み返せば、取りもどせます。", "Don't panic. Stomp the thief and you can get your ray gun back."]
+      ["yana", "うばわれた光線銃は、その敵を上からふむと落とします。ひろえば取りもどせますよ。", "Stomp that enemy from above and it will drop your ray gun. Pick it up to get it back."]
     ],
     stolenNow: [
       ["yana", "いまです！ A で踏み返してください！", "Now! Press A and stomp it back!"]
@@ -245,7 +245,7 @@
       case "thiefAir":
         // 踏めずに着地したら、もう一度（敵がまた歩いてくる）
         airT += dt;
-        if (airT > 0.3 && state.player.grounded) phase = phase === "air" ? "approach" : "thiefCome";
+        if (airT > 0.3 && state.player.grounded) phase = phase === "air" ? "approach" : "autoJump";
         return false;
       case "talkStomp":
         if (talkDone("stomped")) {
@@ -268,11 +268,17 @@
         }
         return true;
       case "stolenTalk":
-        if (talkDone("stolen")) {
-          phase = "thiefBack";
-          backT = 0;
-        }
+        // 言い終わるまで止めて、そのあとは自動で踏み返す
+        if (talkDone("stolen")) phase = "autoJump";
         return true;
+      case "autoJump":
+        // 地面に立ったら、自動でジャンプ（敵がぴょんぴーの下に来る）
+        if (state.player.grounded) {
+          jumpQueued = true;
+          airT = 0;
+          phase = "thiefAir";
+        }
+        return false;
       case "thiefBack":
         backT += dt;
         if (gap(enemy) >= 300 || backT > 2.2) phase = "thiefCome";
@@ -309,6 +315,12 @@
       case "thiefAir":
         steerUnder(e, dt);
         return true;
+      case "autoJump":
+        e.vx = 0;
+        e.gunCooldown = 99;
+        e.vy += GRAVITY * dt;
+        moveEnemyAndCollide(e, dt);
+        return true;
       case "shoot": {
         // 撃ち終わるまで、目を回したまま。近すぎるときは、ふらふらと少しはなれる（撃ちやすいように）
         e.stun = Math.max(e.stun, 0.6);
@@ -329,7 +341,7 @@
     if (phase === "air" || phase === "approach" || phase === "waitJump") {
       phase = "talkStomp";
       e.stun = 2;
-    } else if (phase === "thiefAir" || phase === "thiefCome" || phase === "thiefWait" || phase === "thiefBack") {
+    } else if (phase === "thiefAir" || phase === "autoJump" || phase === "thiefCome" || phase === "thiefWait" || phase === "thiefBack") {
       e.tutorialSafe = false;
       phase = "regainTalk";
     }
@@ -356,6 +368,7 @@
       case "thiefCome":
       case "thiefWait":
       case "thiefAir":
+      case "autoJump":
         return { move: false, jump: false, shoot: false };
       case "shoot":
         return { move: true, jump: false, shoot: true };
