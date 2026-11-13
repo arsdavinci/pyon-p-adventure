@@ -160,9 +160,10 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
       ...fuseHowTo(),
       ["yana", "月の武器🌙と星の武器⭐は別の種類です。同じ種類の、同じ武器どうしでしか合成できません。合成をくり返すと、それぞれ Lv8 まで進化しますよ。", "Moon 🌙 and star ⭐ weapons are different types; only the exact same weapon can be fused. Each line evolves up to Lv8."],
       ["pyon", "配合みたいなもんじゃな。ええでないか、いっちょ育てたろ！", "Like breeding, huh. Nice. Let's raise a monster of a gun!"]
-    ] : [
+    ] : firstTime("tipFuseRemind") ? [
+      // 2回目のお知らせは1回だけ。そのあとは、もう言わない
       ["yana", "同じ光線銃が2つそろいました。装備画面で、同じ光線銃どうしを重ねると合成できます。", "You have two of the same ray gun. Stack them in the equipment screen to fuse."]
-    ],
+    ] : [],
     fuseTeach: () => [
       ["yana", "光線銃をひろいましたね。おぼえておいてください。同じ光線銃を2つ集めると、合成して新しい光線銃を生み出せます。", "You picked up a ray gun. Remember this: collect two of the same ray gun and you can fuse them into a new one."],
       ["pyon", "2つで1つ？ へっとるでないか！", "Two become one? That's fewer guns!"],
