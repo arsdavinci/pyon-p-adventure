@@ -2436,7 +2436,7 @@ function enterArea(to, spawnX) {
         }
         if (area.tutorial) {
           Chat.say([
-            ["yana", "ここは合成の練習部屋です。光線銃が3つおいてあります。ぜんぶひろってみてください。", "This is a fusion practice room. Three ray guns are here. Pick them all up."],
+            ["yana", "光線銃がたくさん落ちていますね。ぜんぶひろって、合成してみましょう。", "Lots of ray guns lying around. Pick them all up and try fusing them."],
             ["yana", "SELECTで装備画面をひらいて、🌙ムーンポッパーをAでつかみ、もう1つの🌙ムーンポッパーの上ではなすと合成できます。", "Open the equipment screen with SELECT, grab a 🌙 Moon Popper with A and drop it on the other one to fuse."],
             ["yana", "でも⭐の武器とは合成できません。月の武器🌙と星の武器⭐は別の種類。同じ種類の、同じ武器どうしだけです。", "But you can't fuse it with the ⭐ weapon. Moon 🌙 and star ⭐ are different types; only the exact same weapon fuses."],
             ["pyon", "月は月、星は星で育てるんじゃな。まかしとき！", "Moon with moon, star with star. Got it!"]
@@ -2488,6 +2488,16 @@ function updateDoors() {
     if (d.shop) {
       Shop.openInStage();
       return;
+    }
+    // 合成の練習部屋：一度合成するまでは出られない
+    if (courses[currentCourse]?.tutorial && !fuseGuideDone()) {
+      if ((state.gimmickHint ?? 0) <= 0) {
+        state.gimmickHint = 3.5;
+        FX.floater(d.x + d.w / 2, d.y - 20, language === "ja" ? "合成してから 出よう！" : "Fuse first!", { color: "#ffffff", stroke: "#ff5f9e", size: 22, life: 1.5 });
+        playSfx("locked", d.x);
+        Chat.say([["yana", "出る前に、一度合成してみましょう！ SELECT で装備画面をひらいてください。", "Before you leave, try fusing once! Press SELECT to open the equipment screen."]], true);
+      }
+      continue;
     }
     if (d.locked) {
       if ((state.keys ?? 0) > 0) {
