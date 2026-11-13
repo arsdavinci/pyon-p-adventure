@@ -3547,7 +3547,13 @@ function update(dt) {
   state.stompBoostTimer = Math.max(0, (state.stompBoostTimer ?? 0) - dt);
   state.stompLateBoostTimer = Math.max(0, (state.stompLateBoostTimer ?? 0) - dt);
   state.time -= dt;
-  if (state.time <= 0) damagePlayer();
+  // 時間切れ：HP にかかわらず、その場でアウト（ヤナビス「時間切れです！」→ ぴょんぴー「ゆっくりしすぎたわぁ」）
+  if (state.time <= 0) {
+    state.time = 0;
+    startDeathFall(false, true);
+    updateHud();
+    return;
+  }
 
   if (maybeStartBossIntro()) {
     updateParticles(dt);
@@ -3842,6 +3848,15 @@ function updateBossDeath(dt) {
 function updateDeathFall(dt) {
   const p = state.player;
   state.deathTimer = Math.max(0, (state.deathTimer ?? 0) - dt);
+  if (state.deathByTime) {
+    // 時間切れ：動かずに、セリフが終わるのを待つ
+    updateCamera(dt);
+    if (state.deathTimer > 0 || Chat.busy()) return;
+    state.deathByTime = false;
+    if (state.lives <= 0) endGame("Game Over", t("replay"), null, { allowContinue: true });
+    else startMoonRespawn();
+    return;
+  }
   p.vy += GRAVITY * dt;
   // 穴に落ちたときは、画面の下まで落ちたらそこで待つ（「さいならーーー」を言い終わるまで）
   if (state.deathByPit && p.y > worldBottom() + 200) p.vy = 0;
@@ -7075,9 +7090,10 @@ function damagePlayer(fell = false, sourceEnemy = null, canStealWeapon = false) 
   state.time = Math.max(30, state.time);
 }
 
-function startDeathFall(fell = false) {
+function startDeathFall(fell = false, timeUp = false) {
   const p = state.player;
   state.deathByPit = fell;
+  state.deathByTime = timeUp;
   playSfx("death", p.x + p.w / 2);
   if (state.charmSaveLife) {
     // 穴に落ちたときは、お守りでライフをへらさない
@@ -7093,6 +7109,14 @@ function startDeathFall(fell = false) {
   p.invincible = 0;
   p.grounded = false;
   p.vx = 0;
+  if (timeUp) {
+    // 時間切れ：その場で止まって、2人のセリフを言い終わってから
+    p.vy = 0;
+    state.deathTimer = 1.2;
+    FX.floater(p.x + p.w / 2, p.y - 30, language === "ja" ? "タイムアップ！" : "TIME UP!", { color: "#ffffff", stroke: "#ff5f9e", size: 34, life: 2.2 });
+    Chat.event("timeUp");
+    return;
+  }
   if (fell) {
     // 穴に落ちたとき：はね上がらずに、そのまま下へ落ちていきながら「さいならーーー」
     p.vy = Math.max(p.vy, 200);

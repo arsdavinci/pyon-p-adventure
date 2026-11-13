@@ -181,6 +181,8 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
     death: () => [["pyon", "月まで飛ばされもたわ〜！", "I got launched all the way to the moooon!"]],
     // 穴に落ちたとき（言い終わってから、三日月タクシーで上がってくる）
     fallPit: () => [["pyon", "さいならーーー", "Byeeeeee!"]],
+    // 時間切れ（その場でアウト。言い終わってから三日月タクシー）
+    timeUp: () => [["yana", "時間切れです！", "Time's up!"], ["pyon", "ゆっくりしすぎたわぁ", "I took my sweet time..."]],
     respawn: () => [["pyon", "三日月タクシーで復活じゃ！ 好きなとこにおりるじょ。", "Back on the Crescent Taxi! I'll hop off wherever I like."]],
     combo: () => [["pyon", "コンボじゃ！ ノってきたじょ！", "Combo! I'm on a roll!"]],
     bossHalf: () => [["yana", "ボスの体力、のこり半分です！", "The boss is down to half health!"], ["pyon", "あとひといきじゃ！", "Almost there!"]],
@@ -363,7 +365,7 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
     }
   }
 
-  const URGENT = { stageStart: 1, map: 1, gameOver: 1, bossHalf: 1, stolen: 1, canFuse: 1, fallPit: 1, death: 1 };
+  const URGENT = { stageStart: 1, map: 1, gameOver: 1, bossHalf: 1, stolen: 1, canFuse: 1, fallPit: 1, death: 1, timeUp: 1 };
 
   function say(lines, urgent = false) {
     if (!lines || !lines.length) return;
