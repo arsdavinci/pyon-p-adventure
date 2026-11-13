@@ -157,6 +157,7 @@
       onMid: () => {
         state.mode = "shop";
         sel = 0;
+        scroll = 0;
         tab = 0;
         page = 0;
         say("まいど〜！ ここのお店には、このあたりでしか売ってへん品もあるで。",
@@ -175,6 +176,7 @@
       onMid: () => {
         state.mode = "shop";
         sel = 0;
+        scroll = 0;
         tab = 0;
         page = 0;
         const first = !Story.data.seen.shopVisit;
@@ -259,18 +261,48 @@
     Story.persist();
   }
 
-  // 商品が多いときは、行を少しつめる
+  // 一覧は大きな行を5つずつ見せて、のこりは上下にスクロール（スマホでも読める大きさ）
+  const ROWS = 5;
+  const LIST = { x: 420, y: 146, w: 800, step: 108, h: 100 };
+  let scroll = 0;
   function rowRect(i) {
-    const step = tab === 0 ? Math.min(66, Math.floor(568 / Math.max(1, stock().length))) : 66;
-    return { x: 520, y: 140 + i * step, w: 716, h: step - 6 };
+    return { x: LIST.x, y: LIST.y + i * LIST.step, w: LIST.w, h: LIST.h };
+  }
+  // スクロールの ▲▼（一覧の右）
+  const arrowRect = up => ({ x: LIST.x + LIST.w + 8, y: up ? LIST.y : LIST.y + ROWS * LIST.step - 8 - 150, w: 46, h: 150 });
+  function keepSelVisible(total) {
+    if (sel < scroll) scroll = sel;
+    if (sel >= scroll + ROWS) scroll = sel - ROWS + 1;
+    scroll = Math.max(0, Math.min(scroll, Math.max(0, total - ROWS)));
+  }
+  // 長い説明は2行までに折りかえし、はみ出たら「…」
+  function twoLines(text, maxW) {
+    const out = [];
+    let line = "";
+    const parts = language === "ja" ? [...text] : text.split(/(\s+)/);
+    let cut = false;
+    for (const ch of parts) {
+      if (line && ctx.measureText(line + ch).width > maxW) {
+        out.push(line);
+        line = ch.trimStart();
+        if (out.length === 2) { cut = true; break; }
+      } else line += ch;
+    }
+    if (!cut && line) out.push(line);
+    if (cut) {
+      let last = out[1];
+      while (last && ctx.measureText(last + "…").width > maxW) last = [...last].slice(0, -1).join("");
+      out[1] = last + "…";
+    }
+    return out;
   }
 
   // ---------- 武器を売る ----------
   // 上のタブで「買う」「売る」を切りかえる。売るとルナコインがもらえる
   let tab = 0; // 0 = 買う, 1 = 売る
   let page = 0;
-  const SELL_ROWS = 6;
-  const tabRect = i => ({ x: 520 + i * 230, y: 84, w: 220, h: 48 });
+  const SELL_ROWS = 5;
+  const tabRect = i => ({ x: 420 + i * 270, y: 82, w: 260, h: 54 });
 
   // 1つ売ったときにもらえる数（月は Lv×3、星は Lv×6）
   const sellPrice = power => 2 * (power === FIGHTER_POWER ? 3000 : power >= MECH_POWER ? 200 * (power - MECH_POWER + 1) : weaponRank(power) * (weaponAttribute(power) === "star" ? 6 : 3));
@@ -349,9 +381,11 @@
       else switchTab(1);
     } else if ((code === "ArrowUp" || code === "KeyW") && rows) {
       sel = (sel + rows - 1) % rows;
+      if (tab === 0) keepSelVisible(rows);
       playSfx("cursor");
     } else if ((code === "ArrowDown" || code === "KeyS") && rows) {
       sel = (sel + 1) % rows;
+      if (tab === 0) keepSelVisible(rows);
       playSfx("cursor");
     } else if (["Enter", "Space", "KeyX", "KeyJ", "KeyY"].includes(code)) {
       if (tab === 0) buy();
@@ -374,17 +408,27 @@
         return true;
       }
     }
-    const rows = tab === 0 ? stock().length : sellRowCount();
-    for (let i = 0; i < rows; i++) {
-      const r = rowRect(i);
-      if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) {
-        if (sel === i) (tab === 0 ? buy() : sell());
-        else {
-          sel = i;
-          playSfx("cursor");
-        }
+    const inR = r => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+    if (tab === 0) {
+      const total = stock().length;
+      // ▲▼ でスクロール
+      if (total > ROWS && inR(arrowRect(true)) && scroll > 0) { scroll = Math.max(0, scroll - ROWS); sel = Math.max(scroll, Math.min(sel, scroll + ROWS - 1)); playSfx("cursor"); return true; }
+      if (total > ROWS && inR(arrowRect(false)) && scroll + ROWS < total) { scroll = Math.min(total - ROWS, scroll + ROWS); sel = Math.max(scroll, Math.min(sel, scroll + ROWS - 1)); playSfx("cursor"); return true; }
+      for (let i = 0; i < Math.min(ROWS, total - scroll); i++) {
+        if (!inR(rowRect(i))) continue;
+        const idx = scroll + i;
+        if (sel === idx) buy();
+        else { sel = idx; playSfx("cursor"); }
         return true;
       }
+      return true;
+    }
+    const rows = sellRowCount();
+    for (let i = 0; i < rows; i++) {
+      if (!inR(rowRect(i))) continue;
+      if (sel === i) sell();
+      else { sel = i; playSfx("cursor"); }
+      return true;
     }
     return true;
   }
@@ -468,12 +512,12 @@
     if (!rows.length) {
       ctx.fillStyle = "rgba(255, 248, 253, 0.9)";
       ctx.beginPath();
-      ctx.roundRect(520, 140, 716, 120, 14);
+      ctx.roundRect(LIST.x, LIST.y, LIST.w, 130, 14);
       ctx.fill();
       ctx.fillStyle = "#8b82b3";
-      ctx.font = `900 22px ${FX.FONT}`;
+      ctx.font = `900 30px ${FX.FONT}`;
       ctx.textAlign = "center";
-      ctx.fillText(L("売れる武器がないよ", "No weapons to sell"), 878, 200);
+      ctx.fillText(L("売れる武器がないよ", "No weapons to sell"), LIST.x + LIST.w / 2, LIST.y + 65);
       return;
     }
     const w = wallet();
@@ -488,25 +532,25 @@
       ctx.roundRect(r.x - (active ? 8 : 0), r.y, r.w + (active ? 8 : 0), r.h, 14);
       ctx.fill();
       ctx.stroke();
-      drawWeaponIcon(r.x + 44, r.y + r.h / 2, entry.power, weaponIconFitScale(entry.power, 72, 0.9), 1);
+      drawWeaponIcon(r.x + 54, r.y + r.h / 2, entry.power, weaponIconFitScale(entry.power, 92, 0.9), 1);
       ctx.textAlign = "left";
-      ctx.font = `900 21px ${FX.FONT}`;
+      ctx.font = `900 30px ${FX.FONT}`;
       ctx.fillStyle = locked ? "#9a8fc0" : "#4d4773";
-      ctx.fillText(`${weaponName(entry.power)}  ${weaponLevelLabel(entry.power)}`, r.x + 96, r.y + 20);
-      ctx.font = `700 15px ${FX.FONT}`;
+      ctx.fillText(`${weaponName(entry.power)}  ${weaponLevelLabel(entry.power)}`, r.x + 112, r.y + 32);
+      ctx.font = `800 21px ${FX.FONT}`;
       ctx.fillStyle = "#8b82b3";
-      ctx.fillText(locked ? L(`もってる数 ${entry.count}（そうび中なので売れない）`, `Owned ${entry.count} (equipped)`) : L(`もってる数 ${entry.count}`, `Owned ${entry.count}`), r.x + 96, r.y + 43);
+      ctx.fillText(locked ? L(`もってる数 ${entry.count}（そうび中なので売れない）`, `Owned ${entry.count} (equipped)`) : L(`もってる数 ${entry.count}`, `Owned ${entry.count}`), r.x + 112, r.y + 70);
       ctx.textAlign = "right";
-      ctx.font = `900 22px ${FX.FONT}`;
+      ctx.font = `900 30px ${FX.FONT}`;
       ctx.fillStyle = locked ? "#b3a9d6" : "#2f9e6a";
       ctx.fillText(`+${sellPrice(entry.power)} ${L("枚", "coins")}`, r.x + r.w - 18, r.y + r.h / 2);
     });
     const pages = Math.max(1, Math.ceil(list.length / SELL_ROWS));
     if (pages > 1) {
       ctx.fillStyle = "#ffffff";
-      ctx.font = `900 18px ${FX.FONT}`;
+      ctx.font = `900 24px ${FX.FONT}`;
       ctx.textAlign = "center";
-      ctx.fillText(`◀ ${page + 1} / ${pages} ▶`, 878, rowRect(SELL_ROWS).y + 14);
+      ctx.fillText(`◀ ${page + 1} / ${pages} ▶`, LIST.x + LIST.w / 2, rowRect(SELL_ROWS).y + 4);
     }
   }
 
@@ -583,56 +627,92 @@
       ctx.fill();
       ctx.stroke();
       ctx.fillStyle = on ? "#ffffff" : "#7f67c8";
-      ctx.font = `900 22px ${FX.FONT}`;
+      ctx.font = `900 28px ${FX.FONT}`;
       ctx.textAlign = "center";
       ctx.fillText(i === 0 ? L("買う", "Buy") : L("売る", "Sell"), r.x + r.w / 2, r.y + r.h / 2 + 1);
     }
     if (tab === 1) drawSellList();
 
-    // 商品リスト
-    if (tab === 0) stock().forEach((it, i) => {
-      const r = rowRect(i);
-      const active = i === sel;
-      const got = !it.repeat && owns(it.id);
-      const afford = pairs() >= it.price;
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = active ? "#fffbe0" : "rgba(255, 248, 253, 0.9)";
-      ctx.strokeStyle = active ? "#ff8db7" : "#c8b2ff";
-      ctx.lineWidth = active ? 5 : 2;
-      ctx.beginPath();
-      ctx.roundRect(r.x - (active ? 8 : 0), r.y, r.w + (active ? 8 : 0), r.h, 14);
-      ctx.fill();
-      ctx.stroke();
-      drawIcon(it, r.x + 34, r.y + r.h / 2, 48);
-      const txt = language === "ja" ? it.ja : it.en;
-      ctx.textAlign = "left";
-      ctx.font = `900 21px ${FX.FONT}`;
-      ctx.fillStyle = got ? "#9a8fc0" : "#4d4773";
-      ctx.fillText(txt[0], r.x + 70, r.y + r.h * 0.34);
-      if (it.world !== undefined) {
-        // ここでしか買えない印
-        const nameW = ctx.measureText(txt[0]).width;
-        ctx.fillStyle = "#ff5f9e";
+    // 商品リスト（大きな行を5つ。のこりは ▲▼ でスクロール）
+    if (tab === 0) {
+      const all = stock();
+      keepSelVisible(all.length);
+      all.slice(scroll, scroll + ROWS).forEach((it, i) => {
+        const idx = scroll + i;
+        const r = rowRect(i);
+        const active = idx === sel;
+        const got = !it.repeat && owns(it.id);
+        const afford = pairs() >= it.price;
+        ctx.fillStyle = active ? "#fffbe0" : "rgba(255, 248, 253, 0.93)";
+        ctx.strokeStyle = active ? "#ff8db7" : "#c8b2ff";
+        ctx.lineWidth = active ? 6 : 2;
         ctx.beginPath();
-        ctx.roundRect(r.x + 80 + nameW, r.y + r.h * 0.34 - 11, 92, 22, 11);
+        ctx.roundRect(r.x - (active ? 10 : 0), r.y, r.w + (active ? 10 : 0), r.h, 18);
         ctx.fill();
+        ctx.stroke();
+        drawIcon(it, r.x + 50, r.y + r.h / 2, 78);
+        const txt = language === "ja" ? it.ja : it.en;
+        const priceW = 170;
+        ctx.textAlign = "left";
+        ctx.font = `900 30px ${FX.FONT}`;
+        ctx.fillStyle = got ? "#9a8fc0" : "#4d4773";
+        ctx.fillText(txt[0], r.x + 100, r.y + 26);
+        if (it.world !== undefined) {
+          // ここでしか買えない印
+          const nameW = ctx.measureText(txt[0]).width;
+          ctx.fillStyle = "#ff5f9e";
+          ctx.beginPath();
+          ctx.roundRect(r.x + 112 + nameW, r.y + 12, 118, 28, 14);
+          ctx.fill();
+          ctx.fillStyle = "#ffffff";
+          ctx.font = `900 17px ${FX.FONT}`;
+          ctx.fillText(L("ここだけ！", "Only here!"), r.x + 124 + nameW, r.y + 27);
+        }
+        ctx.font = `700 19px ${FX.FONT}`;
+        ctx.fillStyle = "#7d74a8";
+        twoLines(txt[1], r.w - 100 - priceW - 10).forEach((ln, k) => ctx.fillText(ln, r.x + 100, r.y + 60 + k * 24));
+        ctx.textAlign = "right";
+        ctx.font = `900 30px ${FX.FONT}`;
+        if (got) {
+          ctx.fillStyle = "#3fae6b";
+          ctx.fillText(L("もってる ✓", "Owned ✓"), r.x + r.w - 20, r.y + r.h / 2);
+        } else {
+          ctx.fillStyle = afford ? "#d98a2b" : "#c0266d";
+          ctx.fillText(`${it.price} ${L("枚", "coins")}`, r.x + r.w - 20, r.y + r.h / 2);
+        }
+        if (it.id === "manju" && manjuCount() > 0) {
+          ctx.font = `800 18px ${FX.FONT}`;
+          ctx.fillStyle = "#8b6ac9";
+          ctx.fillText(L(`かばんに ${manjuCount()}個`, `${manjuCount()} in bag`), r.x + r.w - 20, r.y + r.h - 16);
+        }
+      });
+      // ▲▼（まだ上・下に商品があるとき）
+      if (all.length > ROWS) {
+        for (const up of [true, false]) {
+          const a = arrowRect(up);
+          const can = up ? scroll > 0 : scroll + ROWS < all.length;
+          ctx.globalAlpha = can ? 1 : 0.3;
+          ctx.fillStyle = "rgba(255, 248, 253, 0.92)";
+          ctx.strokeStyle = "#c8b2ff";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.roundRect(a.x, a.y, a.w, a.h, 16);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = "#7f67c8";
+          ctx.font = `900 26px ${FX.FONT}`;
+          ctx.textAlign = "center";
+          ctx.fillText(up ? "▲" : "▼", a.x + a.w / 2, a.y + a.h / 2);
+          ctx.globalAlpha = 1;
+        }
         ctx.fillStyle = "#ffffff";
-        ctx.font = `900 13px ${FX.FONT}`;
-        ctx.fillText(L("ここだけ！", "Only here!"), r.x + 90 + nameW, r.y + r.h * 0.34 + 1);
+        ctx.font = `900 18px ${FX.FONT}`;
+        ctx.textAlign = "center";
+        const ar = arrowRect(true);
+        ctx.fillText(`${scroll + 1}-${Math.min(all.length, scroll + ROWS)}`, ar.x + ar.w / 2, (ar.y + ar.h + arrowRect(false).y) / 2);
+        ctx.fillText(`/${all.length}`, ar.x + ar.w / 2, (ar.y + ar.h + arrowRect(false).y) / 2 + 22);
       }
-      ctx.font = `700 14px ${FX.FONT}`;
-      ctx.fillStyle = "#8b82b3";
-      ctx.fillText(txt[1], r.x + 70, r.y + r.h * 0.76);
-      ctx.textAlign = "right";
-      ctx.font = `900 22px ${FX.FONT}`;
-      if (got) {
-        ctx.fillStyle = "#61c989";
-        ctx.fillText(L("もってる ✓", "Owned ✓"), r.x + r.w - 18, r.y + r.h / 2);
-      } else {
-        ctx.fillStyle = afford ? "#d98a2b" : "#c0266d";
-        ctx.fillText(`${it.price} ${L("枚", "coins")}`, r.x + r.w - 18, r.y + r.h / 2);
-      }
-    });
+    }
 
     // 店主のセリフ（下に会話の欄がある端末では、そっちに出す）
     const below = line && typeof Handheld !== "undefined" && Handheld.active() && Handheld.commOn() &&
@@ -655,17 +735,17 @@
       ctx.strokeStyle = "#ff8db7";
       ctx.lineWidth = 4;
       ctx.beginPath();
-      ctx.roundRect(34, H - 132, 462, 104, 18);
+      ctx.roundRect(24, H - 150, 380, 128, 18);
       ctx.fill();
       ctx.stroke();
       ctx.fillStyle = "#ff5f9e";
       ctx.font = `900 16px ${FX.FONT}`;
       ctx.textAlign = "left";
-      ctx.fillText(L("店主 モチまる", "Mochimaru the shopkeeper"), 54, H - 112);
+      ctx.fillText(L("店主 モチまる", "Mochimaru the shopkeeper"), 42, H - 130);
       ctx.fillStyle = "#3f355d";
       ctx.font = `800 18px ${FX.FONT}`;
       ctx.textBaseline = "top";
-      wrapText(shown, 54, H - 96, 424, 25);
+      wrapText(shown, 42, H - 112, 346, 25);
       ctx.textBaseline = "middle";
     }
     ctx.fillStyle = "#ffffff";
