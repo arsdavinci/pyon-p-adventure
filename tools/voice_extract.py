@@ -81,8 +81,21 @@ def chat_lines() -> list[tuple[str, str, str, int]]:
             # マップのひとこと（"ぴょんぴー「…」" の形。プレイ中のかけあいと同じく chat で流れる）
             if f == "game.js":
                 for m in re.finditer(r'"ぴょんぴー「([^」"]+)」"', t):
-                    if "pyonJa" not in t and "inventorySortComment" not in t and "return" not in t and "showFuseHint" not in t:
+                    if "pyonJa" not in t and "${" not in m.group(1):
                         rows.append(("pyon", m.group(1), f, i))
+                # 合成のヒント（showFuseHint("…")）
+                for m in re.finditer(r'showFuseHint\(' + STR, t):
+                    rows.append(("pyon", unq(m.group(1)), f, i))
+    # そうび画面：武器ごとのひとこと（武器の名前 + きまった言い方）と、はじめての合成の案内
+    src = (ROOT / "game.js").read_text(encoding="utf-8")
+    names = re.findall(r'"([^"]+)"', re.search(r"const WEAPON_NAMES_JA = \[(.*?)\];", src, re.S).group(1))
+    classic = re.search(r'commentClassic: "([^"]+)"', src).group(1)
+    experimental = re.search(r'commentExperimental: "([^"]+)"', src).group(1)
+    for n, name in enumerate(names, 1):
+        rows.append(("pyon", name + (classic if n <= 5 else experimental), "game.js", 0))
+    for key in ("A", "Space"):
+        for m in re.finditer(r'if \(g\.step === \d\) return `([^`]+)`|return `(「はい」[^`]+)`', src):
+            rows.append(("pyon", (m.group(1) or m.group(2)).replace("${a}", key), "game.js", 0))
             if f == "chat.js" and re.match(r"^\s*\[" + STR + r",\s*" + STR + r"\],?$", t):  # GAGS（ぴょんぴー）
                 m = re.match(r"^\s*\[" + STR, t)
                 rows.append(("pyon", unq(m.group(1)), f, i))

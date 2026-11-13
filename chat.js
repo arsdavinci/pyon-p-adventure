@@ -440,6 +440,8 @@
       const text = inventoryFocusComment(slot?.power ?? null).replace(/^ぴょんぴー「/, "").replace(/」$/, "");
       if (text !== invText) {
         invText = text;
+        // そうび画面のひとことも声で（カーソルを動かすと、前の声は止めて新しいほうを流す）
+        if (typeof Voice !== "undefined") Voice.play("chat", text);
         const e = dom();
         e.speaker.textContent = L("ぴょんぴー", "Pyon-P");
         e.speaker.style.color = SPEAKERS.pyon.color;
