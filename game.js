@@ -8697,6 +8697,11 @@ function drawInventoryWeaponCard() {
   ctx.save();
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
+  if (!slot && inventoryGearAt(state.inventorySelection)) {
+    ctx.restore();
+    drawInventoryGearCard(r, inventoryGearAt(state.inventorySelection));
+    return;
+  }
   if (!slot) {
     ctx.fillStyle = "#9a8fc4";
     ctx.font = `900 30px ${FX.FONT}`;
@@ -10092,6 +10097,136 @@ function inventoryBodyHeight() {
   return inventoryTalkBelow() ? 588 : 474;
 }
 
+// ---------- 持ち物のマスに、買った道具とぶどうまんじゅうも置く ----------
+// 武器のマスはそのまま。あいているマスに（前から順に）まんじゅう・道具をならべる。
+// 道具をえらんで A（もう一度タップ）で、つける／はずす。まんじゅうは食べる
+function inventoryGearCells() {
+  const map = new Map();
+  if (typeof Shop === "undefined" || !Shop.gearList) return map;
+  const entries = [];
+  if (Shop.manjuCount() > 0) entries.push("manju");
+  for (const it of Shop.gearList()) entries.push(it.id);
+  const items = state.inventoryItems ?? [];
+  let k = 0;
+  for (let i = 0; i < MAX_INVENTORY_ITEMS && k < entries.length; i++) if (!items[i]) map.set(i, entries[k++]);
+  return map;
+}
+
+function inventoryGearAt(index) {
+  return inventoryGearCells().get(index) ?? null;
+}
+
+function useInventoryGear(id) {
+  if (!id || typeof Shop === "undefined") return;
+  const say = text => { state.inventorySortComment = `ぴょんぴー「${text}」`; state.inventorySortCommentUntil = performance.now() + 2600; };
+  if (id === "manju") {
+    const r = Shop.useManju();
+    if (r === true) say(language === "ja" ? "もぐもぐ……ぶどうまんじゅう、うまいじょ！ 元気満タンじゃ！" : "Munch munch... Grape Manju! Fully recharged!");
+    else { playSfx("locked"); say(r === "full" ? (language === "ja" ? "いまは満タンじゃけん、とっとくじょ。" : "I'm already full. Saving it.") : (language === "ja" ? "ステージの中で食べられるじょ。" : "I can eat it during a stage.")); }
+    return;
+  }
+  const r = Shop.toggleGear(id);
+  if (!r) return;
+  playSfx(r.on ? "equip" : "cursor");
+  const name = Shop.itemName(id);
+  if (language === "ja") {
+    say(r.on ? (r.removed.length ? `${name}をはいたじょ！ くつは1足だけじゃけん、${Shop.itemName(r.removed[0])}はぬいだじょ。` : `${name}、つけたじょ！`) : `${name}、はずしたじょ。`);
+  } else {
+    say(r.on ? (r.removed.length ? `Put on ${name}! Only one pair of shoes, so I took off ${Shop.itemName(r.removed[0])}.` : `${name} on!`) : `${name} off.`);
+  }
+}
+
+function drawInventoryGearSlot(slot, id) {
+  const on = id === "manju" || Shop.has(id);
+  const icon = Math.min(slot.w, slot.h) - 46;
+  ctx.save();
+  ctx.globalAlpha = on ? 1 : 0.38;
+  Shop.drawItem(id, slot.x + slot.w / 2, slot.y + slot.h / 2 - 8, icon);
+  ctx.globalAlpha = 1;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  if (id === "manju") {
+    const n = Shop.manjuCount();
+    ctx.fillStyle = "#ffd85a";
+    ctx.beginPath();
+    ctx.roundRect(slot.x + slot.w - 58, slot.y + 10, 46, 28, 14);
+    ctx.fill();
+    ctx.fillStyle = "#7a4fa8";
+    ctx.font = `900 19px ${FX.FONT}`;
+    ctx.fillText(`×${n}`, slot.x + slot.w - 35, slot.y + 25);
+  } else {
+    // くつは「くつ」の札
+    if (Shop.isShoe(id)) {
+      ctx.fillStyle = "rgba(127, 103, 200, 0.85)";
+      ctx.beginPath();
+      ctx.roundRect(slot.x + 10, slot.y + 10, 52, 26, 13);
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.font = `900 15px ${FX.FONT}`;
+      ctx.fillText(language === "ja" ? "くつ" : "Shoe", slot.x + 36, slot.y + 24);
+    }
+    ctx.fillStyle = on ? "#ff5f9e" : "rgba(130, 120, 170, 0.85)";
+    ctx.beginPath();
+    ctx.roundRect(slot.x + 14, slot.y + slot.h - 40, slot.w - 28, 30, 15);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = `900 18px ${FX.FONT}`;
+    ctx.fillText(on ? (language === "ja" ? "そうび中" : "ON") : (language === "ja" ? "はずしてる" : "OFF"), slot.x + slot.w / 2, slot.y + slot.h - 24);
+  }
+  ctx.restore();
+}
+
+function drawInventoryGearCard(r, id) {
+  const ja = language === "ja";
+  const item = Shop.ITEMS.find(it => it.id === id);
+  const on = id === "manju" || Shop.has(id);
+  const cx = r.x + r.w / 2;
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  Shop.drawItem(id, cx, r.y + 110, 170);
+  ctx.fillStyle = "#5a3d9a";
+  let size = 32;
+  ctx.font = `900 ${size}px ${FX.FONT}`;
+  const name = Shop.itemName(id);
+  while (size > 20 && ctx.measureText(name).width > r.w - 40) { size -= 2; ctx.font = `900 ${size}px ${FX.FONT}`; }
+  ctx.fillText(name, cx, r.y + 222);
+  // 状態
+  const tag = id === "manju" ? (ja ? `かばんに ${Shop.manjuCount()}個` : `${Shop.manjuCount()} in bag`)
+    : on ? (ja ? "そうび中" : "Equipped") : (ja ? "はずしている" : "Not worn");
+  ctx.font = `900 22px ${FX.FONT}`;
+  const tw = ctx.measureText(tag).width + 36;
+  ctx.fillStyle = id === "manju" ? "#ffd85a" : on ? "#ff5f9e" : "#a59cc9";
+  ctx.beginPath();
+  ctx.roundRect(cx - tw / 2, r.y + 248, tw, 36, 18);
+  ctx.fill();
+  ctx.fillStyle = id === "manju" ? "#7a4fa8" : "#ffffff";
+  ctx.fillText(tag, cx, r.y + 267);
+  // せつめい
+  ctx.fillStyle = "#6a6096";
+  ctx.font = `800 21px ${FX.FONT}`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  wrapInventoryText(Shop.itemDesc(id), r.x + 30, r.y + 302, r.w - 60, 29);
+  // どうするか
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
+  ctx.strokeStyle = "#d6c8ff";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(r.x + 24, r.y + r.h - 74, r.w - 48, 54, 16);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#7f67c8";
+  ctx.font = `900 21px ${FX.FONT}`;
+  const act = id === "manju" ? (ja ? "A で食べる（ライフとHPが満タン）" : "A: eat (full lives & HP)")
+    : on ? (ja ? "A ではずす" : "A: take off") : (Shop.isShoe(id) ? (ja ? "A ではく（くつは1足だけ）" : "A: wear (one pair only)") : (ja ? "A でつける" : "A: put on"));
+  ctx.fillText(pcKeys(act), cx, r.y + r.h - 47);
+  ctx.restore();
+  void item;
+}
+
 function inventorySlotRects() {
   const slots = inventorySlots();
   const rects = [];
@@ -10140,6 +10275,8 @@ function drawInventorySlot(slot) {
     ctx.shadowBlur = 0;
   }
   if (slot.empty) {
+    const gear = inventoryGearAt(slot.index);
+    if (gear && !grabbed) drawInventoryGearSlot(slot, gear);
     ctx.restore();
     return;
   }
@@ -10505,6 +10642,11 @@ function inventoryFocusComment(power = state.weaponPower) {
     if (state.inventoryGrab) return "ぴょんぴー「同じ武器の上ではなすと合成、からっぽのマスではなすと移動、その場ではなすとそうびじゃ！」";
     return pyonpyWeaponComment(power);
   }
+  const gearHere = mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST && !power ? inventoryGearAt(state.inventorySelection) : null;
+  if (gearHere === "manju") return "ぴょんぴー「ぶどうまんじゅうじゃ！ Aで食べたら、ライフもHPも満タンじょ！」";
+  if (gearHere) return Shop.has(gearHere)
+    ? `ぴょんぴー「${Shop.itemName(gearHere)}、つけとるじょ。Aではずせるじょ。」`
+    : `ぴょんぴー「${Shop.itemName(gearHere)}じゃ。Aで${Shop.isShoe(gearHere) ? "はける" : "つけられる"}じょ！${Shop.isShoe(gearHere) ? " くつは1足だけじゃけどな。" : ""}」`;
   if (mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST) {
     return "ぴょんぴー「Aで武器をつかめるじょ。Xでいらん武器をすてる、Yでせいとん、一番上で↑をおすとメニュー、Bでとじるじょ！」";
   }
@@ -13269,6 +13411,14 @@ canvas.addEventListener("pointerdown", event => {
     }
     const slot = inventorySlotAt(pos.x, pos.y);
     if (slot) {
+      const gear = slot.empty && !fuseLessonOn() ? inventoryGearAt(slot.index) : null;
+      if (gear) {
+        if (state.inventorySelection === slot.index) useInventoryGear(gear);
+        else playSfx("cursor");
+        state.inventorySelection = slot.index;
+        event.preventDefault();
+        return;
+      }
       state.inventorySelection = slot.index;
       if (!slot.empty) {
         state.inventoryGrab = { from: slot.index, power: slot.power, x: pos.x, y: pos.y, startX: pos.x, startY: pos.y, moved: false, pointer: true, gamepad: false };
@@ -13396,6 +13546,10 @@ function startInventoryGrab(gamepad = false) {
     }
   }
   const slot = inventorySlotRects().find(s => s.index === state.inventorySelection);
+  if (slot && slot.empty && !fuseLessonOn() && inventoryGearAt(slot.index)) {
+    useInventoryGear(inventoryGearAt(slot.index));
+    return;
+  }
   if (!slot || slot.empty) return;
   const centerX = slot.x + slot.w / 2;
   const centerY = slot.y + slot.h / 2;

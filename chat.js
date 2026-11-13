@@ -542,9 +542,11 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
           else if (r === "full") { playSfx("locked"); gearSay("いまは満タンじゃ。あとで食べるじょ", "Already full. Saving it for later."); }
           else { playSfx("locked"); gearSay("ステージの中で食べられるじょ", "You can eat it during a stage."); }
         } else {
-          const on = Shop.toggleGear(id);
+          const r = Shop.toggleGear(id);
+          const on = !!r?.on;
           playSfx(on ? "equip" : "cursor");
-          gearSay(`${Shop.itemName(id)}：${on ? "つけた" : "はずした"}`, `${Shop.itemName(id)}: ${on ? "on" : "off"}`);
+          const swap = r?.removed?.length ? L(`（${Shop.itemName(r.removed[0])}はぬいだ）`, ` (took off ${Shop.itemName(r.removed[0])})`) : "";
+          gearSay(`${Shop.itemName(id)}：${on ? "つけた" : "はずした"}${swap}`, `${Shop.itemName(id)}: ${on ? "on" : "off"}${swap}`);
         }
         gearKey = "";
         refreshGear();

@@ -102,15 +102,36 @@
   const has = id => owns(id) && !offMap()[id];
   const MANJU_MAX = 9;
   const manjuCount = () => (typeof Story !== "undefined" ? Math.max(0, Story.data.manjuStock | 0) : 0);
-  // そうびの欄にならべる道具（買ったもの。まんじゅうと金の像はのぞく）
-  const gearList = () => ITEMS.filter(it => it.id !== "manju" && it.id !== "statue" && owns(it.id));
+  // くつは1足しかはけない（ほかの道具は、いくつでも同時につけられる）
+  const SHOES = ["double", "boots", "spikeShoes", "fins"];
+  const isShoe = id => SHOES.includes(id);
+  // はいているくつが2足以上になっていたら、はじめの1足だけにする（前のセーブ・買ったとき）
+  function normalizeShoes(keep = null) {
+    const off = offMap();
+    const worn = SHOES.filter(id => owns(id) && !off[id]);
+    if (worn.length <= 1) return [];
+    const stay = keep && worn.includes(keep) ? keep : worn[0];
+    const removed = worn.filter(id => id !== stay);
+    for (const id of removed) off[id] = true;
+    return removed;
+  }
+  // そうびの欄・持ち物にならべる道具（買ったもの。まんじゅうと金の像はのぞく）
+  const gearList = () => { normalizeShoes(); return ITEMS.filter(it => it.id !== "manju" && it.id !== "statue" && owns(it.id)); };
+  // つける／はずす。{ on: つけたか, removed: いっしょにぬいだくつ }
   function toggleGear(id) {
     if (!owns(id)) return null;
     const off = offMap();
-    if (off[id]) delete off[id];
-    else off[id] = true;
+    let removed = [];
+    if (off[id]) {
+      delete off[id];
+      if (isShoe(id)) removed = normalizeShoes(id);
+    } else off[id] = true;
     Story.persist();
-    return !off[id];
+    return { on: !off[id], removed };
+  }
+  function drawItem(id, x, y, size) {
+    const it = ITEMS.find(v => v.id === id);
+    if (it) drawIcon(it, x, y, size);
   }
   // かばんのぶどうまんじゅうを1つ食べる（ステージの中・そうび画面・ポーズ中）
   function useManju() {
@@ -252,6 +273,8 @@
       say(`ぶどうまんじゅう、おまち！ かばんに入れといたで（${manjuCount()}個）。`, `One Grape Manju! It's in your bag (${manjuCount()}).`);
     } else {
       owned()[it.id] = true;
+      // 新しいくつを買ったら、それをはく（前のくつはぬぐ）
+      if (isShoe(it.id)) { delete offMap()[it.id]; normalizeShoes(it.id); }
       say(it.id === "statue" ? "……ほんまに買うたん！？ うちの店の家宝やで。大事にしてや！" : it.id === "boots" ? "これで、ふつうのゲームみたいに遊べるで。" : "おおきに！ ええ買いもんしたな。",
         it.id === "statue" ? "...You actually bought it!? That was the shop's treasure. Take care of it!" : it.id === "boots" ? "Now you can play it like a normal game." : "Thank you kindly! A fine purchase.");
     }
@@ -784,5 +807,5 @@
     return false;
   }
 
-  window.Shop = { ITEMS, has, owns, gearList, toggleGear, manjuCount, useManju, itemName, itemDesc, itemIcon, unlocked, open, openInStage, close, update, draw, handleKey, handlePointer, drawMapButton, mapPointer };
+  window.Shop = { ITEMS, has, owns, gearList, toggleGear, isShoe, drawItem, manjuCount, useManju, itemName, itemDesc, itemIcon, unlocked, open, openInStage, close, update, draw, handleKey, handlePointer, drawMapButton, mapPointer };
 })();
