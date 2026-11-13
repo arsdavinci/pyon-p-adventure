@@ -1264,7 +1264,7 @@
     };
     const count = (to, at, dur = 0.6) => Math.round(to * Math.min(1, Math.max(0, (t - at) / dur)));
     row(L("タイムボーナス", "Time Bonus"), `+${count(rc.timeBonus, 0.9)}`, 0.8, "#2aa7c9");
-    row(L("柿ピー", "Kaki-Pea"), `${rc.coins} / ${rc.coinTotal}${rc.perfect ? "  PERFECT +100" : ""}`, 1.15, rc.perfect ? "#ff5f9e" : "#d98a2b");
+    row(L("ルナコイン", "Luna Coins"), `${rc.coins} / ${rc.coinTotal}${rc.perfect ? "  PERFECT +100" : ""}`, 1.15, rc.perfect ? "#ff5f9e" : "#d98a2b");
     // スター
     {
       const k = ease((t - 1.5) / 0.3);
@@ -1378,7 +1378,7 @@
       { gap: 80 },
       { head: true, text: L("あなたの記録", "Your Record") },
       { text: `${L("スコア", "Score")}  ${keep.score ?? state.score ?? 0}` },
-      { text: `${L("柿の種", "Kaki")} ${keep.kakiTotal ?? 0}   ${L("ピーナッツ", "Peanuts")} ${keep.peaTotal ?? 0}` },
+      { text: `${L("ルナコイン", "Luna Coins")}  ${(keep.kakiTotal ?? 0) + (keep.peaTotal ?? 0)}` },
       { text: `${L("スター", "Stars")}  ${st.got} / ${st.total}` },
       { text: `${L("ぼうけんランク", "Adventure Rank")}  ${rank}`, color: "#fff3a4" },
       { gap: 120 },

@@ -1,4 +1,4 @@
-// shop.js — よろず屋「つきのわ」：集めた柿ピーで便利アイテムを買う
+// shop.js — よろず屋「つきのわ」：集めたルナコインで便利アイテムを買う
 // game.js より前に読み込む。game.js のグローバルは呼び出し時に参照する。
 (() => {
   "use strict";
@@ -6,67 +6,67 @@
   const L = (ja, en) => (language === "ja" ? ja : en);
   const UNLOCK_COURSE = 2; // 1-1 と 1-2 をクリアすると開店
 
-  // price は「柿の種と ピーナッツを それぞれ何個」か
+  // price は「ルナコイン何枚」か
   const ITEMS = [
-    { id: "burger", price: 10, repeat: true, color: "#ffb86b", mark: "🍔",
-      ja: ["月見バーガー", "その場でライフとHPが全回復。何度でも買える。"],
-      en: ["Moon Burger", "Fully restores lives and HP right now. Buy as often as you like."] },
-    { id: "cushion", price: 40, color: "#ffd1ed", mark: "☁",
+    { id: "manju", price: 20, repeat: true, color: "#c8a2e8", mark: "🍇", file: "item-budou-manju",
+      ja: ["ぶどうまんじゅう", "ぴょんぴーの大好物。その場でライフとHPが満タンになる。何度でも買える。"],
+      en: ["Grape Manju", "Pyon-P's favorite treat. Fully restores lives and HP right now. Buy as often as you like."] },
+    { id: "cushion", price: 80, color: "#ffd1ed", mark: "☁",
       ja: ["ふわふわクッション", "ダメージを受けたあとの無敵時間が2倍になる。"],
       en: ["Fluffy Cushion", "Doubles your invincibility time after taking a hit."] },
-    { id: "magnet", price: 60, color: "#9ee8ff", mark: "U",
-      ja: ["柿ピーじしゃく", "近くの柿の種とピーナッツが勝手に集まってくる。"],
-      en: ["Snack Magnet", "Nearby kaki seeds and peanuts fly to you on their own."] },
-    { id: "strap", price: 80, color: "#c8b2ff", mark: "∞",
+    { id: "magnet", price: 120, color: "#9ee8ff", mark: "U",
+      ja: ["コインじしゃく", "近くのルナコインが勝手に集まってくる。"],
+      en: ["Coin Magnet", "Nearby Luna Coins fly to you on their own."] },
+    { id: "strap", price: 160, color: "#c8b2ff", mark: "∞",
       ja: ["ぜったいはなさんストラップ", "敵に光線銃をうばわれなくなる。"],
       en: ["Never-Let-Go Strap", "Enemies can no longer steal your ray gun."] },
-    { id: "key", price: 100, color: "#ffd85a", mark: "♪",
+    { id: "key", price: 200, color: "#ffd85a", mark: "♪",
       ja: ["あいかぎ", "どのステージも、カギを1本持った状態で始まる。"],
       en: ["Spare Key", "Start every stage already holding one key."] },
-    { id: "boots", price: 150, color: "#ff8db7", mark: "▼",
+    { id: "boots", price: 300, color: "#ff8db7", mark: "▼",
       ja: ["ふつうのゲームのくつ", "ふむだけで敵を倒せる。そう、ふつうのゲームみたいに。"],
       en: ["Normal-Game Boots", "Stomping actually beats enemies. You know, like in a normal game."] },
-    { id: "double", price: 250, color: "#d9ffd6", mark: "✦",
+    { id: "double", price: 500, color: "#d9ffd6", mark: "✦",
       ja: ["2段ジャンプシューズ", "空中でもう1回ジャンプできる。空ルートもらくらく。"],
       en: ["Double-Jump Shoes", "Jump once more in mid-air. Sky routes become a breeze."] },
-    { id: "statue", price: 999, color: "#fff3a4", mark: "★",
-      ja: ["黄金の柿ピー像", "とくに効果はない。でも、すごい。"],
-      en: ["Golden Kaki-Pea Statue", "Does nothing in particular. But it is magnificent."] },
+    { id: "statue", price: 1999, color: "#fff3a4", mark: "★",
+      ja: ["黄金のぶどうまんじゅう像", "とくに効果はない。でも、すごい。"],
+      en: ["Golden Grape Manju Statue", "Does nothing in particular. But it is magnificent."] },
     // ---- そのワールドのステージの中のお店でしか買えない ----
-    { id: "moonJump", world: 0, price: 60, color: "#fff3a4", mark: "☾",
+    { id: "moonJump", world: 0, price: 120, color: "#fff3a4", mark: "☾",
       ja: ["月あめジャンプ", "ジャンプが少し高くなる。月あめのふわふわパワー。"],
       en: ["Moon Candy Jump", "Your jumps go a little higher. Fluffy moon-candy power."] },
-    { id: "charm", world: 0, price: 150, color: "#ffd1ed", mark: "♥",
+    { id: "charm", world: 0, price: 300, color: "#ffd1ed", mark: "♥",
       ja: ["うさみみお守り", "ステージで1回だけ、やられてもその場で復活できる。"],
       en: ["Bunny-Ear Charm", "Once per stage, get back up on the spot instead of going down."] },
-    { id: "heatCape", world: 1, price: 100, color: "#ff9a6b", mark: "♨",
+    { id: "heatCape", world: 1, price: 200, color: "#ff9a6b", mark: "♨",
       ja: ["たいねつマント", "マグマとふん石のダメージが半分になる。"],
       en: ["Heatproof Cape", "Halves damage from lava and falling rocks."] },
-    { id: "drill", world: 1, price: 200, color: "#ffcf73", mark: "⚒",
+    { id: "drill", world: 1, price: 400, color: "#ffcf73", mark: "⚒",
       ja: ["火星ドリル", "アイテムブロックの中身が2つ出てくる。"],
       en: ["Mars Drill", "Item blocks give you two of what's inside."] },
-    { id: "spikeShoes", world: 2, price: 120, color: "#c6fff4", mark: "❄",
+    { id: "spikeShoes", world: 2, price: 240, color: "#c6fff4", mark: "❄",
       ja: ["スパイクシューズ", "氷の上でもすべらない。"],
       en: ["Spike Shoes", "No more slipping on ice."] },
-    { id: "iceShield", world: 2, price: 220, color: "#9ee8ff", mark: "◇",
+    { id: "iceShield", world: 2, price: 440, color: "#9ee8ff", mark: "◇",
       ja: ["こおりのたて", "ステージで1回だけ、敵の弾をふせぐ。"],
       en: ["Ice Shield", "Blocks one enemy shot per stage."] },
-    { id: "tank", world: 3, price: 150, color: "#bff8ff", mark: "O₂",
+    { id: "tank", world: 3, price: 300, color: "#bff8ff", mark: "O₂",
       ja: ["大きな酸素タンク", "水の中で、酸素が2倍長もちする。"],
       en: ["Big Oxygen Tank", "Your oxygen lasts twice as long underwater."] },
-    { id: "fins", world: 3, price: 250, color: "#7fd8ff", mark: "≈",
+    { id: "fins", world: 3, price: 500, color: "#7fd8ff", mark: "≈",
       ja: ["ひれ", "泳ぐのが速くなる。"],
       en: ["Swim Fins", "You swim faster."] },
-    { id: "helmet", world: 4, price: 180, color: "#ffc67a", mark: "⛑",
+    { id: "helmet", world: 4, price: 360, color: "#ffc67a", mark: "⛑",
       ja: ["ヘルメット", "トロッコの頭の上のはりに当たってもへいき。"],
       en: ["Hard Hat", "Mine-cart beams can't hurt you anymore."] },
-    { id: "booster", world: 4, price: 300, color: "#ff8db7", mark: "»",
+    { id: "booster", world: 4, price: 600, color: "#ff8db7", mark: "»",
       ja: ["ロケットブースター", "ダッシュが速くなる。"],
       en: ["Rocket Booster", "Your dash gets faster."] },
-    { id: "rod", world: 5, price: 250, color: "#d7c8ff", mark: "ϟ",
+    { id: "rod", world: 5, price: 500, color: "#d7c8ff", mark: "ϟ",
       ja: ["ひらいしん", "雷が当たらなくなる。"],
       en: ["Lightning Rod", "Lightning can't hit you anymore."] },
-    { id: "kingCape", world: 5, price: 400, color: "#ff3d7f", mark: "♛",
+    { id: "kingCape", world: 5, price: 800, color: "#ff3d7f", mark: "♛",
       ja: ["王さまのマント", "受けるダメージが半分になる。"],
       en: ["Royal Cape", "Halves the damage you take."] }
   ];
@@ -79,7 +79,7 @@
   };
   load("keeper", "shop-keeper");
   load("bg", "shop-bg");
-  for (const it of ITEMS) load(it.id, `shop-item-${it.id}`);
+  for (const it of ITEMS) load(it.id, it.file ?? `shop-item-${it.id}`);
   const ok = im => im && im.complete && im.naturalWidth > 0;
 
   let sel = 0;
@@ -99,7 +99,8 @@
     if (!campaignKeep) campaignKeep = campaignSnapshotFromState();
     return campaignKeep;
   }
-  const pairs = () => Math.min(wallet().kakiTotal ?? 0, wallet().peaTotal ?? 0);
+  // ルナコインの枚数（前のセーブの柿の種とピーナッツは、合わせてルナコインにする）
+  const pairs = () => { mergeOldSnacks(wallet()); return wallet().kakiTotal ?? 0; };
 
   function say(ja, en) {
     line = [ja, en];
@@ -146,10 +147,10 @@
         const first = !Story.data.seen.shopVisit;
         Story.data.seen.shopVisit = true;
         say(first
-          ? "まいど〜！ よろず屋『つきのわ』へようこそ。柿の種とピーナッツ、同じ数ずつでお代をいただくで。"
+          ? "まいど〜！ よろず屋『つきのわ』へようこそ。お代はルナコインでいただくで。"
           : "まいど〜！ 今日はなに買うてく？",
         first
-          ? "Welcome to Tsukinowa General Store! I take payment in kaki seeds and peanuts, the same number of each."
+          ? "Welcome to Tsukinowa General Store! I take payment in Luna Coins."
           : "Welcome back! What'll it be today?");
       }
     });
@@ -165,7 +166,7 @@
       FX.startTransition({
         type: "fade", dur: 0.6,
         onMid: () => {
-          // お店で使った柿ピー・買ったバーガー・売った武器を、ステージの持ち物にもどす
+          // お店で使ったルナコイン・買ったまんじゅう・売った武器を、ステージの持ち物にもどす
           restoreCampaignSnapshot(campaignKeep);
           campaignKeep = back.prevKeep;
           state.mode = "playing";
@@ -190,20 +191,20 @@
     if (pairs() < it.price) {
       playSfx("locked");
       const lack = it.price - pairs();
-      say(it.id === "statue" ? "それは夢の品や。こつこつ集めて、いつか買いに来てな。" : `あと ${lack} 個ずつ足りへんな。ためてまた来てや。`,
-        it.id === "statue" ? "That one is a dream item. Keep saving and come back someday." : `You're ${lack} short of each. Save up and come back.`);
+      say(it.id === "statue" ? "それは夢の品や。こつこつ集めて、いつか買いに来てな。" : `あと ${lack} 枚足りへんな。ためてまた来てや。`,
+        it.id === "statue" ? "That one is a dream item. Keep saving and come back someday." : `You're ${lack} coins short. Save up and come back.`);
       return;
     }
     w.kakiTotal -= it.price;
-    w.peaTotal -= it.price;
+    w.peaTotal = 0;
     state.kakiTotal = w.kakiTotal;
-    state.peaTotal = w.peaTotal;
-    if (it.id === "burger") {
+    state.peaTotal = 0;
+    if (it.id === "manju") {
       w.lives = MAX_LIVES;
       w.hp = MAX_HP;
       state.lives = MAX_LIVES;
       state.hp = MAX_HP;
-      say("月見バーガーおまち！ 元気まんたんやな。", "One Moon Burger, coming up! You're good as new.");
+      say("ぶどうまんじゅう、おまち！ 元気まんたんやな。", "One Grape Manju, coming up! You're good as new.");
     } else {
       owned()[it.id] = true;
       say(it.id === "statue" ? "……ほんまに買うたん！？ うちの店の家宝やで。大事にしてや！" : it.id === "boots" ? "これで、ふつうのゲームみたいに遊べるで。" : "おおきに！ ええ買いもんしたな。",
@@ -222,14 +223,14 @@
   }
 
   // ---------- 武器を売る ----------
-  // 上のタブで「買う」「売る」を切りかえる。売ると柿の種とピーナッツが同じ数ずつもらえる
+  // 上のタブで「買う」「売る」を切りかえる。売るとルナコインがもらえる
   let tab = 0; // 0 = 買う, 1 = 売る
   let page = 0;
   const SELL_ROWS = 6;
   const tabRect = i => ({ x: 520 + i * 230, y: 84, w: 220, h: 48 });
 
   // 1つ売ったときにもらえる数（月は Lv×3、星は Lv×6）
-  const sellPrice = power => power === FIGHTER_POWER ? 3000 : power >= MECH_POWER ? 200 * (power - MECH_POWER + 1) : weaponRank(power) * (weaponAttribute(power) === "star" ? 6 : 3);
+  const sellPrice = power => 2 * (power === FIGHTER_POWER ? 3000 : power >= MECH_POWER ? 200 * (power - MECH_POWER + 1) : weaponRank(power) * (weaponAttribute(power) === "star" ? 6 : 3));
 
   // 売れる武器の一覧（もっている武器を種類ごとにまとめる）
   function sellList() {
@@ -267,17 +268,17 @@
     for (let i = items.length - 1; i >= 0; i--) if (items[i] === entry.power) { idx = i; break; }
     if (idx >= 0) items[idx] = null;
     w.weaponInventory[entry.power - 1] = Math.max(0, (w.weaponInventory[entry.power - 1] ?? 0) - 1);
+    mergeOldSnacks(w);
     w.kakiTotal = (w.kakiTotal ?? 0) + price;
-    w.peaTotal = (w.peaTotal ?? 0) + price;
     if (state) {
       state.kakiTotal = w.kakiTotal;
-      state.peaTotal = w.peaTotal;
+      state.peaTotal = 0;
       state.weaponInventory = [...w.weaponInventory];
       state.inventoryItems = [...items];
     }
     playSfx("pickup");
-    say(`${weaponName(entry.power)}、買い取ったで！ 柿の種とピーナッツ ${price} 個ずつや。`,
-      `I'll take that ${weaponName(entry.power)}! Here's ${price} of each.`);
+    say(`${weaponName(entry.power)}、買い取ったで！ ルナコイン ${price} 枚や。`,
+      `I'll take that ${weaponName(entry.power)}! Here's ${price} Luna Coins.`);
     Story.persist();
     const rows = sellRowCount();
     if (!rows && page > 0) page -= 1;
@@ -455,7 +456,7 @@
       ctx.textAlign = "right";
       ctx.font = `900 22px ${FX.FONT}`;
       ctx.fillStyle = locked ? "#b3a9d6" : "#2f9e6a";
-      ctx.fillText(`+${sellPrice(entry.power)} ${L("ずつ", "each")}`, r.x + r.w - 18, r.y + r.h / 2);
+      ctx.fillText(`+${sellPrice(entry.power)} ${L("枚", "coins")}`, r.x + r.w - 18, r.y + r.h / 2);
     });
     const pages = Math.max(1, Math.ceil(list.length / SELL_ROWS));
     if (pages > 1) {
@@ -518,11 +519,12 @@
     ctx.roundRect(W - 420, 20, 386, 52, 16);
     ctx.fill();
     ctx.stroke();
-    ctx.font = `900 20px ${FX.FONT}`;
-    ctx.fillStyle = "#d46c2f";
-    ctx.fillText(`${L("柿の種", "Kaki")} ${w.kakiTotal ?? 0}`, W - 400, 47);
-    ctx.fillStyle = "#a8742a";
-    ctx.fillText(`${L("ピーナッツ", "Peanuts")} ${w.peaTotal ?? 0}`, W - 250, 47);
+    ctx.font = `900 22px ${FX.FONT}`;
+    ctx.fillStyle = "#b8862a";
+    drawLunaCoin(W - 388, 46, 15);
+    ctx.fillStyle = "#b8862a";
+    ctx.textBaseline = "middle";
+    ctx.fillText(`${L("ルナコイン", "Luna Coins")} ${pairs()}`, W - 362, 47);
 
     drawKeeper(250, H - 150);
 
@@ -585,7 +587,7 @@
         ctx.fillText(L("もってる ✓", "Owned ✓"), r.x + r.w - 18, r.y + r.h / 2);
       } else {
         ctx.fillStyle = afford ? "#d98a2b" : "#c0266d";
-        ctx.fillText(`${L("各", "each")} ${it.price}`, r.x + r.w - 18, r.y + r.h / 2);
+        ctx.fillText(`${it.price} ${L("枚", "coins")}`, r.x + r.w - 18, r.y + r.h / 2);
       }
     });
 

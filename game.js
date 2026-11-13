@@ -152,7 +152,7 @@ const TEXT = {
     replay: "もう一度遊ぶ",
     stage: "ステージ",
     time: "時間",
-    kaki: "柿の種",
+    kaki: "ルナコイン",
     pea: "ピーナッツ",
     score: "スコア",
     hp: "HP",
@@ -179,7 +179,7 @@ const TEXT = {
     loreExperimental: "は未知惑星の設計図から生まれた実験兵装。ムーニアンノヴァを越える弾道を持つ。",
     commentClassic: "、かわいい顔しとるけど、ちゃんと強いじょ！",
     commentExperimental: "！？ これ、撃ったあと画面を見るほうが忙しいやつじゃ！",
-    ranks: ["ちょこっと柿ピー", "おやつ柿ピー", "いい感じの柿ピー", "大盛り柿ピー", "満タン柿ピーパーティー"],
+    ranks: ["おこづかいルナコイン", "ちょきんルナコイン", "いい感じのルナコイン", "お大尽ルナコイン", "満タンルナコインパーティー"],
     mix: "比率",
     balance: "バランス"
   },
@@ -192,7 +192,7 @@ const TEXT = {
     replay: "Play Again",
     stage: "Stage",
     time: "Time",
-    kaki: "Kaki",
+    kaki: "Luna Coins",
     pea: "Peanuts",
     score: "Score",
     hp: "HP",
@@ -219,7 +219,7 @@ const TEXT = {
     loreExperimental: " is an experimental SF weapon that goes beyond Moonian Nova with stranger firing patterns.",
     commentClassic: " still looks cute, but it hits hard!",
     commentExperimental: " makes the whole screen busy. Nice!",
-    ranks: ["Snack Rookie", "Space Snack Scout", "Balanced Snack Runner", "Big Snack Explorer", "Perfect Snack Master"],
+    ranks: ["Pocket-Money Rookie", "Coin Saver", "Luna Coin Runner", "Big Coin Explorer", "Perfect Coin Master"],
     mix: "Mix",
     balance: "Balance"
   }
@@ -3012,7 +3012,7 @@ function startGame(fresh = false) {
         enterWorldMap(unlockedCourse, true);
         maybePlayWorldIntro(courses[unlockedCourse].worldIndex);
       } else {
-        // 全クリしたあとの「はじめから」は、武器と柿ピーを持ったまま最初から（強くてニューゲーム）
+        // 全クリしたあとの「はじめから」は、武器とルナコインを持ったまま最初から（強くてニューゲーム）
         const plus = Story.data.cleared && Story.data.keep ? JSON.parse(JSON.stringify(Story.data.keep)) : null;
         Story.resetSave();
         currentCourse = 0;
@@ -3064,20 +3064,32 @@ function startCurrentCourse() {
   lastTime = performance.now();
 }
 
+// 復活に払うルナコインの枚数
 function continuePairCost(index = currentCourse) {
   const course = courses[index] ?? courses[0];
-  return clamp(5 + course.worldIndex * 2 + Math.floor(course.areaIndex / 2), 5, 22);
+  return 2 * clamp(5 + course.worldIndex * 2 + Math.floor(course.areaIndex / 2), 5, 22);
+}
+
+// お金はルナコイン1種類（kakiTotal に入れる）。前のセーブの柿の種とピーナッツは、合わせてルナコインにする
+function mergeOldSnacks(o) {
+  if (!o) return o;
+  if (o.peaTotal) {
+    o.kakiTotal = (o.kakiTotal ?? 0) + o.peaTotal;
+    o.peaTotal = 0;
+  }
+  return o;
 }
 
 function canPayContinue(cost = continuePairCost()) {
-  return state && state.kakiTotal >= cost && state.peaTotal >= cost;
+  mergeOldSnacks(state);
+  return state && state.kakiTotal >= cost;
 }
 
 function continueFromGameOver() {
   if (!gameOverContinueAvailable || !canPayContinue(gameOverContinueCost)) return false;
   const snapshot = campaignSnapshotFromState();
   snapshot.kakiTotal = Math.max(0, snapshot.kakiTotal - gameOverContinueCost);
-  snapshot.peaTotal = Math.max(0, snapshot.peaTotal - gameOverContinueCost);
+  snapshot.peaTotal = 0;
   snapshot.lives = MAX_LIVES;
   snapshot.hp = MAX_HP;
   state = newState();
@@ -3098,8 +3110,8 @@ function campaignSnapshotFromState() {
   return {
     score: state.score ?? 0,
     coinTotal: state.coinTotal ?? 0,
-    kakiTotal: state.kakiTotal ?? 0,
-    peaTotal: state.peaTotal ?? 0,
+    kakiTotal: (state.kakiTotal ?? 0) + (state.peaTotal ?? 0),
+    peaTotal: 0,
     lives: state.lives ?? MAX_LIVES,
     hp: state.hp ?? MAX_HP,
     weaponInventory: [...(state.weaponInventory ?? [])],
@@ -3113,8 +3125,8 @@ function restoreCampaignSnapshot(snapshot) {
   if (!snapshot || !state) return;
   state.score = snapshot.score;
   state.coinTotal = snapshot.coinTotal;
-  state.kakiTotal = snapshot.kakiTotal;
-  state.peaTotal = snapshot.peaTotal;
+  state.kakiTotal = (snapshot.kakiTotal ?? 0) + (snapshot.peaTotal ?? 0);
+  state.peaTotal = 0;
   state.lives = snapshot.lives;
   state.hp = snapshot.hp;
   state.weaponInventory = [...snapshot.weaponInventory];
@@ -4648,6 +4660,8 @@ function damageEnemy(e, amount = 1) {
   playSfx("enemyDefeat", e.x + e.w / 2);
   const dropPower = enemyDropPower(e);
   if (dropPower) spawnWeaponDrop(e.x + e.w / 2, e.y + 8, dropPower, !e.stolenWeapon);
+  // ごくたまに、たおした敵がぶどうまんじゅうを落とす
+  else if (!e.boss && Math.random() < 0.015) spawnItem(e.x + e.w / 2, e.y + 8, "manju");
   e.weaponPower = 0;
   e.stolenWeapon = false;
   dropGunFromEnemy(e);
@@ -5626,7 +5640,7 @@ function randomWeaponDropPower() {
 
 function oldRandomWeaponDropPower() {
   const totalSnacks = state ? state.kakiTotal + state.peaTotal : 0;
-  const balance = totalSnacks > 0 ? 1 - Math.abs(state.kakiTotal - state.peaTotal) / totalSnacks : 0;
+  const balance = totalSnacks > 0 ? 1 : 0;
   const difficulty = courses[currentCourse]?.difficulty ?? 1;
   // まず月か星かを決める（最初のステージから半々で出る）。レベルの上限は月も星も同じ
   const star = Math.random() < 0.5;
@@ -6362,7 +6376,7 @@ function breakBlock(block) {
 
 function spawnBlockContents(block, k) {
   if (block.item === "power" && Math.random() < 0.5) {
-    // 武器ブロックの半分は、柿ピーがはじける（武器は出にくい）
+    // 武器ブロックの半分は、ルナコインがはじける（武器は出にくい）
     for (let i = 0; i < 4; i++) {
       const c = coin(block.x + block.w / 2 + (i - 1.5) * 34 + k * 20, block.y - 40 - (i % 2) * 24 - k * 40, i % 2 ? "pea" : "kaki");
       state.coinItems.push({ ...c, taken: false });
@@ -6432,6 +6446,8 @@ function announceRareDrop(x, y, power) {
 }
 
 function spawnItem(x, y, type) {
+  // ライフの星は、ごくたまに「ぶどうまんじゅう」（ライフもHPも満タン）になる
+  if (type === "hp" && Math.random() < 0.08) type = "manju";
   const weaponPower = type === "power" ? randomWeaponDropPower() : null;
   if (weaponPower) announceRareDrop(x, y, weaponPower);
   state.items.push({
@@ -6441,7 +6457,7 @@ function spawnItem(x, y, type) {
     w: 28, h: 28,
     vx: 70,
     vy: -420,
-    life: type === "hp" ? 5.2 : 9,
+    life: type === "hp" ? 5.2 : type === "manju" ? 12 : 9,
     grounded: false
   });
 }
@@ -6485,6 +6501,7 @@ function updateItems(dt) {
           playSfx("snackStar", item.x);
           FX.starGet(item.x + item.w / 2, item.y + item.h / 2);
         }
+        if (item.type === "manju") eatBudouManju(item);
         if (item.type === "power" && !addWeaponStock(item.weaponPower ?? 1)) {
           item.vy = -60;
           item.vx = pusherAwayFromPlayer(item) * 0.4;
@@ -6503,8 +6520,8 @@ function updateItems(dt) {
       if (!hit(item, s)) continue;
       if (item.vy > 0) {
         item.y = s.y - item.h;
-        item.vy = item.type === "hp" ? -360 : -180;
-        item.vx *= item.type === "hp" ? 1.03 : 0.75;
+        item.vy = item.type === "hp" ? -360 : item.type === "manju" ? -150 : -180;
+        item.vx *= item.type === "hp" ? 1.03 : item.type === "manju" ? 0.4 : 0.75;
         item.grounded = true;
       } else if (item.vy < 0) {
         item.y = s.y + s.h;
@@ -6518,6 +6535,7 @@ function updateItems(dt) {
         playSfx("snackStar", item.x);
         FX.starGet(item.x + item.w / 2, item.y + item.h / 2);
       }
+      if (item.type === "manju") eatBudouManju(item);
       if (item.type === "power" && !addWeaponStock(item.weaponPower ?? 1)) {
         item.vy = -260;
         item.vx = pusherAwayFromPlayer(item);
@@ -6528,6 +6546,16 @@ function updateItems(dt) {
     if (item.y > worldBottom() + 80) item.life = 0;
   }
   state.items = state.items.filter(item => item.life > 0);
+}
+
+// ぶどうまんじゅう：ライフもHPも満タン
+function eatBudouManju(item) {
+  state.lives = MAX_LIVES;
+  state.hp = MAX_HP;
+  playSfx("snackStar", item.x);
+  playSfx("powerUp");
+  FX.starGet(item.x + item.w / 2, item.y + item.h / 2);
+  FX.floater(item.x + item.w / 2, item.y - 20, language === "ja" ? "ぶどうまんじゅう！ 満タン！" : "Grape Manju! Full!", { color: "#f3dcff", stroke: "#7a4fa8", size: 26, life: 1.4 });
 }
 
 function pusherAwayFromPlayer(item) {
@@ -6554,8 +6582,7 @@ function collectCoins() {
     if (nearX && nearY) {
       c.taken = true;
       state.coinTotal += 1;
-      if (c.type === "pea") state.peaTotal += 1;
-      else state.kakiTotal += 1;
+      state.kakiTotal += 1;
       state.score += 10;
       playSfx("pickup", c.x);
       FX.coin(c.x, c.y);
@@ -6874,13 +6901,13 @@ function endGame(title, label, message = null, options = {}) {
   gameOverContinueCost = options.allowContinue ? continuePairCost(currentCourse) : 0;
   gameOverContinueAvailable = !!options.allowContinue && canPayContinue(gameOverContinueCost);
   const continueText = language === "ja"
-    ? `柿の種 ${gameOverContinueCost} と ピーナッツ ${gameOverContinueCost} を払って ${stageLabel()} から復活`
-    : `Pay ${gameOverContinueCost} Kaki and ${gameOverContinueCost} Peanuts to continue from ${stageLabel()}`;
+    ? `ルナコイン ${gameOverContinueCost} 枚を払って ${stageLabel()} から復活`
+    : `Pay ${gameOverContinueCost} Luna Coins to continue from ${stageLabel()}`;
   const shortageText = language === "ja"
-    ? `復活には柿の種 ${gameOverContinueCost} と ピーナッツ ${gameOverContinueCost} が必要`
-    : `Continue needs ${gameOverContinueCost} Kaki and ${gameOverContinueCost} Peanuts`;
+    ? `復活にはルナコイン ${gameOverContinueCost} 枚が必要`
+    : `Continue needs ${gameOverContinueCost} Luna Coins`;
   overlay.querySelector("h1").textContent = title;
-  overlay.querySelector("p").textContent = message || `${t("kaki")} ${state.kakiTotal}  ${t("pea")} ${state.peaTotal}  ${t("score")} ${state.score}${options.allowContinue ? `  /  ${gameOverContinueAvailable ? continueText : shortageText}` : ""}`;
+  overlay.querySelector("p").textContent = message || `${t("kaki")} ${state.kakiTotal}  ${t("score")} ${state.score}${options.allowContinue ? `  /  ${gameOverContinueAvailable ? continueText : shortageText}` : ""}`;
   startButton.textContent = gameOverContinueAvailable ? (language === "ja" ? "このステージから復活" : "Continue") : (language === "ja" ? "マップにもどる" : "Back to Map");
   overlay.classList.remove("hidden");
   Story.refreshTitleUi();
@@ -6894,15 +6921,12 @@ function endGame(title, label, message = null, options = {}) {
 function kakipiRank() {
   const total = courses.reduce((sum, course) => sum + (course.level.coins ?? []).length, 0);
   const ratio = state.coinTotal / total;
-  const snackTotal = state.kakiTotal + state.peaTotal;
-  const balance = snackTotal > 0 ? Math.round((1 - Math.abs(state.kakiTotal - state.peaTotal) / snackTotal) * 100) : 0;
-  const mix = state.peaTotal === 0 ? `${state.kakiTotal}:0` : `${state.kakiTotal}:${state.peaTotal}`;
   let rank = t("ranks")[0];
   if (ratio >= 1) rank = t("ranks")[4];
   else if (ratio >= 0.75) rank = t("ranks")[3];
   else if (ratio >= 0.5) rank = t("ranks")[2];
   else if (ratio >= 0.25) rank = t("ranks")[1];
-  return `${t("kaki")} ${state.kakiTotal}  ${t("pea")} ${state.peaTotal}  ${t("mix")} ${mix}  ${t("balance")} ${balance}%  ${rank}  ${t("score")} ${state.score}`;
+  return `${t("kaki")} ${state.kakiTotal}  ${rank}  ${t("score")} ${state.score}`;
 }
 
 function stageLabel(index = currentCourse) {
@@ -6915,7 +6939,7 @@ function updateHud() {
   document.body.dataset.overlayOpen = overlay.classList.contains("hidden") ? "false" : "true";
   stageCount.textContent = stageLabel();
   kakiCount.textContent = state.kakiTotal;
-  peaCount.textContent = state.peaTotal;
+  if (peaCount) peaCount.textContent = state.peaTotal;
   scoreCount.textContent = state.score;
   lifeCount.textContent = `${"★".repeat(clamp(state.lives, 0, MAX_LIVES))}${"☆".repeat(MAX_LIVES - clamp(state.lives, 0, MAX_LIVES))}`;
   timeCount.textContent = Math.max(0, Math.ceil(state.time));
@@ -7417,7 +7441,7 @@ function drawWorldMapPanel() {
     ctx.fillText(language === "ja" ? "よろず屋 つきのわ" : "Tsukinowa General Store", 50, canvas.height - 134);
     ctx.fillStyle = "#4d4773";
     ctx.font = `800 27px ${FX.FONT}`;
-    ctx.fillText(language === "ja" ? "柿の種とピーナッツで、べんりな道具が買えるお店。" : "Trade kaki seeds and peanuts for handy gear.", 50, canvas.height - 82);
+    ctx.fillText(language === "ja" ? "ルナコインで、べんりな道具やぶどうまんじゅうが買えるお店。" : "Trade Luna Coins for handy gear and grape manju.", 50, canvas.height - 82);
     ctx.fillStyle = "#ff8db7";
     ctx.font = `900 22px ${FX.FONT}`;
     ctx.textAlign = "right";
@@ -9269,7 +9293,7 @@ function drawSaveMenu() {
     ctx.fillStyle = "#7f67c8";
     ctx.font = font(21, 800);
     ctx.fillText(
-      `★ ${stars}   ${saveText("柿の種", "Kaki")} ${d.keep?.kakiTotal ?? 0}   ${saveText("ピーナッツ", "Peanuts")} ${d.keep?.peaTotal ?? 0}`,
+      `★ ${stars}   ${saveText("ルナコイン", "Luna Coins")} ${(d.keep?.kakiTotal ?? 0) + (d.keep?.peaTotal ?? 0)}`,
       r.x + 124, r.y + 80
     );
     ctx.fillStyle = "#9a8fc4";
@@ -10824,7 +10848,15 @@ function drawMoonGroundImage(r) {
 
 function drawItems() {
   for (const item of state.items) {
-    if (item.type === "hp") {
+    if (item.type === "manju") {
+      const bob = Math.sin(performance.now() / 260 + item.x) * 3;
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.globalAlpha = 0.45 + Math.sin(performance.now() / 160) * 0.2;
+      ctx.drawImage(FX.glowSprite("#d7a8ff"), item.x + item.w / 2 - 36, item.y + item.h / 2 - 36 + bob, 72, 72);
+      ctx.restore();
+      drawBudouManju(item.x + item.w / 2, item.y + item.h / 2 + bob, 44);
+    } else if (item.type === "hp") {
       ctx.save();
       ctx.translate(item.x + item.w / 2, item.y + item.h / 2);
       ctx.rotate(performance.now() / 220);
@@ -10919,16 +10951,90 @@ function drawCollectibleStar(x, y, r) {
   ctx.restore();
 }
 
+// ステージで集めるお金「ルナコイン」。絵（assets/item-luna-coin.png）があればそれを、なければ描いたコイン
+const lunaCoinImage = new Image();
+lunaCoinImage.src = "assets/item-luna-coin.png";
+const budouManjuImage = new Image();
+budouManjuImage.src = "assets/item-budou-manju.png";
+
 function drawKakipi(x, y, type) {
+  // くるくる回って見えるように、横はばを少しだけ変える
+  const spin = Math.abs(Math.cos(performance.now() / 520 + x * 0.013));
   ctx.save();
   ctx.translate(x, y);
-  ctx.rotate(type === "pea" ? 0.22 : -0.18);
+  ctx.scale(0.35 + spin * 0.65, 1);
+  drawLunaCoin(0, 0, 13);
+  ctx.restore();
+}
 
-  if (type === "pea") {
-    drawPeanut();
-  } else {
-    drawKakiSeed();
+function drawLunaCoin(x, y, r) {
+  if (lunaCoinImage.complete && lunaCoinImage.naturalWidth > 0) {
+    ctx.drawImage(lunaCoinImage, x - r * 1.25, y - r * 1.25, r * 2.5, r * 2.5);
+    return;
   }
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = "#ffe7a0";
+  ctx.strokeStyle = "#a98be0";
+  ctx.lineWidth = r * 0.22;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#e9b84f";
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.62, 0, Math.PI * 2);
+  ctx.fill();
+  // 三日月
+  ctx.fillStyle = "#fff6cf";
+  ctx.beginPath();
+  ctx.arc(-r * 0.08, 0, r * 0.44, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#e9b84f";
+  ctx.beginPath();
+  ctx.arc(r * 0.12, -r * 0.1, r * 0.38, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+  ctx.beginPath();
+  ctx.ellipse(-r * 0.45, -r * 0.5, r * 0.16, r * 0.26, -0.6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+// ぴょんぴーの大好物。満タン回復アイテム。絵（assets/item-budou-manju.png）がなければ描いたまんじゅう
+function drawBudouManju(x, y, size) {
+  if (budouManjuImage.complete && budouManjuImage.naturalWidth > 0) {
+    ctx.drawImage(budouManjuImage, x - size / 2, y - size / 2, size, size);
+    return;
+  }
+  const r = size * 0.15;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(-0.6);
+  ctx.strokeStyle = "#c79a5a";
+  ctx.lineWidth = Math.max(2, size * 0.05);
+  ctx.beginPath();
+  ctx.moveTo(0, -size * 0.48);
+  ctx.lineTo(0, size * 0.48);
+  ctx.stroke();
+  for (let i = 0; i < 4; i++) {
+    const cy = -size * 0.3 + i * r * 1.75;
+    ctx.fillStyle = "#b07fd8";
+    ctx.strokeStyle = "#7a4fa8";
+    ctx.lineWidth = Math.max(1.5, size * 0.03);
+    ctx.beginPath();
+    ctx.arc(0, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+    ctx.beginPath();
+    ctx.arc(-r * 0.35, cy - r * 0.35, r * 0.28, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = "#7fd08a";
+  ctx.beginPath();
+  ctx.ellipse(r * 0.9, -size * 0.36, r * 0.75, r * 0.4, -0.5, 0, Math.PI * 2);
+  ctx.fill();
   ctx.restore();
 }
 
