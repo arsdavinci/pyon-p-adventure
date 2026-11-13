@@ -349,7 +349,7 @@
     v.preload = "auto";
     v.muted = typeof soundEnabled !== "undefined" && !soundEnabled;
     v.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#120a2a;z-index:5;";
-    const hintText = on => on ? L("▶ スキップ（A）", "▶ Skip (A)") : L("スキップ ▶▶", "Skip ▶▶");
+    const hintText = on => on ? pcKeys(L("▶ スキップ（A）", "▶ Skip (A)")) : L("スキップ ▶▶", "Skip ▶▶");
     hint.textContent = hintText(false);
     const hintStyle = on => `position:absolute;left:8px;top:8px;z-index:6;padding:3px 10px;border-radius:99px;font:800 11px system-ui;cursor:pointer;opacity:.9;` +
       (on ? "background:#fff3a4;color:#5a3d9a;border:2px solid #ff8db7;box-shadow:0 0 8px #ffd85a;" : "background:rgba(18,10,42,.45);color:#fff;border:1px solid rgba(255,255,255,.45);");
@@ -478,8 +478,9 @@
     });
   }
 
+  // 画面に出す文（PC ではキーの名前をそえる）。声は ln.ja のままでさがす
   function lineText(ln) {
-    return language === "ja" ? ln.ja : ln.en;
+    return pcKeys(language === "ja" ? ln.ja : ln.en);
   }
 
   function wrapLines(text, maxW) {
@@ -1053,7 +1054,7 @@
     if (!cs || !!cs.skipFocused === on) return;
     cs.skipFocused = on;
     storyBox.skip?.classList.toggle("is-focused", on);
-    if (storyBox.skip) storyBox.skip.textContent = on ? L("スキップ？ A で決定", "Skip? Press A") : L("スキップ ▶▶", "Skip ▶▶");
+    if (storyBox.skip) storyBox.skip.textContent = on ? pcKeys(L("スキップ？ A で決定", "Skip? Press A")) : L("スキップ ▶▶", "Skip ▶▶");
     if (typeof playSfx === "function") playSfx("cursor");
   }
   storyBox.el?.addEventListener("pointerdown", event => {
@@ -1187,7 +1188,7 @@
       const on = !!cs.skipFocused;
       if (storyBox.skip && storyBox.skip.classList.contains("is-focused") !== on) {
         storyBox.skip.classList.toggle("is-focused", on);
-        storyBox.skip.textContent = on ? L("スキップ？ A で決定", "Skip? Press A") : L("スキップ ▶▶", "Skip ▶▶");
+        storyBox.skip.textContent = on ? pcKeys(L("スキップ？ A で決定", "Skip? Press A")) : L("スキップ ▶▶", "Skip ▶▶");
       }
     }
     else drawCanvasTextBox(ln, sp, narr, boxX, boxY, boxW, boxH);
@@ -1283,7 +1284,7 @@
     ctx.font = `800 16px ${FX.FONT}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(on ? L("スキップ？ A で決定", "Skip? Press A") : L("スキップ ▶▶ (Esc)", "SKIP ▶▶ (Esc)"), r.x + r.w / 2, r.y + r.h / 2 + 1);
+    ctx.fillText(on ? pcKeys(L("スキップ？ A で決定", "Skip? Press A")) : L("スキップ ▶▶ (Esc)", "SKIP ▶▶ (Esc)"), r.x + r.w / 2, r.y + r.h / 2 + 1);
     ctx.restore();
   }
 

@@ -1,4 +1,29 @@
 // settings.js — せってい（音の大きさ・ボタンの割り当て）
+
+// PC（キーボード）で遊んでいるときは、画面に出す文の「A」「SELECT」などに、押すキーをそえる。
+// 例：「SELECTで装備画面」→「SELECT（Tab）で装備画面」。声は元の文でさがすので、文そのものは変えない（表示だけ）。
+// キーボードでは A キーは「左へ移動」なので、A ボタン＝Space、B（もどる）＝Esc、SELECT＝Tab、START＝Enter。X・Y はそのまま。
+function pcKeys(text) {
+  if (typeof text !== "string" || !text) return text;
+  if (typeof controlMode === "undefined" || controlMode !== "pc") return text;
+  const KEY = { A: "Space", B: "Esc" };
+  const ja = typeof language === "undefined" || language === "ja";
+  if (ja) {
+    return text
+      .replace(/SELECT(?![（(]Tab)/g, "SELECT（Tab）")
+      .replace(/START(?![（(]Enter)/g, "START（Enter）")
+      .replace(/十字キー(?![（(])/g, "十字キー（矢印キー）")
+      .replace(/[（(]([AB])[）)]/g, (_, b) => `（${KEY[b]}）`)
+      .replace(/(?<![A-Za-z（(])([AB])(ボタン)?(?![A-Za-z（(）)])/g, (_, b, btn) => `${b}${btn ?? ""}（${KEY[b]}）`);
+  }
+  return text
+    .replace(/SELECT(?! \(Tab)/g, "SELECT (Tab)")
+    .replace(/START(?! \(Enter)/g, "START (Enter)")
+    .replace(/the D-pad/g, "the arrow keys")
+    .replace(/\(([AB])\)/g, (_, b) => `(${KEY[b]})`)
+    .replace(/([Pp]ress |[Ww]ith |[Hh]old |then |  )([AB])(?=[\s.,!:]|$)/g, (_, pre, b) => `${pre}${b} (${KEY[b]})`);
+}
+
 // localStorage の "pyonpSettings" に保存する。はじめは今までと同じ（音はぜんぶ 10、A=ジャンプ B=ダッシュ X・Y=こうげき）
 const Settings = (() => {
   "use strict";

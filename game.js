@@ -8711,7 +8711,7 @@ function drawInventoryCommentBar() {
   drawUiPanel(r);
   const slot = inventorySlots()[state.inventorySelection];
   const raw = inventoryFocusComment(slot?.power ?? null);
-  const text = raw.replace(/^ぴょんぴー「/, "").replace(/」$/, "");
+  const text = pcKeys(raw.replace(/^ぴょんぴー「/, "").replace(/」$/, ""));
   ctx.save();
   ctx.fillStyle = "#7f67c8";
   ctx.beginPath();
@@ -9272,7 +9272,7 @@ function drawSettingsMenu() {
   ctx.fillStyle = "#9b86d6";
   ctx.font = `800 28px ${FX.FONT}`;
   ctx.textAlign = "center";
-  ctx.fillText(ja ? "↑↓ でえらぶ　←→ でかえる　A できめる　B でもどる" : "↑↓ choose  ←→ change  A select  B back", L.x + L.w / 2, L.y + h - 36);
+  ctx.fillText(pcKeys(ja ? "↑↓ でえらぶ　←→ でかえる　A できめる　B でもどる" : "↑↓ choose  ←→ change  A select  B back"), L.x + L.w / 2, L.y + h - 36);
   ctx.restore();
 }
 
@@ -10446,6 +10446,7 @@ function inventoryFocusComment(power = state.weaponPower) {
 }
 
 function drawPyonpyCommentPanel(comment) {
+  comment = pcKeys(comment);
   const x = 40;
   const y = 570;
   const w = 1188;

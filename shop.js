@@ -634,7 +634,7 @@
     ctx.fillStyle = "#ffffff";
     ctx.font = `800 15px ${FX.FONT}`;
     ctx.textAlign = "right";
-    ctx.fillText(L("←→ 買う／売る ／ ↑↓ えらぶ ／ 決定 ／ B でもどる", "←→ Buy/Sell  /  ↑↓ choose  /  Confirm  /  B: back"), W - 44, H - 18);
+    ctx.fillText(pcKeys(L("←→ 買う／売る ／ ↑↓ えらぶ ／ 決定 ／ B でもどる", "←→ Buy/Sell  /  ↑↓ choose  /  Confirm  /  B: back")), W - 44, H - 18);
     ctx.restore();
   }
 

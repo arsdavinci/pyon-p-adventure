@@ -460,7 +460,7 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
       e.panel.classList.add("comm-pop");
     }
     ext = o;
-    if (e.text.textContent !== o.text) e.text.textContent = o.text;
+    if (e.text.textContent !== pcKeys(o.text)) e.text.textContent = pcKeys(o.text);
     return true;
   }
   function release() {
@@ -528,7 +528,7 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
       e.icon.style.visibility = "hidden";
       e.name.textContent = stolen ? L("うばわれた！", "Stolen!") : L("光線銃なし", "No ray gun");
       e.lv.textContent = "";
-      e.hint.textContent = stolen ? (isUnderwaterStage() ? L("Xの空気鉄砲でひよらせて取りかえそう", "Stun the thief with your air gun (X)") : L("敵をふんで取りかえそう", "Stomp the thief to get it back")) : L("ひろうか、SELECTで装備しよう", "Pick one up or equip with SELECT");
+      e.hint.textContent = stolen ? (isUnderwaterStage() ? L("Xの空気鉄砲でひよらせて取りかえそう", "Stun the thief with your air gun (X)") : L("敵をふんで取りかえそう", "Stomp the thief to get it back")) : pcKeys(L("ひろうか、SELECTで装備しよう", "Pick one up or equip with SELECT"));
       for (const bar of [e.atk, e.range, e.rapid]) bar.style.width = "0%";
       return;
     }
@@ -544,7 +544,7 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
     e.rapid.style.width = `${Math.max(8, ((0.46 - st.cooldown) / 0.33) * 100)}%`;
     const fusable = stock >= 2 && (nextFusionPower(power) !== null);
     e.hint.textContent = fusable
-      ? L(`×${stock} もってる！ SELECTで合体できるよ`, `You have ×${stock}! Fuse them with SELECT`)
+      ? pcKeys(L(`×${stock} もってる！ SELECTで合体できるよ`, `You have ×${stock}! Fuse them with SELECT`))
       : power >= MAX_WEAPON_POWER ? L("最終進化！", "Final evolution!") : L("同じ銃を2つ集めると合体", "Collect two of the same to fuse");
     e.hint.classList.toggle("comm-hint-hot", fusable);
   }
@@ -605,7 +605,7 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
           e.avatar.style.backgroundSize = "";
           e.avatar.textContent = "";
         }
-        e.text.textContent = text;
+        e.text.textContent = pcKeys(text);
       }
       return;
     }
@@ -637,7 +637,8 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
       renderSpeaker();
     }
     if (!cur) return;
-    const text = L(cur[1], cur[2]);
+    // 表示する文（PC ではキーの名前をそえる）。声は cur[1] のままでさがす
+    const text = pcKeys(L(cur[1], cur[2]));
     const total = [...text].length;
     if (shown < total) {
       shown = Math.min(total, shown + dt * (language === "ja" ? 38 : 70));
@@ -663,13 +664,13 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
     const mode = state.mode;
     if (mode !== "playing" && mode !== "respawning" && mode !== "worldMap") return;
     const sp = SPEAKERS[cur[0]] || SPEAKERS.pyon;
-    const text = [...L(cur[1], cur[2])].slice(0, Math.floor(shown)).join("");
+    const text = [...pcKeys(L(cur[1], cur[2]))].slice(0, Math.floor(shown)).join("");
     const fade = Math.min(1, (4.2 - hold) / 0.5);
     ctx.save();
     ctx.globalAlpha = 0.94 * fade;
     ctx.font = `800 19px ${FX.FONT}`;
     const name = L(sp.ja, sp.en);
-    const full = L(cur[1], cur[2]);
+    const full = pcKeys(L(cur[1], cur[2]));
     const maxW = 620;
     const lines = [];
     let line = "";
