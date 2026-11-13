@@ -68,7 +68,9 @@
     return { x: cx + f * (pose.hand[0] - pose.center[0]) * h, y: cy + (pose.hand[1] - pose.center[1]) * h };
   }
   const WORLD_KEYS = ["moon", "mars", "ice", "ocean", "factory", "demon"];
-  for (const w of WORLD_KEYS) {
+  // 地面に立てる街灯・塔などのかざり（fg-*）は、行き止まりや柱に見えるので使わない（読みこみもしない）
+  const SHOW_PROPS = false;
+  if (SHOW_PROPS) for (const w of WORLD_KEYS) {
     SPRITE_FILES[`fg_${w}_1`] = `fg-${w}-1`;
     SPRITE_FILES[`fg_${w}_2`] = `fg-${w}-2`;
   }
@@ -97,6 +99,7 @@
   }
 
   function drawForeground() {
+    if (!SHOW_PROPS) return;
     const world = courses[currentCourse]?.worldIndex ?? 0;
     const a = sprite(`fg_${WORLD_KEYS[world]}_1`);
     const b = sprite(`fg_${WORLD_KEYS[world]}_2`);
