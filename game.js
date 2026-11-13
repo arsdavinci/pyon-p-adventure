@@ -6455,12 +6455,26 @@ function enemyWeaponStage(owner) {
 function updateBeams(dt) {
   for (const b of state.beams) {
     if (b.homing) updateHomingMissile(b, dt);
-    const wave = b.wave ? Math.sin((b.distance + performance.now() / 18) / 52 + b.wave) * 70 * dt : 0;
-    const stepX = b.vx * dt;
-    const stepY = (b.vy ?? 0) * dt + wave;
+    let stepX = b.vx * dt;
+    let stepY = (b.vy ?? 0) * dt;
+    const straight = Math.hypot(stepX, stepY);
+    if (b.wave) {
+      // くねくねしない「まん中の線」の位置（かべ・地面に当たったかは、こちらで調べる）
+      b.lineX = (b.lineX ?? b.x) + stepX;
+      b.lineY = (b.lineY ?? b.y) + stepY;
+      // アクアリウムスピア：進む向きに対して横に、大きくくねくね（2発は逆向きにゆれて、からみあう）
+      const amp = 30;
+      const k = 1 / 38;
+      const ph = b.wave > 0 ? 0 : Math.PI;
+      const d0 = b.distance, d1 = b.distance + straight;
+      const side = amp * (Math.sin(d1 * k + ph) - Math.sin(d0 * k + ph));
+      const sp = straight || 1;
+      stepX += (-stepY / sp) * side;
+      stepY += (b.vx * dt / sp) * side;
+    }
     b.x += stepX;
     b.y += stepY;
-    b.distance += Math.hypot(stepX, stepY);
+    b.distance += b.wave ? straight : Math.hypot(stepX, stepY);
     b.life -= dt;
     if (b.distance >= b.range) b.life = 0;
     // たてに飛ぶ弾は当たり判定もたて長にする
@@ -6496,7 +6510,8 @@ function updateBeams(dt) {
         break;
       }
       if (b.life <= 0) continue;
-      if (beamHitsWall(beamRect)) {
+      // くねくね弾は、ゆれて地面をかすめても消えない（まん中の線がかべに当たったら消える）
+      if (beamHitsWall(b.wave ? rect(b.lineX, b.lineY, b.w, b.h) : beamRect)) {
         // 弾はかべや地面を通りぬけない
         if (b.explosion) explodeMissile(b.x + b.w / 2, b.y + b.h / 2, b);
         else FX.hit(b.x + b.w / 2, b.y + b.h / 2, b.colors);
