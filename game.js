@@ -357,6 +357,31 @@ const enemyThemeImages = [
   img.src = src;
   return img;
 });
+// 空を飛ぶ（海では泳ぐ）新しい敵。星ごとに1種類
+const flyerImages = [
+  "assets/enemy-moon-bat.png",
+  "assets/enemy-mars-bee.png",
+  "assets/enemy-crystal-bird.png",
+  "assets/enemy-ocean-puffer.png",
+  "assets/enemy-ring-ufo.png",
+  "assets/enemy-demon-lantern.png"
+].map(src => {
+  const img = new Image();
+  img.src = src;
+  return img;
+});
+const flyerHurtImages = [
+  "assets/enemy-moon-bat-hurt.png",
+  "assets/enemy-mars-bee-hurt.png",
+  "assets/enemy-crystal-bird-hurt.png",
+  "assets/enemy-ocean-puffer-hurt.png",
+  "assets/enemy-ring-ufo-hurt.png",
+  "assets/enemy-demon-lantern-hurt.png"
+].map(src => {
+  const img = new Image();
+  img.src = src;
+  return img;
+});
 const bossThemeImages = [
   "assets/boss-moon-candy-king.png",
   "assets/boss-mars-dome-commander.png",
@@ -2515,6 +2540,40 @@ function sanitizeArea(area) {
   }
 }
 
+// どのステージにも、その星の「飛ぶ敵」を足す（1-1・ボス・小部屋・登るステージはのぞく）
+function addFlyersToAllAreas() {
+  const seen = new Set();
+  courses.forEach((c, ci) => {
+    for (const a of c.areas ?? [c]) {
+      if (!a || seen.has(a)) continue;
+      seen.add(a);
+      if (ci === 0 || a.isRoom || a.bossStage || a.finalStage || a.climbStage || a.tutorial || !a.level) continue;
+      const underwater = a.trait === "underwater";
+      const flagX = a.level.flag?.x ?? 0;
+      // ゴールの旗がないエリア（旗が画面の外にある）は、ふつうの道のはばで置く
+      const endX = flagX > 1500 ? Math.min(3600, flagX - 260) : 3500;
+      const count = Math.min(5, 2 + Math.floor((a.difficulty ?? 0) / 3));
+      const solids = areaSolids(a);
+      for (let i = 0; i < count; i++) {
+        const x = Math.round(900 + (i + 0.5) * (endX - 900) / count);
+        let y;
+        if (underwater) {
+          y = 150 + ((i * 97 + ci * 31) % 230);
+        } else {
+          const ground = surfaceBelow(a, x + 23, 170); // 空の上のルートではなく、ふつうの高さの道を目安に
+          // 地面からジャンプで頭に乗れる高さにうかぶ（足場がない穴の上なら、ふつうの地面の高さを目安に）
+          y = (ground ?? GROUND_Y) - 128;
+          if (rectHitsAny({ x: x - 10, y: y - 40, w: 66, h: 82 }, solids)) continue;
+        }
+        const f = flyerEnemy(x, y, Math.max(40, x - 260), Math.min(3860, x + 260));
+        f.enemyKind = a.worldIndex ?? 0;
+        a.level.enemies.push(f);
+      }
+    }
+  });
+}
+addFlyersToAllAreas();
+
 function sanitizeAllAreas() {
   const seen = new Set();
   for (const c of courses) {
@@ -2813,6 +2872,11 @@ function hiddenItemBox(x, y, item = "power") {
 
 function enemy(x, y, left, right) {
   return { x, y, w: 42, h: 42, vx: -86, vy: 0, left, right, alive: true, defeated: 0, alert: 0, trick: 0, grounded: true, jumpCooldown: 0, hp: 3, maxHp: 3, stun: 0 };
+}
+
+// 空を飛ぶ敵：ふわふわ横に動いて、ぴょんぴーが近いと急降下してくる
+function flyerEnemy(x, y, left, right) {
+  return { ...enemy(x, y, left, right), w: 46, h: 42, vx: -70, flyer: true, homeY: y, grounded: false, hp: 2, maxHp: 2, flyPhase: "hover", flyTimer: 1 + Math.random() };
 }
 
 function armedEnemy(x, y, left, right, weaponPower = 2) {
@@ -4842,6 +4906,11 @@ function updateEnemies(dt) {
     e.stun = Math.max(0, (e.stun ?? 0) - dt);
     if (Tutorial.moveEnemy(e, dt)) {
       // チュートリアルの敵は、決まった動きだけ
+    } else if (e.stun > 0 && e.flyer && !isUnderwaterStage()) {
+      // 飛ぶ敵はピヨっても落ちずに、その場で少しだけ下がる
+      e.vx = 0;
+      e.vy = e.y < e.homeY + 36 ? 30 : 0;
+      e.y += e.vy * dt;
     } else if (e.stun > 0) {
       e.vx = 0;
       e.vy += isUnderwaterStage() ? 0 : GRAVITY * dt;
@@ -4851,6 +4920,8 @@ function updateEnemies(dt) {
       updateSwimmingEnemy(e, dt);
     } else if (e.boss && e.script && state.arena?.scripted) {
       updateBossScript(e, dt);
+    } else if (e.flyer) {
+      updateFlyingEnemy(e, dt);
     } else {
       updateEnemyMovement(e, dt);
     }
@@ -5009,6 +5080,55 @@ function updateEnemyMovement(e, dt) {
     e.x = maxX - e.w;
     e.vx = -Math.abs(e.vx) || -86;
   }
+  syncEnemyFacing(e);
+}
+
+function updateFlyingEnemy(e, dt) {
+  const p = state.player;
+  const cx = e.x + e.w / 2;
+  const dx = p.x + p.w / 2 - cx;
+  const dy = p.y + p.h / 2 - (e.y + e.h / 2);
+  const near = Math.abs(dx) < 460 && Math.abs(dy) < 360;
+  e.alert = near ? Math.min(1, e.alert + dt * 2.4) : Math.max(0, e.alert - dt * 0.8);
+  e.flyTimer = (e.flyTimer ?? 1) - dt;
+  const wave = Math.sin(performance.now() / 380 + e.id * 1.7) * 16;
+  let tx, ty, speed;
+  if (e.flyPhase === "dive") {
+    // ねらった場所へまっすぐ急降下
+    tx = e.diveX; ty = e.diveY; speed = 300;
+    const reached = Math.hypot(tx - cx, ty - (e.y + e.h / 2)) < 24;
+    if (reached || e.flyTimer <= 0) { e.flyPhase = "rise"; e.flyTimer = 1.6; }
+  } else if (e.flyPhase === "rise") {
+    tx = cx + (e.vx >= 0 ? 40 : -40); ty = e.homeY + e.h / 2; speed = 150;
+    if (Math.abs(e.y - e.homeY) < 12 || e.flyTimer <= 0) { e.flyPhase = "hover"; e.flyTimer = 1.4 + Math.random() * 0.8; }
+  } else if (e.alert > 0.3) {
+    // ぴょんぴーの少し上についてきて、時間がたったら急降下
+    tx = p.x + p.w / 2 - Math.sign(dx || 1) * 90; ty = e.homeY + e.h / 2 + wave; speed = 120;
+    if (e.flyTimer <= 0 && Math.abs(dx) < 300) {
+      e.flyPhase = "dive";
+      e.flyTimer = 1.1;
+      e.diveX = p.x + p.w / 2;
+      e.diveY = p.y + p.h / 2;
+      e.attackAnim = 0.3;
+    }
+  } else {
+    // ふだんは決まったはばを行ったり来たり
+    const dir = e.vx < 0 ? -1 : 1;
+    tx = cx + dir * 60; ty = e.homeY + e.h / 2 + wave; speed = 70;
+    if (e.x < e.left) tx = cx + 60;
+    if (e.x + e.w > e.right) tx = cx - 60;
+  }
+  const mx = tx - cx, my = ty - (e.y + e.h / 2);
+  const d = Math.hypot(mx, my) || 1;
+  const want = Math.min(speed, d * 4);
+  e.vx += (mx / d * want - e.vx) * Math.min(1, dt * 5);
+  e.vy += (my / d * want - e.vy) * Math.min(1, dt * 5);
+  e.grounded = false;
+  e.allowDrop = true;
+  moveEnemyAndCollide(e, dt);
+  e.grounded = false;
+  e.x = clamp(e.x, 0, 3880 - e.w);
+  if (e.y < 40) { e.y = 40; e.vy = Math.max(0, e.vy); }
   syncEnemyFacing(e);
 }
 
@@ -12428,18 +12548,22 @@ function drawPastelAlien(e) {
 
 function drawEnemyImage(e) {
   const kind = e.enemyKind ?? courses[currentCourse]?.worldIndex ?? 0;
-  const poseImg = e.hurtAnim > 0 ? enemyHurtImages[kind] : e.attackAnim > 0 ? enemyAttackImages[kind] : null;
-  let img = poseImg || enemyThemeImages[kind];
-  if (!img || !img.complete || img.naturalWidth <= 0) img = enemyThemeImages[kind];
+  const baseList = e.flyer ? flyerImages : enemyThemeImages;
+  // 飛ぶ敵は、ピヨっているあいだもダメージの絵
+  const poseImg = e.flyer
+    ? (e.hurtAnim > 0 || (e.alive && e.stun > 0) ? flyerHurtImages[kind] : null)
+    : e.hurtAnim > 0 ? enemyHurtImages[kind] : e.attackAnim > 0 ? enemyAttackImages[kind] : null;
+  let img = poseImg || baseList[kind];
+  if (!img || !img.complete || img.naturalWidth <= 0) img = baseList[kind];
   if (!img || !img.complete || img.naturalWidth <= 0) return false;
   const dying = !e.alive;
   const t = dying ? 1 - e.defeated / 0.42 : 0;
   const alpha = dying ? Math.max(0, 1 - t * 0.86) : 1;
   const bob = dying ? 0 : Math.sin(performance.now() / 220 + e.x) * 2;
-  const drawH = e.h * 1.75;
+  const drawH = e.flyer ? e.h * 1.9 : e.h * 1.75;
   const drawW = drawH * (img.naturalWidth / img.naturalHeight);
   const dx = e.x + e.w / 2 - drawW / 2;
-  const dy = e.y + e.h - drawH + 6 + bob;
+  const dy = e.flyer ? e.y + e.h / 2 - drawH / 2 + bob : e.y + e.h - drawH + 6 + bob;
   ctx.save();
   ctx.globalAlpha = alpha;
   ctx.imageSmoothingEnabled = true;
