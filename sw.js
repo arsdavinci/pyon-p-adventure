@@ -1,4 +1,4 @@
-const CACHE_NAME = "pyon-p-adventure-v105";
+const CACHE_NAME = "pyon-p-adventure-v106";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -59,8 +59,9 @@ self.addEventListener("fetch", event => {
   // 動画はキャッシュを通さない（iPhone は動画を少しずつ読みこむので、キャッシュから丸ごと返すと再生できない）
   if (url.pathname.endsWith(".mp4") || request.headers.has("range")) return;
 
-  if (url.origin === location.origin && (url.pathname.endsWith(".js") || url.pathname.endsWith(".css") || url.pathname.endsWith(".html") || url.pathname.endsWith("/"))) {
+  if (url.origin === location.origin && (url.pathname.endsWith(".js") || url.pathname.endsWith(".css") || url.pathname.endsWith(".html") || url.pathname.endsWith(".json") || url.pathname.endsWith("/"))) {
     // ブラウザの一時保存（最大10分）も通さず、いつも最新をとりにいく
+    // （声の一覧 manifest.json も。古い一覧のままだと、作り直した声が鳴らない）
     event.respondWith(
       fetch(request, { cache: "no-cache" }).then(response => {
         const copy = response.clone();
