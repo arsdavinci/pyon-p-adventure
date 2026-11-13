@@ -297,16 +297,53 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
   // ステージに入って、ひとりごと → 会話 → 会話 の順。だれもしゃべっていない静かなときにだけ流す
   let stageT = 0;
   let lastAmbientAt = 0;
-  const AMBIENT_AT = [14, 40, 75]; // ステージに入ってからの秒数（これより前には流さない）
-  const AMBIENT_GAP = 20; // ひとつ流したら、つぎまで最低これだけあける
+  // ---------- ステージのなにげない会話（ステージごとに3つ・1回きり） ----------
+  // 時間で次々に流すのではなく、「その場所に来たら」流す。
+  //   ひとりごと … 最初の道の半分をこえたら
+  //   会話その1 … 部屋（2つ目より先のエリア）に入って、しばらくしたら
+  //   会話その2 … ゴールのある最後の道の、3分の1をこえたら
+  // そのうえで、ほかのセリフのあとは しっかり間をあける。
+  const AMBIENT_QUIET = 45;  // ほかのセリフが終わってから、これだけ静かだったら
+  const AMBIENT_GAP = 90;    // なにげない会話どうしは、これだけあける
+  let lastAmbientClock = -999;
+  let lastTalkClock = 0;
+  let areaSeen = -1;
+  let areaT = 0;
+
+  function areaProgress() {
+    const course = courses[currentCourse];
+    const lv = course?.level;
+    if (!lv) return 0;
+    const exit = (lv.doors ?? []).find(d => d.exit);
+    const goalX = exit ? exit.x : lv.flag && lv.flag.x > 0 ? lv.flag.x : 3800;
+    return clamp(state.player.x / Math.max(400, goalX), 0, 1);
+  }
+
+  function ambientPlaceOk(k) {
+    const course = courses[currentCourse];
+    const n = course?.areaNo ?? 0;
+    const last = (course?.areas?.length ?? 1) - 1;
+    // 寄り道の部屋（ボーナス・練習部屋）は、ふつうの順番に入れない
+    const side = (course?.areas?.[0]?.level?.doors ?? []).filter(d => d.bonus).map(d => d.to);
+    if (side.includes(n)) return false;
+    const lastMain = course?.areas ? course.areas.filter((a, i) => !side.includes(i)).length - 1 : last;
+    if (k === 0) return n === 0 && areaProgress() > 0.5;
+    if (k === 1) return n >= 1 && n < lastMain && areaT > 10 || (lastMain <= 1 && n === lastMain && areaProgress() > 0.15);
+    return n === lastMain && n > 0 && areaProgress() > 0.33 || (lastMain === 0 && areaProgress() > 0.8);
+  }
 
   function ambient(dt) {
     stageT += dt;
+    const n = courses[currentCourse]?.areaNo ?? 0;
+    if (n !== areaSeen) { areaSeen = n; areaT = 0; }
+    areaT += dt;
     if (typeof STAGE_TALK === "undefined" || typeof Story === "undefined") return;
     if (typeof Tutorial !== "undefined" && Tutorial.muteChat()) return;
-    if (queue.length || (cur && (shown < [...L(cur[1], cur[2])].length || hold < 4))) return;
-    if (state.arena || (typeof Voice !== "undefined" && Voice.busy && Voice.busy())) return;
-    if (stageT - lastAmbientAt < AMBIENT_GAP && lastAmbientAt > 0) return;
+    // しゃべっている最中・しゃべり終わってすぐは、まだ流さない
+    if (queue.length || cur && (shown < [...L(cur[1], cur[2])].length || (typeof Voice !== "undefined" && Voice.busy && Voice.busy()))) { lastTalkClock = clock; return; }
+    if (state.arena || (typeof Voice !== "undefined" && Voice.busy && Voice.busy())) { lastTalkClock = clock; return; }
+    if (clock - lastTalkClock < AMBIENT_QUIET) return;
+    if (clock - lastAmbientClock < AMBIENT_GAP) return;
     const data = STAGE_TALK[currentCourse];
     if (!data) return;
     const items = [["solo", [data.solo]], ["talk0", data.talks?.[0]], ["talk1", data.talks?.[1]]];
@@ -314,9 +351,10 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
       const [name, lines] = items[k];
       const key = `amb${currentCourse}_${name}`;
       if (!lines || Story.data.seen[key]) continue;
-      if (stageT < AMBIENT_AT[k]) return;
+      if (!ambientPlaceOk(k)) continue;
       Story.data.seen[key] = true;
       Story.persist();
+      lastAmbientClock = clock;
       lastAmbientAt = stageT;
       say(lines);
       return;
