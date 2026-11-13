@@ -103,19 +103,46 @@
     if (!a && !b) return;
     const viewL = state.camera - 200;
     const viewR = state.camera + VIEW_W + 200;
+    for (const spot of propSpots()) {
+      if (spot.x > viewR || spot.x < viewL) continue;
+      const im = (spot.seed % 2 ? a : b) || a || b;
+      ctx.globalAlpha = 0.96;
+      drawStanding(im, spot.x, spot.y, spot.h, spot.seed > 3);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // 街灯などの置き場所。上に浮いた地面がかぶる場所には置かない（柱やかべに見えてしまうので）。
+  // かぶるときは、その浮いた地面の上に置きなおす。置けなければ、なし
+  const propCache = new WeakMap();
+  function propSpots() {
+    if (propCache.has(platforms)) return propCache.get(platforms);
+    const solids = platforms.filter(q => !q.sky && !q.mover && q.h < 1000);
+    const WIDTH = 60; // 街灯の横幅の半分くらい（よゆうをもって）
+    const blockerAbove = (x, top, h, self) => solids.find(q => q !== self && q.y < top && q.y + q.h > top - h - 10 && x + WIDTH > q.x && x - WIDTH < q.x + q.w);
+    const spots = [];
     for (const p of platforms) {
-      if (p.sky || p.mover || p.w < 220 || p.x > viewR || p.x + p.w < viewL) continue;
+      if (p.sky || p.mover || p.w < 220) continue;
       if (!p.terrain && p.y < 430) continue;
       const count = Math.max(1, Math.floor(p.w / 420));
       for (let i = 0; i < count; i++) {
         const seed = Math.floor(p.x * 0.37 + i * 53) % 7;
-        const im = (seed % 2 ? a : b) || a || b;
+        const h = 120 + seed * 9;
         const x = p.x + 60 + ((p.w - 120) * (i + 0.5)) / count + (seed - 3) * 14;
-        ctx.globalAlpha = 0.96;
-        drawStanding(im, x, p.y + 8, 120 + seed * 9, seed > 3);
-        ctx.globalAlpha = 1;
+        const over = blockerAbove(x, p.y, h, p);
+        if (!over) {
+          spots.push({ x, y: p.y + 8, h, seed });
+          continue;
+        }
+        // 上の浮いた地面の上へ（広さがあって、さらに上がふさがっていなければ）
+        if (over.w < 120 || over.moving) continue;
+        const ox = Math.min(Math.max(x, over.x + 50), over.x + over.w - 50);
+        if (blockerAbove(ox, over.y, h, over)) continue;
+        spots.push({ x: ox, y: over.y + 8, h, seed });
       }
     }
+    propCache.set(platforms, spots);
+    return spots;
   }
 
   // 横にコマが並んだシート画像を、透明なすき間で自動的にコマ分けする
@@ -935,6 +962,7 @@
   }
 
   window.Gimmick = {
+    propSpots,
     CLIMB_BOTTOM, isClimbArea, buildClimb, finalize,
     update, hitSwitch, drawBlock, drawEntities, drawHud, drawKeyShape, resetStage,
     sprite, drawForeground, drawPlayerPose
