@@ -348,8 +348,8 @@
           damageEnemy(enemy, 99);
           return false;
         }
-        // ヤナビスが代わりに撃つときは、いつも敵のほうを向く（敵が後ろにいると、ずっと外れてしまう）
-        if (autoShoot) {
+        // 撃つ練習のあいだは、いつも敵のほうを向く（敵が後ろにいると、ずっと外れてしまう）
+        {
           const pl = state.player;
           pl.facing = enemy.x + enemy.w / 2 >= pl.x + pl.w / 2 ? 1 : -1;
         }
@@ -521,7 +521,8 @@
       case "stompBounce":
         return { move: false, jump: false, shoot: false };
       case "shoot":
-        return autoShoot ? { move: false, jump: false, shoot: true } : { move: true, jump: false, shoot: true };
+        // チュートリアル中は、その場から動かない（撃つことだけできる）
+        return { move: false, jump: false, shoot: true };
       case "talkStomp":
       case "talkDone":
       case "stolenTalk":
