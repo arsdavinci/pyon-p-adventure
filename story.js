@@ -276,6 +276,12 @@
         { s: "ran", aud: true, fx: "shake", ja: "なんでなっ！！ 言い方かるすぎますよ、先輩！", en: "NO WAY!! You can't say it that casually!" },
         { s: "narr", aud: true, ja: "客席には、約束どおり、月あめキング、ドーム司令官、クリスタルイエティ、\nマンタクイーン、ロボットキング——そして、いちばん前に魔王のすがたがあった。", en: "In the audience, just as promised, sat the Moon Candy King, the Dome Commander, the Crystal Yeti,\nthe Manta Queen, the Robot King... and in the very front row, the Demon Lord." },
         { s: "maou", aud: true, ja: "ふはは！ いいぞー！ もっとやれー！", en: "Hahaha! More! MORE!" },
+        { s: "narr", aud: true, ja: "そして、魔王のとなりの特等席には——約束どおり、かぐや様のすがたもあった。", en: "And in the royal seat beside the Demon Lord... just as she had promised, sat Princess Kaguya." },
+        { s: "kaguya", at: "right", aud: true, ja: "ふふっ……ぴょんぴー、とってもおもしろかったです。約束どおり、いちばん前で笑わせていただきました。", en: "Hehe... Pyon-P, that was wonderful. Just as I promised, I laughed from the very front row." },
+        { s: "pyon", aud: true, ja: "か、かぐや様が……吾輩のネタで、わ、わ、笑って……。", en: "P-Princess Kaguya... l-l-laughed... at MY material..." },
+        { s: "kaguya", at: "right", aud: true, ja: "宇宙の笑顔を守ってくださって、ありがとう。", en: "Thank you for protecting the smiles of the universe." },
+        { s: "pyon", aud: true, ja: "……吾輩、もう、思いのこすことはないじょ……。", en: "...I have no regrets left in this life..." },
+        { s: "ran", aud: true, fx: "shake", ja: "なんでなっ！ 先輩、まだネタの途中ですよ！ 固まっとる場合ですか！", en: "NO WAY! We're still in the middle of our act! This is no time to freeze up!" },
         { s: "luva", aud: true, ja: "ふふ。次は地球の大舞台だね、ふたりとも。", en: "Hehe. Next up is the big stage on Earth, you two." },
         { s: "pyon", aud: true, ja: "よっしゃ！ 次は地球で、てっぺん獲るじょ！", en: "Alright! Next, we're taking the top spot on Earth!" },
         { s: "ran", aud: true, ja: "その前にネタ合わせです、先輩！", en: "Rehearsal first!" },
@@ -430,11 +436,13 @@
     if (ln.holo === "on") { cs.holo = { t: 0, on: true }; if (typeof playSfx === "function") playSfx("decide"); }
     if (ln.holo === "off" && cs.holo) { cs.holo.on = false; cs.holo.t = 0; }
     const sp = SPEAKERS[ln.s] || SPEAKERS.narr;
-    if (sp.side) {
-      const slot = cs.slots[sp.side];
-      if (!slot || slot.id !== ln.s) cs.slots[sp.side] = { id: ln.s, appear: 0 };
-      cs.slots[sp.side].face = ln.face || guessFace(ln);
-      cs.active = sp.side;
+    // at でその行だけ立ち位置を変えられる（エンディングのかぐや様はモニターでなく本人が右に立つ）
+    const side = ln.at || sp.side;
+    if (side) {
+      const slot = cs.slots[side];
+      if (!slot || slot.id !== ln.s) cs.slots[side] = { id: ln.s, appear: 0 };
+      cs.slots[side].face = ln.face || guessFace(ln);
+      cs.active = side;
     } else {
       cs.active = null;
     }
@@ -849,6 +857,9 @@
       if (flip) ctx.scale(-1, 1);
       if (ok(img.portraitYana)) fit(faceImage("portraitYana", face), 470);
       else drawYanabis(ctx, time);
+    } else if (id === "kaguya") {
+      if (flip) ctx.scale(-1, 1);
+      if (ok(img.portraitKaguya)) fit(img.portraitKaguya, 500);
     }
     ctx.restore();
   }
