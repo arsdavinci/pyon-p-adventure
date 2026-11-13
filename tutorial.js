@@ -283,6 +283,11 @@
           phase = "talkDone";
           return true;
         }
+        // ヤナビスが代わりに撃つときは、いつも敵のほうを向く（敵が後ろにいると、ずっと外れてしまう）
+        if (autoShoot) {
+          const pl = state.player;
+          pl.facing = enemy.x + enemy.w / 2 >= pl.x + pl.w / 2 ? 1 : -1;
+        }
         // ヤナビスが代わりに X を押す（押したりはなしたりして、何発も撃つ）
         if (autoShoot === 2) {
           autoT += dt;
