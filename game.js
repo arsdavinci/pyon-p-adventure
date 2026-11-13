@@ -3483,7 +3483,8 @@ function returnToMapFromPause() {
 
 function choosePauseOption() {
   if (pauseSelection === 0) resumeGame();
-  else returnToMapFromPause();
+  else if (pauseSelection === 1) returnToMapFromPause();
+  else openTitleAsk();
 }
 
 function loop(now) {
@@ -7343,6 +7344,7 @@ function draw() {
   Chat.drawToast();
   FX.drawFlashes();
   FX.drawTransition();
+  drawTitleAsk();
 }
 
 function drawGameWorld() {
@@ -7395,13 +7397,96 @@ function drawGameWorld() {
   ctx.restore();
 }
 
+// ---------- 「タイトルにもどる？」（会話シーン・エンディング・ポーズから） ----------
+function openTitleAsk() {
+  if (!state || state.titleAsk || FX.transitioning()) return;
+  state.titleAsk = { choice: 1 }; // はじめは「いいえ」（うっかり押してももどらない）
+  playSfx("decide");
+}
+
+function closeTitleAsk() {
+  if (!state?.titleAsk) return;
+  state.titleAsk = null;
+  playSfx("cancel");
+}
+
+function confirmTitleAsk() {
+  if (!state?.titleAsk) return;
+  if (state.titleAsk.choice !== 0) return closeTitleAsk();
+  state.titleAsk = null;
+  playSfx("decide");
+  if (typeof Voice !== "undefined") Voice.stop();
+  FX.startTransition({ type: "fade", dur: 0.6, onMid: () => { Story.returnToTitle(); lastTime = performance.now(); } });
+}
+
+function titleAskButtonRects() {
+  const w = 220, h = 70, cx = canvas.width / 2, y = canvas.height / 2 + 30;
+  return [{ x: cx - w - 16, y, w, h }, { x: cx + 16, y, w, h }];
+}
+
+function handleTitleAskKey(code) {
+  if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "KeyA", "KeyD", "KeyW", "KeyS"].includes(code)) {
+    state.titleAsk.choice = 1 - state.titleAsk.choice;
+    playSfx("cursor");
+  } else if (["Enter", "Space", "KeyX", "KeyY", "KeyJ", "KeyZ"].includes(code)) confirmTitleAsk();
+  else if (["Escape", "KeyB", "Backspace", "Select", "Tab"].includes(code)) closeTitleAsk();
+}
+
+function handleTitleAskPointer(x, y) {
+  const hit = titleAskButtonRects().findIndex(r => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h);
+  if (hit < 0) return;
+  state.titleAsk.choice = hit;
+  confirmTitleAsk();
+}
+
+function drawTitleAsk() {
+  if (!state?.titleAsk) return;
+  const ja = language === "ja";
+  ctx.save();
+  ctx.fillStyle = "rgba(18, 10, 42, 0.6)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const bw = 620, bh = 290, bx = canvas.width / 2 - bw / 2, by = canvas.height / 2 - 150;
+  ctx.fillStyle = "rgba(255, 245, 252, 0.98)";
+  ctx.strokeStyle = "#c8b2ff";
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.roundRect(bx, by, bw, bh, 26);
+  ctx.fill();
+  ctx.stroke();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#5a3d9a";
+  ctx.font = `900 40px ${FX.FONT}`;
+  ctx.fillText(ja ? "タイトルにもどる？" : "Back to the title?", canvas.width / 2, by + 62);
+  ctx.fillStyle = "#8b82b3";
+  ctx.font = `800 22px ${FX.FONT}`;
+  ctx.fillText(ja ? "（セーブしたところから、つづきができるよ）" : "(You can continue from your last save.)", canvas.width / 2, by + 112);
+  const labels = ja ? ["はい", "いいえ"] : ["Yes", "No"];
+  titleAskButtonRects().forEach((r, i) => {
+    const on = state.titleAsk.choice === i;
+    ctx.fillStyle = on ? (i === 0 ? "#ff8db7" : "#9ee8ff") : "#ffffff";
+    ctx.strokeStyle = on ? "#ffffff" : "#c8b2ff";
+    ctx.lineWidth = on ? 6 : 3;
+    ctx.beginPath();
+    ctx.roundRect(r.x, r.y, r.w, r.h, 22);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = on ? "#ffffff" : "#5a3d9a";
+    if (on && i === 1) ctx.fillStyle = "#24507a";
+    ctx.font = `900 32px ${FX.FONT}`;
+    ctx.fillText(labels[i], r.x + r.w / 2, r.y + r.h / 2 + 2);
+  });
+  ctx.restore();
+}
+
 function pauseButtonRects() {
   const w = 300;
   const h = 58;
   const x = canvas.width / 2 - w / 2;
   return [
-    { x, y: canvas.height / 2 + 4, w, h },
-    { x, y: canvas.height / 2 + 76, w, h }
+    { x, y: canvas.height / 2 - 20, w, h },
+    { x, y: canvas.height / 2 + 50, w, h },
+    { x, y: canvas.height / 2 + 120, w, h }
   ];
 }
 
@@ -7414,7 +7499,7 @@ function drawPauseScreen() {
   ctx.strokeStyle = "#c8b2ff";
   ctx.lineWidth = 5;
   ctx.beginPath();
-  ctx.roundRect(canvas.width / 2 - 230, canvas.height / 2 - 132, 460, 292, 10);
+  ctx.roundRect(canvas.width / 2 - 230, canvas.height / 2 - 150, 460, 360, 10);
   ctx.fill();
   ctx.stroke();
 
@@ -7424,10 +7509,10 @@ function drawPauseScreen() {
   ctx.fillStyle = "#fff3a4";
   ctx.strokeStyle = "#7f67c8";
   ctx.lineWidth = 7;
-  ctx.strokeText("PAUSE", canvas.width / 2, canvas.height / 2 - 104);
-  ctx.fillText("PAUSE", canvas.width / 2, canvas.height / 2 - 104);
+  ctx.strokeText("PAUSE", canvas.width / 2, canvas.height / 2 - 124);
+  ctx.fillText("PAUSE", canvas.width / 2, canvas.height / 2 - 124);
 
-  const labels = language === "ja" ? ["再開", "マップに戻る"] : ["Resume", "Return to Map"];
+  const labels = language === "ja" ? ["再開", "マップに戻る", "タイトルへ"] : ["Resume", "Return to Map", "Title Screen"];
   for (let i = 0; i < rects.length; i++) {
     const r = rects[i];
     const selected = pauseSelection === i;
@@ -7445,7 +7530,7 @@ function drawPauseScreen() {
 
   ctx.fillStyle = "rgba(127, 103, 200, 0.82)";
   ctx.font = "800 14px Segoe UI, system-ui, sans-serif";
-  ctx.fillText(language === "ja" ? "Startでも再開" : "Press Start to resume", canvas.width / 2, canvas.height / 2 + 148);
+  ctx.fillText(language === "ja" ? "Startでも再開" : "Press Start to resume", canvas.width / 2, canvas.height / 2 + 188);
   ctx.restore();
 }
 
@@ -13225,7 +13310,7 @@ function updateGamepad() {
   if (state.mode === "paused") {
     if (startPressed && !gamepadState.startLatch) resumeGame();
     if ((gamepadState.left || gamepadState.up || gamepadState.right || gamepadState.down) && !(gamepadState.leftLatch || gamepadState.upLatch || gamepadState.rightLatch || gamepadState.downLatch)) {
-      pauseSelection = 1 - pauseSelection;
+      pauseSelection = (pauseSelection + (gamepadState.up || gamepadState.left ? 2 : 1)) % 3;
       playSfx("cursor");
     }
     if ((jumpPressed && !gamepadState.jumpLatch) || (shootPressed && !gamepadState.shootLatch)) choosePauseOption();
@@ -13280,7 +13365,16 @@ function handleKeyDown(code, event = { repeat: false }) {
     return;
   }
   if (code === "KeyM" && !event.repeat) toggleSound();
+  if (state?.titleAsk) {
+    if (!event.repeat) handleTitleAskKey(code);
+    return;
+  }
   if (Story.isStoryMode(state.mode)) {
+    // 会話シーン・エンディングでは SELECT（Tab）で「タイトルにもどる？」
+    if (!event.repeat && (code === "Select" || code === "Tab") && (state.mode === "cutscene" || state.mode === "credits")) {
+      openTitleAsk();
+      return;
+    }
     if (!event.repeat) Story.handleKey(code);
     return;
   }
@@ -13298,7 +13392,7 @@ function handleKeyDown(code, event = { repeat: false }) {
       return;
     }
     if (!event.repeat && (code === "ArrowUp" || code === "ArrowDown" || code === "ArrowLeft" || code === "ArrowRight" || code === "KeyW" || code === "KeyS" || code === "KeyA" || code === "KeyD")) {
-      pauseSelection = 1 - pauseSelection;
+      pauseSelection = (pauseSelection + (code === "ArrowUp" || code === "ArrowLeft" || code === "KeyW" || code === "KeyA" ? 2 : 1)) % 3;
       playSfx("cursor");
     }
     if (!event.repeat && (code === "Space" || code === "KeyX" || code === "KeyY" || code === "KeyJ")) choosePauseOption();
@@ -13434,6 +13528,11 @@ canvas.addEventListener("pointerdown", event => {
   }
   if (state.mode === "title" && state.saveMenu) {
     handleSaveMenuPointer(pos.x, pos.y);
+    event.preventDefault();
+    return;
+  }
+  if (state.titleAsk) {
+    handleTitleAskPointer(pos.x, pos.y);
     event.preventDefault();
     return;
   }

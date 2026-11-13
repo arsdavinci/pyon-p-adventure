@@ -2139,3 +2139,8 @@ body[data-layout="handheld"][data-orient="land"] .gb-vol-meter {
 body[data-layout="handheld"][data-orient="land"] .gb-vol-num {
   font-size: calc(24 * var(--uL));
 }
+
+/* 吹き出しの中の「タイトルへ」（スキップのひだり） */
+body[data-layout="handheld"] .gb-story-title {
+  right: calc(176 * var(--u));
+}
