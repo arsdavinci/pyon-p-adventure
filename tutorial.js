@@ -27,6 +27,27 @@
     stolenNow: [
       ["yana", "いまです！ A で踏み返してください！", "Now! Press A and stomp it back!"]
     ],
+    // 合成の練習部屋（★の扉）をスルーしようとしたとき。さわるたびに、ヤナビスがだんだん荒くなる
+    gate1: [
+      ["yana", "ポータルです！ そこの入口に入ってみましょう！ ……よくスルーできますね！", "A portal! Go in that entrance! ...How can you just walk past it?!"],
+      ["pyon", "なんや、めんどくさいなぁ。", "Ugh, what a hassle."]
+    ],
+    gate2: [
+      ["yana", "なんで！！ 入りましょうってば！", "Why?! Go in, I said!"]
+    ],
+    gate3: [
+      ["yana", "ぴょんぴーさん、聞こえてますか？ 入口はうしろです。う・し・ろ！", "Pyon-P, can you hear me? The entrance is behind you. BE-HIND!"],
+      ["pyon", "わかっとるって……。", "I know, I know..."]
+    ],
+    gate4: [
+      ["yana", "……いいかげんにしてください。入れって言うとるでしょうが！", "...That's enough. I'm TELLING you to go in!"]
+    ],
+    gate5: [
+      ["yana", "もう知りません。わたしが入れます。", "That's it. I'll put you in myself."]
+    ],
+    gatePushed: [
+      ["pyon", "そんなんあり！？", "You can DO that?!"]
+    ],
     regained: [
       ["pyon", "落としたじょ！ 吾輩の光線銃、かえしてもらうけんな！", "It dropped it! I'm taking my ray gun back!"],
       ["yana", "落ちた光線銃にさわれば、また使えます。", "Touch the dropped ray gun to use it again."]
@@ -124,8 +145,77 @@
     return true;
   }
 
+  // ---- 1-1：★の扉（合成の練習部屋）に入るまで、少し先から進めない ----
+  const GATE_AHEAD = 600; // 扉からこれだけ右に、見えないかべ
+  let gateCount = 0;
+  let gateTouching = false;
+  let gatePush = null; // { yx, t, said }
+
+  function gateDoor() {
+    if (currentCourse !== 0 || (courses[0]?.areaNo ?? 0) !== 0) return null;
+    if (typeof fuseGuideDone === "function" && fuseGuideDone()) return null;
+    const door = (level.doors ?? []).find(d => d.bonus);
+    if (!door || state.areaMemo?.[door.to]?.dropsGiven) return null;
+    return door;
+  }
+
+  function updateGate(dt) {
+    const door = gateDoor();
+    if (!door) {
+      gatePush = null;
+      return false;
+    }
+    const wallX = door.x + GATE_AHEAD;
+    // 扉に入るまで、かべの手前と先の敵は出さない
+    if (state.gateFiltered !== true) {
+      state.gateFiltered = true;
+      state.enemies = state.enemies.filter(e => e.boss || e.x < door.x - 500 || e.x > wallX + 900 || e === enemy);
+    }
+    const p = state.player;
+    if (gatePush) {
+      // ヤナビスが飛んできて、ぴょんぴーを扉まで押していく
+      gatePush.t += dt;
+      const target = door.x + door.w / 2 - p.w / 2;
+      if (gatePush.t < 0.9) {
+        // 右から飛んでくる
+        gatePush.yx += (p.x + p.w + 6 - gatePush.yx) * Math.min(1, dt * 6);
+      } else {
+        if (!gatePush.said) {
+          gatePush.said = true;
+          Chat.say(LINES.gatePushed, true);
+        }
+        p.facing = 1;
+        p.x = Math.max(target, p.x - 300 * dt);
+        gatePush.yx = p.x + p.w + 6;
+        if (p.x <= target + 1 && !FX.transitioning() && gatePush.t > 1.6) {
+          gatePush = null;
+          enterArea(door.to, door.spawnX);
+          return true;
+        }
+      }
+      p.vx = 0;
+      updateCamera(dt);
+      return true;
+    }
+    if (p.x + p.w > wallX) {
+      p.x = wallX - p.w;
+      p.vx = Math.min(0, p.vx);
+      if (!gateTouching) {
+        gateTouching = true;
+        gateCount += 1;
+        playSfx("locked", p.x);
+        if (gateCount >= 5) {
+          Chat.say(LINES.gate5, true);
+          gatePush = { yx: state.camera + VIEW_W + 80, t: 0, said: false };
+        } else Chat.say(LINES[`gate${gateCount}`], true);
+      }
+    } else if (p.x + p.w < wallX - 80) gateTouching = false;
+    return false;
+  }
+
   // プレイ中に毎フレーム呼ぶ。true を返したら、そのフレームは画面を止める（ほかの更新をしない）
   function update(dt) {
+    if (updateGate(dt)) return true;
     if (!phase) return false;
     const a = aDown();
     const aFresh = a && !aWas;
@@ -257,6 +347,7 @@
 
   // ぴょんぴーの操作をしぼる
   function lock() {
+    if (gatePush) return { move: false, jump: false, shoot: false };
     switch (phase) {
       case "approach":
       case "waitJump":
@@ -285,11 +376,12 @@
 
   // チュートリアル中は、いつものかけあいは出さない
   function muteChat() {
-    return !!phase;
+    return !!phase || !!gatePush;
   }
 
   // 画面のまん中に出す、大きなボタンの案内
   function draw() {
+    drawGatePush();
     if (!phase) return;
     let text = null;
     const pc = typeof controlMode !== "undefined" && controlMode === "pc";
@@ -314,6 +406,37 @@
     ctx.stroke();
     ctx.fillStyle = "#5a3d9a";
     ctx.fillText(text, 0, 2);
+    ctx.restore();
+  }
+
+  // ぴょんぴーを押しこむヤナビス
+  function drawGatePush() {
+    if (!gatePush) return;
+    const im = Story.img.portraitYana;
+    const p = state.player;
+    const sx = (gatePush.yx - state.camera) * ZOOM;
+    const bob = Math.sin(performance.now() / 120) * 4;
+    const sy = (p.y + p.h - state.cameraY) * ZOOM + bob;
+    const h = 120;
+    ctx.save();
+    if (Story.ok(im)) {
+      const w = h * (im.naturalWidth / im.naturalHeight);
+      ctx.drawImage(im, sx, sy - h, w, h);
+    } else {
+      ctx.fillStyle = "#e0559f";
+      ctx.beginPath();
+      ctx.arc(sx + 40, sy - 50, 40, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    if (gatePush.t > 0.9) {
+      ctx.font = "900 30px system-ui, sans-serif";
+      ctx.fillStyle = "#ffffff";
+      ctx.strokeStyle = "#e0559f";
+      ctx.lineWidth = 6;
+      ctx.textAlign = "center";
+      ctx.strokeText(L("えいっ！", "Hup!"), sx + 30, sy - h - 10);
+      ctx.fillText(L("えいっ！", "Hup!"), sx + 30, sy - h - 10);
+    }
     ctx.restore();
   }
 

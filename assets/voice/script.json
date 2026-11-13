@@ -1313,12 +1313,76 @@
     "line": 28
    },
    {
+    "id": "6e99d8d1",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ポータルです！ そこの入口に入ってみましょう！ ……よくスルーできますね！",
+    "file": "tutorial.js",
+    "line": 32
+   },
+   {
+    "id": "49f14dcb",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "なんや、めんどくさいなぁ。",
+    "file": "tutorial.js",
+    "line": 33
+   },
+   {
+    "id": "6989a3a0",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "なんで！！ 入りましょうってば！",
+    "file": "tutorial.js",
+    "line": 36
+   },
+   {
+    "id": "02b0252c",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "ぴょんぴーさん、聞こえてますか？ 入口はうしろです。う・し・ろ！",
+    "file": "tutorial.js",
+    "line": 39
+   },
+   {
+    "id": "d1e0ecd7",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "わかっとるって……。",
+    "file": "tutorial.js",
+    "line": 40
+   },
+   {
+    "id": "5652ed2e",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "……いいかげんにしてください。入れって言うとるでしょうが！",
+    "file": "tutorial.js",
+    "line": 43
+   },
+   {
+    "id": "db3baaa4",
+    "who": "yana",
+    "name": "ヤナビス",
+    "text": "もう知りません。わたしが入れます。",
+    "file": "tutorial.js",
+    "line": 46
+   },
+   {
+    "id": "75e11d93",
+    "who": "pyon",
+    "name": "ぴょんぴー",
+    "text": "そんなんあり！？",
+    "file": "tutorial.js",
+    "line": 49
+   },
+   {
     "id": "57fd48b9",
     "who": "pyon",
     "name": "ぴょんぴー",
     "text": "落としたじょ！ 吾輩の光線銃、かえしてもらうけんな！",
     "file": "tutorial.js",
-    "line": 31
+    "line": 52
    },
    {
     "id": "04f167c7",
@@ -1326,7 +1390,7 @@
     "name": "ヤナビス",
     "text": "落ちた光線銃にさわれば、また使えます。",
     "file": "tutorial.js",
-    "line": 32
+    "line": 53
    },
    {
     "id": "531c1119",
