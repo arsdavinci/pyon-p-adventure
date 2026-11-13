@@ -1955,6 +1955,12 @@
     }
     const sound = document.querySelector("#soundButton");
     if (sound) sound.textContent = (typeof soundEnabled !== "undefined" && soundEnabled) ? "♪ ON" : "♪ OFF";
+    const toggle = document.querySelector("#soundToggle");
+    if (toggle) {
+      const on = typeof soundEnabled !== "undefined" && soundEnabled;
+      toggle.textContent = on ? "♪ ON" : "♪ OFF";
+      toggle.setAttribute("aria-pressed", on ? "true" : "false");
+    }
     if (typeof syncTitleFocus === "function") syncTitleFocus();
   }
 

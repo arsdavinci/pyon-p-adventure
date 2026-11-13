@@ -3053,7 +3053,8 @@ function maybePlayWorldIntro(worldIndex) {
 function toggleSound() {
   soundEnabled = !soundEnabled;
   localStorage.setItem("pyonpSound", soundEnabled ? "on" : "off");
-  if (audioMaster && audioCtx) applyVolumes();
+  if (audioCtx) applyVolumes();
+  if (!soundEnabled && typeof Voice !== "undefined") Voice.stop();
   Story.refreshTitleUi();
 }
 
@@ -5286,7 +5287,7 @@ function bgmOut() {
   if (!ctxAudio) return null;
   if (!bgmBus) {
     bgmBus = ctxAudio.createGain();
-    bgmBus.gain.value = Settings.level("bgm");
+    bgmBus.gain.value = soundEnabled ? Settings.level("bgm") : 0;
     bgmBus.connect(ctxAudio.destination);
   }
   return bgmBus;
@@ -6163,7 +6164,9 @@ function updateFullscreenButton() {
   if (!fullscreenButton) return;
   const standalone = isStandaloneDisplay();
   const fullscreen = isFullscreenActive();
-  if (standalone || fullscreen) fullscreenButton.textContent = language === "ja" ? "全画面中" : "Full";
+  // 全画面のときは、もう一度おすと元の画面にもどる
+  if (fullscreen) fullscreenButton.textContent = language === "ja" ? "全画面をやめる" : "Exit Full";
+  else if (standalone) fullscreenButton.textContent = language === "ja" ? "全画面中" : "Full";
   else fullscreenButton.textContent = language === "ja" ? "全画面" : "Full Screen";
   fullscreenButton.setAttribute("aria-pressed", fullscreen || standalone ? "true" : "false");
 }
@@ -6181,6 +6184,14 @@ function nudgeMobileBrowserChrome() {
 }
 
 async function enterBestFullscreen() {
+  // 全画面のときにおしたら、元の画面にもどす
+  if (isFullscreenActive()) {
+    const exit = document.exitFullscreen || document.webkitExitFullscreen;
+    try { await exit?.call(document); } catch (_) {}
+    try { screen.orientation?.unlock?.(); } catch (_) {}
+    updateFullscreenButton();
+    return;
+  }
   nudgeMobileBrowserChrome();
   if (isStandaloneDisplay()) {
     showInstallHint(language === "ja" ? "ホーム画面版で起動中。これがiPhoneの一番広い表示やで。" : "Running from Home Screen. This is the widest iPhone view.");
@@ -9114,8 +9125,9 @@ function applyVolumes() {
   };
   setGain(audioMaster, on * Settings.level("sfx"));
   setGain(voiceBus, on * Settings.level("voice"));
-  setGain(bgmOut(), Settings.level("bgm"));
-  if (window.Bgm?.setVolume) Bgm.setVolume(0.6 * Settings.level("bgm"));
+  // 音を OFF にしたら、BGM も止める
+  setGain(bgmOut(), on * Settings.level("bgm"));
+  if (window.Bgm?.setVolume) Bgm.setVolume(0.6 * on * Settings.level("bgm"));
 }
 
 function settingsChange(row, dir) {
@@ -13678,6 +13690,14 @@ document.querySelector("#settingsButton")?.addEventListener("click", event => {
   event.stopPropagation();
   unlockAudio();
   openSettingsMenu();
+});
+// 画面の右上の「♪ ON / OFF」（ゲーム中でも、いつでも切りかえられる）
+document.querySelector("#soundToggle")?.addEventListener("click", event => {
+  event.stopPropagation();
+  unlockAudio();
+  toggleSound();
+  if (soundEnabled) playSfx("decide");
+  event.currentTarget.blur();
 });
 document.querySelector("#soundButton")?.addEventListener("click", event => {
   event.stopPropagation();

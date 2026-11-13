@@ -93,6 +93,17 @@ canvas {
   box-shadow: 0 4px 0 rgba(56, 104, 155, 0.88);
 }
 
+.sound-toggle {
+  top: calc(max(12px, env(safe-area-inset-top)) + 50px);
+}
+
+.sound-toggle[aria-pressed="false"],
+.shell:fullscreen .sound-toggle[aria-pressed="false"] {
+  background: rgba(255, 141, 183, 0.92);
+  color: #ffffff;
+  box-shadow: 0 4px 0 rgba(160, 60, 110, 0.88);
+}
+
 .install-hint {
   position: fixed;
   left: 50%;
@@ -618,6 +629,10 @@ button:active {
     right: max(16px, env(safe-area-inset-right));
   }
 
+  .sound-toggle {
+    top: calc(max(86px, env(safe-area-inset-top)) + 42px);
+  }
+
   .install-hint {
     bottom: max(8px, env(safe-area-inset-bottom));
     padding: 9px 12px;
@@ -670,7 +685,7 @@ body[data-control-mode="mobile"][data-overlay-open="true"] .touch-controls {
 }
 
 /* PC・横長の画面：大きさはブラウザの窓ではなく、ゲーム画面のわく（overlay）に合わせる。
-   言葉と端末の切りかえは、上の左右のすみへ（まん中の縦の場所を空けて、下のボタンが見切れないように） */
+   言葉の切りかえは左上、端末の切りかえは左下のすみへ（まん中の縦の場所を空けて、下のボタンが見切れないように） */
 body:not([data-layout="handheld"]) .overlay {
   container-type: size;
 }
@@ -681,10 +696,11 @@ body:not([data-layout="handheld"]) .overlay > .language-switch {
   left: 12px;
 }
 
+/* 右上は「全画面」「♪」のボタンと重なるので、端末の切りかえは左下へ */
 body:not([data-layout="handheld"]) .overlay > .control-switch {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  bottom: 12px;
+  left: 12px;
 }
 
 @supports (height: 1cqh) {
