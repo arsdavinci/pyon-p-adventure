@@ -3808,11 +3808,16 @@ function updateDeathFall(dt) {
   const p = state.player;
   state.deathTimer = Math.max(0, (state.deathTimer ?? 0) - dt);
   p.vy += GRAVITY * dt;
+  // 穴に落ちたときは、画面の下まで落ちたらそこで待つ（「さいならーーー」を言い終わるまで）
+  if (state.deathByPit && p.y > worldBottom() + 200) p.vy = 0;
   p.y += p.vy * dt;
   p.x += p.vx * dt;
   p.grounded = false;
   updateCamera(dt);
-  if (p.y > worldBottom() + 180 || state.deathTimer <= 0) {
+  if (state.deathByPit) {
+    if (state.deathTimer > 0 || Chat.busy()) return;
+  } else if (!(p.y > worldBottom() + 180 || state.deathTimer <= 0)) return;
+  {
     if (state.lives <= 0) {
       endGame("Game Over", t("replay"), null, { allowContinue: true });
     } else {
@@ -6994,7 +6999,7 @@ function damagePlayer(fell = false, sourceEnemy = null, canStealWeapon = false) 
     return;
   }
   if (fell && Shop.has("charm") && !state.charmUsed) state.charmSaveLife = true;
-  startDeathFall();
+  startDeathFall(fell);
   return;
   state.lives -= 1;
   if (state.lives <= 0) return endGame("Game Over", "もう一度走る");
@@ -7007,8 +7012,9 @@ function damagePlayer(fell = false, sourceEnemy = null, canStealWeapon = false) 
   state.time = Math.max(30, state.time);
 }
 
-function startDeathFall() {
+function startDeathFall(fell = false) {
   const p = state.player;
+  state.deathByPit = fell;
   playSfx("death", p.x + p.w / 2);
   if (state.charmSaveLife) {
     // 穴に落ちたときは、お守りでライフをへらさない
@@ -7024,6 +7030,13 @@ function startDeathFall() {
   p.invincible = 0;
   p.grounded = false;
   p.vx = 0;
+  if (fell) {
+    // 穴に落ちたとき：はね上がらずに、そのまま下へ落ちていきながら「さいならーーー」
+    p.vy = Math.max(p.vy, 200);
+    state.deathTimer = 1.2;
+    Chat.event("fallPit");
+    return;
+  }
   p.vy = -720;
   spawnBlockPoof(p.x + p.w / 2, p.y + p.h / 2);
   FX.playerDeath(p.x + p.w / 2, p.y + p.h / 2);

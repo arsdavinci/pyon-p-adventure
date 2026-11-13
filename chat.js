@@ -179,6 +179,8 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
     ])],
     lowHp: () => [["yana", "HPがのこり1です。むりせず、スターやハートをさがしましょう。", "Only 1 HP left. Play it safe and look for stars or hearts."]],
     death: () => [["pyon", "月まで飛ばされもたわ〜！", "I got launched all the way to the moooon!"]],
+    // 穴に落ちたとき（言い終わってから、三日月タクシーで上がってくる）
+    fallPit: () => [["pyon", "さいならーーー", "Byeeeeee!"]],
     respawn: () => [["pyon", "三日月タクシーで復活じゃ！ 好きなとこにおりるじょ。", "Back on the Crescent Taxi! I'll hop off wherever I like."]],
     combo: () => [["pyon", "コンボじゃ！ ノってきたじょ！", "Combo! I'm on a roll!"]],
     bossHalf: () => [["yana", "ボスの体力、のこり半分です！", "The boss is down to half health!"], ["pyon", "あとひといきじゃ！", "Almost there!"]],
@@ -219,7 +221,7 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
           ["pyon", "武器盗んなや！", "Quit stealing my weapon!"],
           ["pyon", "盗られた！はらたつ！", "Stolen! That makes me so mad!"],
           ["pyon", "返せや！", "Give it back!"],
-          ["pyon", "盗られた！これどうにかならんのほんま！", "Stolen again! Can't something be done about this!?"]
+          ["pyon", "また盗られた！これどうにかならんのほんま！", "Stolen again! Can't something be done about this!?"]
         ].sort(() => Math.random() - 0.5);
         // 前の回の最後と同じセリフが、続けて出ないようにする
         if (stolenLast && stolenBag[stolenBag.length - 1][1] === stolenLast) stolenBag.unshift(stolenBag.pop());
@@ -361,7 +363,7 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
     }
   }
 
-  const URGENT = { stageStart: 1, map: 1, gameOver: 1, bossHalf: 1, stolen: 1, canFuse: 1 };
+  const URGENT = { stageStart: 1, map: 1, gameOver: 1, bossHalf: 1, stolen: 1, canFuse: 1, fallPit: 1, death: 1 };
 
   function say(lines, urgent = false) {
     if (!lines || !lines.length) return;
