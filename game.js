@@ -3995,9 +3995,10 @@ function updatePlayer(dt) {
   if (wantsDown && p.grounded && canCrouch && !p.crouch) setCrouch(p, true);
   else if (p.crouch && (!wantsDown || !p.grounded || !canCrouch)) setCrouch(p, false);
   const crawl = !!p.crouch;
-  const accel = crawl ? 900 : slippery ? (wantsRun ? 1380 : 820) : wantsRun ? 2100 : 1250;
+  // しゃがんだままでも B（ダッシュ）をおすと、はやいほふく前進
+  const accel = crawl ? (wantsRun ? 1500 : 900) : slippery ? (wantsRun ? 1380 : 820) : wantsRun ? 2100 : 1250;
   const boost = Shop.has("booster") ? 1.2 : 1; // ロケットブースター：ダッシュが速い
-  const maxSpeed = crawl ? 75 : slippery ? (wantsRun ? 410 * boost : 270) : wantsRun ? 360 * boost : 235;
+  const maxSpeed = crawl ? (wantsRun ? 190 * boost : 75) : slippery ? (wantsRun ? 410 * boost : 270) : wantsRun ? 360 * boost : 235;
 
   if (movingLeft) {
     p.vx -= accel * dt;
