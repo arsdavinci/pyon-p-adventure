@@ -9473,6 +9473,21 @@ function openSettingsMenu() {
 }
 
 function closeSettingsMenu() {
+  // ジャンプ・ダッシュ・こうげきが、どれかのボタンにそろうまでは、とじない
+  const missing = Settings.missingActions();
+  if (missing.length && state.settingsMenu) {
+    const ja = language === "ja";
+    const names = missing.map(a => Settings.actionLabel(a, language));
+    state.settingsMenu.warn = ja
+      ? `このままでは${names.join("と")}ができません。どれかのボタンに割り当ててください`
+      : `You can't ${names.join(" or ").toLowerCase()} like this. Assign it to a button.`;
+    state.settingsMenu.warnUntil = performance.now() + 4000;
+    // まだ割り当てていないボタンの行へ、カーソルを動かす
+    const buttonRow = SETTINGS_ROWS.indexOf(Settings.BUTTONS[0]);
+    if (buttonRow >= 0 && !Settings.BUTTONS.includes(SETTINGS_ROWS[state.settingsMenu.sel])) state.settingsMenu.sel = buttonRow;
+    playSfx("locked");
+    return;
+  }
   state.settingsMenu = null;
   playSfx("cancel");
   overlay.classList.remove("hidden");
@@ -9642,10 +9657,24 @@ function drawSettingsMenu() {
       ctx.fillText(Settings.actionLabel(Settings.data.buttons[row], language), vx + vw / 2, r.y + r.h / 2 + 1);
     }
   });
-  ctx.fillStyle = "#9b86d6";
-  ctx.font = `800 28px ${FX.FONT}`;
+  const sm = state.settingsMenu;
+  const warn = sm?.warn && performance.now() < (sm.warnUntil ?? 0) ? sm.warn : null;
   ctx.textAlign = "center";
-  ctx.fillText(pcKeys(ja ? "↑↓ でえらぶ　←→ でかえる　A できめる　B でもどる" : "↑↓ choose  ←→ change  A select  B back"), L.x + L.w / 2, L.y + h - 36);
+  if (warn) {
+    // そろっていないときの注意（赤い帯）
+    ctx.font = `900 26px ${FX.FONT}`;
+    const tw = Math.min(L.w - 40, ctx.measureText(warn).width + 48);
+    ctx.fillStyle = "#ff5f7e";
+    ctx.beginPath();
+    ctx.roundRect(L.x + L.w / 2 - tw / 2, L.y + h - 58, tw, 44, 22);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(warn, L.x + L.w / 2, L.y + h - 36, L.w - 70);
+  } else {
+    ctx.fillStyle = "#9b86d6";
+    ctx.font = `800 28px ${FX.FONT}`;
+    ctx.fillText(pcKeys(ja ? "↑↓ でえらぶ　←→ でかえる　A できめる　B でもどる" : "↑↓ choose  ←→ change  A select  B back"), L.x + L.w / 2, L.y + h - 36);
+  }
   ctx.restore();
 }
 

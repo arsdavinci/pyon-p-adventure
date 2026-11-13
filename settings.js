@@ -54,6 +54,8 @@ const Settings = (() => {
       d.master = Math.max(0, Math.min(100, Math.round(Number(d.master ?? 100))));
       if (!isFinite(d.master)) d.master = 100;
       for (const b of BUTTONS) if (!ACTIONS.includes(d.buttons[b])) d.buttons[b] = DEFAULT.buttons[b];
+      // ジャンプ・ダッシュ・こうげきのどれかがないまま残っていたら、はじめの割り当てにもどす（遊べなくならないように）
+      if (ACTIONS.some(a => !BUTTONS.some(b => d.buttons[b] === a))) d.buttons = { ...DEFAULT.buttons };
       return d;
     } catch (_) {
       return fresh();
@@ -89,25 +91,16 @@ const Settings = (() => {
     return out;
   }
 
-  // ボタンの役目をかえる。ジャンプとダッシュは、どこかのボタンにかならず残す
+  // ボタンの役目をかえる。かえたボタンだけがかわる（ほかのボタンは動かさない）
   function setButton(button, action) {
-    const old = data.buttons[button];
-    if (old === action) return;
+    if (data.buttons[button] === action) return;
     data.buttons[button] = action;
-    if (action !== "attack") {
-      for (const other of BUTTONS) {
-        if (other !== button && data.buttons[other] === action) data.buttons[other] = old;
-      }
-    }
-    if (old !== "attack" && !BUTTONS.some(b => data.buttons[b] === old)) {
-      const giver = ["Y", "X", "B", "A"].find(b => b !== button && data.buttons[b] === "attack");
-      if (giver) data.buttons[giver] = old;
-    }
-    if (!BUTTONS.some(b => data.buttons[b] === "attack")) {
-      const giver = ["Y", "X"].find(b => b !== button);
-      data.buttons[giver] = "attack";
-    }
     save();
+  }
+
+  // どのボタンにも割り当てられていない役目（とじるときに、そろっているか調べる）
+  function missingActions() {
+    return ACTIONS.filter(a => !BUTTONS.some(b => data.buttons[b] === a));
   }
 
   function cycleButton(button, dir) {
@@ -131,6 +124,6 @@ const Settings = (() => {
 
   return {
     get data() { return data; },
-    BUTTONS, ACTIONS, level, master, setMaster, mapCode, padActions, setButton, cycleButton, setLevel, reset, actionLabel, save
+    BUTTONS, ACTIONS, level, master, setMaster, mapCode, padActions, setButton, cycleButton, setLevel, reset, actionLabel, save, missingActions
   };
 })();
