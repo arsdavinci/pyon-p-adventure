@@ -19,6 +19,7 @@
     portraitRan_smile: "assets/portrait-ranpyon-smile.webp",
     portraitRan_surprise: "assets/portrait-ranpyon-surprise.webp",
     portraitRan_trouble: "assets/portrait-ranpyon-trouble.webp",
+    portraitLuva_trouble: "assets/portrait-luva-trouble.webp",
     portraitYana_smile: "assets/portrait-yanabis-smile.webp",
     portraitYana_surprise: "assets/portrait-yanabis-surprise.webp",
     portraitYana_trouble: "assets/portrait-yanabis-trouble.webp",
@@ -175,9 +176,9 @@
         { s: "ran", ja: "すみません、先輩……。どうツッコんだらええんか、ぜんぜん思い出せんのです……。", en: "I can't... I've completely forgotten how to do a comeback..." },
         { s: "narr", bg: "dark", music: "bossAppear", fx: "shake", ja: "そのとき、夜空がまっくろにそまった。\n宇宙じゅうの“笑い”が、空のかなたへ吸い上げられていく——。", en: "At that moment the night sky turned pitch black.\nAll the laughter in the universe was being sucked away into the distance..." },
         { s: "mystery", fx: "flash", ja: "フハハハ！ 宇宙の笑いは、この魔王星がぜんぶいただいた！ もうだれも、笑うことはない！", en: "Mwahaha! The Demon Star has taken ALL the laughter in the universe! No one shall ever laugh again!" },
-        { s: "luva", bg: "duo", ja: "緊急指令だ、ぴょんぴー。笑いのエネルギー『ワライスター』が6つにくだかれ、魔王の手下たちが6つの星へ持ち去った。", en: "Emergency orders, Pyon-P. The \"Warai Star\", the energy of laughter itself, was shattered into six pieces, and the Demon Lord's followers carried them off to six planets." },
-        { s: "luva", ja: "かけらがもどらなければ、宇宙から笑顔が消えてしまう。……だれも笑えないままでは、3日後のフェスも開けない。", en: "Unless the shards return, smiles will vanish from the universe. ...And if no one can laugh, the Fest three days from now cannot be held." },
-        { s: "luva", ja: "らんぴょんは笑いをうばわれて動けない。AGIの人工知能パートナー、ヤナビスが案内する。行けるのは、きみだけだ。", en: "Ranpyon has lost his laughter and cannot go. Yanabisu, your AGI partner, will guide you. You are the only one who can do this." },
+        { s: "luva", bg: "duo", face: "trouble", ja: "緊急指令だ、ぴょんぴー。笑いのエネルギー『ワライスター』が6つにくだかれ、魔王の手下たちが6つの星へ持ち去った。", en: "Emergency orders, Pyon-P. The \"Warai Star\", the energy of laughter itself, was shattered into six pieces, and the Demon Lord's followers carried them off to six planets." },
+        { s: "luva", face: "trouble", ja: "かけらがもどらなければ、宇宙から笑顔が消えてしまう。……だれも笑えないままでは、3日後のフェスも開けない。", en: "Unless the shards return, smiles will vanish from the universe. ...And if no one can laugh, the Fest three days from now cannot be held." },
+        { s: "luva", face: "trouble", ja: "らんぴょんは笑いをうばわれて動けない。AGIの人工知能パートナー、ヤナビスが案内する。行けるのは、きみだけだ。", en: "Ranpyon has lost his laughter and cannot go. Yanabisu, your AGI partner, will guide you. You are the only one who can do this." },
         { s: "pyon", ja: "なんで吾輩だけ平気なんじゃろ……まあええわ！ 吾輩らの夢の舞台、つぶさせはせんじょ！", en: "Why am I the only one who's fine... eh, whatever! Nobody's wrecking our dream stage!" },
         { s: "ran", face: "trouble", ja: "ぴょんぴー先輩……お願いします。僕の『なんでなっ！』、取り返してきてください。", en: "Pyon-P... please. Bring my \"No way!\" back." },
         { s: "pyon", bg: "depart", ja: "まかしとき！ 柿ピー食べたら百人力じゃ。ほな、ちょっと宇宙すくってくるけん！", en: "Leave it to me! A handful of kaki-pea snacks and I'm unstoppable. Be right back, just gotta save the universe!" },
@@ -811,7 +812,7 @@
       else drawHoloCard(L("ら", "R"), "#ff8db7", time);
     } else if (id === "luva") {
       if (flip) ctx.scale(-1, 1);
-      if (ok(img.portraitLuva)) fit(img.portraitLuva, 560);
+      if (ok(img.portraitLuva)) fit(faceImage("portraitLuva", face), 560);
       else drawHoloCard(L("ル", "L"), "#8f8ad0", time, img.cardLuva);
     } else if (id === "yana") {
       if (flip) ctx.scale(-1, 1);
