@@ -86,6 +86,9 @@ def chat_lines() -> list[tuple[str, str, str, int]]:
                 # 合成のヒント（showFuseHint("…")）
                 for m in re.finditer(r'showFuseHint\(' + STR, t):
                     rows.append(("pyon", unq(m.group(1)), f, i))
+            if f == "chat.js" and re.match(r"^\s*\[" + STR + r",\s*" + STR + r"\],?$", t):  # GAGS（ぴょんぴー）
+                m = re.match(r"^\s*\[" + STR, t)
+                rows.append(("pyon", unq(m.group(1)), f, i))
     # そうび画面：武器ごとのひとこと（武器の名前 + きまった言い方）と、はじめての合成の案内
     src = (ROOT / "game.js").read_text(encoding="utf-8")
     names = re.findall(r'"([^"]+)"', re.search(r"const WEAPON_NAMES_JA = \[(.*?)\];", src, re.S).group(1))
@@ -95,10 +98,12 @@ def chat_lines() -> list[tuple[str, str, str, int]]:
         rows.append(("pyon", name + (classic if n <= 5 else experimental), "game.js", 0))
     for key in ("A", "Space"):
         for m in re.finditer(r'if \(g\.step === \d\) return `([^`]+)`|return `(「はい」[^`]+)`', src):
-            rows.append(("pyon", (m.group(1) or m.group(2)).replace("${a}", key), "game.js", 0))
-            if f == "chat.js" and re.match(r"^\s*\[" + STR + r",\s*" + STR + r"\],?$", t):  # GAGS（ぴょんぴー）
-                m = re.match(r"^\s*\[" + STR, t)
-                rows.append(("pyon", unq(m.group(1)), f, i))
+            rows.append(("yana", (m.group(1) or m.group(2)).replace("${a}", key), "game.js", 0))
+    # はじめての合成のレッスン（ヤナビス）：はみ出したときのひとことと、できたあとのひとこと
+    for m in re.finditer(r'fuseLessonNudge\((?:text = )?"([^"]+)"', src):
+        rows.append(("yana", m.group(1), "game.js", 0))
+    for m in re.finditer(r'"(合成できました！[^"]+)"', src):
+        rows.append(("yana", m.group(1), "game.js", 0))
     return rows
 
 

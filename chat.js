@@ -439,20 +439,31 @@
     // そうび画面では、えらんでいるものの説明を会話の欄に出す
     if (state.mode === "inventory" && commOn) {
       const slot = inventorySlots()[state.inventorySelection];
-      const text = inventoryFocusComment(slot?.power ?? null).replace(/^ぴょんぴー「/, "").replace(/」$/, "");
+      const raw = inventoryFocusComment(slot?.power ?? null);
+      // 「ヤナビス「…」」ならヤナビス、それ以外はぴょんぴーがしゃべる
+      const who = raw.startsWith("ヤナビス「") ? "yana" : "pyon";
+      const text = raw.replace(/^(ぴょんぴー|ヤナビス)「/, "").replace(/」$/, "");
       if (text !== invText) {
         invText = text;
         // そうび画面のひとことも声で（カーソルを動かすと、前の声は止めて新しいほうを流す）
         if (typeof Voice !== "undefined") Voice.play("chat", text);
         const e = dom();
-        e.speaker.textContent = L("ぴょんぴー", "Pyon-P");
-        e.speaker.style.color = SPEAKERS.pyon.color;
-        e.avatar.dataset.speaker = "pyon";
-        e.avatar.style.borderColor = SPEAKERS.pyon.color;
-        e.avatar.style.backgroundImage = "";
-        e.avatar.style.backgroundPosition = "";
-        e.avatar.style.backgroundSize = "";
-        e.avatar.textContent = "";
+        if (who === "yana") {
+          // ヤナビスの顔と名前（いつもの会話と同じ出し方）
+          const keep = cur;
+          cur = ["yana", text, text];
+          renderSpeaker();
+          cur = keep;
+        } else {
+          e.speaker.textContent = L("ぴょんぴー", "Pyon-P");
+          e.speaker.style.color = SPEAKERS.pyon.color;
+          e.avatar.dataset.speaker = "pyon";
+          e.avatar.style.borderColor = SPEAKERS.pyon.color;
+          e.avatar.style.backgroundImage = "";
+          e.avatar.style.backgroundPosition = "";
+          e.avatar.style.backgroundSize = "";
+          e.avatar.textContent = "";
+        }
         e.text.textContent = text;
       }
       return;

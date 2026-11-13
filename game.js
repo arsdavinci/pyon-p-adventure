@@ -3227,6 +3227,8 @@ function openInventory() {
 
 function closeInventory() {
   if (!state || state.mode !== "inventory") return;
+  if (fuseLessonOn()) return fuseLessonNudge();
+  state.fuseLessonJustDone = false;
   state.inventoryGrab = null;
   state.fusionPrompt = null;
   state.inventoryConfirmWorldMap = false;
@@ -5776,6 +5778,8 @@ function compactInventoryItems() {
 }
 
 function runInventorySort() {
+  if (fuseLessonOn()) return fuseLessonNudge();
+
   ensureInventoryItems();
   const items = state.inventoryItems.filter(Boolean);
   const compacted = sortedInventoryLayout();
@@ -5830,6 +5834,7 @@ function fuseInventoryItems(fromIndex, toIndex) {
     Story.persist();
     state.inventorySortComment = "ぴょんぴー「合成できたじょ！ 同じ武器を2つ重ねるたびに、どんどん強うなるけんな。いらん武器は X ですてられるじょ。」";
     state.inventorySortCommentUntil = performance.now() + 6000;
+    state.fuseLessonJustDone = true;
   }
   playSfx("powerUp", state.player.x);
   FX.flash("#ffd1ed", 0.3, 0.3);
@@ -8602,6 +8607,8 @@ function inventoryPageButtonRects() {
 }
 
 function changeInventoryPage(dir) {
+  if (fuseLessonOn()) return fuseLessonNudge();
+
   const before = state.inventoryScroll ?? 0;
   state.inventoryScroll = clamp(before + dir * VISIBLE_INVENTORY_ITEMS, 0, MAX_INVENTORY_ITEMS - VISIBLE_INVENTORY_ITEMS);
   clampInventoryScroll();
@@ -8687,6 +8694,8 @@ function resetInventoryFocus() {
 
 // もちものの一番上の段で上を押すと、上のメニューへ
 function inventoryFocusTopMenu() {
+  if (fuseLessonOn()) return fuseLessonNudge();
+
   state.inventoryFocusMode = INVENTORY_FOCUS_MODES.INSIDE_TOP_MENU;
   state.inventoryFocusArea = "topMenu";
   state.inventoryTopMenuIndex = clamp((state.inventorySelection - (state.inventoryScroll ?? 0)) % 5, 0, 3);
@@ -8704,6 +8713,8 @@ function inventoryAtTopRow() {
 }
 
 function moveInventoryFocusArea(dir) {
+  if (fuseLessonOn()) return fuseLessonNudge();
+
   const current = INVENTORY_FOCUS_AREAS.indexOf(state.inventoryFocusArea ?? "itemList");
   const next = (current + dir + INVENTORY_FOCUS_AREAS.length) % INVENTORY_FOCUS_AREAS.length;
   state.inventoryFocusArea = INVENTORY_FOCUS_AREAS[next];
@@ -8741,6 +8752,8 @@ function leaveInventoryInnerFocus() {
 }
 
 function activateInventoryTopMenuButton() {
+  if (fuseLessonOn()) return fuseLessonNudge();
+
   const index = state.inventoryTopMenuIndex ?? 0;
   if (index === 0) {
     closeInventory();
@@ -9422,6 +9435,8 @@ function drawTopMenuNumberBadge(r, number, active) {
 
 // ---------- いらない武器をすてる（もちもので X） ----------
 function openDeletePrompt() {
+  if (fuseLessonOn()) return fuseLessonNudge();
+
   const slot = inventorySlots()[state.inventorySelection];
   if (!slot || state.inventoryGrab) {
     playSfx("locked");
@@ -10005,12 +10020,31 @@ function fuseGuideStep() {
   return { step: 1, source, target: source === pair[0] ? pair[1] : pair[0] };
 }
 
+// はじめての合成は、ヤナビスが教える。決まった動きだけできて、合成するまで画面をとじられない
 function fuseGuideText(g) {
   const pc = typeof controlMode !== "undefined" && controlMode === "pc";
   const a = pc ? "Space" : "A";
-  if (g.step === 1) return `はじめての合成じゃ！ 同じ武器を2つ重ねると、強い武器になるんじょ。まず、光っとる武器で ${a} をおしたままにしてだ（つかむ）。`;
-  if (g.step === 2) return `つかめたじょ！ ${a} をおしたまま、十字キーで、もうひとつの同じ武器（光っとる方）の上まで運んで、そこで ${a} をはなすんじょ。`;
-  return `「はい」をえらんで ${a} で合成じゃ！`;
+  if (g.step === 1) return `はじめての合成です。同じ武器を2つ重ねると、強い武器になります。まず、光っている武器の上で ${a} をおしたままにしてください。`;
+  if (g.step === 2) return `つかめましたね。${a} をおしたまま、十字キーで、もうひとつの光っている武器の上まで運んで、そこで ${a} をはなしてください。`;
+  return `「はい」をえらんで、${a} で合成です！`;
+}
+
+function fuseLessonOn() {
+  return !!state && state.mode === "inventory" && !fuseGuideDone() && !!fuseGuideStep();
+}
+
+// レッスン中に、決まった動き以外をしようとしたとき
+function fuseLessonNudge(text = "まずは一度、合成してみましょう！ 光っている武器をつかんでください。") {
+  state.inventorySortComment = `ヤナビス「${text}」`;
+  state.inventorySortCommentUntil = performance.now() + 2600;
+  playSfx("locked");
+}
+
+function fuseLessonDoneText() {
+  const pc = typeof controlMode !== "undefined" && controlMode === "pc";
+  return pc
+    ? "合成できました！ 同じ武器を重ねるたびに強くなりますよ。Tab でこの画面をとじて、冒険にもどりましょう。"
+    : "合成できました！ 同じ武器を重ねるたびに強くなりますよ。SELECT でこの画面をとじて、冒険にもどりましょう。";
 }
 
 function drawFuseGuide() {
@@ -10085,7 +10119,8 @@ function inventoryFocusComment(power = state.weaponPower) {
     return state.inventorySortComment;
   }
   const guide = fuseGuideStep();
-  if (guide) return `ぴょんぴー「${fuseGuideText(guide)}」`;
+  if (guide) return `ヤナビス「${fuseGuideText(guide)}」`;
+  if (state.fuseLessonJustDone) return `ヤナビス「${fuseLessonDoneText()}」`;
   if (state.inventoryConfirmWorldMap) {
     return "ぴょんぴー「ワールドマップに戻るんか？ はいならマップへ、いいえならここに残るじょ！」";
   }
@@ -12879,18 +12914,29 @@ function normalizeInputCode(event) {
 
 function moveInventorySelection(dir) {
   if (!state || state.mode !== "inventory") return;
+  // はじめての合成：つかむまでは、光っている武器から動かない
+  if (fuseLessonOn() && !state.inventoryGrab) return fuseLessonNudge();
   state.inventorySelection = (state.inventorySelection + dir + MAX_INVENTORY_ITEMS * 4) % MAX_INVENTORY_ITEMS;
   ensureInventorySelectionVisible();
   playSfx("cursor");
 }
 
 function equipSelectedInventorySlot() {
+  if (fuseLessonOn()) return fuseLessonNudge();
+
   const slot = inventorySlots()[state.inventorySelection];
   if (slot) equipWeapon(slot.power - 1);
 }
 
 function startInventoryGrab(gamepad = false) {
   if (!state || state.mode !== "inventory" || state.inventoryGrab) return;
+  if (fuseLessonOn()) {
+    const g = fuseGuideStep();
+    if (g?.step === 1 && state.inventorySelection !== g.source) {
+      state.inventorySelection = g.source;
+      ensureInventorySelectionVisible();
+    }
+  }
   const slot = inventorySlotRects().find(s => s.index === state.inventorySelection);
   if (!slot || slot.empty) return;
   const centerX = slot.x + slot.w / 2;
@@ -12929,6 +12975,14 @@ function releaseInventoryGrab() {
   const grab = state.inventoryGrab;
   if (!grab) return;
   const target = inventorySlotRects().find(s => s.index === state.inventorySelection);
+  // はじめての合成：光っている武器の上でなければ、はなさない（つかんだまま）
+  if (fuseLessonOn()) {
+    const g = fuseGuideStep();
+    if (g?.step === 2 && target?.index !== g.target) {
+      grab.gamepad = true;
+      return fuseLessonNudge("そこではありません。光っている武器の上まで運んで、はなしてください。");
+    }
+  }
   state.inventoryGrab = null;
   if (!target) return;
   if (target.empty) {
@@ -12980,6 +13034,7 @@ function handleInventoryAction() {
 function confirmFusionPrompt() {
   if (!state.fusionPrompt) return;
   const prompt = state.fusionPrompt;
+  if (fuseLessonOn()) prompt.choice = 0;
   state.fusionPrompt = null;
   playSfx(prompt.choice === 0 ? "decide" : "cancel");
   if (prompt.choice === 0) {
@@ -12997,6 +13052,7 @@ function handleFusionPromptPointer(x, y) {
     state.fusionPrompt.choice = 0;
     confirmFusionPrompt();
   } else if (inside(rects[1])) {
+    if (fuseLessonOn()) return fuseLessonNudge("ここは「はい」をえらんでください。"), true;
     state.fusionPrompt = null;
     playSfx("cancel");
   }
@@ -13039,8 +13095,9 @@ function handleInventoryKeyboardFocus(code, repeat = false) {
       state.fusionPrompt.choice = 1 - state.fusionPrompt.choice;
       playSfx("cursor");
     }
+    if (fuseLessonOn()) state.fusionPrompt.choice = 0;
     if (code === "Enter" || code === "Space" || code === "KeyZ") confirmFusionPrompt();
-    if (code === "Escape" || code === "KeyB") {
+    if ((code === "Escape" || code === "KeyB") && !fuseLessonOn()) {
       state.fusionPrompt = null;
       playSfx("cancel");
     }
@@ -13147,8 +13204,9 @@ function updateInventoryGamepadFocus(now, jumpPressed, runPressed, shootPressed)
 
   if (state.fusionPrompt) {
     if ((gamepadState.left || gamepadState.right) && !(gamepadState.leftLatch || gamepadState.rightLatch)) state.fusionPrompt.choice = 1 - state.fusionPrompt.choice;
+    if (fuseLessonOn()) state.fusionPrompt.choice = 0;
     if (jumpPressed && !gamepadState.jumpLatch) confirmFusionPrompt();
-    if (runPressed && !gamepadState.runLatch) state.fusionPrompt = null;
+    if (runPressed && !gamepadState.runLatch && !fuseLessonOn()) state.fusionPrompt = null;
     return;
   }
 
