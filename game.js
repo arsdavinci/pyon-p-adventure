@@ -5495,7 +5495,7 @@ function audioOut() {
     audioMaster = ctxAudio.createGain();
     audioMaster.gain.value = soundEnabled ? Settings.level("sfx") : 0;
     const comp = ctxAudio.createDynamicsCompressor();
-    comp.threshold.value = -14;
+    comp.threshold.value = -10;
     comp.ratio.value = 6;
     audioMaster.connect(comp);
     comp.connect(ctxAudio.destination);
@@ -5539,9 +5539,14 @@ function unlockAudio() {
   try { applyVolumes(); } catch (_) {}
 }
 
+// 効果音ごとの音量の上乗せ（playSfx の中だけ 1 以外になる）
+let sfxBoost = 1;
+const SFX_BOOST = { laser: 3, enemyHit: 3, equipSet: 2.6, equip: 3 };
+
 function playTone({ start = 0, freq = 440, endFreq = freq, duration = 0.12, type = "sine", gain = 0.08, pan = 0 }) {
   const ctxAudio = getAudioContext();
   if (!ctxAudio) return;
+  gain = Math.min(0.9, gain * sfxBoost);
   const now = ctxAudio.currentTime + start;
   const osc = ctxAudio.createOscillator();
   const vol = ctxAudio.createGain();
@@ -5565,6 +5570,7 @@ function playTone({ start = 0, freq = 440, endFreq = freq, duration = 0.12, type
 function playNoise({ duration = 0.12, gain = 0.05, filter = 1400, start = 0 }) {
   const ctxAudio = getAudioContext();
   if (!ctxAudio) return;
+  gain = Math.min(0.9, gain * sfxBoost);
   const now = ctxAudio.currentTime + start;
   const sampleCount = Math.max(1, Math.floor(ctxAudio.sampleRate * duration));
   const buffer = ctxAudio.createBuffer(1, sampleCount, ctxAudio.sampleRate);
@@ -5587,6 +5593,11 @@ function playSfx(name, x = state?.player?.x ?? 0) {
   const minGap = name === "laser" ? 45 : name === "text" ? 34 : name === "enemyHit" || name === "explosion" ? 70 : 100;
   if ((lastSfxAt[name] ?? 0) + minGap > now) return;
   lastSfxAt[name] = now;
+  sfxBoost = SFX_BOOST[name] || 1;
+  try { playSfxInner(name, x); } finally { sfxBoost = 1; }
+}
+
+function playSfxInner(name, x) {
   const pan = clamp(((x - (state?.camera ?? 0)) / canvas.width) * 2 - 1, -0.8, 0.8);
   if (name === "laser") {
     // 光線銃を撃つ音：ピュンッ（スマホのスピーカーでも聞こえるように、少し低めの芯の音も足す）
