@@ -10523,13 +10523,29 @@ function drawInventoryKindTabs() {
   }
 }
 
+// そうび画面のどうぐのひとこと。どのどうぐでも同じ言い方（どうぐの名前は左のカードに出ている）。声もこの文で探す
+const GEAR_LINES_JA = {
+  wornFocus: "つけとるじょ。Aではずせるじょ。",
+  shoeWornFocus: "はいとるじょ。Aでぬげるじょ。",
+  offFocus: "これ、Aでつけられるじょ！",
+  shoeOffFocus: "これ、Aではけるじょ！ くつは1足だけじゃけどな。",
+  on: "つけたじょ！",
+  shoeOn: "はいたじょ！",
+  shoeSwap: "はいたじょ！ くつは1足だけじゃけん、前のくつはぬいだじょ。",
+  off: "はずしたじょ。",
+  shoeOff: "ぬいだじょ。",
+  manjuEat: "もぐもぐ……ぶどうまんじゅう、うまいじょ！ 元気満タンじゃ！",
+  manjuFull: "いまは満タンじゃけん、とっとくじょ。",
+  manjuOutside: "ステージの中で食べられるじょ。"
+};
+
 function useInventoryGear(id) {
   if (!id || typeof Shop === "undefined") return;
   const say = text => { state.inventorySortComment = `ぴょんぴー「${text}」`; state.inventorySortCommentUntil = performance.now() + 2600; };
   if (id === "manju") {
     const r = Shop.useManju();
-    if (r === true) say(language === "ja" ? "もぐもぐ……ぶどうまんじゅう、うまいじょ！ 元気満タンじゃ！" : "Munch munch... Grape Manju! Fully recharged!");
-    else { playSfx("locked"); say(r === "full" ? (language === "ja" ? "いまは満タンじゃけん、とっとくじょ。" : "I'm already full. Saving it.") : (language === "ja" ? "ステージの中で食べられるじょ。" : "I can eat it during a stage.")); }
+    if (r === true) say(language === "ja" ? GEAR_LINES_JA.manjuEat : "Munch munch... Grape Manju! Fully recharged!");
+    else { playSfx("locked"); say(r === "full" ? (language === "ja" ? GEAR_LINES_JA.manjuFull : "I'm already full. Saving it.") : (language === "ja" ? GEAR_LINES_JA.manjuOutside : "I can eat it during a stage.")); }
     return;
   }
   const r = Shop.toggleGear(id);
@@ -10537,7 +10553,8 @@ function useInventoryGear(id) {
   playSfx(r.on ? "equipSet" : "cursor");
   const name = Shop.itemName(id);
   if (language === "ja") {
-    say(r.on ? (r.removed.length ? `${name}をはいたじょ！ くつは1足だけじゃけん、${Shop.itemName(r.removed[0])}はぬいだじょ。` : `${name}、つけたじょ！`) : `${name}、はずしたじょ。`);
+    const shoe = Shop.isShoe(id);
+    say(r.on ? (r.removed.length ? GEAR_LINES_JA.shoeSwap : shoe ? GEAR_LINES_JA.shoeOn : GEAR_LINES_JA.on) : shoe ? GEAR_LINES_JA.shoeOff : GEAR_LINES_JA.off);
   } else {
     say(r.on ? (r.removed.length ? `Put on ${name}! Only one pair of shoes, so I took off ${Shop.itemName(r.removed[0])}.` : `${name} on!`) : `${name} off.`);
   }
@@ -11058,9 +11075,11 @@ function inventoryFocusComment(power = state.weaponPower) {
   const gearHere = mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST && !power ? inventoryGearAt(state.inventorySelection) : null;
   if (inventoryGearTab() && !gearHere && mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST) return "ぴょんぴー「どうぐは、よろず屋で買えるじょ。くつ・マント・ぶどうまんじゅうは、ここに入るけんな！」";
   if (gearHere === "manju") return "ぴょんぴー「ぶどうまんじゅうじゃ！ Aで食べたら、ライフもHPも満タンじょ！」";
-  if (gearHere) return Shop.has(gearHere)
-    ? `ぴょんぴー「${Shop.itemName(gearHere)}、つけとるじょ。Aではずせるじょ。」`
-    : `ぴょんぴー「${Shop.itemName(gearHere)}じゃ。Aで${Shop.isShoe(gearHere) ? "はける" : "つけられる"}じょ！${Shop.isShoe(gearHere) ? " くつは1足だけじゃけどな。" : ""}」`;
+  if (gearHere) {
+    const shoe = Shop.isShoe(gearHere);
+    const line = Shop.has(gearHere) ? (shoe ? GEAR_LINES_JA.shoeWornFocus : GEAR_LINES_JA.wornFocus) : (shoe ? GEAR_LINES_JA.shoeOffFocus : GEAR_LINES_JA.offFocus);
+    return `ぴょんぴー「${line}」`;
+  }
   if (mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST) {
     return "ぴょんぴー「Aで武器をつかめるじょ。Xでいらん武器をすてる、Yでせいとん、一番上で↑をおすとメニュー、Bでとじるじょ！」";
   }

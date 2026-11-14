@@ -97,6 +97,9 @@ def chat_lines() -> list[tuple[str, str, str, int]]:
     comments = re.findall(r'"([^"]+)"', re.search(r"const WEAPON_COMMENTS_JA = \[(.*?)\];", src, re.S).group(1))
     for c in comments:
         rows.append(("pyon", c, "game.js", 0))
+    # そうび画面のどうぐ・ぶどうまんじゅうのひとこと（GEAR_LINES_JA）
+    for c in re.findall(r':\s*"([^"]+)"', re.search(r"const GEAR_LINES_JA = \{(.*?)\};", src, re.S).group(1)):
+        rows.append(("pyon", c, "game.js", 0))
     # ダメージを受けたときのさけび声（声だけ）
     for c in re.findall(r'"([^"]+)"', re.search(r"const HURT_CRIES = \[(.*?)\];", src, re.S).group(1)):
         rows.append(("pyon", c, "game.js", 0))
