@@ -4997,8 +4997,8 @@ function damageEnemy(e, amount = 1) {
   const hadStolen = !!e.stolenWeapon;
   const dropPower = enemyDropPower(e);
   if (dropPower) spawnWeaponDrop(e.x + e.w / 2, e.y + 8, dropPower, !e.stolenWeapon);
-  // ごくたまに、たおした敵がぶどうまんじゅうを落とす
-  else if (!e.boss && Math.random() < 0.015) spawnItem(e.x + e.w / 2, e.y + 8, "manju");
+  // ごくたまに、たおした敵がぶどうまんじゅうを落とす（1-1 では落とさない）
+  else if (!e.boss && currentCourse !== 0 && Math.random() < 0.015) spawnItem(e.x + e.w / 2, e.y + 8, "manju");
   e.weaponPower = 0;
   e.stolenWeapon = false;
   dropGunFromEnemy(e, hadStolen);
@@ -6946,8 +6946,8 @@ function announceRareDrop(x, y, power) {
 }
 
 function spawnItem(x, y, type) {
-  // ライフの星は、ごくたまに「ぶどうまんじゅう」（ライフもHPも満タン）になる
-  if (type === "hp" && Math.random() < 0.08) type = "manju";
+  // ライフの星は、ごくたまに「ぶどうまんじゅう」（ライフもHPも満タン）になる（1-1 ではならない）
+  if (type === "hp" && currentCourse !== 0 && Math.random() < 0.08) type = "manju";
   const weaponPower = type === "power" ? randomWeaponDropPower() : null;
   if (weaponPower) announceRareDrop(x, y, weaponPower);
   state.items.push({
