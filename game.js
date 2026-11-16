@@ -7486,10 +7486,22 @@ function explodeMissile(x, y, missile) {
       else damageEnemy(e, missile.damage ?? 1);
     }
   }
-  spawnExplosion(x, y, radius, missile.colors);
-  if (missile.bomb) {
-    playSfx("explosion", x);
-    FX.flash("#ffd1f0", 0.2, 0.2);
+  if (!missile.bomb) { spawnExplosion(x, y, radius, missile.colors); return; }
+  // 爆弾：まん中の大爆発のまわりに、小さな爆発がつぎつぎ起こる。画面も大きくゆれる
+  spawnExplosion(x, y, radius * 0.55, missile.colors);
+  playSfx("explosion", x);
+  playSfx("bossDown", x);
+  FX.flash("#fff0fa", 0.45, 0.35);
+  FX.shake(1);
+  FX.hitStop(0.07);
+  for (let i = 0; i < 10; i++) {
+    const a = (i / 10) * Math.PI * 2 + Math.random() * 0.4;
+    const d = radius * (0.35 + Math.random() * 0.55);
+    setTimeout(() => {
+      if (!state || state.mode !== "playing") return;
+      spawnExplosion(x + Math.cos(a) * d, y + Math.sin(a) * d * 0.7, 40 + Math.random() * 50, missile.colors);
+      if (i % 3 === 0) { playSfx("explosion", x + Math.cos(a) * d); FX.shake(0.5); }
+    }, 60 + i * 55);
   }
 }
 
@@ -7497,6 +7509,7 @@ function explodeMissile(x, y, missile) {
 // ボスには、体力の 8% ぶん（ガード・バリアを通りぬける）。ふつうの敵は一撃
 const BOMB_BOSS_RATE = 0.08;
 const BOMB_MAX = 5;
+const BOMB_RADIUS = 320; // 爆発の広さ（画面の大部分の敵をまきこむ）
 const bombStock = () => (typeof Story !== "undefined" ? Math.max(0, Story.data.bombStock | 0) : 0);
 function updateBombThrow(p) {
   const wants = keys.has("KeyC") || keys.has("KeyK") || gamepadState.bomb;
@@ -7515,7 +7528,7 @@ function updateBombThrow(p) {
   const swim = isUnderwaterStage();
   const dir = p.facing || 1;
   state.beams.push({
-    owner: "player", bomb: true, explosion: 130, damage: 0,
+    owner: "player", bomb: true, explosion: BOMB_RADIUS, damage: 0,
     x: p.x + p.w / 2 - 14 + dir * 16, y: p.y + 4, w: 28, h: 28,
     vx: dir * (swim ? 360 : 430) + (p.vx ?? 0) * 0.3, vy: swim ? -60 : -520, grav: swim ? 260 : 1300,
     life: 2.2, distance: 0, range: 99999, pierce: 0, spin: 0,
