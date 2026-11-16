@@ -12490,12 +12490,19 @@ function drawMoonRock(r, fill, edge) {
   }
 }
 
+// 地面の絵は、上下に白い余白がある。絵のある部分（たての範囲）だけを切り出して使う
+// （前は余白ごとはっていたので、足場の上下に白い帯が出て、もようもつぶれていた）
+const STAGE_GROUND_CROP = [null, [186, 400], [183, 395], [172, 422], [169, 435], [192, 417]];
+
 function drawStageGroundImage(r, img) {
+  const crop = STAGE_GROUND_CROP[courses[currentCourse]?.theme?.imageIndex ?? 0];
+  const srcY = crop ? crop[0] : 0;
+  const srcH = crop ? crop[1] : img.naturalHeight;
   const destH = r.h + 14;
-  const tileW = destH * (img.naturalWidth / img.naturalHeight);
+  const tileW = destH * (img.naturalWidth / srcH);
   for (let x = r.x; x < r.x + r.w; x += tileW) {
     const w = Math.min(tileW, r.x + r.w - x);
-    ctx.drawImage(img, 0, 0, img.naturalWidth * (w / tileW), img.naturalHeight, x, r.y - 6, w, destH);
+    ctx.drawImage(img, 0, srcY, img.naturalWidth * (w / tileW), srcH, x, r.y - 6, w, destH);
   }
   ctx.strokeStyle = "rgba(255, 255, 255, 0.72)";
   ctx.lineWidth = 2;
