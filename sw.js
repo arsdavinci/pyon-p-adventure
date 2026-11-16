@@ -1,4 +1,10 @@
-const CACHE_NAME = "pyon-p-adventure-v156";
+const CACHE_NAME = "pyon-p-adventure-v157";
+// 絵・声は、公開のたびに消さない別の入れ物にとっておく（前は公開するたびに、遊ぶ人が全部ダウンロードし直していた）。
+// 同じ名前で絵をさしかえても、下の「うらで新しいか聞く」しくみで、次に開いたときに新しい絵になる。
+// ぜんぶ捨ててやり直したいときだけ、この番号を上げる
+const ASSET_CACHE = "pyon-p-assets-v1";
+// この起動中に、もう「新しいか」を聞いた絵（何度も聞かない）
+const revalidated = new Set();
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -51,7 +57,7 @@ self.addEventListener("install", event => {
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))))
+      .then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME && key !== ASSET_CACHE).map(key => caches.delete(key))))
       .then(() => self.clients.claim())
   );
 });
@@ -76,16 +82,24 @@ self.addEventListener("fetch", event => {
     return;
   }
 
+  // 絵・声：とってあればすぐ返す。うらで「新しくなった？」とだけ聞いて（変わっていなければ中身は送られてこない）、
+  // 変わっていたら入れかえておく → 次に開いたときに新しい絵になる
+  const sameOrigin = url.origin === location.origin;
+  const refresh = () => fetch(request, { cache: "no-cache" }).then(response => {
+    if (sameOrigin && response.ok) {
+      const copy = response.clone();
+      caches.open(ASSET_CACHE).then(cache => cache.put(request, copy));
+    }
+    return response;
+  });
   event.respondWith(
     caches.match(request).then(cached => {
-      if (cached) return cached;
-      return fetch(request).then(response => {
-        const copy = response.clone();
-        if (url.origin === location.origin && response.ok) {
-          caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
-        }
-        return response;
-      });
+      if (!cached) return refresh();
+      if (sameOrigin && !revalidated.has(request.url)) {
+        revalidated.add(request.url);
+        event.waitUntil(refresh().catch(() => {}));
+      }
+      return cached;
     })
   );
 });
