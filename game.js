@@ -11381,6 +11381,7 @@ function inventoryGearEntries() {
   if (typeof Shop === "undefined" || !Shop.gearList) return [];
   const gear = Shop.gearList().map(it => it.id);
   const out = [];
+  if (bombStock() > 0) out.push("bomb");
   if (Shop.manjuCount() > 0) out.push("manju");
   out.push(...gear.filter(id => Shop.isShoe(id)), ...gear.filter(id => !Shop.isShoe(id)));
   return out;
@@ -11484,9 +11485,23 @@ const GEAR_LINES_JA = {
   manjuOutside: "ステージの中で食べられるじょ。"
 };
 
+// どうぐが「そうび中」か（爆弾は Story.data.bombOn、まんじゅうはいつも）
+function gearIsOn(id) {
+  if (id === "manju") return true;
+  if (id === "bomb") return Story.data.bombOn !== false;
+  return Shop.has(id);
+}
+
 function useInventoryGear(id) {
   if (!id || typeof Shop === "undefined") return;
   const say = text => { state.inventorySortComment = `ぴょんぴー「${text}」`; state.inventorySortCommentUntil = performance.now() + 2600; };
+  if (id === "bomb") {
+    Story.data.bombOn = Story.data.bombOn === false;
+    Story.persist();
+    playSfx(Story.data.bombOn ? "equipSet" : "cursor");
+    say(language === "ja" ? (Story.data.bombOn ? "爆弾をそうびしたじょ！ Xでポイじゃ！" : "爆弾をはずしたじょ。Xも銃になるじょ。") : (Story.data.bombOn ? "Bombs equipped! Toss with X!" : "Bombs off. X shoots again."));
+    return;
+  }
   if (id === "manju") {
     const r = Shop.useManju();
     if (r === true) say(language === "ja" ? GEAR_LINES_JA.manjuEat : "Munch munch... Grape Manju! Fully recharged!");
@@ -11506,7 +11521,7 @@ function useInventoryGear(id) {
 }
 
 function drawInventoryGearSlot(slot, id) {
-  const on = id === "manju" || Shop.has(id);
+  const on = gearIsOn(id);
   const icon = Math.min(slot.w, slot.h) - 46;
   ctx.save();
   ctx.globalAlpha = on ? 1 : 0.38;
@@ -11514,8 +11529,8 @@ function drawInventoryGearSlot(slot, id) {
   ctx.globalAlpha = 1;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  if (id === "manju") {
-    const n = Shop.manjuCount();
+  if (id === "manju" || id === "bomb") {
+    const n = id === "bomb" ? bombStock() : Shop.manjuCount();
     ctx.fillStyle = "#ffd85a";
     ctx.beginPath();
     ctx.roundRect(slot.x + slot.w - 58, slot.y + 10, 46, 28, 14);
@@ -11523,7 +11538,8 @@ function drawInventoryGearSlot(slot, id) {
     ctx.fillStyle = "#7a4fa8";
     ctx.font = `900 19px ${FX.FONT}`;
     ctx.fillText(`×${n}`, slot.x + slot.w - 35, slot.y + 25);
-  } else {
+  }
+  if (id !== "manju") {
     // くつは「くつ」の札
     if (Shop.isShoe(id)) {
       ctx.fillStyle = "rgba(127, 103, 200, 0.85)";
@@ -11548,7 +11564,7 @@ function drawInventoryGearSlot(slot, id) {
 function drawInventoryGearCard(r, id) {
   const ja = language === "ja";
   const item = Shop.ITEMS.find(it => it.id === id);
-  const on = id === "manju" || Shop.has(id);
+  const on = gearIsOn(id);
   const cx = r.x + r.w / 2;
   ctx.save();
   ctx.textAlign = "center";
@@ -11562,6 +11578,7 @@ function drawInventoryGearCard(r, id) {
   ctx.fillText(name, cx, r.y + 222);
   // 状態
   const tag = id === "manju" ? (ja ? `かばんに ${Shop.manjuCount()}個` : `${Shop.manjuCount()} in bag`)
+    : id === "bomb" ? (ja ? `${on ? "そうび中" : "はずしている"}・のこり ${bombStock()}個` : `${on ? "Equipped" : "Off"} · ${bombStock()} left`)
     : on ? (ja ? "そうび中" : "Equipped") : (ja ? "はずしている" : "Not worn");
   ctx.font = `900 22px ${FX.FONT}`;
   const tw = ctx.measureText(tag).width + 36;
@@ -11590,6 +11607,7 @@ function drawInventoryGearCard(r, id) {
   ctx.fillStyle = "#7f67c8";
   ctx.font = `900 21px ${FX.FONT}`;
   const act = id === "manju" ? (ja ? "A で食べる（ライフとHPが満タン）" : "A: eat (full lives & HP)")
+    : id === "bomb" ? (on ? (ja ? "A ではずす（Xは銃になる）" : "A: unequip (X shoots)") : (ja ? "A でそうび（Xで投げる）" : "A: equip (X throws)"))
     : on ? (ja ? "A ではずす" : "A: take off") : (Shop.isShoe(id) ? (ja ? "A ではく（くつは1足だけ）" : "A: wear (one pair only)") : (ja ? "A でつける" : "A: put on"));
   ctx.fillText(pcKeys(act), cx, r.y + r.h - 47);
   ctx.restore();
@@ -12025,6 +12043,7 @@ function inventoryFocusComment(power = state.weaponPower) {
   }
   const gearHere = mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST && !power ? inventoryGearAt(state.inventorySelection) : null;
   if (inventoryGearTab() && !gearHere && mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST) return "ぴょんぴー「どうぐは、よろず屋で買えるじょ。くつ・マント・ぶどうまんじゅうは、ここに入るけんな！」";
+  if (gearHere === "bomb") return gearIsOn("bomb") ? "ぴょんぴー「ネコネオン爆弾じゃ！ Xでポイっと投げたら、まわりの敵がまとめてドカーンじゃ！」" : "ぴょんぴー「爆弾、はずしとるじょ。Aでそうびしたら、Xで投げられるじょ。」";
   if (gearHere === "manju") return "ぴょんぴー「ぶどうまんじゅうじゃ！ Aで食べたら、ライフもHPも満タンじょ！」";
   if (gearHere) {
     const shoe = Shop.isShoe(gearHere);

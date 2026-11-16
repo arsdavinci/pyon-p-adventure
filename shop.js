@@ -168,7 +168,7 @@
     return { on: !off[id], removed };
   }
   function drawItem(id, x, y, size) {
-    const it = ITEMS.find(v => v.id === id);
+    const it = id === "bomb" ? BOMB : ITEMS.find(v => v.id === id);
     if (it) drawIcon(it, x, y, size);
   }
   // かばんのぶどうまんじゅうを1つ食べる（ステージの中・そうび画面・ポーズ中）
@@ -181,8 +181,8 @@
     eatBudouManju({ x: p.x, y: p.y, w: p.w, h: p.h });
     return true;
   }
-  const itemName = id => { const it = ITEMS.find(x => x.id === id); return it ? L(it.ja[0], it.en[0]) : id; };
-  const itemDesc = id => { const it = ITEMS.find(x => x.id === id); return it ? L(it.ja[1], it.en[1]) : ""; };
+  const itemName = id => { const it = id === "bomb" ? BOMB : ITEMS.find(x => x.id === id); return it ? L(it.ja[0], it.en[0]) : id; };
+  const itemDesc = id => { const it = id === "bomb" ? BOMB : ITEMS.find(x => x.id === id); return it ? L(it.ja[1], it.en[1]) : ""; };
   const itemIcon = id => { if (id === "bomb") return "assets/item-bomb.png"; const it = ITEMS.find(x => x.id === id); return `assets/${it?.file ?? `shop-item-${id}`}.png`; };
   const unlocked = () => unlockedCourse >= UNLOCK_COURSE;
 
