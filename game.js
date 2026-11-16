@@ -8150,13 +8150,18 @@ function drawTitleAsk() {
   ctx.fillStyle = "rgba(18, 10, 42, 0.6)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   const bw = 620, bh = 290, bx = canvas.width / 2 - bw / 2, by = canvas.height / 2 - 150;
-  ctx.fillStyle = "rgba(255, 245, 252, 0.98)";
-  ctx.strokeStyle = "#c8b2ff";
-  ctx.lineWidth = 6;
-  ctx.beginPath();
-  ctx.roundRect(bx, by, bw, bh, 26);
-  ctx.fill();
-  ctx.stroke();
+  const dialogArt = artImage("ui-dialog-panel");
+  if (dialogArt) {
+    ctx.drawImage(dialogArt, bx - 20, by - 20, bw + 40, bh + 40);
+  } else {
+    ctx.fillStyle = "rgba(255, 245, 252, 0.98)";
+    ctx.strokeStyle = "#c8b2ff";
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.roundRect(bx, by, bw, bh, 26);
+    ctx.fill();
+    ctx.stroke();
+  }
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillStyle = "#5a3d9a";
@@ -8168,15 +8173,19 @@ function drawTitleAsk() {
   const labels = ja ? ["はい", "いいえ"] : ["Yes", "No"];
   titleAskButtonRects().forEach((r, i) => {
     const on = state.titleAsk.choice === i;
-    ctx.fillStyle = on ? (i === 0 ? "#ff8db7" : "#9ee8ff") : "#ffffff";
-    ctx.strokeStyle = on ? "#ffffff" : "#c8b2ff";
-    ctx.lineWidth = on ? 6 : 3;
-    ctx.beginPath();
-    ctx.roundRect(r.x, r.y, r.w, r.h, 22);
-    ctx.fill();
-    ctx.stroke();
+    const artButton = drawArtButton(r, on);
+    if (!artButton) {
+      ctx.fillStyle = on ? (i === 0 ? "#ff8db7" : "#9ee8ff") : "#ffffff";
+      ctx.strokeStyle = on ? "#ffffff" : "#c8b2ff";
+      ctx.lineWidth = on ? 6 : 3;
+      ctx.beginPath();
+      ctx.roundRect(r.x, r.y, r.w, r.h, 22);
+      ctx.fill();
+      ctx.stroke();
+    }
     ctx.fillStyle = on ? "#ffffff" : "#5a3d9a";
     if (on && i === 1) ctx.fillStyle = "#24507a";
+    if (artButton) ctx.fillStyle = on ? "#2c2650" : "#5a3d9a";
     ctx.font = `900 32px ${FX.FONT}`;
     ctx.fillText(labels[i], r.x + r.w / 2, r.y + r.h / 2 + 2);
   });
@@ -8194,39 +8203,65 @@ function pauseButtonRects() {
   ];
 }
 
+// ボタンの絵（あれば）。えらんでいるボタンは、ふわっと大きくなる。絵がなければ false を返す
+function drawArtButton(r, selected) {
+  const img = artImage(selected ? "ui-button-on" : "ui-button") ?? artImage("ui-button");
+  if (!img) return false;
+  const grow = selected ? 3 + Math.sin(performance.now() / 160) * 2 : 0;
+  drawNineSlice(img, { x: r.x - grow, y: r.y - grow, w: r.w + grow * 2, h: r.h + grow * 2 }, 56, Math.min(28, r.h / 2));
+  return true;
+}
+
 function drawPauseScreen() {
   const rects = pauseButtonRects();
   ctx.save();
   ctx.fillStyle = "rgba(18, 10, 42, 0.56)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = "rgba(255, 245, 252, 0.96)";
-  ctx.strokeStyle = "#c8b2ff";
-  ctx.lineWidth = 5;
-  ctx.beginPath();
-  ctx.roundRect(canvas.width / 2 - 230, canvas.height / 2 - 150, 460, 360, 10);
-  ctx.fill();
-  ctx.stroke();
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  const panelArt = artImage("ui-pause-panel");
+  if (panelArt) {
+    ctx.drawImage(panelArt, cx - 250, cy - 170, 500, 400);
+  } else {
+    ctx.fillStyle = "rgba(255, 245, 252, 0.96)";
+    ctx.strokeStyle = "#c8b2ff";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.roundRect(cx - 230, cy - 150, 460, 360, 10);
+    ctx.fill();
+    ctx.stroke();
+  }
+  // ぴょんぴーが、わくの右上にちょこんとすわって、ゆらゆら
+  const mascot = artImage("ui-pause-pyonpy");
+  if (mascot) ctx.drawImage(mascot, cx + 140, cy - 290 + Math.sin(performance.now() / 520) * 4, 150, 150);
 
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  ctx.font = "900 54px Segoe UI, system-ui, sans-serif";
-  ctx.fillStyle = "#fff3a4";
-  ctx.strokeStyle = "#7f67c8";
-  ctx.lineWidth = 7;
-  ctx.strokeText("PAUSE", canvas.width / 2, canvas.height / 2 - 124);
-  ctx.fillText("PAUSE", canvas.width / 2, canvas.height / 2 - 124);
+  const titleArt = artImage("ui-pause-title");
+  if (titleArt) {
+    ctx.drawImage(titleArt, cx - 150, cy - 140, 300, 100);
+  } else {
+    ctx.font = "900 54px Segoe UI, system-ui, sans-serif";
+    ctx.fillStyle = "#fff3a4";
+    ctx.strokeStyle = "#7f67c8";
+    ctx.lineWidth = 7;
+    ctx.strokeText("PAUSE", cx, cy - 124);
+    ctx.fillText("PAUSE", cx, cy - 124);
+  }
 
   const labels = language === "ja" ? ["再開", "マップに戻る", "タイトルへ"] : ["Resume", "Return to Map", "Title Screen"];
   for (let i = 0; i < rects.length; i++) {
     const r = rects[i];
     const selected = pauseSelection === i;
-    ctx.fillStyle = selected ? "#9ee8ff" : "#ffffff";
-    ctx.strokeStyle = selected ? "#ff8db7" : "#c8b2ff";
-    ctx.lineWidth = selected ? 5 : 3;
-    ctx.beginPath();
-    ctx.roundRect(r.x, r.y, r.w, r.h, 8);
-    ctx.fill();
-    ctx.stroke();
+    if (!drawArtButton(r, selected)) {
+      ctx.fillStyle = selected ? "#9ee8ff" : "#ffffff";
+      ctx.strokeStyle = selected ? "#ff8db7" : "#c8b2ff";
+      ctx.lineWidth = selected ? 5 : 3;
+      ctx.beginPath();
+      ctx.roundRect(r.x, r.y, r.w, r.h, 8);
+      ctx.fill();
+      ctx.stroke();
+    }
     ctx.fillStyle = selected ? "#2c2650" : "#4d4773";
     ctx.font = "900 24px Segoe UI, system-ui, sans-serif";
     ctx.fillText(labels[i], r.x + r.w / 2, r.y + 13);
@@ -8793,19 +8828,22 @@ function drawHpMeter() {
   const w = 220;
   const h = 44;
   const ratio = clamp(state.hp / MAX_HP, 0, 1);
+  const hpFrame = artImage("ui-hp-frame");
   ctx.save();
-  ctx.fillStyle = "rgba(255, 255, 255, 0.78)";
-  ctx.strokeStyle = "rgba(139, 106, 201, 0.78)";
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.roundRect(x, y, w, h, 8);
-  ctx.fill();
-  ctx.stroke();
-  ctx.font = "900 15px Segoe UI, system-ui, sans-serif";
-  ctx.fillStyle = "#7f67c8";
-  ctx.textAlign = "left";
-  ctx.textBaseline = "middle";
-  ctx.fillText("HP", x + 14, y + h / 2);
+  if (!hpFrame) {
+    ctx.fillStyle = "rgba(255, 255, 255, 0.78)";
+    ctx.strokeStyle = "rgba(139, 106, 201, 0.78)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, 8);
+    ctx.fill();
+    ctx.stroke();
+    ctx.font = "900 15px Segoe UI, system-ui, sans-serif";
+    ctx.fillStyle = "#7f67c8";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText("HP", x + 14, y + h / 2);
+  }
   ctx.fillStyle = "rgba(215, 200, 255, 0.7)";
   ctx.beginPath();
   ctx.roundRect(x + 48, y + 13, 154, 18, 6);
@@ -8827,6 +8865,8 @@ function drawHpMeter() {
     ctx.lineTo(sx, y + 31);
     ctx.stroke();
   }
+  // わくの絵は、バーの上に重ねる（バーのところだけ、すけている）
+  if (hpFrame) ctx.drawImage(hpFrame, x, y, w, h);
   ctx.restore();
 }
 
@@ -8903,6 +8943,7 @@ function drawBossHpMeter() {
   const x = canvas.width / 2 - w / 2;
   const y = canvas.height - 62;
   const ratio = clamp((boss.hp ?? 0) / Math.max(1, boss.maxHp ?? 1), 0, 1);
+  const bossFrame = artImage("ui-boss-hp-frame");
   ctx.save();
   ctx.fillStyle = "rgba(30, 24, 52, 0.54)";
   ctx.strokeStyle = boss.finalBoss ? "#ff3d7f" : "#ff8db7";
@@ -8910,7 +8951,7 @@ function drawBossHpMeter() {
   ctx.beginPath();
   ctx.roundRect(x, y, w, h, 8);
   ctx.fill();
-  ctx.stroke();
+  if (!bossFrame) ctx.stroke();
   ctx.fillStyle = "rgba(255, 255, 255, 0.22)";
   ctx.beginPath();
   ctx.roundRect(x + 12, y + 11, w - 24, 12, 6);
@@ -8926,6 +8967,7 @@ function drawBossHpMeter() {
   // 変身する場所（2/3・1/3）のしるし
   ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
   for (const k of [1 / 3, 2 / 3]) ctx.fillRect(x + 12 + (w - 24) * k - 1.5, y + 8, 3, 18);
+  if (bossFrame) ctx.drawImage(bossFrame, x - 26, y - 9, w + 52, h + 18);
   ctx.font = "900 15px Segoe UI, system-ui, sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "bottom";
@@ -9278,13 +9320,18 @@ function drawStageBadge() {
   ctx.font = "800 24px Segoe UI, system-ui, sans-serif";
   ctx.textBaseline = "top";
   const width = Math.max(ctx.measureText(label).width + 28, ctx.measureText(weaponLabel).width + 28);
-  ctx.fillStyle = "rgba(255, 255, 255, 0.76)";
-  ctx.strokeStyle = "rgba(139, 106, 201, 0.72)";
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.roundRect(14, 14, width, 68, 8);
-  ctx.fill();
-  ctx.stroke();
+  const badgeArt = artImage("ui-badge");
+  if (badgeArt) {
+    drawNineSlice(badgeArt, { x: 8, y: 8, w: width + 12, h: 80 }, 60, 30);
+  } else {
+    ctx.fillStyle = "rgba(255, 255, 255, 0.76)";
+    ctx.strokeStyle = "rgba(139, 106, 201, 0.72)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.roundRect(14, 14, width, 68, 8);
+    ctx.fill();
+    ctx.stroke();
+  }
   ctx.fillStyle = "#ffd85a";
   ctx.strokeStyle = "#7f67c8";
   ctx.lineWidth = 5;
@@ -12287,7 +12334,10 @@ function drawMovingPlatformGlow(p) {
 const EXTRA_ART_NAMES = [
   "block-item", "block-hidden", "hazard-spike", "hazard-lava-pool", "hazard-lava-pillar", "hazard-fire-bar",
   "item-life-star", "boss-shot-orb", "boss-shot-candy", "boss-shot-fire", "boss-shot-ice", "boss-shot-bubble",
-  "boss-shot-gear", "boss-shot-dark", "boss-icicle", "boss-meteor"
+  "boss-shot-gear", "boss-shot-dark", "boss-icicle", "boss-meteor",
+  // 画面のかざり（依頼文は IMAGE_PROMPTS.md の「N. ポーズ画面とゲーム中の表示」）
+  "ui-pause-panel", "ui-pause-title", "ui-pause-pyonpy", "ui-button", "ui-button-on", "ui-dialog-panel",
+  "ui-hp-frame", "ui-boss-hp-frame", "ui-badge"
 ];
 const extraArt = {};
 for (const name of EXTRA_ART_NAMES) {
