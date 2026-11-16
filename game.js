@@ -569,7 +569,8 @@ const SHOP_MAP_NODES = [
   { x: 708, y: 372, course: 12, world: 2, dir: "up", via: [[745, 405]] },                         // 氷：ドームの入口
   { x: 928, y: 690, course: 20, world: 3, dir: "left", via: [] },                                 // 海：下の泡の家
   { x: 1262, y: 268, course: 25, world: 4, dir: "up", via: [[1215, 248]] },                       // メカ：列車（右は次のステージへの道と同じ向きなので、お店は↑）
-  { x: 1605, y: 478, course: 29, world: 5, dir: "right", via: [] }                                // 魔王星：ランタンの家
+  { x: 1605, y: 478, course: 29, world: 5, dir: "right", via: [] },                               // 魔王星：ランタンの家
+  { x: 1262, y: 532, course: 23, world: 4, dir: "down", via: [], kind: "arms" }                    // メカの街のあやしい武器屋（4-2 から↓）
 ];
 
 // お店への枝道（絵の座標の点の列）
@@ -682,7 +683,7 @@ function mapStepFor(direction) {
 
 function confirmMapSelection() {
   if (mapAtShop) {
-    if (mapShopT > 0.85) Shop.open(SHOP_MAP_NODE.world);
+    if (mapShopT > 0.85) Shop.open(SHOP_MAP_NODE.world, SHOP_MAP_NODE.kind);
     return;
   }
   startMapCourse(mapSelectedCourse);
@@ -4631,6 +4632,7 @@ function updatePlayer(dt) {
   p.aim = p.crouch ? (p.facing < 0 ? Math.PI : 0) : playerAimAngle(p, dxInput);
   const shootFresh = wantsShoot && !p.shootHeld;
   p.shootHeld = wantsShoot;
+  updateBombThrow(p);
   // ロボット・戦闘機は、ボタンを押すたびに1発（おしっぱなしで連射しない）
   const rideShot = hasEquippedWeapon() && isRideable(state.weaponPower);
   if (wantsShoot && (!rideShot || shootFresh) && hasEquippedWeapon() && state.gun.cooldown <= 0) {
@@ -4739,6 +4741,7 @@ function updateSwimmingPlayer(dt) {
   p.aim = playerAimAngle(p, dxInput);
   const shootFresh = wantsShoot && !p.shootHeld;
   p.shootHeld = wantsShoot;
+  updateBombThrow(p);
   // ロボット・戦闘機は、ボタンを押すたびに1発（おしっぱなしで連射しない）
   const rideShot = hasEquippedWeapon() && isRideable(state.weaponPower);
   if (wantsShoot && (!rideShot || shootFresh) && hasEquippedWeapon() && state.gun.cooldown <= 0) {
@@ -4783,6 +4786,7 @@ function updateFlyingPlayer(dt) {
   const wantsShoot = keys.has("KeyX") || keys.has("KeyY") || keys.has("KeyJ") || gamepadState.shoot;
   const shootFresh = wantsShoot && !p.shootHeld;
   p.shootHeld = wantsShoot;
+  updateBombThrow(p);
   if (shootFresh && state.gun.cooldown <= 0) {
     const m = playerMuzzle(p);
     shootBeam("player", m.x, m.y, p.facing, p.aim);
@@ -5499,16 +5503,17 @@ function enemyCanSeePlayer(e) {
   return e.x + e.w > state.camera - 20 && e.x < state.camera + VIEW_W + 20 && Math.abs((e.y + e.h / 2) - (p.y + p.h / 2)) < 420;
 }
 
-function damageEnemy(e, amount = 1) {
+function damageEnemy(e, amount = 1, pure = false) {
   if (!e.alive) return;
   if (e.boss && courses[currentCourse]?.bossStage && (!state.bossIntroPlayed || state.mode === "bossIntro")) return;
   const scripted = e.boss && !!e.script;
   if (scripted) {
     // 変身中・ワープ中は無敵
     if ((e.invuln ?? 0) > 0) return;
-    amount = bossGuardedDamage(e, amount);
+    // 爆弾（pure）は、ボスのガードも魔王のバリアも通りぬける
+    if (!pure) amount = bossGuardedDamage(e, amount);
     // 魔王のバリア：ふつうの光線銃は、ほとんど効かない
-    if (e.finalBoss && !(hasEquippedWeapon() && isRideable(state.weaponPower))) {
+    if (!pure && e.finalBoss && !(hasEquippedWeapon() && isRideable(state.weaponPower))) {
       amount *= FINAL_BOSS_GUN_RATE;
       if ((state.barrierHintAt ?? -99) < (state.playClock ?? 0) - 4) {
         state.barrierHintAt = state.playClock ?? 0;
@@ -7097,9 +7102,9 @@ function updateBeams(dt) {
       : rect(b.x, b.y, b.w, b.h);
     b.hitRect = beamRect;
     if (b.owner === "player") {
-      if (!b.bubble) FX.beamTrail(b);
-      // 敵の弾とぶつかったら、おたがいに消える（撃って防げる）
-      for (const other of state.beams) {
+      if (!b.bubble && !b.bomb) FX.beamTrail(b);
+      // 敵の弾とぶつかったら、おたがいに消える（撃って防げる。爆弾は弾をすりぬける）
+      if (!b.bomb) for (const other of state.beams) {
         if (other.owner === "player" || other.unbreakable || other.life <= 0 || !other.hitRect || !hit(beamRect, other.hitRect)) continue;
         other.life = 0;
         FX.hit((b.x + other.x) / 2 + b.w / 2, (b.y + other.y) / 2 + b.h / 2, b.colors);
@@ -7476,9 +7481,77 @@ function explodeMissile(x, y, missile) {
     const ex = e.x + e.w / 2;
     const ey = e.y + e.h / 2;
     const dist = Math.hypot(ex - x, ey - y);
-    if (dist <= radius + Math.max(e.w, e.h) * 0.35) damageEnemy(e, missile.damage ?? 1);
+    if (dist <= radius + Math.max(e.w, e.h) * 0.35) {
+      if (missile.bomb) damageEnemy(e, e.boss ? (e.maxHp ?? e.hp ?? 60) * BOMB_BOSS_RATE : 99, true);
+      else damageEnemy(e, missile.damage ?? 1);
+    }
   }
   spawnExplosion(x, y, radius, missile.colors);
+  if (missile.bomb) {
+    playSfx("explosion", x);
+    FX.flash("#ffd1f0", 0.2, 0.2);
+  }
+}
+
+// ---------- 爆弾（武器屋で買う）：投げて、当たったところで大爆発。ボスにもよく効く ----------
+// ボスには、体力の 8% ぶん（ガード・バリアを通りぬける）。ふつうの敵は一撃
+const BOMB_BOSS_RATE = 0.08;
+const BOMB_MAX = 5;
+const bombStock = () => (typeof Story !== "undefined" ? Math.max(0, Story.data.bombStock | 0) : 0);
+function updateBombThrow(p) {
+  const wants = keys.has("KeyC") || keys.has("KeyK") || gamepadState.bomb;
+  const fresh = wants && !p.bombHeld;
+  p.bombHeld = wants;
+  if (!fresh || state.mode !== "playing") return;
+  if (bombStock() <= 0) {
+    if ((state.noBombHintAt ?? -99) < (state.playClock ?? 0) - 2) {
+      state.noBombHintAt = state.playClock ?? 0;
+      FX.floater(p.x + p.w / 2, p.y - 30, language === "ja" ? "爆弾がないじょ（メカの街の武器屋で買える）" : "No bombs (buy them at the arms shop)", { color: "#ffffff", stroke: "#8b82b3", size: 18, life: 1.6 });
+    }
+    return;
+  }
+  Story.data.bombStock = bombStock() - 1;
+  Story.persist();
+  const swim = isUnderwaterStage();
+  const dir = p.facing || 1;
+  state.beams.push({
+    owner: "player", bomb: true, explosion: 130, damage: 0,
+    x: p.x + p.w / 2 - 14 + dir * 16, y: p.y + 4, w: 28, h: 28,
+    vx: dir * (swim ? 360 : 430) + (p.vx ?? 0) * 0.3, vy: swim ? -60 : -520, grav: swim ? 260 : 1300,
+    life: 2.2, distance: 0, range: 99999, pierce: 0, spin: 0,
+    colors: ["#ff5fc8", "#ffd85a", "#ffffff"]
+  });
+  playSfx("whoosh", p.x);
+  FX.floater(p.x + p.w / 2, p.y - 26, language === "ja" ? `ポイッ！ のこり ${bombStock()}` : `Toss! ${bombStock()} left`, { color: "#ffffff", stroke: "#ff5fc8", size: 18, life: 1 });
+}
+
+const bombArt = new Image();
+bombArt.src = "assets/item-bomb.png";
+function drawBomb(b) {
+  ctx.globalAlpha = 1;
+  ctx.rotate((b.distance ?? 0) / 30);
+  if (bombArt.complete && bombArt.naturalWidth > 0) {
+    ctx.drawImage(bombArt, -22, -22, 44, 44);
+    return;
+  }
+  ctx.fillStyle = "#5b4a9a";
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(0, 2, 13, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#ff8ad8";
+  ctx.beginPath();
+  ctx.arc(-4, -2, 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#ffd85a";
+  ctx.fillRect(-4, -15, 8, 6);
+  const flick = 3 + Math.random() * 3;
+  ctx.fillStyle = "#ffef7a";
+  ctx.beginPath();
+  ctx.arc(0, -18, flick, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 function clampAngle(angle) {
@@ -8652,12 +8725,17 @@ function drawShopMapNode(node = SHOP_MAP_NODE, i = mapShopIndex) {
   ctx.translate(p.x, p.y);
   ctx.scale(MAP_UI, MAP_UI);
   ctx.translate(-p.x, -p.y);
-  drawShopMapNodeInner(p, t, mapAtShop && i === mapShopIndex);
+  drawShopMapNodeInner(p, t, mapAtShop && i === mapShopIndex, node.kind === "arms");
   ctx.restore();
 }
 
-function drawShopMapNodeInner(p, t, here = mapAtShop) {
+// 武器屋の目じるし（assets/map-arms-shop.png。なければ、ネオンの看板の仮の絵）
+const armsMapIcon = new Image();
+armsMapIcon.src = "assets/map-arms-shop.png";
+
+function drawShopMapNodeInner(p, t, here = mapAtShop, arms = false) {
   ctx.save();
+  const icon = arms ? armsMapIcon : shopMapIcon;
   if (here) {
     const pulse = 1 + Math.sin(t * 7.7) * 0.08;
     ctx.strokeStyle = "rgba(255, 255, 255, 0.92)";
@@ -8667,10 +8745,31 @@ function drawShopMapNodeInner(p, t, here = mapAtShop) {
     ctx.stroke();
   }
   const bob = Math.sin(t * 2.4) * 3;
-  if (shopMapIcon.complete && shopMapIcon.naturalWidth > 0) {
+  if (icon.complete && icon.naturalWidth > 0) {
     const h = here ? 92 : 80;
-    const w = h * (shopMapIcon.naturalWidth / shopMapIcon.naturalHeight);
-    ctx.drawImage(shopMapIcon, p.x - w / 2, p.y - h * 0.78 + bob, w, h);
+    const w = h * (icon.naturalWidth / icon.naturalHeight);
+    ctx.drawImage(icon, p.x - w / 2, p.y - h * 0.78 + bob, w, h);
+  } else if (arms) {
+    // 仮の絵：紫の小屋に、ピンクのネオンの銃の看板
+    ctx.translate(p.x, p.y + bob);
+    ctx.fillStyle = "#4a3a7a";
+    ctx.strokeStyle = "#ff5fc8";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.roundRect(-26, -34, 52, 38, 6);
+    ctx.fill();
+    ctx.stroke();
+    ctx.shadowColor = "#ff5fc8";
+    ctx.shadowBlur = 10 + Math.sin(t * 9) * 4;
+    ctx.fillStyle = "#7fffe0";
+    ctx.beginPath();
+    ctx.roundRect(-16, -24, 26, 9, 3);
+    ctx.roundRect(-16, -18, 9, 14, 3);
+    ctx.fill();
+    ctx.fillStyle = "#ffd85a";
+    ctx.beginPath();
+    ctx.arc(16, -12, 6, 0, Math.PI * 2);
+    ctx.fill();
   } else {
     // 仮の絵：三日月の看板がついた小さなお店
     ctx.translate(p.x, p.y + bob);
@@ -8701,11 +8800,11 @@ function drawShopMapNodeInner(p, t, here = mapAtShop) {
   ctx.restore();
   // 名前の札
   ctx.save();
-  const label = language === "ja" ? "よろず屋" : "Shop";
+  const label = arms ? (language === "ja" ? "武器屋" : "Arms") : language === "ja" ? "よろず屋" : "Shop";
   ctx.font = "900 14px Segoe UI, system-ui, sans-serif";
   const lw = ctx.measureText(label).width + 20;
-  ctx.fillStyle = here ? "#ffd85a" : "rgba(255, 251, 224, 0.95)";
-  ctx.strokeStyle = "#d98a2b";
+  ctx.fillStyle = here ? "#ffd85a" : arms ? "rgba(255, 214, 244, 0.95)" : "rgba(255, 251, 224, 0.95)";
+  ctx.strokeStyle = arms ? "#c0399a" : "#d98a2b";
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.roundRect(p.x - lw / 2, p.y + 14, lw, 22, 11);
@@ -8732,10 +8831,13 @@ function drawWorldMapPanel() {
     ctx.font = `900 38px ${FX.FONT}`;
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
-    ctx.fillText(language === "ja" ? "よろず屋 つきのわ" : "Tsukinowa General Store", 50, canvas.height - 134);
+    const armsHere = SHOP_MAP_NODE.kind === "arms";
+    ctx.fillText(armsHere ? (language === "ja" ? "武器屋 ネコネオン" : "Neko-Neon Arms") : language === "ja" ? "よろず屋 つきのわ" : "Tsukinowa General Store", 50, canvas.height - 134);
     ctx.fillStyle = "#4d4773";
     ctx.font = `800 27px ${FX.FONT}`;
-    ctx.fillText(language === "ja" ? "ルナコインで、べんりな道具やぶどうまんじゅうが買えるお店。" : "Trade Luna Coins for handy gear and grape manju.", 50, canvas.height - 82);
+    ctx.fillText(armsHere
+      ? (language === "ja" ? "メカの街の路地裏のあやしいお店。月と星の銃（Lv7まで）と爆弾が買える。" : "A shady back-alley shop. Moon and star guns (up to Lv7) and bombs.")
+      : language === "ja" ? "ルナコインで、べんりな道具やぶどうまんじゅうが買えるお店。" : "Trade Luna Coins for handy gear and grape manju.", 50, canvas.height - 82);
     ctx.fillStyle = "#ff8db7";
     ctx.font = `900 22px ${FX.FONT}`;
     ctx.textAlign = "right";
@@ -12887,6 +12989,11 @@ function drawBeams() {
       ctx.restore();
       continue;
     }
+    if (b.bomb) {
+      drawBomb(b);
+      ctx.restore();
+      continue;
+    }
     if (b.bossOrb) {
       drawBossOrb(b);
       ctx.restore();
@@ -14413,7 +14520,8 @@ function updateGamepad() {
   const dpadDown = Boolean(pad.buttons[13]?.pressed);
   const phys = { A: Boolean(pad.buttons[0]?.pressed), B: Boolean(pad.buttons[1]?.pressed), X: Boolean(pad.buttons[2]?.pressed), Y: Boolean(pad.buttons[3]?.pressed) };
   // ゲーム中は、せっていのボタンの割り当てで読みかえる（メニューでは A=決定、B=もどる のまま）
-  const act = inGameplay() ? Settings.padActions(phys) : { jump: phys.A, dash: phys.B, attack: phys.X || phys.Y };
+  const act = inGameplay() ? Settings.padActions(phys) : { jump: phys.A, dash: phys.B, attack: phys.X || phys.Y, bomb: false };
+  gamepadState.bomb = !!act.bomb;
   const jumpPressed = act.jump;
   const runPressed = act.dash || Boolean(pad.buttons[5]?.pressed);
   const shootPressed = act.attack;

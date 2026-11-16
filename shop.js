@@ -71,6 +71,25 @@
       en: ["Royal Cape", "Halves the damage you take."] }
   ];
 
+  // ---------- メカの街のあやしい武器屋「ネコネオン」 ----------
+  // 月🌙・星⭐の銃を Lv1〜7 まで（Lv8 は売らない）。Lv が上がるほど、ぐんと高い。爆弾も売る
+  const GUN_PRICE = { moon: [80, 150, 280, 480, 800, 1300, 2000], star: [120, 220, 400, 680, 1100, 1800, 2800] };
+  const BOMB = { id: "bomb", price: 120, repeat: true, color: "#ff8ad8", mark: "●", file: "item-bomb",
+    ja: ["ネコネオン爆弾", "投げて大爆発！ ボスのガードもバリアも通りぬけて、大ダメージ。5個まで持てる。"],
+    en: ["Neko-Neon Bomb", "Throw it for a big blast! Goes through boss guards and barriers. Carry up to 5."] };
+  const armsItems = () => {
+    const list = [BOMB];
+    for (const attr of ["moon", "star"]) {
+      GUN_PRICE[attr].forEach((price, i) => {
+        const power = (attr === "moon" ? 1 : MOON_TOP + 1) + i;
+        list.push({ id: "gun" + power, power, price, repeat: true });
+      });
+    }
+    return list;
+  };
+  let kind = "general";
+  const isArms = () => kind === "arms";
+
   const art = {};
   const load = (key, file) => {
     const im = new Image();
@@ -79,6 +98,9 @@
   };
   load("keeper", "shop-keeper");
   load("bg", "shop-bg");
+  load("armsKeeper", "arms-keeper");
+  load("armsBg", "arms-bg");
+  load("bomb", "item-bomb");
   for (const it of ITEMS) load(it.id, it.file ?? `shop-item-${it.id}`);
   const ok = im => im && im.complete && im.naturalWidth > 0;
 
@@ -164,12 +186,13 @@
   let shopWorld = null;
   let inStage = null;
   // ステージが進むほど、品ぞろえがふえる
-  const stock = () => ITEMS.filter(it => (it.world === undefined || it.world === shopWorld) && unlockedCourse >= (it.from ?? 0));
+  const stock = () => isArms() ? armsItems() : ITEMS.filter(it => (it.world === undefined || it.world === shopWorld) && unlockedCourse >= (it.from ?? 0));
 
   // ステージの中のよろず屋：いまの持ち物でお買い物して、終わったらステージにもどる
   function openInStage() {
     if (state.mode !== "playing" || FX.transitioning()) return;
     inStage = { prevKeep: campaignKeep };
+    kind = "general";
     campaignKeep = campaignSnapshotFromState();
     shopWorld = courses[currentCourse]?.worldIndex ?? 0;
     playSfx("decide");
@@ -187,9 +210,10 @@
     });
   }
 
-  function open(world = null) {
+  function open(world = null, shopKind = "general") {
     if (!unlocked() || state.mode !== "worldMap" || FX.transitioning()) return;
     shopWorld = world;
+    kind = shopKind === "arms" ? "arms" : "general";
     inStage = null;
     playSfx("decide");
     FX.startTransition({
@@ -200,6 +224,17 @@
         scroll = 0;
         tab = 0;
         page = 0;
+        if (isArms()) {
+          const firstArms = !Story.data.seen.armsVisit;
+          Story.data.seen.armsVisit = true;
+          say(firstArms
+            ? "……ニャフフ。よう来たな、うさぎのお客。ここは表じゃ売れん銃の店や。月も星も、Lv7 までならそろっとるで。"
+            : "ニャフフ……また来たんか。今日はどの銃にする？ 爆弾もあるで。",
+          firstArms
+            ? "...Nyahaha. Welcome, little bunny. I sell guns you won't find out front. Moon and star, up to Lv7."
+            : "Nyahaha... back again? Which gun today? I've got bombs too.");
+          return;
+        }
         const first = !Story.data.seen.shopVisit;
         Story.data.seen.shopVisit = true;
         // 前に来たときより品がふえていたら、それを知らせる
@@ -256,11 +291,26 @@
         it.id === "statue" ? "That one is a dream item. Keep saving and come back someday." : `You're ${lack} coins short. Save up and come back.`);
       return;
     }
+    if (it.id === "bomb" && bombCount() >= BOMB_MAX_SHOP) {
+      playSfx("locked");
+      say(`爆弾は ${BOMB_MAX_SHOP} 個までや。あぶないからな、ニャフ。`, `${BOMB_MAX_SHOP} bombs max. Safety first, nyah.`);
+      return;
+    }
+    if (it.power && !addGun(w, it.power)) {
+      playSfx("locked");
+      say("持ち物がいっぱいや。いらん武器を売るか、合成してから来ぃ。", "Your bag is full. Sell or fuse something first.");
+      return;
+    }
     w.kakiTotal -= it.price;
     w.peaTotal = 0;
     state.kakiTotal = w.kakiTotal;
     state.peaTotal = 0;
-    if (it.id === "manju") {
+    if (it.id === "bomb") {
+      Story.data.bombStock = bombCount() + 1;
+      say(`まいど、ニャフ。爆弾、かばんに入れといたで（${bombCount()}個）。ばくだんボタンでポイや。`, `Thanks, nyah. Bomb's in your bag (${bombCount()}). Toss it with the bomb button.`);
+    } else if (it.power) {
+      say(`${weaponName(it.power)}、まいどあり。……どこで買うたかは、ないしょやで。`, `One ${weaponName(it.power)}. ...You didn't get it from me, nyah.`);
+    } else if (it.id === "manju") {
       // その場で食べずに、かばんへ（そうびの欄から、好きなときに食べる）
       if (manjuCount() >= MANJU_MAX) {
         w.kakiTotal += it.price;
@@ -282,6 +332,29 @@
     FX.firework(canvas.width * 0.7, 250, FX.GOLD);
     FX.flash("#fff3a4", 0.25, 0.25);
     Story.persist();
+  }
+
+  const BOMB_MAX_SHOP = 5;
+  const bombCount = () => Math.max(0, Story.data.bombStock | 0);
+  // 買った銃を、持ち物のあいているマスへ。いっぱいなら false
+  function addGun(w, power) {
+    if (!Array.isArray(w.weaponInventory)) w.weaponInventory = Array(MAX_WEAPON_POWER).fill(0);
+    if (!Array.isArray(w.inventoryItems)) {
+      w.inventoryItems = [];
+      for (let pw = 1; pw <= MAX_WEAPON_POWER; pw++) for (let i = 0; i < (w.weaponInventory[pw - 1] ?? 0); i++) w.inventoryItems.push(pw);
+    }
+    while (w.inventoryItems.length < MAX_INVENTORY_ITEMS) w.inventoryItems.push(null);
+    const idx = w.inventoryItems.findIndex(v => !v);
+    if (idx < 0) return false;
+    w.inventoryItems[idx] = power;
+    w.weaponInventory[power - 1] = (w.weaponInventory[power - 1] ?? 0) + 1;
+    // 手ぶらなら、そのまま持たせる
+    if (!w.hasGun) { w.hasGun = true; w.weaponPower = power; }
+    if (state) {
+      state.weaponInventory = [...w.weaponInventory];
+      state.inventoryItems = [...w.inventoryItems];
+    }
+    return true;
   }
 
   // 一覧は大きな行を5つずつ見せて、のこりは上下にスクロール（スマホでも読める大きさ）
@@ -463,12 +536,14 @@
 
   function drawKeeper(cx, base) {
     const bob = Math.sin(t * 2.4) * 5;
-    if (ok(art.keeper)) {
+    const kArt = isArms() ? art.armsKeeper : art.keeper;
+    if (ok(kArt)) {
       const h = 400;
-      const w = h * (art.keeper.naturalWidth / art.keeper.naturalHeight);
-      ctx.drawImage(art.keeper, cx - w / 2, base - h + bob, w, h);
+      const w = h * (kArt.naturalWidth / kArt.naturalHeight);
+      ctx.drawImage(kArt, cx - w / 2, base - h + bob, w, h);
       return;
     }
+    if (isArms()) { drawArmsKeeperFallback(cx, base - 150 + bob); return; }
     // 仮の店主：おもちみたいな月うさぎの商人
     ctx.save();
     ctx.translate(cx, base - 150 + bob);
@@ -508,7 +583,49 @@
     ctx.restore();
   }
 
+  // 仮の店主：あやしい黒ネコのロボット（目がピンクに光る）
+  function drawArmsKeeperFallback(cx, cy) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.fillStyle = "#3b3366";
+    ctx.strokeStyle = "#ff5fc8";
+    ctx.lineWidth = 6;
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(s * 40, -90);
+      ctx.lineTo(s * 105, -175);
+      ctx.lineTo(s * 110, -70);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.roundRect(-120, -110, 240, 200, 60);
+    ctx.fill();
+    ctx.stroke();
+    ctx.shadowColor = "#ff5fc8";
+    ctx.shadowBlur = 20;
+    ctx.fillStyle = "#ff8ad8";
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(s * 45, -20, 26, 12 + Math.abs(Math.sin(t * 1.3)) * 4, s * -0.25, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = "#7fffe0";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(-30, 35);
+    ctx.quadraticCurveTo(0, 55, 30, 35);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   function drawIcon(it, x, y, size) {
+    if (it.power) {
+      drawWeaponIcon(x, y, it.power, weaponIconFitScale(it.power, size * 1.15, 0.9), 1);
+      return;
+    }
     if (ok(art[it.id])) {
       ctx.drawImage(art[it.id], x - size / 2, y - size / 2, size, size);
       return;
@@ -580,11 +697,29 @@
   function draw() {
     const W = canvas.width;
     const H = canvas.height;
-    if (ok(art.bg)) {
-      const s = Math.max(W / art.bg.naturalWidth, H / art.bg.naturalHeight);
-      ctx.drawImage(art.bg, (W - art.bg.naturalWidth * s) / 2, (H - art.bg.naturalHeight * s) / 2, art.bg.naturalWidth * s, art.bg.naturalHeight * s);
+    const bgArt = isArms() ? art.armsBg : art.bg;
+    if (ok(bgArt)) {
+      const s = Math.max(W / bgArt.naturalWidth, H / bgArt.naturalHeight);
+      ctx.drawImage(bgArt, (W - bgArt.naturalWidth * s) / 2, (H - bgArt.naturalHeight * s) / 2, bgArt.naturalWidth * s, bgArt.naturalHeight * s);
       ctx.fillStyle = "rgba(40, 24, 90, 0.28)";
       ctx.fillRect(0, 0, W, H);
+    } else if (isArms()) {
+      // 仮の背景：うす暗い路地裏に、ピンクと水色のネオン
+      const g = ctx.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, "#2a1d52");
+      g.addColorStop(0.7, "#5b3f8f");
+      g.addColorStop(1, "#c98ad8");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+      ctx.save();
+      ctx.shadowBlur = 18;
+      for (let i = 0; i < 5; i++) {
+        ctx.shadowColor = ctx.strokeStyle = i % 2 ? "#7fffe0" : "#ff5fc8";
+        ctx.globalAlpha = 0.5 + 0.3 * Math.sin(t * 3 + i);
+        ctx.lineWidth = 4;
+        ctx.strokeRect(30 + i * 70, 130 + (i % 3) * 60, 50, 30);
+      }
+      ctx.restore();
     } else {
       const g = ctx.createLinearGradient(0, 0, 0, H);
       g.addColorStop(0, "#6f5bb8");
@@ -619,8 +754,10 @@
     ctx.strokeStyle = "#7f67c8";
     ctx.fillStyle = "#fff3a4";
     ctx.textAlign = "left";
-    ctx.strokeText(L("よろず屋 つきのわ", "Tsukinowa General Store"), 230, 44);
-    ctx.fillText(L("よろず屋 つきのわ", "Tsukinowa General Store"), 230, 44);
+    const sign = isArms() ? L("武器屋 ネコネオン", "Neko-Neon Arms") : L("よろず屋 つきのわ", "Tsukinowa General Store");
+    if (isArms()) { ctx.strokeStyle = "#c0399a"; ctx.fillStyle = "#ffd6f4"; }
+    ctx.strokeText(sign, 230, 44);
+    ctx.fillText(sign, 230, 44);
     const w = wallet();
     ctx.fillStyle = "rgba(255, 248, 253, 0.95)";
     ctx.strokeStyle = "#ffd85a";
@@ -674,13 +811,17 @@
         ctx.fill();
         ctx.stroke();
         drawIcon(it, r.x + 50, r.y + r.h / 2, 78);
-        const txt = language === "ja" ? it.ja : it.en;
+        const attrJa = it.power && weaponAttribute(it.power) === "star" ? "星⭐" : "月🌙";
+        const txt = it.power
+          ? [`${weaponName(it.power)}  ${weaponLevelLabel(it.power)}`,
+            L(`${attrJa}の銃。同じ銃と合成すれば、もっと強くなる。`, `A ${weaponAttribute(it.power)} gun. Fuse two to make it stronger.`)]
+          : language === "ja" ? it.ja : it.en;
         const priceW = 170;
         ctx.textAlign = "left";
         ctx.font = `900 30px ${FX.FONT}`;
         ctx.fillStyle = got ? "#9a8fc0" : "#4d4773";
         ctx.fillText(txt[0], r.x + 100, r.y + 26);
-        if (it.world !== undefined) {
+        if (it.world !== undefined && !isArms()) {
           // ここでしか買えない印
           const nameW = ctx.measureText(txt[0]).width;
           ctx.fillStyle = "#ff5f9e";
@@ -702,6 +843,11 @@
         } else {
           ctx.fillStyle = afford ? "#d98a2b" : "#c0266d";
           ctx.fillText(`${it.price} ${L("枚", "coins")}`, r.x + r.w - 20, r.y + r.h / 2);
+        }
+        if (it.id === "bomb" && bombCount() > 0) {
+          ctx.font = `800 18px ${FX.FONT}`;
+          ctx.fillStyle = "#c0399a";
+          ctx.fillText(L(`かばんに ${bombCount()}個`, `${bombCount()} in bag`), r.x + r.w - 20, r.y + r.h - 16);
         }
         if (it.id === "manju" && manjuCount() > 0) {
           ctx.font = `800 18px ${FX.FONT}`;
@@ -742,13 +888,13 @@
       Chat.show({
         key: "shop:" + line[0],
         who: "keeper",
-        name: L("店主 モチまる", "Mochimaru"),
+        name: isArms() ? L("店主 ノワール", "Noir") : L("店主 モチまる", "Mochimaru"),
         color: "#ff5f9e",
-        avatar: ok(art.keeper) ? art.keeper.src : "",
+        avatar: isArms() ? (ok(art.armsKeeper) ? art.armsKeeper.src : "") : ok(art.keeper) ? art.keeper.src : "",
         // 丸い顔アイコン：背中の荷物ではなく、顔（絵の 横60%・たて55% あたり）を見せる
         size: "200%",
         pos: "66% 50%",
-        initial: L("モ", "M"),
+        initial: isArms() ? L("ノ", "N") : L("モ", "M"),
         text: [...L(line[0], line[1])].slice(0, Math.floor(lineT * (language === "ja" ? 40 : 70))).join(""),
         modes: ["shop"]
       });
@@ -765,7 +911,7 @@
       ctx.fillStyle = "#ff5f9e";
       ctx.font = `900 16px ${FX.FONT}`;
       ctx.textAlign = "left";
-      ctx.fillText(L("店主 モチまる", "Mochimaru the shopkeeper"), 42, H - 130);
+      ctx.fillText(isArms() ? L("店主 ノワール", "Noir the shopkeeper") : L("店主 モチまる", "Mochimaru the shopkeeper"), 42, H - 130);
       ctx.fillStyle = "#3f355d";
       ctx.font = `800 18px ${FX.FONT}`;
       ctx.textBaseline = "top";

@@ -30,16 +30,18 @@ const Settings = (() => {
 
   const KEY = "pyonpSettings";
   const BUTTONS = ["A", "B", "X", "Y"];
-  const ACTIONS = ["jump", "dash", "attack"];
+  const ACTIONS = ["jump", "dash", "attack", "bomb"];
+  // かならずどれかのボタンに要る役目（爆弾はなくてもよい）
+  const REQUIRED = ["jump", "dash", "attack"];
   // pad：画面のゲーム機の A・B・X・Y のならび。"switch" = 上X・左Y・右A・下B（はじめはこちら） / "classic" = 上Y・左X・右B・下A
-  const DEFAULT = { master: 100, bgm: 10, voice: 10, sfx: 10, pad: "switch", buttons: { A: "jump", B: "dash", X: "attack", Y: "attack" } };
+  const DEFAULT = { master: 100, bgm: 10, voice: 10, sfx: 10, pad: "switch", buttons: { A: "jump", B: "dash", X: "attack", Y: "bomb" }, v: 2 };
   // ゲーム中に、そのボタンが出すキー（キーボードと同じ処理に流す）
-  const ACTION_CODE = { jump: "Space", dash: "KeyB", attack: "KeyX" };
+  const ACTION_CODE = { jump: "Space", dash: "KeyB", attack: "KeyX", bomb: "KeyC" };
   // 画面のボタンがもともと出すキー → どのボタンか
   const BUTTON_OF_CODE = { Space: "A", KeyB: "B", KeyX: "X", KeyY: "Y" };
   const LABEL = {
-    ja: { jump: "ジャンプ", dash: "ダッシュ", attack: "こうげき" },
-    en: { jump: "Jump", dash: "Dash", attack: "Shoot" }
+    ja: { jump: "ジャンプ", dash: "ダッシュ", attack: "こうげき", bomb: "ばくだん" },
+    en: { jump: "Jump", dash: "Dash", attack: "Shoot", bomb: "Bomb" }
   };
 
   function fresh() {
@@ -56,8 +58,13 @@ const Settings = (() => {
       if (d.pad !== "switch" && d.pad !== "classic") d.pad = DEFAULT.pad;
       if (!isFinite(d.master)) d.master = 100;
       for (const b of BUTTONS) if (!ACTIONS.includes(d.buttons[b])) d.buttons[b] = DEFAULT.buttons[b];
+      // 前のせってい（Y もこうげき）は、Y を爆弾にする
+      if ((saved.v ?? 1) < 2) {
+        if (d.buttons.Y === "attack" && d.buttons.X === "attack") d.buttons.Y = "bomb";
+        d.v = 2;
+      }
       // ジャンプ・ダッシュ・こうげきのどれかがないまま残っていたら、はじめの割り当てにもどす（遊べなくならないように）
-      if (ACTIONS.some(a => !BUTTONS.some(b => d.buttons[b] === a))) d.buttons = { ...DEFAULT.buttons };
+      if (REQUIRED.some(a => !BUTTONS.some(b => d.buttons[b] === a))) d.buttons = { ...DEFAULT.buttons };
       return d;
     } catch (_) {
       return fresh();
@@ -88,7 +95,7 @@ const Settings = (() => {
 
   // ゲームパッド：A=0 B=1 X=2 Y=3 のボタンが、いまどの役目か
   function padActions(pressed) {
-    const out = { jump: false, dash: false, attack: false };
+    const out = { jump: false, dash: false, attack: false, bomb: false };
     for (const b of BUTTONS) if (pressed[b]) out[data.buttons[b]] = true;
     return out;
   }
@@ -102,7 +109,7 @@ const Settings = (() => {
 
   // どのボタンにも割り当てられていない役目（とじるときに、そろっているか調べる）
   function missingActions() {
-    return ACTIONS.filter(a => !BUTTONS.some(b => data.buttons[b] === a));
+    return REQUIRED.filter(a => !BUTTONS.some(b => data.buttons[b] === a));
   }
 
   function cycleButton(button, dir) {
