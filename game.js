@@ -7290,19 +7290,22 @@ function drawSeaGates() {
       const tipArt = artImage("sea-gate-tip");
       if (rockArt && tipArt && r.h > 0) {
         // 岩の絵：先っぽの絵を1つ、そのうしろに岩の絵をたてにならべる（下の岩は上下をひっくり返す）
-        const tipH = Math.min(r.h, r.w * (tipArt.naturalHeight / tipArt.naturalWidth));
-        const tileH = r.w * (rockArt.naturalHeight / rockArt.naturalWidth);
+        // 当たり判定より少し太く描く（細いままだと、岩の絵が小さくくり返されて ロープのように見える）
+        const pad = 22;
+        const artW = r.w + pad * 2;
+        const tipH = Math.min(r.h, artW * (tipArt.naturalHeight / tipArt.naturalWidth));
+        const tileH = artW * (rockArt.naturalHeight / rockArt.naturalWidth);
         ctx.save();
         ctx.beginPath();
-        ctx.rect(r.x - 4, r.y, r.w + 8, r.h);
+        ctx.rect(r.x - pad, r.y, artW, r.h);
         ctx.clip();
         if (!isTop) {
           ctx.translate(0, r.y * 2 + r.h);
           ctx.scale(1, -1);
         }
         // ここからは「上の岩」として描く（先っぽが下）
-        for (let ty = r.y + r.h - tipH - tileH; ty > r.y - tileH; ty -= tileH) ctx.drawImage(rockArt, r.x - 4, ty, r.w + 8, tileH + 1);
-        ctx.drawImage(tipArt, r.x - 4, r.y + r.h - tipH, r.w + 8, tipH);
+        for (let ty = r.y + r.h - tipH - tileH; ty > r.y - tileH; ty -= tileH) ctx.drawImage(rockArt, r.x - pad, ty, artW, tileH + 1);
+        ctx.drawImage(tipArt, r.x - pad, r.y + r.h - tipH, artW, tipH);
         ctx.restore();
         if (g.moving) {
           // 動く門は、うすく紫をかさねて見分ける
@@ -8309,10 +8312,13 @@ function pauseButtonRects() {
 
 // ボタンの絵（あれば）。えらんでいるボタンは、ふわっと大きくなる。絵がなければ false を返す
 function drawArtButton(r, selected) {
-  const img = artImage(selected ? "ui-button-on" : "ui-button") ?? artImage("ui-button");
+  // えらんでいないボタンは、えらんだボタンと同じ形の色ちがい（ui-button-off）を使う
+  const img = artImage(selected ? "ui-button-on" : "ui-button-off") ?? artImage(selected ? "ui-button-on" : "ui-button");
   if (!img) return false;
   const grow = selected ? 3 + Math.sin(performance.now() / 160) * 2 : 0;
-  drawNineSlice(img, { x: r.x - grow, y: r.y - grow, w: r.w + grow * 2, h: r.h + grow * 2 }, 56, Math.min(28, r.h / 2));
+  // 絵の左右のはし（高さの半分くらい）は、のばさない
+  const src = Math.min(img.naturalHeight / 2, img.naturalWidth / 3);
+  drawNineSlice(img, { x: r.x - grow, y: r.y - grow, w: r.w + grow * 2, h: r.h + grow * 2 }, src, Math.min(r.h / 2, src));
   return true;
 }
 
@@ -8337,7 +8343,7 @@ function drawPauseScreen() {
   }
   // ぴょんぴーが、わくの右上にちょこんとすわって、ゆらゆら
   const mascot = artImage("ui-pause-pyonpy");
-  if (mascot) ctx.drawImage(mascot, cx + 140, cy - 290 + Math.sin(performance.now() / 520) * 4, 150, 150);
+  if (mascot) ctx.drawImage(mascot, cx + 105, cy - 262 + Math.sin(performance.now() / 520) * 3, 150, 150);
 
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
@@ -8373,7 +8379,13 @@ function drawPauseScreen() {
 
   ctx.fillStyle = "rgba(127, 103, 200, 0.82)";
   ctx.font = "800 14px Segoe UI, system-ui, sans-serif";
-  ctx.fillText(language === "ja" ? "Startでも再開" : "Press Start to resume", canvas.width / 2, canvas.height / 2 + 188);
+  // わくの絵があるときは、わくの下（リボンと重ならない所）に白い字で
+  if (panelArt) {
+    ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+    ctx.fillText(language === "ja" ? "Startでも再開" : "Press Start to resume", canvas.width / 2, cy + 238);
+  } else {
+    ctx.fillText(language === "ja" ? "Startでも再開" : "Press Start to resume", canvas.width / 2, canvas.height / 2 + 188);
+  }
   ctx.restore();
 }
 
@@ -12470,7 +12482,7 @@ const EXTRA_ART_NAMES = [
   "item-life-star", "boss-shot-orb", "boss-shot-candy", "boss-shot-fire", "boss-shot-ice", "boss-shot-bubble",
   "boss-shot-gear", "boss-shot-dark", "boss-icicle", "boss-meteor",
   // 画面のかざり（依頼文は IMAGE_PROMPTS.md の「N. ポーズ画面とゲーム中の表示」）
-  "ui-pause-panel", "ui-pause-title", "ui-pause-pyonpy", "ui-button", "ui-button-on", "ui-dialog-panel",
+  "ui-pause-panel", "ui-pause-title", "ui-pause-pyonpy", "ui-button", "ui-button-on", "ui-button-off", "ui-dialog-panel",
   "ui-hp-frame", "ui-boss-hp-frame", "ui-badge",
   // 依頼文は IMAGE_PROMPTS.md の「O. メニューのわく・海と魔王星の小物」（ゲームオーバーの絵 ui-gameover-pyonpy は index.html が読む）
   "ui-menu-panel", "ui-o2-frame", "platform-mover", "sea-gate-rock", "sea-gate-tip", "hazard-lightning"
