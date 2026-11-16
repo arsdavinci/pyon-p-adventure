@@ -2183,3 +2183,52 @@ body[data-layout="handheld"][data-orient="land"] .gb-vol-num {
   0% { transform: translateY(-40px) scale(0.8); opacity: 0; }
   100% { transform: translateY(0) scale(1); opacity: 1; }
 }
+
+/* ---------- タイトルのボタンも、ゲームの中と同じカプセル形のボタンの絵に ---------- */
+/* えらんでいないとき = ui-button-off.png（ラベンダー） / えらんでいるとき = ui-button-on.png（ミント） */
+.overlay .title-actions #newGameButton,
+.overlay .title-actions #startButton,
+.overlay .title-actions #settingsButton,
+body[data-layout="handheld"] .overlay .title-actions #newGameButton,
+body[data-layout="handheld"] .overlay .title-actions #startButton,
+body[data-layout="handheld"] .overlay .title-actions #settingsButton {
+  background: transparent;
+  border: 24px solid transparent;
+  border-image: url("assets/ui-button-off.png") 58 fill / 24px stretch;
+  border-radius: 0;
+  box-shadow: none;
+  filter: drop-shadow(0 4px 6px rgba(60, 40, 120, 0.25));
+  color: #5a3d9a;
+  text-shadow: 0 1px 0 #ffffff;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  min-width: min(52vw, 230px);
+  animation: none;
+}
+.overlay .title-actions #newGameButton.is-focused,
+.overlay .title-actions #startButton.is-focused,
+.overlay .title-actions #settingsButton.is-focused,
+body[data-layout="handheld"] .overlay .title-actions #newGameButton.is-focused,
+body[data-layout="handheld"] .overlay .title-actions #startButton.is-focused,
+body[data-layout="handheld"] .overlay .title-actions #settingsButton.is-focused {
+  border-image: url("assets/ui-button-on.png") 58 fill / 24px stretch;
+  box-shadow: none;
+  color: #2c2650;
+  filter: drop-shadow(0 0 10px rgba(255, 141, 183, 0.6));
+  animation: start-pulse 1.5s ease-in-out infinite;
+}
+.overlay .title-actions #startButton {
+  min-width: min(64vw, 300px);
+}
+/* スマホ・タブレット（手持ちの画面）は、画面に合わせた大きさで */
+body[data-layout="handheld"] .overlay .title-actions #newGameButton,
+body[data-layout="handheld"] .overlay .title-actions #startButton,
+body[data-layout="handheld"] .overlay .title-actions #settingsButton {
+  border-width: calc(17 * var(--u));
+  border-image-width: calc(17 * var(--u));
+  padding: 0 calc(16 * var(--u));
+  min-width: calc(250 * var(--u));
+}
+body[data-layout="handheld"] .overlay .title-actions #startButton {
+  min-width: calc(300 * var(--u));
+}
