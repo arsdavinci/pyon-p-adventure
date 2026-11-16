@@ -73,9 +73,13 @@ const BOSS_TUNING = [
   { hp: 460, guard: 20, hit: 2 },  // 3 水晶の星
   { hp: 560, guard: 24, hit: 2 },  // 4 星の海のクイーン
   { hp: 700, guard: 28, hit: 2 },  // 5 リング工場のロボ
-  { hp: 1000, guard: 32, hit: 2 }  // 6 魔王
+  { hp: 1500, guard: 46, hit: 3 }  // 6 魔王（ふつうの光線銃は バリアで 1/10 しか効かない → ロボットか戦闘機で たおす）
 ];
 const BOSS_GUARD_LEAK = 0.15;
+// 魔王のバリア：ロボット・戦闘機いがいの攻撃は、この倍率しか通らない
+const FINAL_BOSS_GUN_RATE = 0.1;
+// ロボット・戦闘機に乗っているときに受けるダメージの倍率（よろいが かたい）
+const RIDE_ARMOR = 0.3;
 // ふつうの敵の体力（ワールドごと）。その星で手に入る武器なら 1〜2 発、弱い武器でも 3〜4 発でたおせる
 const ENEMY_HP_BY_WORLD = [3, 4, 6, 8, 10, 12];
 const FLYER_HP_BY_WORLD = [2, 3, 4, 5, 6, 8];
@@ -5463,6 +5467,14 @@ function damageEnemy(e, amount = 1) {
     // 変身中・ワープ中は無敵
     if ((e.invuln ?? 0) > 0) return;
     amount = bossGuardedDamage(e, amount);
+    // 魔王のバリア：ふつうの光線銃は、ほとんど効かない
+    if (e.finalBoss && !(hasEquippedWeapon() && isRideable(state.weaponPower))) {
+      amount *= FINAL_BOSS_GUN_RATE;
+      if ((state.barrierHintAt ?? -99) < (state.playClock ?? 0) - 4) {
+        state.barrierHintAt = state.playClock ?? 0;
+        FX.floater(e.x + e.w / 2, e.y - 40, language === "ja" ? "バリアで ほとんど効かない！ ロボットで たおそう" : "Barrier! Use the mecha!", { color: "#ffffff", stroke: "#a976ff", size: 22, life: 2 });
+      }
+    }
     // 体力が 2/3・1/3 をまたいだら、そこで止めて「変身」
     const next = e.script.stage + 1;
     const floor = e.maxHp * (1 - next / 3);
@@ -6533,11 +6545,14 @@ function favoriteWeapon() {
 }
 
 function pickDropPower(attrOnly = null) {
+  // まず 月🌙 か 星⭐ かを、半々で決める（前は月ばかり出ていた）
+  const attr = attrOnly ?? (Math.random() < 0.5 ? "moon" : "star");
   const fav = favoriteWeapon();
-  // 半分くらいは、持っている武器と同じもの（合成しやすいように）
-  if (fav && dropAllowed(fav) && (!attrOnly || weaponAttribute(fav) === attrOnly) && Math.random() < 0.5) return fav;
+  // 3回に1回くらいは、持っている武器と同じもの（合成しやすいように。ただし、決めた種類のときだけ）
+  if (fav && dropAllowed(fav) && weaponAttribute(fav) === attr && Math.random() < 0.35) return fav;
   const list = [];
-  for (const attr of attrOnly ? [attrOnly] : ["moon", "star"]) {
+  for (const attr2 of [attr]) {
+    const attr = attr2;
     for (let rank = 1; rank <= WEAPON_ATTRIBUTE_SIZE; rank++) {
       const power = attr === "star" ? WEAPON_ATTRIBUTE_SIZE + rank : rank;
       if (dropAllowed(power)) list.push({ power, weight: Math.pow(0.5, rank - 1) });
@@ -6574,9 +6589,8 @@ function enemyDropPower(e) {
   if (!power) return 0;
   if (e.stolenWeapon) return power;
   if (firstWeaponsLocked()) return 0;
-  // 武器を持っている敵をたおしたら、その武器はかならず落とす（前は 35% だけで、ほかは消えていた）
-  const attr = power <= STAR_TOP ? weaponAttribute(power) : null;
-  return pickDropPower(attr);
+  // 武器を持っている敵をたおしたら、かならず武器を落とす。月か星かは半々（前は敵の銃と同じ種類で、前半は月しか出なかった）
+  return pickDropPower();
 }
 
 function randomWeaponDropPower() {
@@ -7352,7 +7366,10 @@ function visibleMissileTargets() {
 // ロボットのミサイル：押すたびに1発。まだ誰もねらっていない一番近い敵（いなければアイテムブロック）へ
 function shootMechMissile(x, y, dir, stage) {
   const aimed = new Set(state.beams.filter(b => b.homing && b.owner === "player" && b.life > 0).map(b => b.targetRef));
-  const targets = visibleMissileTargets().filter(t => !aimed.has(t.ref));
+  const all = visibleMissileTargets();
+  // まだねらっていない敵を先に。みんなねらっていたら、敵をもう一度ねらう（ボス1体のとき、2発目から空へ飛んでいっていた）
+  let targets = all.filter(t => !aimed.has(t.ref));
+  if (!targets.some(t => t.kind === "enemy")) targets = targets.concat(all.filter(t => t.kind === "enemy"));
   const dist = t => Math.hypot(t.ref.x + t.ref.w / 2 - x, t.ref.y + t.ref.h / 2 - y);
   targets.sort((a, b) => (a.kind === b.kind ? 0 : a.kind === "enemy" ? -1 : 1) || dist(a) - dist(b));
   const target = targets[0] ?? null;
@@ -7847,7 +7864,9 @@ function damagePlayer(fell = false, sourceEnemy = null, canStealWeapon = false) 
   if (fell) {
     state.hp = 0;
   } else {
-    const hitDamage = enemyHitDamage(sourceEnemy);
+    // ロボット・戦闘機は よろいが かたいので、ダメージが少ない
+    const riding = hasEquippedWeapon() && isRideable(state.weaponPower);
+    const hitDamage = enemyHitDamage(sourceEnemy) * (riding ? RIDE_ARMOR : 1);
     const minHpAfterHit = state.hp > 1 ? 1 : 0;
     state.hp = Math.max(minHpAfterHit, state.hp - hitDamage);
   }
