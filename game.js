@@ -12689,7 +12689,8 @@ function drawBossOrb(b) {
     // 歯車はころがる向きに回す。氷のかけらは進む向きへ向ける。ほかは、ふわっとゆれるだけ
     if (b.kind === "gear") ctx.rotate(b.x / r);
     else if (b.kind === "ice") ctx.rotate(Math.atan2(b.vy, b.vx));
-    const size = r * 2.7;
+    // 氷のかけらは細長い絵なので、大きめに出す
+    const size = r * (b.kind === "ice" ? 4.6 : 2.7);
     ctx.drawImage(shotArt, -size / 2, -size / 2, size, size);
     return;
   }
