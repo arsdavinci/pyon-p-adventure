@@ -7967,7 +7967,8 @@ function damagePlayer(fell = false, sourceEnemy = null, canStealWeapon = false) 
       sourceEnemy.stolenWeapon = true;
       state.gun.holder = sourceEnemy.id;
       // はじめてうばわれたときは、画面を止めて「踏み返せば取りもどせる」と教える
-      if (!Tutorial.onStolen(sourceEnemy)) Chat.event("stolen");
+      // （この説明は 1-1 だけ。ほかのステージでは、いつもの一言だけ）
+      if (!(lessonStage() && Tutorial.onStolen(sourceEnemy))) Chat.event("stolen");
       sourceEnemy.gunCooldown = sourceEnemy.boss ? 0.2 : 0.5;
     }
   }
@@ -11858,7 +11859,13 @@ function drawWeaponDetail(power) {
 // ---------- はじめての合成を、ていねいに教える ----------
 // 同じ武器を2つ持っていて、まだ合成したことがないときだけ。1回合成したら、もう出さない
 function fuseGuideDone() {
-  return !!Story.data.seen?.fuseGuide;
+  // 説明は 1-1（と合成の練習部屋）だけ。続きから遊んでいるほかのステージでは出さない
+  return !!Story.data.seen?.fuseGuide || !lessonStage();
+}
+
+// 1-1 のチュートリアルで使うステージか
+function lessonStage() {
+  return currentCourse === 0 || !!courses[currentCourse]?.tutorial;
 }
 
 function findFusePair() {
