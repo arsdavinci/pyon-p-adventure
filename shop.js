@@ -954,5 +954,5 @@
     return false;
   }
 
-  window.Shop = { ITEMS, has, owns, gearList, toggleGear, isShoe, drawItem, manjuCount, useManju, itemName, itemDesc, itemIcon, unlocked, open, openInStage, close, update, draw, handleKey, handlePointer, drawMapButton, mapPointer };
+  window.Shop = { isArms, ITEMS, has, owns, gearList, toggleGear, isShoe, drawItem, manjuCount, useManju, itemName, itemDesc, itemIcon, unlocked, open, openInStage, close, update, draw, handleKey, handlePointer, drawMapButton, mapPointer };
 })();

@@ -1997,6 +1997,11 @@
   function desiredTrack() {
     const m = state.mode;
     if (m === "title") return "title";
+    // 武器屋ネコネオン：assets/bgm/arms.mp3 があればその曲（なければ地図の曲）
+    if (m === "shop" && Shop.isArms?.()) {
+      const arms = fileTrack("arms");
+      if (arms.ready && !arms.missing) return "arms";
+    }
     if (m === "worldMap" || m === "shop") return "map";
     if (m === "cutscene") return cs?.music || "story";
     if (m === "credits") return cr?.done ? null : "credits";
