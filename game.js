@@ -2646,6 +2646,8 @@ function enterArea(to, spawnX) {
     type: "fade",
     dur: 0.7,
     onMid: () => {
+      // 扉に入るしゅんかんにやられたら、エリアは切りかえない
+      if (state.mode === "dying" || state.mode === "ended") return;
       const keep = campaignSnapshotFromState();
       const time = state.time;
       const keys = state.keys;
@@ -2702,6 +2704,12 @@ function enterArea(to, spawnX) {
       const g = sp ? null : groundUnder(courses[currentCourse], spawnX + 20);
       p.x = sp ? sp.x : spawnX;
       p.y = (sp ? sp.y : g ? g.y : 492) - p.h;
+      // 床やブロックの中に出てしまったら、その上に立たせる（うまったまま動くと、横へふき飛ばされて落ちていた）
+      for (let guard = 0; guard < 6; guard++) {
+        const inside = platforms.concat(blocks.filter(b => !b.broken)).find(s => hit(p, s));
+        if (!inside) break;
+        p.y = inside.y - p.h;
+      }
       state.lastSafe = { x: p.x, y: p.y + p.h };
       // 扉から出てすぐは、敵は少し待ってから撃つ
       for (const e of state.enemies) e.gunCooldown = Math.max(e.gunCooldown ?? 0, 1.5);
@@ -2743,7 +2751,7 @@ function updateDoors() {
       return;
     }
     // 合成の練習部屋：一度合成するまでは出られない
-    if (courses[currentCourse]?.tutorial && !fuseGuideDone()) {
+    if (courses[currentCourse]?.tutorial && !fuseGuideDone() && (findFusePair() || state.items.some(it => it.type === "power"))) {
       if ((state.gimmickHint ?? 0) <= 0) {
         state.gimmickHint = 3.5;
         FX.floater(d.x + d.w / 2, d.y - 20, language === "ja" ? "合成してから 出よう！" : "Fuse first!", { color: "#ffffff", stroke: "#ff5f9e", size: 22, life: 1.5 });
@@ -4439,7 +4447,9 @@ function updateMoonRespawn(dt) {
     p.x = state.lastSafe.x;
     p.y = state.lastSafe.y - p.h - 90 * (1 - k);
   } else {
-    p.x = clamp(p.x + dx / len * speed * dt, 36, WORLD_WIDTH - p.w - 36);
+    // エリアのはしの高いかべの中へは、タクシーで入れない（かべの中におりて、動くとやられていた）
+    const outerWall = platforms.filter(s => s.w >= 1000 && s.x > 600 && s.y < worldTop()).sort((a, b) => a.x - b.x)[0];
+    p.x = clamp(p.x + dx / len * speed * dt, 36, (outerWall ? outerWall.x - 4 : WORLD_WIDTH - 36) - p.w);
     p.y = clamp(p.y + dy / len * speed * dt, respawnMinY(), worldBottom() - 290);
   }
   p.vx = dx / len * speed;
@@ -4453,10 +4463,25 @@ function updateMoonRespawn(dt) {
     p.vy = 0;
     p.onCrescent = false;
     p.invincible = 1.2;
+    const landSolids = platforms.concat(blocks.filter(b => !b.broken));
+    const startX = p.x;
     for (let guard = 0; guard < 12; guard++) {
-      const inside = platforms.concat(blocks.filter(b => !b.broken)).find(s => hit(p, s));
+      const inside = landSolids.find(s => hit(p, s));
       if (!inside) break;
-      p.y = inside.y - p.h - 1;
+      if (p.y + p.h - inside.y <= 220) {
+        p.y = inside.y - p.h - 1;
+        continue;
+      }
+      // 高い岩のかべの中におりたときは、屋根の上ではなく、横のあいている場所へ（前は画面のずっと上に出てしまっていた）
+      let moved = false;
+      for (let d = 30; d <= 900 && !moved; d += 30) {
+        for (const nx of [startX - d, startX + d]) {
+          if (nx < 36 || nx > WORLD_WIDTH - p.w - 36) continue;
+          const probe = { x: nx, y: p.y, w: p.w, h: p.h };
+          if (!landSolids.some(s => hit(probe, s))) { p.x = nx; moved = true; break; }
+        }
+      }
+      if (!moved) p.y = inside.y - p.h - 1;
     }
     FX.respawnSparkle(p.x + p.w / 2, p.y + p.h / 2);
     state.mode = "playing";
@@ -4583,7 +4608,8 @@ function updatePlayer(dt) {
 
   moveAndCollide(p, dt);
   // 閉じたエリアでやられたときにもどる場所（さいごに立っていた安全な床）
-  if (p.grounded && !p.onCart && !(level.spikes ?? []).some(sp => p.x + p.w > sp.x - 30 && p.x < sp.x + sp.w + 30 && Math.abs(p.y + p.h - sp.y - sp.h) < 30)) {
+  // （ふせているあいだは覚えない。ほふく前進のすき間でやられると、立った体が岩にうまって、屋根の上に出てしまっていた）
+  if (p.grounded && !p.crouch && !p.onCart && !(level.spikes ?? []).some(sp => p.x + p.w > sp.x - 30 && p.x < sp.x + sp.w + 30 && Math.abs(p.y + p.h - sp.y - sp.h) < 30)) {
     state.lastSafe = { x: p.x, y: p.y + p.h };
   }
 
@@ -4821,6 +4847,11 @@ function updateCarts(dt) {
         ], true);
       }
     }
+    // 乗らないまま行ってしまったトロッコは、乗り場にもどってくる（前はもどらず、穴に落ちるしかなかった）
+    if (m.state === "done" && p.grounded && p.onCart !== c && p.x + p.w < m.startX) {
+      c.x = m.startX;
+      m.state = "idle";
+    }
     if (m.state !== "run") continue;
     const dx = Math.min(m.speed * dt, m.endX - c.x);
     c.x += dx;
@@ -4852,12 +4883,18 @@ function resetCarts() {
 // ほふく前進のすき間の前で立っていたら、「↓でふせてくぐろう」と教える
 function updateCrawlHint() {
   const p = state.player;
-  if (p.crouch || !p.grounded) return;
+  const riding = hasEquippedWeapon() && isRideable(state.weaponPower);
+  if (p.crouch || (!p.grounded && !riding)) return;
   for (const c of level.crawlSpots ?? []) {
     const atMouth = (p.x + p.w >= c.x - 24 && p.x + p.w <= c.x + 6) || (p.x <= c.x + c.w + 24 && p.x >= c.x + c.w - 6);
-    if (!atMouth || Math.abs(p.y + p.h - c.y) > 6) continue;
+    if (!atMouth || Math.abs(p.y + p.h - c.y) > (riding ? 70 : 6)) continue;
     if ((state.crawlHintCool ?? 0) > performance.now()) return;
     state.crawlHintCool = performance.now() + 3500;
+    if (riding) {
+      // ロボット・戦闘機は ふせられない：光線銃に持ちかえるように教える
+      FX.floater(p.x + p.w / 2, p.y - 24, language === "ja" ? "ロボットでは通れない！ SELECTで光線銃にかえよう" : "Too big! Press SELECT and switch to a ray gun", { color: "#ffffff", stroke: "#ff5f9e", size: 20, life: 2.2 });
+      return;
+    }
     FX.floater(p.x + p.w / 2, p.y - 24, language === "ja" ? "↓でふせて くぐろう！" : "Duck with ↓ to crawl through!", { color: "#ffffff", stroke: "#7f67c8", size: 22, life: 1.6 });
     let told = false;
     try { told = localStorage.getItem("pyonpCrawlTip") === "1"; localStorage.setItem("pyonpCrawlTip", "1"); } catch (_) {}

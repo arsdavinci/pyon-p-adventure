@@ -543,6 +543,15 @@
     const p = state.player;
     state.switchCooldown = Math.max(0, (state.switchCooldown ?? 0) - dt);
     state.gimmickHint = Math.max(0, (state.gimmickHint ?? 0) - dt);
+    // 1-3 の谷：カギを取る前に、出口がわから★スイッチを撃つと、青いかべで谷にもどれなくなる → スイッチを自動でもどす
+    if (courses[currentCourse]?.puzzle === "valley" && state.switchOn && (state.keys ?? 0) === 0 && (state.keyItems ?? []).some(k => !k.taken)) {
+      const wall = blocks.find(b => b.phase === 1);
+      const box = blocks.find(b => b.switchBox);
+      if (wall && box && !wall.broken && p.x > wall.x + wall.w) {
+        state.switchCooldown = 0;
+        hitSwitch(box);
+      }
+    }
     for (const k of state.keyItems ?? []) {
       if (k.taken) continue;
       if (p.x < k.x + 18 && p.x + p.w > k.x - 18 && p.y < k.y + 18 && p.y + p.h > k.y - 18) {
