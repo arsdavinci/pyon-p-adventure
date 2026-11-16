@@ -5109,9 +5109,24 @@ function drawLightning() {
       ctx.stroke();
     } else if (b.t < BOLT_WARN + BOLT_STRIKE) {
       // 雷：ジグザグの光
+      const boltArt = artImage("hazard-lightning");
+      if (boltArt) {
+        // 雷の絵をたてにならべる。こまかく左右をひっくり返して、バチバチさせる
+        const bw = BOLT_W + 30;
+        const tileH = bw * (boltArt.naturalHeight / boltArt.naturalWidth);
+        const flip = Math.floor(now * 16) % 2 === 0;
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(b.x - bw, top, bw * 2, b.landY - top);
+        ctx.clip();
+        ctx.translate(b.x, 0);
+        if (flip) ctx.scale(-1, 1);
+        for (let ty = b.landY - tileH; ty > top - tileH; ty -= tileH) ctx.drawImage(boltArt, -bw / 2, ty, bw, tileH + 1);
+        ctx.restore();
+      }
       ctx.shadowColor = "#fff3a4";
       ctx.shadowBlur = 26;
-      for (const [width, color] of [[16, "rgba(200, 178, 255, 0.9)"], [7, "#fffbe0"]]) {
+      for (const [width, color] of boltArt ? [] : [[16, "rgba(200, 178, 255, 0.9)"], [7, "#fffbe0"]]) {
         ctx.strokeStyle = color;
         ctx.lineWidth = width;
         ctx.lineJoin = "round";
@@ -7215,6 +7230,30 @@ function drawSeaGates() {
       const isTop = r === top;
       const tipY = isTop ? r.y + r.h : r.y;
       ctx.save();
+      const rockArt = artImage("sea-gate-rock");
+      const tipArt = artImage("sea-gate-tip");
+      if (rockArt && tipArt && r.h > 0) {
+        // 岩の絵：先っぽの絵を1つ、そのうしろに岩の絵をたてにならべる（下の岩は上下をひっくり返す）
+        const tipH = Math.min(r.h, r.w * (tipArt.naturalHeight / tipArt.naturalWidth));
+        const tileH = r.w * (rockArt.naturalHeight / rockArt.naturalWidth);
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(r.x - 4, r.y, r.w + 8, r.h);
+        ctx.clip();
+        if (!isTop) {
+          ctx.translate(0, r.y * 2 + r.h);
+          ctx.scale(1, -1);
+        }
+        // ここからは「上の岩」として描く（先っぽが下）
+        for (let ty = r.y + r.h - tipH - tileH; ty > r.y - tileH; ty -= tileH) ctx.drawImage(rockArt, r.x - 4, ty, r.w + 8, tileH + 1);
+        ctx.drawImage(tipArt, r.x - 4, r.y + r.h - tipH, r.w + 8, tipH);
+        ctx.restore();
+        if (g.moving) {
+          // 動く門は、うすく紫をかさねて見分ける
+          ctx.fillStyle = "rgba(170, 120, 255, 0.22)";
+          ctx.fillRect(r.x, r.y, r.w, r.h);
+        }
+      } else {
       const grad = ctx.createLinearGradient(r.x, 0, r.x + r.w, 0);
       grad.addColorStop(0, g.moving ? "#5a4fa8" : "#3f6f8f");
       grad.addColorStop(0.5, g.moving ? "#8f7be0" : "#62a9c4");
@@ -7236,6 +7275,7 @@ function drawSeaGates() {
         ctx.moveTo(r.x + 10, ly);
         ctx.lineTo(r.x + r.w - 10, ly + 10);
         ctx.stroke();
+      }
       }
       if (g.moving) {
         // 先のギザギザ。とじる前は赤く点めつする
@@ -7992,6 +8032,8 @@ function stageLabel(index = currentCourse) {
 
 function updateHud() {
   document.body.dataset.gameMode = state.mode;
+  // ゲームオーバーのときだけ、しょんぼりぴょんぴーの絵を出す（index.html の .gameover-art）
+  overlay.classList.toggle("is-gameover", state.mode === "ended");
   document.body.dataset.overlayOpen = overlay.classList.contains("hidden") ? "false" : "true";
   stageCount.textContent = stageLabel();
   kakiCount.textContent = state.kakiTotal;
@@ -8908,18 +8950,21 @@ function drawOxygenMeter() {
     ctx.fillText(msg, canvas.width / 2, my + 27);
     ctx.globalAlpha = 1;
   }
-  ctx.fillStyle = low ? `rgba(255, 228, 238, ${0.8 + blink * 0.2})` : "rgba(235, 252, 255, 0.78)";
-  ctx.strokeStyle = low ? "#ff3d7f" : "rgba(106, 198, 231, 0.82)";
-  ctx.lineWidth = low ? 4 : 3;
-  ctx.beginPath();
-  ctx.roundRect(x, y, w, h, 8);
-  ctx.fill();
-  ctx.stroke();
-  ctx.font = "900 14px Segoe UI, system-ui, sans-serif";
-  ctx.fillStyle = low ? "#c0266d" : "#277394";
-  ctx.textAlign = "left";
-  ctx.textBaseline = "middle";
-  ctx.fillText("O2", x + 14, y + h / 2);
+  const o2Frame = artImage("ui-o2-frame");
+  if (!o2Frame) {
+    ctx.fillStyle = low ? `rgba(255, 228, 238, ${0.8 + blink * 0.2})` : "rgba(235, 252, 255, 0.78)";
+    ctx.strokeStyle = low ? "#ff3d7f" : "rgba(106, 198, 231, 0.82)";
+    ctx.lineWidth = low ? 4 : 3;
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, 8);
+    ctx.fill();
+    ctx.stroke();
+    ctx.font = "900 14px Segoe UI, system-ui, sans-serif";
+    ctx.fillStyle = low ? "#c0266d" : "#277394";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText("O2", x + 14, y + h / 2);
+  }
   ctx.fillStyle = "rgba(201, 246, 255, 0.72)";
   ctx.beginPath();
   ctx.roundRect(x + 48, y + 11, 154, 16, 6);
@@ -8932,6 +8977,17 @@ function drawOxygenMeter() {
   ctx.beginPath();
   ctx.roundRect(x + 48, y + 11, 154 * ratio, 16, 6);
   ctx.fill();
+  if (o2Frame) {
+    ctx.drawImage(o2Frame, x, y, w, h);
+    // 少なくなったら、わくを赤く点めつさせる
+    if (low) {
+      ctx.strokeStyle = `rgba(255, 61, 127, ${0.4 + blink * 0.6})`;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.roundRect(x - 2, y - 2, w + 4, h + 4, 19);
+      ctx.stroke();
+    }
+  }
   ctx.restore();
 }
 
@@ -10256,13 +10312,18 @@ function drawSettingsMenu() {
   ctx.save();
   ctx.fillStyle = "rgba(40, 26, 96, 0.55)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = "rgba(255, 248, 253, 0.97)";
-  ctx.strokeStyle = "#c8b2ff";
-  ctx.lineWidth = 5;
-  ctx.beginPath();
-  ctx.roundRect(L.x, L.y, L.w, h, 26);
-  ctx.fill();
-  ctx.stroke();
+  const settingsArt = artImage("ui-menu-panel");
+  if (settingsArt) {
+    drawNineSlice(settingsArt, { x: L.x - 10, y: L.y - 10, w: L.w + 20, h: h + 20 }, 100, 50);
+  } else {
+    ctx.fillStyle = "rgba(255, 248, 253, 0.97)";
+    ctx.strokeStyle = "#c8b2ff";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.roundRect(L.x, L.y, L.w, h, 26);
+    ctx.fill();
+    ctx.stroke();
+  }
   ctx.fillStyle = "#7f67c8";
   ctx.font = `900 46px ${FX.FONT}`;
   ctx.textAlign = "center";
@@ -10542,15 +10603,20 @@ function drawSaveMenu() {
   const body = ctx.createLinearGradient(win.x, win.y, win.x + win.w, win.y + win.h);
   body.addColorStop(0, "rgba(246, 240, 255, 0.98)");
   body.addColorStop(1, "rgba(226, 244, 255, 0.98)");
-  ctx.shadowColor = "rgba(142, 220, 232, 0.9)";
-  ctx.shadowBlur = 26;
-  panel(win, body, "#8edce8", 5, 24);
-  ctx.shadowBlur = 0;
-  ctx.strokeStyle = "rgba(255, 141, 183, 0.75)";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.roundRect(win.x + 10, win.y + 10, win.w - 20, win.h - 20, 18);
-  ctx.stroke();
+  const saveArt = artImage("ui-menu-panel");
+  if (saveArt) {
+    drawNineSlice(saveArt, { x: win.x - 10, y: win.y - 10, w: win.w + 20, h: win.h + 20 }, 100, 50);
+  } else {
+    ctx.shadowColor = "rgba(142, 220, 232, 0.9)";
+    ctx.shadowBlur = 26;
+    panel(win, body, "#8edce8", 5, 24);
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = "rgba(255, 141, 183, 0.75)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(win.x + 10, win.y + 10, win.w - 20, win.h - 20, 18);
+    ctx.stroke();
+  }
 
   ctx.fillStyle = "#5a3d9a";
   ctx.font = font(34);
@@ -12224,6 +12290,12 @@ function drawPlatforms() {
       drawMoonRock({ x: p.x, y: p.y + p.h - 40, w: p.w, h: 40 }, theme?.ground[0] ?? "#f4e9cc", theme?.ground[1] ?? "#cfc7d6");
       continue;
     }
+    const moverArt = p.mover ? artImage("platform-mover") : null;
+    if (moverArt) {
+      // 動く足場：うかぶ乗りものの絵（左右のはしはそのまま、まん中だけのばす）
+      drawNineSlice(moverArt, { x: p.x - 4, y: p.y - 4, w: p.w + 8, h: p.h + 14 }, 48, Math.min(24, p.h / 2));
+      continue;
+    }
     drawMoonRock(p, theme?.ground[0] ?? "#f4e9cc", theme?.ground[1] ?? "#cfc7d6");
     if (p.iceRamp) drawIceSlopeMarks(p);
     if (p.conveyor) drawConveyorSurface(p);
@@ -12337,7 +12409,9 @@ const EXTRA_ART_NAMES = [
   "boss-shot-gear", "boss-shot-dark", "boss-icicle", "boss-meteor",
   // 画面のかざり（依頼文は IMAGE_PROMPTS.md の「N. ポーズ画面とゲーム中の表示」）
   "ui-pause-panel", "ui-pause-title", "ui-pause-pyonpy", "ui-button", "ui-button-on", "ui-dialog-panel",
-  "ui-hp-frame", "ui-boss-hp-frame", "ui-badge"
+  "ui-hp-frame", "ui-boss-hp-frame", "ui-badge",
+  // 依頼文は IMAGE_PROMPTS.md の「O. メニューのわく・海と魔王星の小物」（ゲームオーバーの絵 ui-gameover-pyonpy は index.html が読む）
+  "ui-menu-panel", "ui-o2-frame", "platform-mover", "sea-gate-rock", "sea-gate-tip", "hazard-lightning"
 ];
 const extraArt = {};
 for (const name of EXTRA_ART_NAMES) {

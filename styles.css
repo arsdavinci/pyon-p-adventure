@@ -2140,3 +2140,24 @@ body[data-layout="handheld"][data-orient="land"] .gb-vol-num {
   font-size: calc(24 * var(--uL));
 }
 
+/* ゲームオーバーのときだけ出す、しょんぼりぴょんぴーの絵（絵がなければ何も出ない） */
+.overlay .gameover-art {
+  display: none;
+}
+.overlay.is-gameover .gameover-art {
+  display: block;
+  justify-self: center;
+  margin: 0 auto;
+  width: auto;
+  height: min(34vh, 230px);
+  object-fit: contain;
+  animation: gameover-bob 2.4s ease-in-out infinite;
+}
+.overlay.is-gameover:has(.gameover-art) .brand-logo,
+.overlay.is-gameover:has(.gameover-art) .title-sub {
+  display: none;
+}
+@keyframes gameover-bob {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(6px) rotate(2deg); }
+}
