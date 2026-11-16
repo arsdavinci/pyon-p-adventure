@@ -64,6 +64,23 @@ const INVENTORY_FOCUS_MODES = {
   INSIDE_TOP_MENU: "insideTopMenu",
   INSIDE_ITEM_LIST: "insideItemList"
 };
+// ---------- 強さのバランス（ここの数字だけで、ゲーム全体のむずかしさを調整できる） ----------
+// ボス：hp = 体力 / guard = 1秒あたりに「そのまま通る」ダメージ（これをこえた分は BOSS_GUARD_LEAK 倍にへる。
+//       強い武器でも一瞬では終わらず、弱い武器でも時間内にたおせるように） / hit = ボスの攻撃1回でへるHP
+const BOSS_TUNING = [
+  { hp: 130, guard: 6, hit: 1 },   // 1 月あめの王さま
+  { hp: 340, guard: 14, hit: 1 },  // 2 火星の司令官
+  { hp: 460, guard: 20, hit: 2 },  // 3 水晶の星
+  { hp: 560, guard: 24, hit: 2 },  // 4 星の海のクイーン
+  { hp: 700, guard: 28, hit: 2 },  // 5 リング工場のロボ
+  { hp: 1000, guard: 32, hit: 2 }  // 6 魔王
+];
+const BOSS_GUARD_LEAK = 0.15;
+// ふつうの敵の体力（ワールドごと）。その星で手に入る武器なら 1〜2 発、弱い武器でも 3〜4 発でたおせる
+const ENEMY_HP_BY_WORLD = [3, 4, 6, 8, 10, 12];
+const FLYER_HP_BY_WORLD = [2, 3, 4, 5, 6, 8];
+// ピンチのとき（HP 2 以下か、のこりライフ 1）は、たおした敵がライフの星を落としやすい
+const PITY_STAR_CHANCE = 0.14;
 const STOMP_BOUNCE_VY = -540;
 const BOSS_STOMP_BOUNCE_VY = -700;
 const STOMP_BOOST_VY = -1040;
@@ -1118,12 +1135,12 @@ function makeCourse(worldIndex, areaIndex, layout = areaIndex, seed = null) {
   if (bossStage) {
     const bossPowers = [5, 4, 7, 9, 11, 16];
     const bossPower = finalStage ? 16 : bossPowers[worldIndex] ?? Math.min(MAX_WEAPON_POWER, 5 + worldIndex * 2);
-    enemies.push(bossEnemy(finalStage ? 4280 : 4440, finalStage ? 320 : 392, 3940, 5120, {
+    enemies.push(bossEnemy(finalStage ? 4900 : 4440, finalStage ? 320 : 392, 3940, 5120, {
       final: finalStage,
       bossKind: worldIndex,
       weaponPower: bossPower,
-      // 最初のボスは、ムーンポッパー（いちばん弱い武器）でも時間内に倒せるくらいに
-      hp: finalStage ? 420 : Math.round((96 + worldIndex * 34) * (worldIndex === 0 ? 1.25 : 1.6)),
+      // 体力は BOSS_TUNING で決める（最初のボスは、いちばん弱い武器でも時間内に倒せるくらい）
+      hp: (BOSS_TUNING[worldIndex] ?? BOSS_TUNING[0]).hp,
       w: finalStage ? 190 : 96 + worldIndex * 10,
       h: finalStage ? 172 : 96 + worldIndex * 10
     }));
@@ -1153,11 +1170,11 @@ function makeCourse(worldIndex, areaIndex, layout = areaIndex, seed = null) {
     lavaGeyser(2880, 3.4),
     lavaGeyser(4140, 0.5)
   ] : [];
+  // （魔王のいる場所は、落ちない床にした。マグマは手前の道だけ）
   const lavaPools = finalStage ? [
     lavaPool(410, 492, 88),
     lavaPool(860, 492, 115),
-    lavaPool(1040, 492, 105),
-    lavaPool(4050, 492, 640)
+    lavaPool(1040, 492, 105)
   ] : [];
   const rotatingFires = finalStage ? [
     rotatingFire(740, 364, 66, 1.25),
@@ -1301,15 +1318,14 @@ function buildFinalBossCoursePlatforms() {
     rect(2440, 360, 280, 48),
     rect(2880, 420, 240, 48),
     rect(3300, 360, 500, 48),
-    rect(3920, 492, 150, 48),
-    rect(4690, 492, 510, 48),
+    // 魔王とたたかう場所は、ひとつづきの床（前はマグマの上の足場で、魔王ごと落ちてしまっていた）
+    rect(3920, 492, 1280, 48),
     rect(640, 292, 190, 36),
     rect(1320, 218, 170, 36),
     rect(1740, 210, 170, 36),
     rect(2200, 200, 170, 36),
     rect(2780, 204, 190, 36),
-    rect(3180, 226, 170, 36),
-    rect(4200, 350, 340, 34)
+    rect(3180, 226, 170, 36)
   ];
 }
 
@@ -2273,6 +2289,11 @@ function drawSpikes() {
     if (sp.x + sp.w < state.camera - 60 || sp.x > state.camera + VIEW_W + 60) continue;
     const n = Math.max(2, Math.round(sp.w / 22));
     const tw = sp.w / n;
+    const spikeArt = artImage("hazard-spike");
+    if (spikeArt) {
+      for (let i = 0; i < n; i++) ctx.drawImage(spikeArt, sp.x + i * tw, sp.y - 4, tw, sp.h + 4);
+      continue;
+    }
     ctx.save();
     ctx.fillStyle = "#5a3d9a";
     ctx.fillRect(sp.x, sp.y + sp.h - 5, sp.w, 5);
@@ -2574,6 +2595,23 @@ function addFlyersToAllAreas() {
 }
 addFlyersToAllAreas();
 
+// 敵の体力は、ワールドが進むほど少しずつ多くなる（前はどの星でも 3 で、後半は何でも一発だった）
+function scaleEnemiesByWorld() {
+  const seen = new Set();
+  for (const c of courses) {
+    for (const a of c.areas ?? [c]) {
+      if (!a || seen.has(a) || !a.level) continue;
+      seen.add(a);
+      const w = clamp(a.worldIndex ?? 0, 0, ENEMY_HP_BY_WORLD.length - 1);
+      for (const e of a.level.enemies ?? []) {
+        if (e.boss) continue;
+        e.hp = e.maxHp = (e.flyer ? FLYER_HP_BY_WORLD : ENEMY_HP_BY_WORLD)[w];
+      }
+    }
+  }
+}
+scaleEnemiesByWorld();
+
 function sanitizeAllAreas() {
   const seen = new Set();
   for (const c of courses) {
@@ -2619,7 +2657,10 @@ function enterArea(to, spawnX) {
         ...(memo[from] ?? {}),
         stars: state.starItems.map((s, i) => (s.taken ? i : -1)).filter(i => i >= 0),
         keys: (state.keyItems ?? []).map((k, i) => (k.taken ? i : -1)).filter(i => i >= 0),
-        opened: (level.doors ?? []).map((d, i) => (d.lockedOriginally && !d.locked ? i : -1)).filter(i => i >= 0)
+        opened: (level.doors ?? []).map((d, i) => (d.lockedOriginally && !d.locked ? i : -1)).filter(i => i >= 0),
+        // 取ったコイン・こわしたアイテムブロックも覚えておく（出入りするだけで、何度でも取れてしまっていた）
+        coins: state.coinItems.map((c, i) => (c.taken ? i : -1)).filter(i => i >= 0),
+        blocks: blocks.map((b, i) => (b.breakable && b.broken && b.phase === undefined ? i : -1)).filter(i => i >= 0)
       };
       courses[currentCourse] = areas[to];
       state = newState();
@@ -2634,6 +2675,8 @@ function enterArea(to, spawnX) {
         mine.stars.forEach(i => { if (state.starItems[i]) state.starItems[i].taken = true; });
         mine.keys.forEach(i => { if (state.keyItems[i]) state.keyItems[i].taken = true; });
         mine.opened.forEach(i => { if (level.doors[i]) level.doors[i].locked = false; });
+        (mine.coins ?? []).forEach(i => { if (state.coinItems[i]) state.coinItems[i].taken = true; });
+        (mine.blocks ?? []).forEach(i => { if (blocks[i]?.breakable) blocks[i].broken = true; });
       }
       state.stageStarsGot = Object.entries(memo).filter(([n]) => Number(n) !== to).reduce((sum, [, m]) => sum + (m.stars?.length ?? 0), 0);
       unarmFirstStageEnemies();
@@ -3171,7 +3214,7 @@ function isUnderwaterStage() {
 
 // ---------- テスト中だけ：アプリを閉じたところから「つづきから」ではじめる ----------
 // 数秒ごとと、アプリを閉じる・かくれるときに、いまの記録を自動でとっておく。テストが終わったら false にする
-const TEST_QUICK_RESUME = true;
+const TEST_QUICK_RESUME = false;
 const TEST_RESUME_KEY = "pyonpTestResumeV1";
 
 function writeTestResume() {
@@ -3240,7 +3283,11 @@ function startGame(fresh = false) {
   }
   // 「つづきから」：セーブファイルがあれば、どのファイルから始めるか選ぶ画面を出す
   // 「つづきから」：セーブファイルを選ぶ画面（ファイルがなくても開いて、空っぽを見せる）
-  if (!fresh && state?.mode === "title" && !state.saveMenu && (readSaveSlots().some(Boolean) || !Story.hasSave())) {
+  // ただし、自動の記録のほうがどのファイルよりも新しいときは、そのまま続きから（ファイルを読むと、進んだ分が消えてしまうため）
+  const slotList = readSaveSlots();
+  const newestSlot = Math.max(0, ...slotList.filter(Boolean).map(s => s.savedAt || 0));
+  const autoNewer = Story.hasSave() && (Story.data.savedAt || 0) > newestSlot;
+  if (!fresh && state?.mode === "title" && !state.saveMenu && !autoNewer && (slotList.some(Boolean) || !Story.hasSave())) {
     openSaveMenu(true);
     overlay.classList.add("hidden");
     return;
@@ -3343,8 +3390,20 @@ function continueFromGameOver() {
   snapshot.peaTotal = 0;
   snapshot.lives = MAX_LIVES;
   snapshot.hp = MAX_HP;
+  const areaMemo = state.areaMemo;
+  const stageStarsGot = state.stageStarsGot;
   state = newState();
   restoreCampaignSnapshot(snapshot);
+  // 復活しても、時間・取った★・エリアの入口は、ふつうに始めたときと同じにする（前は時間が 120 秒しかなかった）
+  if (courses[currentCourse].areas) state.time = 520;
+  else if (courses[currentCourse].bossStage) state.time = 180;
+  state.areaMemo = areaMemo;
+  state.stageStarsGot = stageStarsGot;
+  const continueSpawn = courses[currentCourse].spawn;
+  if (continueSpawn) {
+    state.player.x = continueSpawn.x;
+    state.player.y = continueSpawn.y - state.player.h;
+  }
   state.mode = "playing";
   gameOverContinueAvailable = false;
   gameOverContinueCost = 0;
@@ -3392,6 +3451,8 @@ function enterWorldMap(selectedIndex = currentCourse, firstOpen = false, fromWor
   mapAtShop = false;
   mapShopT = 0;
   if (!state) state = newState();
+  // マップでは、いつも記録どおりのコイン・武器を見せる（つづきからのあと、コイン 0 と出ていた）
+  if (campaignKeep) restoreCampaignSnapshot(campaignKeep);
   state.mode = "worldMap";
   state.camera = 0;
   pendingCourseStart = false;
@@ -3653,6 +3714,7 @@ function update(dt) {
   state.itemFullPrompt = Math.max(0, (state.itemFullPrompt ?? 0) - dt);
   state.stompBoostTimer = Math.max(0, (state.stompBoostTimer ?? 0) - dt);
   state.stompLateBoostTimer = Math.max(0, (state.stompLateBoostTimer ?? 0) - dt);
+  state.playClock = (state.playClock ?? 0) + dt;
   state.time -= dt;
   // 時間切れ：HP にかかわらず、その場でアウト（ヤナビス「時間切れです！」→ ぴょんぴー「ゆっくりしすぎたわぁ」）
   if (state.time <= 0) {
@@ -3720,100 +3782,457 @@ function maybeStartBossIntro() {
 
 // ---------- ボス戦のアリーナ ----------
 // ボスがあらわれたら、うしろに光のかべができて逃げられない。床があるので落ちない。
-// ボスは右はしにいて、決まった順番で攻撃する（体力が少なくなるとランダムになる）
+// ボスは決まった順番で攻撃する。体力が 2/3・1/3 になるたびに「変身」して、攻撃の種類がふえる
 function setupBossArena(boss) {
-  const course = courses[currentCourse];
   const left = Math.max(0, boss.left - 20);
   const right = Math.min(WORLD_WIDTH, boss.right + 60);
-  state.arena = { left, right, scripted: !isUnderwaterStage() && !course?.finalStage };
+  const swim = isUnderwaterStage();
+  state.arena = { left, right, scripted: true, swim };
   const p = state.player;
   if (p.x < left + 10) p.x = left + 10;
-  if (!state.arena.scripted) return;
-  // 落ちない床と、頭の上の足場（ボスの突進をよけるため）
-  platforms.push(rect(left, GROUND_Y, right - left, 48));
-  const span = right - left;
-  platforms.push(rect(left + span * 0.12, GROUND_Y - 170, 220, 30), rect(left + span * 0.52, GROUND_Y - 170, 220, 30));
-  boss.script = { step: 0, phase: "idle", t: 1.4 };
+  if (!swim) {
+    // 落ちない床と、頭の上の足場（ボスの突進をよけるため）
+    const span = right - left;
+    platforms.push(rect(left, GROUND_Y, span, 48));
+    // 魔王は体が大きいので、立つ場所とかさならないように足場を内がわへ
+    for (const k of boss.finalBoss ? [0.22, 0.56] : [0.12, 0.52]) platforms.push(rect(left + span * k, GROUND_Y - 170, 220, 30));
+  }
+  boss.script = { step: 0, phase: "idle", t: 1.4, stage: 0, side: 1, swim };
   boss.left = left + 10;
   boss.right = right - 10;
+  boss.fade = 1;
+  boss.invuln = 0;
+  // ここからがボス戦。弱い武器でも落ちついて戦える時間をとる
+  state.time = Math.max(state.time, 240);
 }
 
-const BOSS_SEQUENCE = ["orb", "charge", "rain", "orb", "leap"];
+// ボスごとの攻撃の順番（[はじめ, 体力 2/3 から, 体力 1/3 から]）
+const BOSS_MOVES = [
+  // 1 月あめの王さま：はずむ月あめ玉
+  [["orb", "bounce", "charge"], ["bounce", "rain", "charge", "orb"], ["leap", "bounce", "charge", "rain"]],
+  // 2 火星の司令官：マグマの波と、火の玉なげ
+  [["orb", "wave", "charge"], ["lob", "wave", "charge", "rain"], ["wave", "lob", "leap", "charge"]],
+  // 3 水晶の星：氷のかけらと、つららのカーテン、行って帰ってくる氷すべり
+  [["shard", "icicle", "charge"], ["icicle", "shard", "slide", "orb"], ["shard", "icicle", "slide", "leap"]],
+  // 4 星の海のクイーン：泡の連射・泡の輪・突進
+  [["stream", "ring", "dash"], ["ring", "rain", "dash", "stream"], ["dash", "ring", "stream", "rain"]],
+  // 5 リング工場のロボ：歯車ころがしと、高さのちがうレーザー（しゃがむ・ジャンプ・足場をおりる）
+  [["gear", "laserMid", "charge"], ["laserLow", "gear", "rain", "charge"], ["laserCombo", "gear", "leap", "charge"]],
+  // 6 魔王：ワープして、これまでのボスの技をぜんぶ使う
+  [["darkorb", "rain", "warp", "wave"], ["laserMid", "ring", "warp", "lob", "laserLow"], ["laserCombo", "ring", "warp", "wave", "meteor"]]
+];
+const BOSS_REST = [1.25, 1.0, 0.7];
+const BOSS_ORB_COLORS = {
+  orb: ["#fff3a4", "#ff8db7", "#c8b2ff"],
+  candy: ["#ffffff", "#ffb7dc", "#ffd1ed"],
+  fire: ["#fff3a4", "#ff8a3d", "#ff5a3d"],
+  ice: ["#ffffff", "#9ee8ff", "#c9f6ff"],
+  bubble: ["#ffffff", "#9ee8ff", "#e8fbff"],
+  gear: ["#fff3a4", "#8f9bb3", "#c9d2e6"],
+  dark: ["#ffd1ed", "#a976ff", "#3b2a6e"]
+};
+
+function bossHomeX(e) {
+  const a = state.arena;
+  return e.script.side > 0 ? a.right - e.w - 40 : a.left + 40;
+}
+
+function bossRest(e, base = 1) {
+  const sc = e.script;
+  sc.phase = "idle";
+  sc.t = base * BOSS_REST[sc.stage];
+}
+
+// ボスの弾（丸い玉）。grav = 重力 / bounce = 床ではねる強さ / burst = 床に落ちたら小さな火柱
+function pushBossOrb(boss, o) {
+  const r = o.r ?? 19;
+  const kind = o.kind ?? "orb";
+  state.beams.push({
+    owner: boss.id, bossOrb: true, kind,
+    x: o.x - r, y: o.y - r, w: r * 2, h: r * 2,
+    vx: o.vx ?? 0, vy: o.vy ?? 0, angle: 0,
+    grav: o.grav ?? 0, bounce: o.bounce ?? 0, floorY: o.floorY ?? null, burst: !!o.burst,
+    unbreakable: !!o.unbreakable,
+    life: o.life ?? 5, damage: 1,
+    colors: BOSS_ORB_COLORS[kind] ?? BOSS_ORB_COLORS.orb,
+    power: 4, distance: 0, range: 99999
+  });
+}
+
+// ぴょんぴーをねらって、おうぎ形に n 発
+function bossAimedOrbs(e, n, spread, speed, kind = "orb", r = 19) {
+  const p = state.player;
+  const ox = e.x + e.w / 2 + (e.facing ?? -1) * e.w * 0.3;
+  const oy = e.y + e.h * 0.4;
+  const base = Math.atan2(p.y + p.h / 2 - oy, p.x + p.w / 2 - ox);
+  for (let i = 0; i < n; i++) {
+    const ang = base + (i - (n - 1) / 2) * spread;
+    pushBossOrb(e, { x: ox, y: oy, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, kind, r });
+  }
+  playSfx("laser", ox);
+}
+
+// まわり全部に n 発（すき間をぬけてよける）
+function bossRing(e, n, offset = 0, speed = 175) {
+  const kind = e.script.swim ? "bubble" : e.finalBoss ? "dark" : "orb";
+  const ox = e.x + e.w / 2;
+  const oy = e.y + e.h * 0.45;
+  for (let i = 0; i < n; i++) {
+    const ang = offset + (i * Math.PI * 2) / n;
+    pushBossOrb(e, { x: ox, y: oy, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, kind, r: 16, life: 6 });
+  }
+  playSfx("laser", ox);
+}
+
+// 床をぽよんぽよんとはねて進む玉（下をくぐるか、とびこえる）
+function bossBounceBall(e, i) {
+  const dir = -e.script.side;
+  pushBossOrb(e, {
+    x: e.x + e.w / 2 + dir * 30, y: e.y + e.h * 0.3,
+    vx: dir * (180 + i * 45), vy: -260, grav: 1500, bounce: 600 + i * 40, floorY: GROUND_Y,
+    kind: "candy", r: 22, life: 9
+  });
+  playSfx("jump", e.x);
+}
+
+// 床（high なら足場の高さ）をころがる歯車。撃っても消せない
+function bossGear(e, high) {
+  const dir = -e.script.side;
+  const r = 24;
+  pushBossOrb(e, {
+    x: e.x + e.w / 2 + dir * e.w / 2, y: (high ? GROUND_Y - 170 : GROUND_Y) - r,
+    vx: dir * (e.script.stage >= 2 ? 360 : 300), kind: "gear", r, unbreakable: true, life: 7
+  });
+  playSfx("switch", e.x);
+}
+
+// 山なりに投げる火の玉。落ちた場所に小さな火柱が立つ
+function bossLob(e, n) {
+  const p = state.player;
+  const x0 = e.x + e.w / 2;
+  const y0 = e.y + 10;
+  const vy0 = -620;
+  const g = 1100;
+  const t = (-vy0 + Math.sqrt(vy0 * vy0 + 2 * g * Math.max(1, GROUND_Y - 16 - y0))) / g;
+  for (let i = 0; i < n; i++) {
+    const tx = clamp(p.x + p.w / 2 + (i - (n - 1) / 2) * 150, state.arena.left + 40, state.arena.right - 40);
+    pushBossOrb(e, { x: x0, y: y0, vx: (tx - x0) / t, vy: vy0, grav: g, floorY: GROUND_Y, burst: true, kind: e.finalBoss ? "dark" : "fire", r: 16, life: 4 });
+  }
+  playSfx("whoosh", x0);
+}
+
+// ボスの足もとから、火柱が波のように走る。2本ぶんの「すき間」か、上の足場が安全
+function bossWave(e) {
+  const a = state.arena;
+  const dir = -e.script.side;
+  const startX = e.x + e.w / 2 + dir * (e.w / 2 + 70);
+  const room = dir < 0 ? startX - (a.left + 50) : a.right - 50 - startX;
+  const n = Math.max(0, Math.floor(room / 100));
+  const gap = 1 + Math.floor(Math.random() * Math.max(1, n - 3));
+  for (let i = 0; i < n; i++) {
+    if (i === gap || i === gap + 1) continue;
+    const telegraph = 0.75 + i * 0.1;
+    state.bossHazards.push({ type: "eruption", x: startX + dir * i * 100, y: 492, w: 72, h: 168, telegraph, active: 0, life: telegraph + 0.7, owner: e.id });
+  }
+  playSfx("equip", e.x);
+}
+
+// 上から、ずらっとならんで落ちてくる（つらら・いん石）。空いている場所へにげる
+function bossCurtain(e, { step = 84, gaps = 2, vy = 520, kind = "ice" } = {}) {
+  const a = state.arena;
+  const p = state.player;
+  const xs = [];
+  for (let x = a.left + 50; x < a.right - 30; x += step) xs.push(x);
+  // 安全な場所のひとつは、かならず ぴょんぴーの近く（走ってまにあう所）
+  const near = Math.max(0, xs.findIndex(x => x > p.x + p.w / 2));
+  const g1 = clamp(near + (Math.random() < 0.5 ? -3 : 2), 1, xs.length - 3);
+  let g2 = -9;
+  if (gaps > 1) {
+    g2 = 1 + Math.floor(Math.random() * (xs.length - 3));
+    if (Math.abs(g2 - g1) < 3) g2 = -9;
+  }
+  xs.forEach((x, i) => {
+    if (i === g1 || i === g1 + 1 || i === g2 || i === g2 + 1) return;
+    state.bossHazards.push({ type: "fall", kind, x, y: (state.cameraY ?? 0) - 90 - (i % 3) * 34, r: 24, telegraph: 0.95, life: 3.6, vy, owner: e.id });
+  });
+  playSfx("equip", e.x);
+}
+
+// 横いっぱいのレーザー。top = 足場の上をはらう（おりるか、しゃがむ） / mid = 胸の高さ（しゃがむか、ジャンプ）
+// / low = 足もと（ジャンプ）。出る前に、細い線で場所を知らせる
+function bossLaser(e, level, delay = 0) {
+  const a = state.arena;
+  const y = level === "top" ? GROUND_Y - 240 : level === "mid" ? GROUND_Y - 92 : GROUND_Y - 28;
+  const h = level === "top" ? 34 : level === "mid" ? 52 : 28;
+  state.bossHazards.push({ type: "laser", level, x: a.left, w: a.right - a.left, y, h, delay, telegraph: 0.9, active: 0, hold: 0.55, life: 0.9 + 0.55 + 0.2, owner: e.id });
+}
+
+function bossPickAction(e) {
+  const sc = e.script;
+  const list = BOSS_MOVES[e.bossKind ?? 0]?.[sc.stage] ?? BOSS_MOVES[0][0];
+  const action = list[sc.step % list.length];
+  sc.step += 1;
+  sc.action = action;
+  sc.phase = "wind";
+  const big = action === "charge" || action === "slide" || action === "dash";
+  sc.t = (big ? 0.85 : action === "leap" ? 0.6 : 0.55) * (sc.stage >= 2 ? 0.8 : 1);
+  e.attackAnim = 0.9;
+  playSfx("equip", e.x + e.w / 2);
+}
+
+function bossStartAction(e) {
+  const a = state.arena;
+  const p = state.player;
+  const sc = e.script;
+  const st = sc.stage;
+  const pcx = p.x + p.w / 2;
+  const volley = (n, gap) => { sc.phase = "volley"; sc.n = n; sc.gap = gap; sc.t = 0; };
+  const hold = t => { sc.phase = "hold"; sc.t = t; };
+  switch (sc.action) {
+    case "orb": bossAimedOrbs(e, st >= 2 ? 3 : 2, st >= 2 ? 0.16 : 0.1, 190 + st * 15); bossRest(e); break;
+    case "shard": bossAimedOrbs(e, st >= 2 ? 7 : 5, 0.2, 320 + st * 20, "ice", 13); bossRest(e); break;
+    case "darkorb": volley(2 + (st >= 1 ? 1 : 0), 0.5); break;
+    case "stream": volley(4 + st, 0.18); break;
+    case "bounce": volley(2 + (st >= 2 ? 1 : 0), 0.5); break;
+    case "gear": volley(2 + (st >= 2 ? 1 : 0), 0.6); break;
+    case "ring": volley(st >= 2 ? 2 : 1, 0.55); break;
+    case "lob": bossLob(e, st >= 2 ? 4 : 3); bossRest(e, 1.2); break;
+    case "rain":
+      fireBossPattern(e, { type: "rain", targetX: clamp(pcx, a.left + 120, a.right - 120), count: 3 + st });
+      bossRest(e);
+      break;
+    case "icicle": bossCurtain(e, { step: 84, gaps: st >= 2 ? 1 : 2, vy: 520 + st * 40, kind: "ice" }); hold(1.5); break;
+    case "meteor": bossCurtain(e, { step: 96, gaps: 2, vy: 600, kind: "fire" }); hold(1.4); break;
+    case "wave": bossWave(e); hold(1.7); break;
+    case "laserMid": bossLaser(e, "mid"); hold(1.5); break;
+    case "laserLow": bossLaser(e, "low"); hold(1.5); break;
+    case "laserCombo":
+      bossLaser(e, "top");
+      bossLaser(e, "low", 0.8);
+      if (e.finalBoss) bossLaser(e, "mid", 1.6);
+      hold(e.finalBoss ? 3.1 : 2.3);
+      break;
+    case "charge":
+    case "slide":
+      sc.dir = -sc.side;
+      sc.phase = "charge";
+      playSfx("whoosh", e.x);
+      break;
+    case "slideBack":
+      sc.phase = "charge";
+      playSfx("whoosh", e.x);
+      break;
+    case "leap": {
+      // プレイヤーのいる場所へジャンプして、着地でしょうげき波
+      const air = (2 * 920) / GRAVITY;
+      const tx = clamp(pcx - e.w / 2, a.left + 20, a.right - e.w - 20);
+      e.vy = -920;
+      e.vx = (tx - e.x) / air;
+      e.grounded = false;
+      sc.phase = "leap";
+      sc.t = 0.2;
+      break;
+    }
+    case "dash": {
+      // 海のボス：ねらった向きへ、まっすぐ突進
+      const dx = pcx - (e.x + e.w / 2);
+      const dy = p.y + p.h / 2 - (e.y + e.h / 2);
+      const d = Math.hypot(dx, dy) || 1;
+      const sp = st >= 2 ? 700 : 600;
+      sc.dvx = (dx / d) * sp;
+      sc.dvy = (dy / d) * sp;
+      sc.phase = "dash";
+      sc.t = clamp(d / sp + 0.3, 0.5, 1.4);
+      e.facing = dx < 0 ? -1 : 1;
+      playSfx("whoosh", e.x);
+      break;
+    }
+    case "warp":
+      sc.phase = "warpOut";
+      sc.t = 0.4;
+      e.invuln = Math.max(e.invuln ?? 0, 0.85);
+      playSfx("whoosh", e.x);
+      break;
+    default: bossRest(e);
+  }
+}
+
+// れんぞくで出す攻撃の、1回ぶん
+function bossVolleyShot(e, n) {
+  const sc = e.script;
+  const st = sc.stage;
+  if (sc.action === "darkorb") bossAimedOrbs(e, 3, 0.22, 230, "dark");
+  else if (sc.action === "stream") bossAimedOrbs(e, 1, 0, 270, "bubble", 15);
+  else if (sc.action === "bounce") bossBounceBall(e, n);
+  else if (sc.action === "gear") bossGear(e, st >= 1 && n % 2 === 0);
+  else if (sc.action === "ring") bossRing(e, 8 + st * 2, n * 0.33);
+}
+
+// 体力が 2/3・1/3 になったら「変身」：少しのあいだ無敵になって、弾を消し、攻撃がふえる
+function beginBossStage(e, stage) {
+  const sc = e.script;
+  sc.stage = stage;
+  sc.step = 0;
+  sc.phase = "roar";
+  sc.t = 1.5;
+  e.invuln = 1.7;
+  e.fade = 1;
+  e.vx = 0;
+  e.attackAnim = 1.2;
+  state.beams = state.beams.filter(b => b.owner === "player");
+  state.bossHazards = [];
+  const cx = e.x + e.w / 2;
+  const cy = e.y + e.h / 2;
+  FX.shake(0.5);
+  FX.flash(stage >= 2 ? "#ff8db7" : "#fff3a4", 0.4, 0.3);
+  FX.radial(cx, cy, 18, { type: "star", speed: [160, 420], life: [0.5, 0.9], r: [5, 10], colors: FX.GOLD, spin: 9 });
+  const text = stage >= 2 ? (language === "ja" ? "ほんきモード！" : "MAX POWER!") : (language === "ja" ? "おこった！" : "ANGRY!");
+  FX.floater(cx, e.y - 40, text, { color: "#ffffff", stroke: stage >= 2 ? "#ff3d7f" : "#ff8a3d", size: 30, life: 1.5 });
+  playSfx("explosion", cx);
+  playSfx("whoosh", cx);
+}
+
+// ボスへのダメージ：1秒あたり guard までは、そのまま通る。こえた分は少しだけ通る
+function bossGuardedDamage(e, amount) {
+  const cap = (BOSS_TUNING[e.bossKind ?? 0] ?? BOSS_TUNING[0]).guard;
+  const now = state.playClock ?? 0;
+  const max = cap * 1.2;
+  e.guardPool = Math.min(max, (e.guardPool ?? max) + (now - (e.guardAt ?? now)) * cap);
+  e.guardAt = now;
+  const through = Math.min(amount, e.guardPool);
+  e.guardPool -= through;
+  return through + (amount - through) * BOSS_GUARD_LEAK;
+}
+
+// 敵の攻撃が当たったときに、へるHP
+function enemyHitDamage(e) {
+  if (!e) return 1;
+  if (e.boss) return courses[currentCourse]?.bossStage ? (BOSS_TUNING[e.bossKind ?? 0] ?? BOSS_TUNING[0]).hit : 1;
+  // 銃を持った敵：はじめの2つの星は 1、そのあとは 2（前は武器の番号しだいで、いきなり HP 1 にされていた）
+  if (e.weaponPower) return (courses[currentCourse]?.worldIndex ?? 0) >= 2 ? 2 : 1;
+  return 1;
+}
 
 function updateBossScript(e, dt) {
   const a = state.arena;
   const p = state.player;
   const sc = e.script;
-  const hpRate = (e.hp ?? e.maxHp) / Math.max(1, e.maxHp ?? 1);
-  const angry = hpRate < 0.3;
-  const home = a.right - e.w - 40;
-  const face = () => { e.facing = p.x + p.w / 2 < e.x + e.w / 2 ? -1 : 1; };
+  const pcx = p.x + p.w / 2;
+  const pcy = p.y + p.h / 2;
+  const quick = sc.stage >= 2;
+  const face = () => { e.facing = pcx < e.x + e.w / 2 ? -1 : 1; };
+  const still = () => { e.vx = 0; if (sc.swim) e.vy = 0; };
+  const busy = () => { e.attackAnim = Math.max(e.attackAnim ?? 0, 0.2); };
   sc.t -= dt;
-  e.vy += GRAVITY * dt;
+  e.invuln = Math.max(0, (e.invuln ?? 0) - dt);
+  if (!sc.swim) e.vy += GRAVITY * dt;
 
-  if (sc.phase === "idle") {
-    // 右はしの定位置へもどる
-    const dx = home - e.x;
-    e.vx = Math.abs(dx) > 8 ? Math.sign(dx) * (angry ? 340 : 260) : 0;
+  if (sc.phase === "roar") {
+    still();
+    busy();
+    if (sc.t <= 0) { sc.phase = "idle"; sc.t = 0.45; }
+  } else if (sc.phase === "idle") {
+    // 定位置へもどって、次の攻撃を待つ
     face();
-    if (sc.t <= 0 && Math.abs(dx) < 16 && e.grounded) {
-      const action = angry ? BOSS_SEQUENCE[Math.floor(Math.random() * BOSS_SEQUENCE.length)] : BOSS_SEQUENCE[sc.step % BOSS_SEQUENCE.length];
-      sc.step += 1;
-      sc.action = action;
-      sc.phase = "wind";
-      sc.t = action === "charge" ? (angry ? 0.6 : 0.85) : action === "leap" ? 0.55 : 0.5;
-      e.attackAnim = 0.9;
-      playSfx("equip", e.x + e.w / 2);
+    let ready;
+    if (sc.swim) {
+      const dx = bossHomeX(e) - e.x;
+      const dy = clamp(pcy - e.h / 2, 90, worldBottom() - e.h - 70) - e.y;
+      e.vx = clamp(dx * 3, -260, 260);
+      e.vy = clamp(dy * 2, -150, 150);
+      ready = Math.abs(dx) < 30;
+    } else {
+      const dx = bossHomeX(e) - e.x;
+      e.vx = Math.abs(dx) > 8 ? Math.sign(dx) * (quick ? 340 : 260) : 0;
+      ready = Math.abs(dx) < 16 && e.grounded;
     }
+    if (sc.t <= 0 && ready) bossPickAction(e);
   } else if (sc.phase === "wind") {
     // 攻撃の前ぶれ（体をゆらす）
-    e.vx = 0;
+    still();
     face();
-    e.attackAnim = Math.max(e.attackAnim ?? 0, 0.2);
+    busy();
+    if (sc.t <= 0) bossStartAction(e);
+  } else if (sc.phase === "volley") {
+    still();
+    face();
+    busy();
     if (sc.t <= 0) {
-      if (sc.action === "orb" || sc.action === "rain") {
-        fireBossPattern(e, { type: sc.action, targetX: clamp(p.x + p.w / 2, a.left + 120, a.right - 120), count: angry ? 5 : 3 });
-        sc.phase = "idle";
-        sc.t = angry ? 0.7 : 1.2;
-      } else if (sc.action === "charge") {
-        sc.phase = "charge";
-        e.vx = -(angry ? 820 : 640);
-        e.facing = -1;
-        playSfx("whoosh", e.x);
-      } else {
-        // プレイヤーのいる場所へジャンプして、着地でしょうげき波
-        const air = (2 * 920) / GRAVITY;
-        const tx = clamp(p.x + p.w / 2 - e.w / 2, a.left + 20, a.right - e.w - 20);
-        e.vy = -920;
-        e.vx = (tx - e.x) / air;
-        e.grounded = false;
-        sc.phase = "leap";
-        sc.t = 0.2;
-      }
+      bossVolleyShot(e, sc.n);
+      sc.n -= 1;
+      sc.t = sc.gap;
+      if (sc.n <= 0) bossRest(e);
     }
+  } else if (sc.phase === "hold") {
+    // レーザーや火柱が出ているあいだは、その場で待つ
+    still();
+    busy();
+    if (sc.t <= 0) bossRest(e, 0.6);
   } else if (sc.phase === "charge") {
-    // 左のかべまで突進（ジャンプか、上の足場でよける）
-    e.vx = -(angry ? 820 : 640);
-    if (e.x <= a.left + 20) {
-      e.x = a.left + 20;
+    // 反対がわのかべまで突進（ジャンプか、上の足場でよける）
+    const dir = sc.dir ?? -1;
+    e.vx = dir * (quick ? 800 : 640);
+    e.facing = dir;
+    const wall = dir < 0 ? a.left + 20 : a.right - e.w - 20;
+    if ((dir < 0 && e.x <= wall) || (dir > 0 && e.x >= wall)) {
+      e.x = wall;
       e.vx = 0;
       FX.shake(0.25);
       playSfx("explosion", e.x);
-      sc.phase = "idle";
-      sc.t = angry ? 0.4 : 0.9;
+      if (sc.action === "slide") {
+        // 氷すべり：かべではね返って、もどってくる
+        sc.action = "slideBack";
+        sc.dir = -dir;
+        sc.phase = "wind";
+        sc.t = quick ? 0.45 : 0.65;
+      } else {
+        bossRest(e, 0.75);
+      }
     }
   } else if (sc.phase === "leap") {
     if (sc.t <= 0 && e.grounded) {
       e.vx = 0;
       FX.shake(0.3);
       playSfx("explosion", e.x + e.w / 2);
-      fireBossPattern(e, { type: "eruption", targetX: e.x + e.w / 2, count: angry ? 4 : 2 });
-      sc.phase = "idle";
-      sc.t = angry ? 0.6 : 1.1;
+      fireBossPattern(e, { type: "eruption", targetX: e.x + e.w / 2, count: quick ? 4 : 2 });
+      bossRest(e, 0.9);
+    }
+  } else if (sc.phase === "dash") {
+    e.vx = sc.dvx;
+    e.vy = sc.dvy;
+    if (sc.t <= 0) bossRest(e, 0.8);
+  } else if (sc.phase === "warpOut") {
+    // 魔王：すっと消えて、反対がわにあらわれる
+    still();
+    e.fade = clamp(sc.t / 0.4, 0, 1);
+    if (sc.t <= 0) {
+      sc.side = -sc.side;
+      e.x = bossHomeX(e);
+      sc.phase = "warpIn";
+      sc.t = 0.4;
+      face();
+    }
+  } else if (sc.phase === "warpIn") {
+    still();
+    face();
+    e.fade = 1 - clamp(sc.t / 0.4, 0, 1);
+    if (sc.t <= 0) {
+      e.fade = 1;
+      bossRing(e, quick ? 12 : 8, Math.random());
+      bossRest(e, 0.8);
     }
   }
-  moveEnemyAndCollide(e, dt);
-  e.x = clamp(e.x, a.left + 10, a.right - e.w - 10);
+
+  if (sc.swim) {
+    e.x = clamp(e.x + e.vx * dt, a.left + 10, a.right - e.w - 10);
+    e.y = clamp(e.y + e.vy * dt, 72, worldBottom() - e.h - 48);
+    e.grounded = false;
+  } else {
+    // アリーナは床がつながっているので、足場のはしで止まらない（前は上の足場に乗ると動けなくなっていた）
+    e.allowDrop = true;
+    moveEnemyAndCollide(e, dt);
+    e.x = clamp(e.x, a.left + 10, a.right - e.w - 10);
+  }
 }
 
 function drawBossArenaWalls() {
@@ -4925,6 +5344,9 @@ function updateEnemies(dt) {
     e.stun = Math.max(0, (e.stun ?? 0) - dt);
     if (Tutorial.moveEnemy(e, dt)) {
       // チュートリアルの敵は、決まった動きだけ
+    } else if (e.boss && e.script && state.arena?.scripted) {
+      // ボスは、撃たれても ふまれても止まらない（前は連射されると固まって、何もできなかった）
+      updateBossScript(e, dt);
     } else if (e.stun > 0 && e.flyer && !isUnderwaterStage()) {
       // 飛ぶ敵はピヨっても落ちずに、その場で少しだけ下がる
       e.vx = 0;
@@ -4937,8 +5359,6 @@ function updateEnemies(dt) {
       else moveEnemyAndCollide(e, dt);
     } else if (isUnderwaterStage()) {
       updateSwimmingEnemy(e, dt);
-    } else if (e.boss && e.script && state.arena?.scripted) {
-      updateBossScript(e, dt);
     } else if (e.flyer) {
       updateFlyingEnemy(e, dt);
     } else {
@@ -4956,12 +5376,16 @@ function updateEnemies(dt) {
       e.gunCooldown = e.finalBoss ? 0.22 : e.boss ? (e.weaponPower >= 5 ? 0.48 : 0.68) : e.weaponPower >= 3 ? 0.92 : 1.25;
     }
     if (!hit(p, e)) continue;
+    // ワープで消えているあいだの魔王には、さわれない
+    if (e.boss && (e.fade ?? 1) < 0.5) continue;
 
     if (e.stun > 0) continue;
     const stomp = p.vy > 120 && p.y + p.h - e.y < 24;
     if (stomp) {
       stunEnemy(e);
       if (!e.boss && Shop.has("boots") && !e.tutorialSafe) damageEnemy(e, 3);
+      // ボスをふむと、少しだけダメージ（弱い武器でも、ふんで けずれる）
+      if (e.boss && e.script) damageEnemy(e, Math.ceil(e.maxHp * 0.03));
       applyStompBounce(e, (state.stompBoostTimer ?? 0) > 0);
       Tutorial.onStomp(e);
     } else if (!e.tutorialSafe) {
@@ -4980,13 +5404,30 @@ function enemyCanSeePlayer(e) {
 function damageEnemy(e, amount = 1) {
   if (!e.alive) return;
   if (e.boss && courses[currentCourse]?.bossStage && (!state.bossIntroPlayed || state.mode === "bossIntro")) return;
+  const scripted = e.boss && !!e.script;
+  if (scripted) {
+    // 変身中・ワープ中は無敵
+    if ((e.invuln ?? 0) > 0) return;
+    amount = bossGuardedDamage(e, amount);
+    // 体力が 2/3・1/3 をまたいだら、そこで止めて「変身」
+    const next = e.script.stage + 1;
+    const floor = e.maxHp * (1 - next / 3);
+    if (next <= 2 && e.hp - amount <= floor) {
+      e.hp = floor;
+      e.hurtAnim = 0.38;
+      beginBossStage(e, next);
+      return;
+    }
+  }
   e.hp = Math.max(0, (e.hp ?? 3) - amount);
   e.alert = 1;
   e.hurtAnim = e.boss ? 0.38 : 0.24;
-  e.stun = e.boss ? 0.22 : 2;
-  e.vx = 0;
+  if (!scripted) {
+    e.stun = e.boss ? 0.22 : 2;
+    e.vx = 0;
+  }
   spawnBlockPoof(e.x + e.w / 2, e.y + e.h / 2);
-  FX.enemyHurt(e, amount);
+  FX.enemyHurt(e, scripted ? Math.max(1, Math.round(amount)) : amount);
   if (e.hp > 0) {
     playSfx("enemyHit", e.x + e.w / 2);
     return;
@@ -4999,6 +5440,8 @@ function damageEnemy(e, amount = 1) {
   if (dropPower) spawnWeaponDrop(e.x + e.w / 2, e.y + 8, dropPower, !e.stolenWeapon);
   // ごくたまに、たおした敵がぶどうまんじゅうを落とす（1-1 では落とさない）
   else if (!e.boss && currentCourse !== 0 && Math.random() < 0.015) spawnItem(e.x + e.w / 2, e.y + 8, "manju");
+  // ピンチのときは、ライフの星を落としやすい（海の星はアイテムブロックがないので、もう少し出やすい）
+  else if (!e.boss && currentCourse !== 0 && (state.hp <= 2 || state.lives <= 1) && Math.random() < PITY_STAR_CHANCE * (isUnderwaterStage() ? 1.5 : 1)) spawnItem(e.x + e.w / 2, e.y + 8, "hp");
   e.weaponPower = 0;
   e.stolenWeapon = false;
   dropGunFromEnemy(e, hadStolen);
@@ -5017,7 +5460,7 @@ function stunEnemy(e) {
   // ふんでピヨらせたら、少し長めに動けなくする（2秒では短すぎた）
   e.stun = e.boss ? 0.35 : 3.5;
   e.alert = 1;
-  e.vx = 0;
+  if (!(e.boss && e.script)) e.vx = 0;
   const hadStolen = !!e.stolenWeapon;
   if (e.weaponPower) {
     const dropPower = enemyDropPower(e);
@@ -5278,10 +5721,26 @@ function fireBossPattern(boss, pattern) {
 function updateBossHazards(dt) {
   const p = state.player;
   for (const h of state.bossHazards ?? []) {
+    // delay：前ぶれが出るまでの待ち時間（レーザーをつづけて出すとき）
+    if (h.delay > 0) {
+      h.delay -= dt;
+      continue;
+    }
     h.life -= dt;
     if (h.telegraph > 0) {
       h.telegraph -= dt;
-      if (h.telegraph <= 0) h.active = h.type === "eruption" ? 0.55 : 1;
+      if (h.telegraph <= 0) {
+        h.active = h.type === "eruption" ? 0.55 : h.type === "laser" ? h.hold : 1;
+        if (h.type === "laser") {
+          playSfx("laser", state.player.x);
+          FX.shake(0.15);
+        }
+      }
+      continue;
+    }
+    if (h.type === "laser") {
+      h.active -= dt;
+      if (h.active > 0 && hit(rect(h.x, h.y, h.w, h.h), p)) damagePlayer(false, state.enemies.find(e => e.id === h.owner));
       continue;
     }
     if (h.type === "fall") {
@@ -5761,7 +6220,12 @@ function playerMuzzle(p) {
 
 function shootBeam(owner, x, y, dir, aimAngle = null) {
   if (owner === "player" && !hasEquippedWeapon()) return;
-  const stage = owner === "player" ? weaponStage() : enemyWeaponStage(owner);
+  let stage = owner === "player" ? weaponStage() : enemyWeaponStage(owner);
+  // ふつうの敵の弾は、星が進むほど少しずつ速く・遠くまで（前は持っている武器の番号しだいで、ばらばらだった）
+  if (owner !== "player" && !state.enemies.find(e => e.id === owner)?.boss) {
+    const w = courses[currentCourse]?.worldIndex ?? 0;
+    stage = { ...stage, speed: 2 * (300 + w * 28), range: 440 + w * 60, width: 34, height: 8 };
+  }
   const beamSpeed = owner === "player" ? stage.speed : stage.speed * 0.5;
   const base = aimAngle ?? (dir >= 0 ? 0 : Math.PI);
   playSfx("laser", x);
@@ -6478,6 +6942,7 @@ function enemyWeaponStage(owner) {
 function updateBeams(dt) {
   for (const b of state.beams) {
     if (b.homing) updateHomingMissile(b, dt);
+    if (b.grav) b.vy += b.grav * dt;
     let stepX = b.vx * dt;
     let stepY = (b.vy ?? 0) * dt;
     const straight = Math.hypot(stepX, stepY);
@@ -6500,8 +6965,23 @@ function updateBeams(dt) {
     b.distance += b.wave ? straight : Math.hypot(stepX, stepY);
     b.life -= dt;
     if (b.distance >= b.range) b.life = 0;
+    if (b.bossOrb) {
+      // 床ではねる玉・床に落ちて火柱になる玉
+      if (b.floorY != null && b.vy > 0 && b.y + b.h >= b.floorY) {
+        if (b.bounce) {
+          b.y = b.floorY - b.h;
+          b.vy = -b.bounce;
+        } else {
+          if (b.burst) state.bossHazards.push({ type: "eruption", x: b.x + b.w / 2, y: 492, w: 64, h: 96, telegraph: 0.28, active: 0, life: 0.95, owner: b.owner });
+          FX.hit(b.x + b.w / 2, b.y + b.h / 2, b.colors);
+          b.life = 0;
+        }
+      }
+      // アリーナの外へは出ていかない
+      if (state.arena && (b.x + b.w < state.arena.left - 20 || b.x > state.arena.right + 20)) b.life = 0;
+    }
     // たてに飛ぶ弾は当たり判定もたて長にする
-    const upright = Math.abs(b.vy ?? 0) > Math.abs(b.vx);
+    const upright = !b.bossOrb && Math.abs(b.vy ?? 0) > Math.abs(b.vx);
     const beamRect = upright
       ? rect(b.x + b.w / 2 - b.h / 2, b.y + b.h / 2 - b.w / 2, b.h, b.w)
       : rect(b.x, b.y, b.w, b.h);
@@ -6510,7 +6990,7 @@ function updateBeams(dt) {
       if (!b.bubble) FX.beamTrail(b);
       // 敵の弾とぶつかったら、おたがいに消える（撃って防げる）
       for (const other of state.beams) {
-        if (other.owner === "player" || other.life <= 0 || !other.hitRect || !hit(beamRect, other.hitRect)) continue;
+        if (other.owner === "player" || other.unbreakable || other.life <= 0 || !other.hitRect || !hit(beamRect, other.hitRect)) continue;
         other.life = 0;
         FX.hit((b.x + other.x) / 2 + b.w / 2, (b.y + other.y) / 2 + b.h / 2, b.colors);
         playSfx("break", b.x);
@@ -6543,6 +7023,8 @@ function updateBeams(dt) {
       }
       for (const e of state.enemies) {
         if (!e.alive || e.tutorialHidden || !hit(beamRect, e)) continue;
+        // ワープで消えているあいだの魔王には当たらない
+        if (e.boss && (e.fade ?? 1) < 0.5) continue;
         if (b.bubble) {
           // 空気鉄砲：ダメージはなく、ひよらせるだけ（うばわれた武器は落とす）
           stunEnemy(e);
@@ -7286,7 +7768,7 @@ function damagePlayer(fell = false, sourceEnemy = null, canStealWeapon = false) 
   if (fell) {
     state.hp = 0;
   } else {
-    const hitDamage = sourceEnemy?.weaponPower ? Math.max(1, weaponStage(sourceEnemy.weaponPower).damage) : 1;
+    const hitDamage = enemyHitDamage(sourceEnemy);
     const minHpAfterHit = state.hp > 1 ? 1 : 0;
     state.hp = Math.max(minHpAfterHit, state.hp - hitDamage);
   }
@@ -8402,6 +8884,9 @@ function drawBossHpMeter() {
   ctx.beginPath();
   ctx.roundRect(x + 12, y + 11, (w - 24) * ratio, 12, 6);
   ctx.fill();
+  // 変身する場所（2/3・1/3）のしるし
+  ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+  for (const k of [1 / 3, 2 / 3]) ctx.fillRect(x + 12 + (w - 24) * k - 1.5, y + 8, 3, 18);
   ctx.font = "900 15px Segoe UI, system-ui, sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "bottom";
@@ -8502,6 +8987,19 @@ function drawStageHazards() {
 function drawFinalStageHazards() {
   if (!courses[currentCourse]?.finalStage) return;
   for (const pool of state.lavaPools ?? []) {
+    const poolArt = artImage("hazard-lava-pool");
+    if (poolArt) {
+      // 横にならべて、ゆっくり流す
+      const tile = 96;
+      const shift = (performance.now() / 60) % tile;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(pool.x, pool.y - 6, pool.w, pool.h + 6);
+      ctx.clip();
+      for (let x = pool.x - shift; x < pool.x + pool.w; x += tile) ctx.drawImage(poolArt, x, pool.y - 6, tile, pool.h + 6);
+      ctx.restore();
+      continue;
+    }
     const grad = ctx.createLinearGradient(pool.x, pool.y, pool.x, pool.y + pool.h);
     grad.addColorStop(0, "#ff8d3d");
     grad.addColorStop(0.45, "#ff3d3d");
@@ -8535,6 +9033,11 @@ function drawFinalStageHazards() {
     ctx.moveTo(fire.x, fire.y);
     ctx.lineTo(fx, fy);
     ctx.stroke();
+    const fireArt = artImage("hazard-fire-bar");
+    if (fireArt) {
+      ctx.drawImage(fireArt, fx - 26, fy - 26, 52, 52);
+      continue;
+    }
     ctx.save();
     ctx.translate(fx, fy);
     ctx.rotate(fire.angle * 2);
@@ -8555,6 +9058,12 @@ function drawBossHazards() {
       const x = h.x;
       const y = warning ? (state.cameraY ?? 0) + 56 : h.y;
       const pulse = 1 + Math.sin(performance.now() / 95) * 0.08;
+      const fallArt = warning ? null : artImage(h.kind === "ice" ? "boss-icicle" : "boss-meteor");
+      if (fallArt) {
+        ctx.globalAlpha = 1;
+        ctx.drawImage(fallArt, x - h.r * 1.3, y - h.r * 1.9, h.r * 2.6, h.r * 3.4);
+        continue;
+      }
       ctx.globalAlpha = warning ? 0.62 : 0.92;
       ctx.strokeStyle = warning ? "#ff8db7" : "#fff3a4";
       ctx.fillStyle = warning ? "rgba(255, 141, 183, 0.16)" : "rgba(255, 111, 82, 0.78)";
@@ -8567,11 +9076,65 @@ function drawBossHazards() {
         ctx.fillStyle = "rgba(255, 243, 164, 0.86)";
         drawTinyStar(x, y, h.r * 0.72);
       }
+      if (h.kind === "ice") {
+        // つらら：水色の、とがった形を重ねる
+        ctx.globalAlpha = warning ? 0.5 : 0.95;
+        ctx.fillStyle = "#c9f6ff";
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x - h.r * 0.7, y - h.r);
+        ctx.lineTo(x + h.r * 0.7, y - h.r);
+        ctx.lineTo(x, y + h.r * 1.2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+    } else if (h.type === "laser") {
+      if (h.delay > 0) continue;
+      const warning = h.telegraph > 0;
+      const t = performance.now() / 1000;
+      if (warning) {
+        // 前ぶれ：細い線がだんだん太くなって、点めつする
+        const k = 1 - h.telegraph / 0.9;
+        ctx.globalAlpha = 0.35 + Math.abs(Math.sin(t * (10 + k * 22))) * 0.4;
+        ctx.fillStyle = "rgba(255, 90, 120, 0.5)";
+        ctx.fillRect(h.x, h.y + h.h / 2 - (2 + k * h.h * 0.35), h.w, 4 + k * h.h * 0.7);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = "#ffffff";
+        ctx.strokeStyle = "#ff3d5a";
+        ctx.lineWidth = 4;
+        ctx.font = "900 22px Segoe UI, system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        for (let wx = state.camera + 80; wx < state.camera + VIEW_W; wx += 190) {
+          if (wx < h.x || wx > h.x + h.w) continue;
+          ctx.strokeText("!", wx, h.y + h.h / 2);
+          ctx.fillText("!", wx, h.y + h.h / 2);
+        }
+      } else if (h.active > 0) {
+        const pulse = 0.85 + Math.sin(t * 40) * 0.15;
+        const grad = ctx.createLinearGradient(0, h.y - 8, 0, h.y + h.h + 8);
+        grad.addColorStop(0, "rgba(255, 90, 140, 0)");
+        grad.addColorStop(0.3, "rgba(255, 90, 140, 0.9)");
+        grad.addColorStop(0.5, "#ffffff");
+        grad.addColorStop(0.7, "rgba(255, 90, 140, 0.9)");
+        grad.addColorStop(1, "rgba(255, 90, 140, 0)");
+        ctx.globalAlpha = pulse;
+        ctx.fillStyle = grad;
+        ctx.fillRect(h.x, h.y - 8, h.w, h.h + 16);
+      }
     } else if (h.type === "eruption") {
       const warning = h.telegraph > 0;
       const x = h.x - h.w / 2;
       const baseY = eruptionBaseY();
       const y = baseY - h.h;
+      const pillarArt = warning ? null : artImage("hazard-lava-pillar");
+      if (pillarArt) {
+        ctx.globalAlpha = 0.95;
+        ctx.drawImage(pillarArt, x - 10, y - 14, h.w + 20, h.h + 14);
+        continue;
+      }
       ctx.globalAlpha = warning ? 0.64 : 0.9;
       ctx.fillStyle = warning ? "rgba(255, 141, 183, 0.18)" : "rgba(255, 111, 82, 0.82)";
       ctx.strokeStyle = warning ? "#ff8db7" : "#fff3a4";
@@ -11680,7 +12243,31 @@ function drawMovingPlatformGlow(p) {
   ctx.restore();
 }
 
+// ---------- あとから足せる絵（assets/ に置くだけで、手がきの図形と入れかわる。なければ今までどおり） ----------
+// 依頼文は IMAGE_PROMPTS.md の「M. ステージの小物とボスの弾」
+const EXTRA_ART_NAMES = [
+  "block-item", "block-hidden", "hazard-spike", "hazard-lava-pool", "hazard-lava-pillar", "hazard-fire-bar",
+  "item-life-star", "boss-shot-orb", "boss-shot-candy", "boss-shot-fire", "boss-shot-ice", "boss-shot-bubble",
+  "boss-shot-gear", "boss-shot-dark", "boss-icicle", "boss-meteor"
+];
+const extraArt = {};
+for (const name of EXTRA_ART_NAMES) {
+  const img = new Image();
+  img.onerror = () => { extraArt[name] = null; };
+  img.src = `assets/${name}.png`;
+  extraArt[name] = img;
+}
+function artImage(name) {
+  const img = extraArt[name];
+  return img && img.complete && img.naturalWidth > 0 ? img : null;
+}
+
 function drawBreakableBlock(b) {
+  const blockArt = artImage(b.hiddenBox ? "block-hidden" : "block-item");
+  if (blockArt) {
+    ctx.drawImage(blockArt, b.x - 2, b.y - 2, b.w + 4, b.h + 4);
+    return;
+  }
   const grad = ctx.createLinearGradient(b.x, b.y, b.x + b.w, b.y + b.h);
   if (b.hiddenBox) {
     grad.addColorStop(0, "#9ee8ff");
@@ -11788,9 +12375,14 @@ function drawItems() {
     } else if (item.type === "hp") {
       ctx.save();
       ctx.translate(item.x + item.w / 2, item.y + item.h / 2);
-      ctx.rotate(performance.now() / 220);
-      ctx.fillStyle = "#ffd85a";
-      drawTinyStar(0, 0, 14);
+      const lifeArt = artImage("item-life-star");
+      if (lifeArt) {
+        ctx.drawImage(lifeArt, -20, -20 + Math.sin(performance.now() / 200) * 3, 40, 40);
+      } else {
+        ctx.rotate(performance.now() / 220);
+        ctx.fillStyle = "#ffd85a";
+        drawTinyStar(0, 0, 14);
+      }
       ctx.restore();
     } else {
       const dropPower = item.weaponPower ?? 1;
@@ -12053,6 +12645,66 @@ function drawBeams() {
 function drawBossOrb(b) {
   const r = Math.max(b.w, b.h) / 2;
   const colors = b.colors || ["#fff3a4", "#ff8db7", "#c8b2ff"];
+  const shotArt = artImage(`boss-shot-${b.kind ?? "orb"}`);
+  if (shotArt) {
+    // 歯車はころがる向きに回す。氷のかけらは進む向きへ向ける。ほかは、ふわっとゆれるだけ
+    if (b.kind === "gear") ctx.rotate(b.x / r);
+    else if (b.kind === "ice") ctx.rotate(Math.atan2(b.vy, b.vx));
+    const size = r * 2.7;
+    ctx.drawImage(shotArt, -size / 2, -size / 2, size, size);
+    return;
+  }
+  if (b.kind === "gear") {
+    // 歯車：ぎざぎざの輪が、ころがる向きに回る
+    ctx.rotate((b.x / r) * (b.vx < 0 ? 1 : -1) * -1);
+    ctx.fillStyle = colors[1];
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2;
+      const rr = i % 2 ? r * 0.78 : r * 1.08;
+      ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = colors[0];
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.34, 0, Math.PI * 2);
+    ctx.fill();
+    return;
+  }
+  if (b.kind === "ice") {
+    // 氷のかけら：とがったひし形
+    ctx.rotate(Math.atan2(b.vy, b.vx));
+    ctx.fillStyle = colors[1];
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(r * 1.7, 0);
+    ctx.lineTo(0, r * 0.8);
+    ctx.lineTo(-r * 1.1, 0);
+    ctx.lineTo(0, -r * 0.8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    return;
+  }
+  if (b.kind === "bubble") {
+    ctx.fillStyle = "rgba(190, 240, 255, 0.4)";
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 1.15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(-r * 0.4, -r * 0.4, r * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+    return;
+  }
   const glow = ctx.createRadialGradient(0, 0, 4, 0, 0, r * 1.9);
   glow.addColorStop(0, "rgba(255,255,255,0.95)");
   glow.addColorStop(0.35, colors[1]);
@@ -12285,10 +12937,53 @@ function drawEnemies() {
     }
     if (e.boss) drawBossAlien(e);
     else drawPastelAlien(e);
+    if (e.boss && e.alive && e.script) drawBossSigns(e);
     if (waking) ctx.restore();
     // ピヨっているあいだは点滅させず、頭の上に星を回す
     if (e.alive && e.stun > 0) drawDizzyStars(e);
   }
+}
+
+// ボスの「変身中のバリア」と、突進・ジャンプの前の「！」
+function drawBossSigns(e) {
+  const sc = e.script;
+  const t = performance.now() / 1000;
+  const cx = e.x + e.w / 2;
+  const cy = e.y + e.h / 2;
+  ctx.save();
+  if ((e.invuln ?? 0) > 0 && (e.fade ?? 1) > 0.5) {
+    const r = Math.max(e.w, e.h) * 0.78;
+    for (let i = 0; i < 2; i++) {
+      const k = (t * 1.6 + i * 0.5) % 1;
+      ctx.globalAlpha = (1 - k) * 0.7;
+      ctx.strokeStyle = i ? "#fff3a4" : "#ffffff";
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * (0.75 + k * 0.5), 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+  const big = sc.phase === "wind" && ["charge", "slide", "slideBack", "dash", "leap"].includes(sc.action);
+  if (big) {
+    const my = e.y - e.h * 0.7 - 30 + Math.sin(t * 30) * 4;
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#ff3d5a";
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(cx, my + 40);
+    ctx.lineTo(cx - 24, my);
+    ctx.lineTo(cx + 24, my);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "900 22px Segoe UI, system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("!", cx, my + 14);
+  }
+  ctx.restore();
 }
 
 // 攻撃が当たった瞬間に重ねる、赤くそめた絵（画像ごとに1回だけ作る）
@@ -12468,7 +13163,7 @@ function drawBossImage(e) {
   if (!img || !img.complete || img.naturalWidth <= 0) return false;
   const dying = !e.alive;
   const t = dying ? 1 - e.defeated / 0.42 : 0;
-  const alpha = dying ? Math.max(0, 1 - t * 0.86) : 1;
+  const alpha = (dying ? Math.max(0, 1 - t * 0.86) : 1) * (e.fade ?? 1);
   const bob = dying ? 0 : Math.sin(performance.now() / 260 + e.x) * 3;
   const drawH = e.finalBoss ? 228 : e.h * 1.65;
   const drawW = drawH * (img.naturalWidth / img.naturalHeight);
@@ -12497,7 +13192,7 @@ function drawBossImage(e) {
   }
   ctx.restore();
 
-  if (e.alive) {
+  if (e.alive && (e.fade ?? 1) > 0.5) {
     const hpRatio = Math.max(0, e.hp / e.maxHp);
     ctx.save();
     ctx.fillStyle = "rgba(255, 255, 255, 0.84)";
@@ -14419,7 +15114,9 @@ document.addEventListener("touchmove", event => event.preventDefault(), { passiv
 state = newState();
 state.mode = "title";
 applyLanguage();
-const debugParams = new URLSearchParams(window.location.search);
+// ステージに直接入る ?stage=1-3 は、開発中のパソコン（localhost）でだけ使える。公開サイトでは使えない
+const debugLocal = ["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname);
+const debugParams = new URLSearchParams(debugLocal ? window.location.search : "");
 if (debugParams.get("stage") === "final") {
   startDirectCourse(courses.length - 1);
 } else if (/^\d-\d$/.test(debugParams.get("stage") ?? "")) {

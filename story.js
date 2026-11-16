@@ -104,6 +104,7 @@
       data.completed = [...completedCourses];
       data.keep = campaignKeep ? JSON.parse(JSON.stringify(campaignKeep)) : null;
       data.best = Math.max(data.best || 0, campaignKeep?.score || 0);
+      data.savedAt = Date.now();
       localStorage.setItem(SAVE_KEY, JSON.stringify(data));
     } catch (_) {}
   }
@@ -125,7 +126,7 @@
   }
 
   function hasSave() {
-    return data.unlocked > 0 || data.completed.length > 0 || !!data.seen.opening;
+    return data.unlocked > 0 || data.completed.length > 0 || !!data.seen.opening || !!data.keep;
   }
 
   function resetSave() {
@@ -1382,6 +1383,11 @@
       starPopped: 0, leaving: false, fireT: 0.4,
       gateX: f.x + f.w / 2, gateY: f.y + 122
     };
+    // クリアしたら、すぐに記録する（結果の画面でアプリを閉じても、クリアが消えない）
+    completedCourses.add(currentCourse);
+    unlockedCourse = Math.max(unlockedCourse, Math.min(currentCourse + 1, courses.length - 1));
+    campaignKeep = campaignSnapshotFromState();
+    persist();
     state.mode = "stageClear";
     FX.resetCombo();
     FX.confetti(opts.boss ? 90 : 60);
