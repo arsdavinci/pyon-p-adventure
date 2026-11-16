@@ -7883,8 +7883,8 @@ function damagePlayer(fell = false, sourceEnemy = null, canStealWeapon = false) 
   const p = state.player;
   if (state.mode === "dying" || state.mode === "respawning") return;
   if (!fell && p.invincible > 0) return;
-  // 光線銃をうばわれるのは 1-1（教えるところ）だけ。ほかのステージではうばわれない
-  if (!fell && canStealWeapon && currentCourse === 0 && sourceEnemy && sourceEnemy.alive && hasEquippedWeapon() && !Shop.has("strap") && !isRideable(state.weaponPower)) {
+  // 敵は、どのステージでも光線銃をうばう（ストラップがあれば うばわれない）
+  if (!fell && canStealWeapon && sourceEnemy && sourceEnemy.alive && hasEquippedWeapon() && !Shop.has("strap") && !isRideable(state.weaponPower)) {
     const playerPower = state.weaponPower;
     const enemyPower = sourceEnemy.weaponPower ?? 0;
     if (enemyPower === 0 || playerPower > enemyPower || (sourceEnemy.boss && playerPower >= enemyPower)) {
