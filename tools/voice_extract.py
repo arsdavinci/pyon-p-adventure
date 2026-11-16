@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "assets" / "voice" / "script.json"
 
 NAMES = {"narr": "ナレーター", "pyon": "ぴょんぴー", "ran": "らんぴょん", "luva": "ザ・ルーヴァ・セレス",
-         "yana": "ヤナビス", "maou": "魔王", "mystery": "？？？", "kaguya": "かぐや様"}
+         "yana": "ヤナビス", "maou": "魔王", "mystery": "？？？", "kaguya": "かぐや様", "noir": "ノワール"}
 
 # アフレコブースのキャスト案（声のイメージ。ブースで直してOK）
 CAST = {
@@ -34,6 +34,8 @@ CAST = {
     "maou": {"name": "魔王", "description": "低く太い、いばった魔王の声。じつは芸人を目指していた、どこかさみしげな老人", "gender": "男性", "age": "50代以上"},
     "kaguya": {"name": "かぐや様", "description": "月の皇族のお姫様。ムーニアンのうさ耳の少女。上品でおっとりした、やさしいお姫様言葉（〜ですわ、〜くださいませ）。ぴょんぴーのあこがれの人",
                "gender": "女性", "age": "10代"},
+    "noir": {"name": "ノワール", "description": "メカの街の路地裏で、あやしい武器屋をやっている黒ネコのロボット。マフィアの取引みたいに、低く小声で、ねっとりしゃべる。関西弁まじりで、口ぐせは「ニャフフ」。悪そうだけど、どこかかわいい",
+             "gender": "男性", "age": "40〜50代"},
     # ？？？は正体をかくした魔王
     "mystery": {"name": "魔王", "description": "低く太い、いばった魔王の声。じつは芸人を目指していた、どこかさみしげな老人", "gender": "男性", "age": "50代以上"},
 }
@@ -126,6 +128,12 @@ def main() -> None:
         rows = stages.setdefault(stage, [])
         if all(r["id"] != row["id"] for r in rows):
             rows.append(row)
+
+    # 武器屋の店主ノワール（shop.js の NOIR）：ステージ = shop
+    shop_src = (ROOT / "shop.js").read_text(encoding="utf-8")
+    noir = re.search(r"const NOIR = \{(.*?)\n  \};", shop_src, re.S).group(1)
+    for m in re.finditer(r'\w+: \[' + STR, noir):
+        add("shop", "noir", unq(m.group(1)), "shop.js", 0)
 
     for sid, lines in story_lines().items():
         for who, text, line in lines:

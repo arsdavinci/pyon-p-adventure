@@ -89,6 +89,22 @@
   };
   let kind = "general";
   const isArms = () => kind === "arms";
+  // 武器屋の店主ノワールのセリフ（声つき。台本 assets/voice/script.json の shop に入る。中身が変わる言葉は入れない）
+  const NOIR = {
+    first: ["……ニャフフ。よう来たな、うさぎのお客。ここは表じゃ売れん銃の店や。月も星も、Lv7 までならそろっとるで。",
+      "...Nyahaha. Welcome, little bunny. I sell guns you won't find out front. Moon and star, up to Lv7."],
+    again: ["ニャフフ……また来たんか。今日はどの銃にする？ 爆弾もあるで。", "Nyahaha... back again? Which gun today? I've got bombs too."],
+    gun: ["まいどあり。……どこで買うたかは、ないしょやで。", "Pleasure doing business. ...You didn't get it from me, nyah."],
+    bomb: ["まいど、ニャフ。爆弾、かばんに入れといたで。ばくだんボタンでポイや。", "Thanks, nyah. Bomb's in your bag. Toss it with the bomb button."],
+    bombMax: ["爆弾は5個までや。あぶないからな、ニャフ。", "Five bombs max. Safety first, nyah."],
+    full: ["持ち物がいっぱいや。いらん銃を売るか、合成してから来ぃ。", "Your bag is full. Sell or fuse something first."],
+    poor: ["……ルナコインが足りんのう。出直してきぃ、ニャフ。", "...Not enough Luna Coins. Come back later, nyah."],
+    sellTab: ["いらん銃は買い取ったる。……出どころは聞かんでおくわ。", "I'll buy guns you don't need. ...I won't ask where they came from."],
+    sold: ["ええ品や。ルナコイン、置いとくで。", "Fine piece. Here are your Luna Coins."],
+    noSell: ["売れる銃がないやないか。ひやかしは帰りぃ。", "You've got nothing to sell. No window shopping, nyah."],
+    lastOne: ["それを売ったら手ぶらやで。この街で丸腰は、あぶないで。", "Sell that and you're unarmed. Not safe in this town."]
+  };
+  const noir = key => say(NOIR[key][0], NOIR[key][1]);
 
   const art = {};
   const load = (key, file) => {
@@ -178,6 +194,8 @@
   const pairs = () => { mergeOldSnacks(wallet()); return wallet().kakiTotal ?? 0; };
 
   function say(ja, en) {
+    // 武器屋では、ノワールの声を流す（声がないセリフは何も鳴らない）
+    if (isArms() && typeof Voice !== "undefined") Voice.play("shop", ja);
     line = [ja, en];
     lineT = 0;
   }
@@ -227,12 +245,7 @@
         if (isArms()) {
           const firstArms = !Story.data.seen.armsVisit;
           Story.data.seen.armsVisit = true;
-          say(firstArms
-            ? "……ニャフフ。よう来たな、うさぎのお客。ここは表じゃ売れん銃の店や。月も星も、Lv7 までならそろっとるで。"
-            : "ニャフフ……また来たんか。今日はどの銃にする？ 爆弾もあるで。",
-          firstArms
-            ? "...Nyahaha. Welcome, little bunny. I sell guns you won't find out front. Moon and star, up to Lv7."
-            : "Nyahaha... back again? Which gun today? I've got bombs too.");
+          noir(firstArms ? "first" : "again");
           return;
         }
         const first = !Story.data.seen.shopVisit;
@@ -286,6 +299,7 @@
     }
     if (pairs() < it.price) {
       playSfx("locked");
+      if (isArms()) { noir("poor"); return; }
       const lack = it.price - pairs();
       say(it.id === "statue" ? "それは夢の品や。こつこつ集めて、いつか買いに来てな。" : `あと ${lack} 枚足りへんな。ためてまた来てや。`,
         it.id === "statue" ? "That one is a dream item. Keep saving and come back someday." : `You're ${lack} coins short. Save up and come back.`);
@@ -293,12 +307,12 @@
     }
     if (it.id === "bomb" && bombCount() >= BOMB_MAX_SHOP) {
       playSfx("locked");
-      say(`爆弾は ${BOMB_MAX_SHOP} 個までや。あぶないからな、ニャフ。`, `${BOMB_MAX_SHOP} bombs max. Safety first, nyah.`);
+      noir("bombMax");
       return;
     }
     if (it.power && !addGun(w, it.power)) {
       playSfx("locked");
-      say("持ち物がいっぱいや。いらん武器を売るか、合成してから来ぃ。", "Your bag is full. Sell or fuse something first.");
+      noir("full");
       return;
     }
     w.kakiTotal -= it.price;
@@ -307,9 +321,9 @@
     state.peaTotal = 0;
     if (it.id === "bomb") {
       Story.data.bombStock = bombCount() + 1;
-      say(`まいど、ニャフ。爆弾、かばんに入れといたで（${bombCount()}個）。ばくだんボタンでポイや。`, `Thanks, nyah. Bomb's in your bag (${bombCount()}). Toss it with the bomb button.`);
+      noir("bomb");
     } else if (it.power) {
-      say(`${weaponName(it.power)}、まいどあり。……どこで買うたかは、ないしょやで。`, `One ${weaponName(it.power)}. ...You didn't get it from me, nyah.`);
+      noir("gun");
     } else if (it.id === "manju") {
       // その場で食べずに、かばんへ（そうびの欄から、好きなときに食べる）
       if (manjuCount() >= MANJU_MAX) {
@@ -423,14 +437,16 @@
     const entry = list[page * SELL_ROWS + sel];
     if (!entry) {
       playSfx("locked");
-      say("売れる武器がないで。", "You have no weapons to sell.");
+      if (isArms()) noir("noSell");
+      else say("売れる武器がないで。", "You have no weapons to sell.");
       return;
     }
     const w = wallet();
     // そうび中の武器が最後の1つなら売らない（手ぶらにならないように）
     if (entry.count <= 1 && w.weaponPower === entry.power && w.hasGun) {
       playSfx("locked");
-      say("それはそうび中の最後の1つやろ。手ぶらになってまうで。", "That's the last one you have equipped. You'd be empty-handed!");
+      if (isArms()) noir("lastOne");
+      else say("それはそうび中の最後の1つやろ。手ぶらになってまうで。", "That's the last one you have equipped. You'd be empty-handed!");
       return;
     }
     const price = sellPrice(entry.power);
@@ -448,7 +464,8 @@
       state.inventoryItems = [...items];
     }
     playSfx("pickup");
-    say(`${weaponName(entry.power)}、買い取ったで！ ルナコイン ${price} 枚や。`,
+    if (isArms()) noir("sold");
+    else say(`${weaponName(entry.power)}、買い取ったで！ ルナコイン ${price} 枚や。`,
       `I'll take that ${weaponName(entry.power)}! Here's ${price} Luna Coins.`);
     Story.persist();
     const rows = sellRowCount();
@@ -462,7 +479,8 @@
     sel = 0;
     page = 0;
     playSfx("cursor");
-    if (tab === 1) say("いらん武器があったら買い取るで。強い武器ほど高う買うで。", "Got weapons you don't need? I'll buy them. The stronger, the better the price.");
+    if (tab === 1 && isArms()) noir("sellTab");
+    else if (tab === 1) say("いらん武器があったら買い取るで。強い武器ほど高う買うで。", "Got weapons you don't need? I'll buy them. The stronger, the better the price.");
   }
   const backRect = () => ({ x: 34, y: 20, w: 170, h: 46 });
 
