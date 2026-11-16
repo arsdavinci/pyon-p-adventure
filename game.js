@@ -3602,6 +3602,8 @@ function pauseGame() {
 
 function resumeGame() {
   if (!state || state.mode !== "paused") return;
+  // 「タイトルにもどる？」が出ているあいだは、再開しない（うしろでゲームが動いてしまっていた）
+  if (state.titleAsk) return;
   state.mode = state.pauseReturnMode === "respawning" ? "respawning" : "playing";
   state.pauseReturnMode = null;
   playSfx("cancel");
@@ -5934,7 +5936,7 @@ function getAudioContext() {
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
   if (!AudioContextClass) return null;
   if (!audioCtx) audioCtx = new AudioContextClass();
-  if (audioCtx.state === "suspended") {
+  if (audioCtx.state !== "running") {
     audioCtx.resume().then(() => {
       audioUnlocked = true;
     }).catch(() => {});
@@ -12992,10 +12994,12 @@ function redTintOf(img) {
   let tinted = redTintCache.get(img);
   if (tinted) return tinted;
   tinted = document.createElement("canvas");
-  tinted.width = img.naturalWidth;
-  tinted.height = img.naturalHeight;
+  // 大きさをおさえる（スマホでは小さい絵を使っているのに、ここだけ元の大きさで作ってメモリを食っていた）
+  const tintScale = Math.min(1, 512 / Math.max(img.naturalWidth, img.naturalHeight));
+  tinted.width = Math.max(1, Math.round(img.naturalWidth * tintScale));
+  tinted.height = Math.max(1, Math.round(img.naturalHeight * tintScale));
   const g = tinted.getContext("2d");
-  g.drawImage(img, 0, 0);
+  g.drawImage(img, 0, 0, tinted.width, tinted.height);
   g.globalCompositeOperation = "source-atop";
   g.fillStyle = "#ff2d55";
   g.fillRect(0, 0, tinted.width, tinted.height);
@@ -14154,6 +14158,23 @@ function updateGamepad() {
     if (gamepadState.right && !gamepadState.rightLatch) registerMoveTap(1);
   }
 
+  if (state.titleAsk) {
+    // 「タイトルにもどる？」は、コントローラーでも えらべる（左右でえらぶ・A で決定・B でやめる）
+    if ((gamepadState.left && !gamepadState.leftLatch) || (gamepadState.right && !gamepadState.rightLatch)) handleTitleAskKey("ArrowLeft");
+    if (jumpPressed && !gamepadState.jumpLatch) handleTitleAskKey("Space");
+    else if (runPressed && !gamepadState.runLatch) handleTitleAskKey("Escape");
+    gamepadState.leftLatch = gamepadState.left;
+    gamepadState.rightLatch = gamepadState.right;
+    gamepadState.upLatch = gamepadState.up;
+    gamepadState.downLatch = gamepadState.down;
+    gamepadState.runLatch = runPressed;
+    gamepadState.selectLatch = selectPressed;
+    gamepadState.startLatch = startPressed;
+    gamepadState.jumpLatch = jumpPressed;
+    gamepadState.shootLatch = shootPressed;
+    return;
+  }
+
   if (state.mode === "title" && state.settingsMenu) {
     if (gamepadState.left && !gamepadState.leftLatch) handleSettingsKey("ArrowLeft");
     if (gamepadState.right && !gamepadState.rightLatch) handleSettingsKey("ArrowRight");
@@ -14368,7 +14389,7 @@ function handleKeyDown(code, event = { repeat: false }) {
     else if (state.mode === "playing" || state.mode === "respawning") pauseGame();
     return;
   }
-  if (code === "Tab" || code === "Backspace" || code === "Select" || ((code === "KeyI" || code === "KeyE") && !event.repeat && state.mode !== "inventory")) {
+  if (!event.repeat && (code === "Tab" || code === "Backspace" || code === "Select") || ((code === "KeyI" || code === "KeyE") && !event.repeat && state.mode !== "inventory")) {
     toggleInventory();
     return;
   }
@@ -14437,6 +14458,19 @@ function handleKeyUp(code) {
 }
 
 window.addEventListener("keyup", event => handleKeyUp(normalizeInputCode(event)));
+// ほかの画面に切りかえたら、おしっぱなしのキーをはなす（もどったときに、勝手に走りつづけていた）
+window.addEventListener("blur", () => keys.clear());
+// アプリがかくれたら、ポーズして音を止める。もどったら音をもどす
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    keys.clear();
+    if (state && (state.mode === "playing" || state.mode === "respawning")) pauseGame();
+    try { audioCtx?.suspend(); } catch (_) {}
+  } else {
+    try { audioCtx?.resume(); } catch (_) {}
+    lastTime = performance.now();
+  }
+});
 startButton.addEventListener("click", () => {
   unlockAudio();
   if (state?.mode === "ended" && gameOverContinueAvailable) continueFromGameOver();

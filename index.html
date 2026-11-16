@@ -143,7 +143,7 @@
         const hadController = !!navigator.serviceWorker.controller;
         let reloading = false;
         let pendingReload = false;
-        const canReloadNow = () => typeof state === "undefined" || !state || !["playing", "bossIntro", "respawning"].includes(state.mode);
+        const canReloadNow = () => typeof state === "undefined" || !state || ["title", "worldMap"].includes(state.mode);
         const reloadForUpdate = () => {
           if (reloading) return;
           if (!canReloadNow()) { pendingReload = true; return; }
