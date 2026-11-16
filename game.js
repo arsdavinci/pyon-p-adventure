@@ -2628,6 +2628,42 @@ function sanitizeAllAreas() {
 }
 sanitizeAllAreas();
 
+// ---------- ボスステージは、ボスの部屋だけ ----------
+// ボスにたどりつくまでの道はなくして、少し歩けば すぐボス戦。★3つは、ボスの部屋の上の足場に置く
+const BOSS_ROOM_START = 3400;
+function makeBossOnly(course) {
+  const swim = course.trait === "underwater";
+  const lv = course.level;
+  const boss = lv.enemies.find(e => e.boss);
+  if (!boss) return;
+  const left = boss.left - 20;
+  const right = Math.min(WORLD_WIDTH, boss.right + 60);
+  const span = right - left;
+  // 床は、入口から部屋の右はしまで ひとつづき。左には高いかべ（何もない所へ行かないように）
+  course.platforms = swim ? [] : [rect(BOSS_ROOM_START, GROUND_Y, WORLD_WIDTH - BOSS_ROOM_START + 200, 48)];
+  course.platforms.push(rect(BOSS_ROOM_START - 400, -1200, 400, canvas.height + 1248));
+  course.blocks = [];
+  lv.enemies = [boss];
+  lv.coins = [];
+  const upY = swim ? 200 : GROUND_Y - 170 - 60;
+  const ks = boss.finalBoss ? [0.22, 0.56] : [0.12, 0.52];
+  lv.starItems = [
+    starItem(left + span * ks[0] + 110, upY),
+    starItem(left + span * ks[1] + 110, upY),
+    starItem(BOSS_ROOM_START + 260, swim ? 160 : GROUND_Y - 150)
+  ];
+  for (const k of ["keys", "springs", "chests", "doors", "spikes", "lowBars", "crawlSpots", "rails", "lavaGeysers", "lavaPools", "rotatingFires", "oxygenItems", "seaGates"]) {
+    if (Array.isArray(lv[k])) lv[k] = [];
+  }
+  // 海のボス：酸素の泡を、部屋の入口と上のほうに
+  if (swim) lv.oxygenItems = [oxygenItem(BOSS_ROOM_START + 150, 140), oxygenItem(left + span * 0.3, 110), oxygenItem(left + span * 0.7, 110)];
+  course.spawn = { x: BOSS_ROOM_START + 120, y: swim ? 300 : GROUND_Y };
+  course.climbStage = false;
+  course.climbMeta = null;
+  course.puzzle = null;
+}
+courses.forEach(c => { if (c.bossStage) makeBossOnly(c); });
+
 // ステージ全体の★の数（エリアに分かれていても合計で数える）
 function courseStarTotal(index) {
   const c = courses[index];
@@ -2995,9 +3031,10 @@ function newState() {
   applyCourse(currentCourse);
   FX.resetStage();
   Gimmick.resetStage();
+  const bossSpawn = courses[currentCourse]?.bossStage ? courses[currentCourse].spawn : null;
   return {
     mode: "playing",
-    camera: 0,
+    camera: bossSpawn ? Math.max(0, bossSpawn.x - 220) : 0,
     cameraY: cameraYMax(),
     keys: Shop.has("key") ? 1 : 0,
     keyItems: (level.keys ?? []).map(k => ({ ...k, taken: false })),
@@ -3016,8 +3053,8 @@ function newState() {
     lives: MAX_LIVES,
     hp: MAX_HP,
     player: {
-      x: 72,
-      y: 380,
+      x: bossSpawn ? bossSpawn.x : 72,
+      y: bossSpawn ? bossSpawn.y - 54 : 380,
       w: 38,
       h: 54,
       vx: 0,
@@ -4105,6 +4142,8 @@ function beginBossStage(e, stage) {
   FX.floater(cx, e.y - 40, text, { color: "#ffffff", stroke: stage >= 2 ? "#ff3d7f" : "#ff8a3d", size: 30, life: 1.5 });
   playSfx("explosion", cx);
   playSfx("whoosh", cx);
+  // 変身のごほうびに、ライフの星を1つ落とす（ボスの部屋には回復がないので）
+  spawnItem(cx, e.y + 10, "hp");
 }
 
 // ボスへのダメージ：1秒あたり guard までは、そのまま通る。こえた分は少しだけ通る
