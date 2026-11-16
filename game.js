@@ -3729,7 +3729,8 @@ function update(dt) {
   state.stompBoostTimer = Math.max(0, (state.stompBoostTimer ?? 0) - dt);
   state.stompLateBoostTimer = Math.max(0, (state.stompLateBoostTimer ?? 0) - dt);
   state.playClock = (state.playClock ?? 0) + dt;
-  state.time -= dt;
+  // ボス戦は、時間を気にせず じっくり戦えるように、時間がへらない
+  if (!courses[currentCourse]?.bossStage) state.time -= dt;
   // 時間切れ：HP にかかわらず、その場でアウト（ヤナビス「時間切れです！」→ ぴょんぴー「ゆっくりしすぎたわぁ」）
   if (state.time <= 0) {
     state.time = 0;
@@ -8059,7 +8060,7 @@ function updateHud() {
   if (peaCount) peaCount.textContent = state.peaTotal;
   scoreCount.textContent = state.score;
   lifeCount.textContent = `${"★".repeat(clamp(state.lives, 0, MAX_LIVES))}${"☆".repeat(MAX_LIVES - clamp(state.lives, 0, MAX_LIVES))}`;
-  timeCount.textContent = Math.max(0, Math.ceil(state.time));
+  timeCount.textContent = courses[currentCourse]?.bossStage && state.mode !== "worldMap" ? "∞" : Math.max(0, Math.ceil(state.time));
 }
 
 function draw() {
