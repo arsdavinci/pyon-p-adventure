@@ -539,7 +539,13 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
         b.blur();
         unlockAudio();
         const id = b.dataset.gear;
-        if (id === "manju") {
+        if (id === "bomb") {
+          Story.data.bombOn = Story.data.bombOn === false;
+          Story.persist();
+          const on = Story.data.bombOn;
+          playSfx(on ? "equip" : "cursor");
+          gearSay(on ? "爆弾をそうびしたじょ！ Xでポイじゃ" : "爆弾をはずしたじょ。Xも銃になる", on ? "Bombs equipped! Toss with X" : "Bombs off. X shoots again");
+        } else if (id === "manju") {
           const r = Shop.useManju();
           if (r === true) gearSay("ぶどうまんじゅう、もぐもぐ！", "Munch munch, Grape Manju!");
           else if (r === "full") { playSfx("locked"); gearSay("いまは満タンじゃ。あとで食べるじょ", "Already full. Saving it for later."); }
@@ -557,7 +563,9 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
     }
     const gear = Shop.gearList();
     const manju = Shop.manjuCount();
-    const key = `${manju}|${gear.map(it => `${it.id}${Shop.has(it.id) ? 1 : 0}`).join(",")}|${language}`;
+    const bombs = Math.max(0, Story.data.bombStock | 0);
+    const bombOn = Story.data.bombOn !== false;
+    const key = `${bombs}${bombOn ? 1 : 0}|${manju}|${gear.map(it => `${it.id}${Shop.has(it.id) ? 1 : 0}`).join(",")}|${language}`;
     if (key === gearKey) return;
     gearKey = key;
     gearBox.textContent = "";
@@ -575,6 +583,14 @@ ${desc}`;
       extra(b);
       gearBox.appendChild(b);
     };
+    if (bombs > 0) {
+      add("bomb", L("ネコネオン爆弾", "Neko Neon Bomb"), L("タップで そうび／はずす（そうび中は Xで投げる）", "Tap to equip / unequip (X throws while equipped)"), b => {
+        const n = document.createElement("i");
+        n.textContent = bombOn ? `×${bombs}` : "OFF";
+        if (!bombOn) b.classList.add("is-off");
+        b.appendChild(n);
+      });
+    }
     if (manju > 0) {
       add("manju", Shop.itemName("manju"), L("タップで食べる（ライフとHPが満タン）", "Tap to eat (full lives and HP)"), b => {
         const n = document.createElement("i");

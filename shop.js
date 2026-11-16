@@ -183,7 +183,7 @@
   }
   const itemName = id => { const it = ITEMS.find(x => x.id === id); return it ? L(it.ja[0], it.en[0]) : id; };
   const itemDesc = id => { const it = ITEMS.find(x => x.id === id); return it ? L(it.ja[1], it.en[1]) : ""; };
-  const itemIcon = id => { const it = ITEMS.find(x => x.id === id); return `assets/${it?.file ?? `shop-item-${id}`}.png`; };
+  const itemIcon = id => { if (id === "bomb") return "assets/item-bomb.png"; const it = ITEMS.find(x => x.id === id); return `assets/${it?.file ?? `shop-item-${id}`}.png`; };
   const unlocked = () => unlockedCourse >= UNLOCK_COURSE;
 
   function wallet() {
@@ -321,6 +321,7 @@
     state.peaTotal = 0;
     if (it.id === "bomb") {
       Story.data.bombStock = bombCount() + 1;
+      Story.data.bombOn = true; // 買ったら、そうびの欄で装備した状態にする
       noir("bomb");
     } else if (it.power) {
       noir("gun");

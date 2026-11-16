@@ -4555,7 +4555,7 @@ function updatePlayer(dt) {
   const dxInput = (movingRight ? 1 : 0) - (movingLeft ? 1 : 0);
   const doubleTapRun = isDoubleTapRunActive(dxInput);
   const wantsRun = isRunHeld(dxInput) || doubleTapRun;
-  const wantsShoot = (!tut || tut.shoot) && (keys.has("KeyX") || keys.has("KeyY") || keys.has("KeyJ") || gamepadState.shoot);
+  const wantsShoot = (!tut || tut.shoot) && (keys.has("KeyX") || keys.has("KeyY") || keys.has("KeyJ") || gamepadState.shoot || (!bombReady() && bombButtonHeld()));
   const trait = currentStageTrait();
   const slippery = trait === "iceSlide" && !Shop.has("spikeShoes");
   // しゃがむ（地面で↓）。しゃがんだまま←→で、ほふく前進。敵の弾は頭の上を通りすぎる
@@ -4722,7 +4722,7 @@ function updateSwimmingPlayer(dt) {
   const dxInput = (movingRight ? 1 : 0) - (movingLeft ? 1 : 0);
   const doubleTapRun = isDoubleTapRunActive(dxInput);
   const wantsRun = isRunHeld(dxInput) || doubleTapRun;
-  const wantsShoot = keys.has("KeyX") || keys.has("KeyY") || keys.has("KeyJ") || gamepadState.shoot;
+  const wantsShoot = keys.has("KeyX") || keys.has("KeyY") || keys.has("KeyJ") || gamepadState.shoot || (!bombReady() && bombButtonHeld());
   const dx = dxInput;
   const dy = (movingDown ? 1 : 0) - (movingUp ? 1 : 0);
   const len = Math.hypot(dx, dy) || 1;
@@ -4783,7 +4783,7 @@ function updateFlyingPlayer(dt) {
   p.vy += ((dy / len) * speed - p.vy) * Math.min(1, dt * 7);
   if (dx) p.facing = dx;
   p.aim = p.facing < 0 ? Math.PI : 0;
-  const wantsShoot = keys.has("KeyX") || keys.has("KeyY") || keys.has("KeyJ") || gamepadState.shoot;
+  const wantsShoot = keys.has("KeyX") || keys.has("KeyY") || keys.has("KeyJ") || gamepadState.shoot || (!bombReady() && bombButtonHeld());
   const shootFresh = wantsShoot && !p.shootHeld;
   p.shootHeld = wantsShoot;
   updateBombThrow(p);
@@ -7511,18 +7511,14 @@ const BOMB_BOSS_RATE = 0.08;
 const BOMB_MAX = 5;
 const BOMB_RADIUS = 320; // 爆発の広さ（画面の大部分の敵をまきこむ）
 const bombStock = () => (typeof Story !== "undefined" ? Math.max(0, Story.data.bombStock | 0) : 0);
+// 爆弾は、そうびの欄で「装備」して、1個以上あるときだけ投げる。そうでないときは、爆弾ボタンも銃のボタンになる
+const bombButtonHeld = () => keys.has("KeyC") || keys.has("KeyK") || !!gamepadState.bomb;
+const bombReady = () => bombStock() > 0 && typeof Story !== "undefined" && Story.data.bombOn !== false;
 function updateBombThrow(p) {
-  const wants = keys.has("KeyC") || keys.has("KeyK") || gamepadState.bomb;
+  const wants = bombReady() && bombButtonHeld();
   const fresh = wants && !p.bombHeld;
   p.bombHeld = wants;
   if (!fresh || state.mode !== "playing") return;
-  if (bombStock() <= 0) {
-    if ((state.noBombHintAt ?? -99) < (state.playClock ?? 0) - 2) {
-      state.noBombHintAt = state.playClock ?? 0;
-      FX.floater(p.x + p.w / 2, p.y - 30, language === "ja" ? "爆弾がないじょ（メカの街の武器屋で買える）" : "No bombs (buy them at the arms shop)", { color: "#ffffff", stroke: "#8b82b3", size: 18, life: 1.6 });
-    }
-    return;
-  }
   Story.data.bombStock = bombStock() - 1;
   Story.persist();
   const swim = isUnderwaterStage();
