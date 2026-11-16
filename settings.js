@@ -34,7 +34,7 @@ const Settings = (() => {
   // かならずどれかのボタンに要る役目（爆弾はなくてもよい）
   const REQUIRED = ["jump", "dash", "attack"];
   // pad：画面のゲーム機の A・B・X・Y のならび。"switch" = 上X・左Y・右A・下B（はじめはこちら） / "classic" = 上Y・左X・右B・下A
-  const DEFAULT = { master: 100, bgm: 10, voice: 10, sfx: 10, pad: "switch", buttons: { A: "jump", B: "dash", X: "attack", Y: "bomb" }, v: 2 };
+  const DEFAULT = { master: 100, bgm: 10, voice: 10, sfx: 10, pad: "switch", buttons: { A: "jump", B: "dash", X: "bomb", Y: "attack" }, v: 3 };
   // ゲーム中に、そのボタンが出すキー（キーボードと同じ処理に流す）
   const ACTION_CODE = { jump: "Space", dash: "KeyB", attack: "KeyX", bomb: "KeyC" };
   // 画面のボタンがもともと出すキー → どのボタンか
@@ -58,10 +58,11 @@ const Settings = (() => {
       if (d.pad !== "switch" && d.pad !== "classic") d.pad = DEFAULT.pad;
       if (!isFinite(d.master)) d.master = 100;
       for (const b of BUTTONS) if (!ACTIONS.includes(d.buttons[b])) d.buttons[b] = DEFAULT.buttons[b];
-      // 前のせってい（Y もこうげき）は、Y を爆弾にする
-      if ((saved.v ?? 1) < 2) {
-        if (d.buttons.Y === "attack" && d.buttons.X === "attack") d.buttons.Y = "bomb";
-        d.v = 2;
+      // 前のせってい（X・Y どちらもこうげき／X=こうげき・Y=爆弾）は、X を爆弾・Y をこうげきにする
+      if ((saved.v ?? 1) < 3) {
+        const x = d.buttons.X, y = d.buttons.Y;
+        if (x === "attack" && (y === "attack" || y === "bomb")) { d.buttons.X = "bomb"; d.buttons.Y = "attack"; }
+        d.v = 3;
       }
       // ジャンプ・ダッシュ・こうげきのどれかがないまま残っていたら、はじめの割り当てにもどす（遊べなくならないように）
       if (REQUIRED.some(a => !BUTTONS.some(b => d.buttons[b] === a))) d.buttons = { ...DEFAULT.buttons };
