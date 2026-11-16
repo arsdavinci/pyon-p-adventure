@@ -6494,12 +6494,13 @@ function canFusePower(power) {
 }
 
 // ---------- 武器の出かた ----------
-// ・ワールドごとに、出るレベルの上限がある（合成してようやく目標のレベルに届くように）
-//   ワールド1：Lv1 だけ → 集めて合成で Lv3 / ワールド2：〜Lv3 → Lv5 / ワールド3：〜Lv5 → Lv7
-//   ワールド4：〜Lv7 → 月Lv8 / ワールド5：月〜8・星〜7 → 星Lv8（ロボット） / ワールド6：〜Lv8
-// ・Lv2 より上は「一度でも合成して作った（持った）ことのある武器」だけが出る（つくった武器ずかん）
-// ・レベルが高いほど出にくい。持っている武器と同じものが出やすい
-const DROP_CAP = { moon: [1, 3, 5, 7, 8, 8], star: [1, 3, 5, 7, 7, 8] };
+// ・月🌙と星⭐は、最初から半々で出る
+// ・ワールドごとに、出るレベルの上限がある：ワールド1 は Lv1、2 は〜Lv2、3・4 は〜Lv3、5・6 は〜Lv4
+// ・Lv5〜Lv8 は、落ちていない。合成でしか作れない（ロボットは 月Lv8＋星Lv8 の合成）
+// ・上限までのレベルは、どれも同じくらい出る。持っている武器と同じものが、少し出やすい
+// ・星の海は銃を持った敵がとても多いので、敵が武器を落とすのは半分だけ
+// （計算では：ぜんぶ拾う人は 5-1 ごろ、4分の3 拾う人は 5-5 ごろ、半分の人は 6-5 ごろに ロボットが作れる）
+const DROP_CAP = { moon: [1, 2, 3, 3, 4, 4], star: [1, 2, 3, 3, 4, 4] };
 const DEX_POWERS = [...Array.from({ length: STAR_TOP }, (_, i) => i + 1), MECH_POWER, FIGHTER_POWER];
 
 function weaponDex() {
@@ -6530,7 +6531,7 @@ function dropAllowed(power) {
   if (!power || power > STAR_TOP) return false;
   const attr = weaponAttribute(power);
   const rank = weaponRank(power);
-  return rank <= DROP_CAP[attr][dropWorld()] && (rank === 1 || !!weaponDex()[power]);
+  return rank <= DROP_CAP[attr][dropWorld()];
 }
 
 // いちばん多く持っている武器（同じ数なら、そうび中の武器）
@@ -6556,7 +6557,7 @@ function pickDropPower(attrOnly = null) {
     const attr = attr2;
     for (let rank = 1; rank <= WEAPON_ATTRIBUTE_SIZE; rank++) {
       const power = attr === "star" ? WEAPON_ATTRIBUTE_SIZE + rank : rank;
-      if (dropAllowed(power)) list.push({ power, weight: Math.pow(0.5, rank - 1) });
+      if (dropAllowed(power)) list.push({ power, weight: 1 });
     }
   }
   const total = list.reduce((s, it) => s + it.weight, 0);
@@ -6590,6 +6591,7 @@ function enemyDropPower(e) {
   if (!power) return 0;
   if (e.stolenWeapon) return power;
   if (firstWeaponsLocked()) return 0;
+  if (isUnderwaterStage() && Math.random() < 0.5) return 0;
   // 武器を持っている敵をたおしたら、かならず武器を落とす。月か星かは半々（前は敵の銃と同じ種類で、前半は月しか出なかった）
   return pickDropPower();
 }
@@ -7513,7 +7515,8 @@ function isRareDrop(power) {
   if (!power || power > STAR_TOP) return false;
   const rank = weaponRank(power);
   const cap = DROP_CAP[weaponAttribute(power)][dropWorld()];
-  return rank >= 3 || (cap > 1 && rank === cap);
+  // その星で出るいちばん高いレベルだけ「レア」
+  return cap > 1 && rank === cap;
 }
 
 function announceRareDrop(x, y, power) {
