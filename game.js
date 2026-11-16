@@ -10255,7 +10255,23 @@ function openSaveMenu(loadOnly = false) {
 
 // ---------- せってい画面（タイトルの「せってい」から） ----------
 // 音のオン・オフ、BGM・セリフ・効果音の大きさ（0〜10）、A/B/X/Y ボタンの役目
-const SETTINGS_ROWS = ["sound", "bgm", "voice", "sfx", "A", "B", "X", "Y", "reset", "close"];
+const SETTINGS_ROWS = ["sound", "bgm", "voice", "sfx", "pad", "A", "B", "X", "Y", "reset", "close"];
+
+// ---------- 画面のゲーム機の A・B・X・Y のならび（せっていで切りかえ） ----------
+// スイッチ式の本体の絵（assets/gb-controls-switch.webp・gb-land-switch.webp）がそろったら、切りかえられる
+let padSwitchArtReady = false;
+(() => {
+  let left = 2;
+  for (const src of ["assets/gb-controls-switch.webp", "assets/gb-land-switch.webp"]) {
+    const img = new Image();
+    img.onload = () => { if (--left === 0) { padSwitchArtReady = true; applyPadLayout(); } };
+    img.src = src;
+  }
+})();
+function applyPadLayout() {
+  document.body.dataset.pad = padSwitchArtReady && Settings.data.pad === "switch" ? "switch" : "classic";
+}
+applyPadLayout();
 
 function openSettingsMenu() {
   if (!state || state.mode !== "title") return;
@@ -10318,6 +10334,9 @@ function settingsChange(row, dir) {
     applyVolumes();
   } else if (Settings.BUTTONS.includes(row)) {
     Settings.cycleButton(row, dir);
+  } else if (row === "pad") {
+    Settings.setPad(Settings.data.pad === "switch" ? "classic" : "switch");
+    applyPadLayout();
   } else {
     return;
   }
@@ -10331,6 +10350,7 @@ function settingsActivate(row) {
   if (row === "reset") {
     Settings.reset();
     applyVolumes();
+    applyPadLayout();
     playSfx("decide");
     return;
   }
@@ -10358,9 +10378,10 @@ function settingsRowRect(i) {
   const colW = 570;
   const left = canvas.width / 2 - colW - 12;
   const right = canvas.width / 2 + 12;
-  if (i < 4) return { x: left, y: 104 + i * 104, w: colW, h: 88 };
-  if (i < 8) return { x: right, y: 104 + (i - 4) * 104, w: colW, h: 88 };
-  return { x: i === 8 ? left : right, y: 530, w: colW, h: 84 };
+  // 左：音・BGM・セリフ・効果音・ボタンのならび（5つ） / 右：A・B・X・Y / 下：もどす・とじる
+  if (i < 5) return { x: left, y: 100 + i * 90, w: colW, h: 78 };
+  if (i < 9) return { x: right, y: 100 + (i - 5) * 90, w: colW, h: 78 };
+  return { x: i === 9 ? left : right, y: 560, w: colW, h: 72 };
 }
 
 function handleSettingsPointer(px, py) {
@@ -10406,7 +10427,8 @@ function drawSettingsMenu() {
   const label = {
     sound: ja ? "音" : "Sound", bgm: "BGM", voice: ja ? "セリフ" : "Voices", sfx: ja ? "効果音" : "Effects",
     A: ja ? "A ボタン" : "A button", B: ja ? "B ボタン" : "B button", X: ja ? "X ボタン" : "X button", Y: ja ? "Y ボタン" : "Y button",
-    reset: ja ? "はじめの設定にもどす" : "Reset to default", close: ja ? "とじる" : "Close"
+    reset: ja ? "はじめの設定にもどす" : "Reset to default", close: ja ? "とじる" : "Close",
+    pad: ja ? "ならび" : "Layout"
   };
   SETTINGS_ROWS.forEach((row, i) => {
     const r = settingsRowRect(i);
@@ -10448,6 +10470,17 @@ function drawSettingsMenu() {
       ctx.fillStyle = "#5a3d9a";
       ctx.font = `900 30px ${FX.FONT}`;
       ctx.fillText(String(v), vx + vw + 32, r.y + r.h / 2 + 1);
+    } else if (row === "pad") {
+      // ボタンのならび：スイッチ式（上X・右A） / いままでの形（上Y・右B）
+      ctx.fillText("◀", vx, r.y + r.h / 2 + 1);
+      ctx.fillText("▶", vx + vw, r.y + r.h / 2 + 1);
+      const sw = Settings.data.pad === "switch";
+      ctx.font = `900 28px ${FX.FONT}`;
+      ctx.fillText(sw ? (ja ? "スイッチ式" : "Switch style") : (ja ? "いままでの形" : "Classic"), vx + vw / 2, r.y + r.h / 2 - 9);
+      ctx.font = `800 18px ${FX.FONT}`;
+      ctx.fillStyle = "#8b82b3";
+      const sub = !padSwitchArtReady && sw ? (ja ? "（絵ができたら切りかわります）" : "(art coming soon)") : sw ? (ja ? "上X・左Y・右A・下B" : "X top, A right") : (ja ? "上Y・左X・右B・下A" : "Y top, B right");
+      ctx.fillText(sub, vx + vw / 2, r.y + r.h / 2 + 20);
     } else {
       ctx.fillText("◀", vx, r.y + r.h / 2 + 1);
       ctx.fillText("▶", vx + vw, r.y + r.h / 2 + 1);

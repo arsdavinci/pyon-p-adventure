@@ -31,7 +31,8 @@ const Settings = (() => {
   const KEY = "pyonpSettings";
   const BUTTONS = ["A", "B", "X", "Y"];
   const ACTIONS = ["jump", "dash", "attack"];
-  const DEFAULT = { master: 100, bgm: 10, voice: 10, sfx: 10, buttons: { A: "jump", B: "dash", X: "attack", Y: "attack" } };
+  // pad：画面のゲーム機の A・B・X・Y のならび。"switch" = 上X・左Y・右A・下B（はじめはこちら） / "classic" = 上Y・左X・右B・下A
+  const DEFAULT = { master: 100, bgm: 10, voice: 10, sfx: 10, pad: "switch", buttons: { A: "jump", B: "dash", X: "attack", Y: "attack" } };
   // ゲーム中に、そのボタンが出すキー（キーボードと同じ処理に流す）
   const ACTION_CODE = { jump: "Space", dash: "KeyB", attack: "KeyX" };
   // 画面のボタンがもともと出すキー → どのボタンか
@@ -52,6 +53,7 @@ const Settings = (() => {
       const d = { ...fresh(), ...saved, buttons: { ...DEFAULT.buttons, ...(saved.buttons || {}) } };
       for (const k of ["bgm", "voice", "sfx"]) d[k] = Math.max(0, Math.min(10, Math.round(Number(d[k]) || 0)));
       d.master = Math.max(0, Math.min(100, Math.round(Number(d.master ?? 100))));
+      if (d.pad !== "switch" && d.pad !== "classic") d.pad = DEFAULT.pad;
       if (!isFinite(d.master)) d.master = 100;
       for (const b of BUTTONS) if (!ACTIONS.includes(d.buttons[b])) d.buttons[b] = DEFAULT.buttons[b];
       // ジャンプ・ダッシュ・こうげきのどれかがないまま残っていたら、はじめの割り当てにもどす（遊べなくならないように）
@@ -113,6 +115,11 @@ const Settings = (() => {
     save();
   }
 
+  function setPad(v) {
+    data.pad = v === "classic" ? "classic" : "switch";
+    save();
+  }
+
   function reset() {
     data = fresh();
     save();
@@ -124,6 +131,6 @@ const Settings = (() => {
 
   return {
     get data() { return data; },
-    BUTTONS, ACTIONS, level, master, setMaster, mapCode, padActions, setButton, cycleButton, setLevel, reset, actionLabel, save, missingActions
+    BUTTONS, ACTIONS, level, master, setMaster, setPad, mapCode, padActions, setButton, cycleButton, setLevel, reset, actionLabel, save, missingActions
   };
 })();

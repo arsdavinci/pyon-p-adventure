@@ -2232,3 +2232,15 @@ body[data-layout="handheld"] .overlay .title-actions #settingsButton {
 body[data-layout="handheld"] .overlay .title-actions #startButton {
   min-width: calc(300 * var(--u));
 }
+
+/* ---------- スイッチ式のならび（上X・左Y・右A・下B）。せっていの「ならび」で切りかえ ---------- */
+body[data-pad="switch"][data-layout="handheld"] .touch-action.shoot { left: calc(136.07 * var(--u)); top: calc(30.35 * var(--u)); }
+body[data-pad="switch"][data-layout="handheld"] .touch-action.y { left: calc(34.32 * var(--u)); top: calc(135.75 * var(--u)); }
+body[data-pad="switch"][data-layout="handheld"] .touch-action.jump { left: calc(237.71 * var(--u)); top: calc(135.74 * var(--u)); }
+body[data-pad="switch"][data-layout="handheld"] .touch-action.run { left: calc(136.13 * var(--u)); top: calc(241.61 * var(--u)); }
+body[data-pad="switch"][data-layout="handheld"] .gb-controls-art {
+  background-image: url("assets/gb-controls-switch.webp");
+}
+body[data-pad="switch"][data-layout="handheld"][data-orient="land"] .gb-frame-art {
+  background-image: url("assets/gb-land-switch.webp");
+}
