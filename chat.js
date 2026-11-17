@@ -497,6 +497,8 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
       flags.playT = (flags.playT ?? 0) + 0.25;
       if (flags.playT > 12 && !queue.length && (!cur || hold > 2.5)) once("tipDash", "dashTeach");
     }
+    // 買った・つけたどうぐの説明（ヤナビス）が残っていたら、手があいたときに流す
+    if (typeof gearTipQueue !== "undefined" && gearTipQueue.length && !queue.length && typeof flushGearTips === "function") flushGearTips();
     if (state.time < 30 && state.time > 0) once("timeLow", "timeLow");
     if (course?.trait === "underwater") {
       if ((state.oxygen ?? 100) < 25) once("o2", "oxygenLow");
@@ -645,6 +647,14 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
           const r = Shop.toggleGear(id);
           const on = !!r?.on;
           playSfx(on ? "equip" : "cursor");
+          // はじめて身につけたら、ぴょんぴーのひとこと → ヤナビスの説明
+          if (on && typeof gearFirstOn === "function" && gearFirstOn(id)) {
+            say([GEAR_TIPS[id][0]], true);
+            flushGearTips();
+            gearKey = "";
+            refreshGear();
+            return;
+          }
           const swap = r?.removed?.length ? L(`（${Shop.itemName(r.removed[0])}はぬいだ）`, ` (took off ${Shop.itemName(r.removed[0])})`) : "";
           gearSay(`${Shop.itemName(id)}：${on ? "つけた" : "はずした"}${swap}`, `${Shop.itemName(id)}: ${on ? "on" : "off"}${swap}`);
         }

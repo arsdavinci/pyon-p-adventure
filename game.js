@@ -3720,6 +3720,7 @@ function closeInventory() {
   }
   lastTime = performance.now();
   playSfx("cancel");
+  flushGearTips();
 }
 
 function toggleInventory() {
@@ -8444,6 +8445,7 @@ function draw() {
     if (mode !== "stageClear" && !mapInventory) {
       drawStageBadge();
       Gimmick.drawHud();
+      if (inGameplay() || mode === "paused") drawGearHud();
       drawHpMeter();
       drawOxygenMeter();
       drawBossHpMeter();
@@ -11763,6 +11765,110 @@ const GEAR_LINES_JA = {
   manjuOutside: "ステージの中で食べられるじょ。"
 };
 
+// どうぐを はじめて身につけたときの ひとこと（ぴょんぴー）と、ステージにもどったときのヤナビスの説明
+// 声は台本の chat に入る（["pyon", …] / ["yana", …] の形で書く）
+const GEAR_TIPS = {
+  double: [["pyon", "2段ジャンプシューズ、はいたじょ！ 空でも、もういっぺん跳べるけん！", "Double Jump Shoes on! I can jump again in midair!"],
+    ["yana", "2段ジャンプシューズをはきましたね。空中で、もう1回ジャンプできますよ。高い足場もねらえます。", "You're wearing the Double Jump Shoes. You can jump once more in midair, so aim for those high ledges."]],
+  cushion: [["pyon", "ふわふわクッション、つけたじょ！ ぶつかっても、ふわっとじゃ。", "Fluffy Cushion on! Bumps feel soft now."],
+    ["yana", "ふわふわクッションですね。ダメージを受けたあとの無敵時間が、2倍になります。", "The Fluffy Cushion doubles your invincibility time after taking damage."]],
+  magnet: [["pyon", "コインじしゃく、つけたじょ！ ルナコインがよってくるでないか。", "Coin Magnet on! The Luna Coins come to me!"],
+    ["yana", "コインじしゃくをつけました。近くのルナコインが、自動で集まってきますよ。", "With the Coin Magnet, nearby Luna Coins fly to you on their own."]],
+  strap: [["pyon", "ぜったいはなさんストラップ、つけたじょ！ もう盗らせんけんな。", "Never-Let-Go Strap on! Nobody's stealing my gun now."],
+    ["yana", "ストラップをつけましたね。敵に光線銃をうばわれなくなります。", "With the strap, enemies can't steal your ray gun anymore."]],
+  key: [["pyon", "あいかぎ、持ったじょ！ これでカギ探しも、ちょっと楽じゃ。", "Spare key in hand! Key hunting just got easier."],
+    ["yana", "あいかぎがあると、どのステージもカギを1本持った状態で始まります。", "With the spare key, every stage starts with one key in hand."]],
+  boots: [["pyon", "ふつうのゲームのくつ、はいたじょ！ ふんだら一発じゃ！", "Normal Game Shoes on! One stomp and they're done!"],
+    ["yana", "ふつうのゲームのくつですね。ふむだけで、敵をたおせます。……ふつうのゲームみたいに。", "With the Normal Game Shoes, stomping alone defeats enemies. ...Just like a normal game."]],
+  moonJump: [["pyon", "月あめジャンプ、はいたじょ！ ふわっと高う跳べるけん。", "Moon Candy Jump on! I'll float up higher!"],
+    ["yana", "月あめジャンプですね。ジャンプが少し高くなりますよ。", "The Moon Candy Jump makes your jumps a little higher."]],
+  charm: [["pyon", "うさみみお守り、つけたじょ！ これで、ちょっと安心じゃ。", "Bunny-Ear Charm on! That's reassuring."],
+    ["yana", "うさみみお守りがあると、ステージで1回だけ、やられてもその場で復活できます。", "With the Bunny-Ear Charm, once per stage you'll revive right where you fall."]],
+  heatCape: [["pyon", "たいねつマント、はおったじょ！ マグマも、こわないけん。", "Heatproof Cape on! Lava doesn't scare me."],
+    ["yana", "たいねつマントですね。マグマとふん石のダメージが、半分になります。", "The Heatproof Cape halves damage from lava and meteors."]],
+  drill: [["pyon", "火星ドリル、持ったじょ！ ブロックをガリガリいくけん。", "Mars Drill ready! Time to grind some blocks."],
+    ["yana", "火星ドリルがあると、アイテムブロックの中身が2つ出てきますよ。", "With the Mars Drill, item blocks give two items."]],
+  spikeShoes: [["pyon", "スパイクシューズ、はいたじょ！ 氷の上でも、ふんばれるけん。", "Spike Shoes on! I can hold my ground on ice."],
+    ["yana", "スパイクシューズですね。氷の上でも、すべらなくなります。", "With the Spike Shoes, you won't slip on ice."]],
+  iceShield: [["pyon", "こおりのたて、持ったじょ！ 弾なんか、はね返しちゃる。", "Ice Shield ready! Bring on the bullets."],
+    ["yana", "こおりのたては、ステージで1回だけ、敵の弾をふせいでくれます。", "The Ice Shield blocks one enemy shot per stage."]],
+  tank: [["pyon", "大きな酸素タンク、せおったじょ！ 長いこと もぐれるけん。", "Big Oxygen Tank on! I can stay under longer."],
+    ["yana", "大きな酸素タンクですね。水の中で、酸素が2倍長もちします。", "The Big Oxygen Tank makes your air last twice as long underwater."]],
+  fins: [["pyon", "ひれ、つけたじょ！ すいすい泳ぐけん、見とってだ。", "Fins on! Watch me swim!"],
+    ["yana", "ひれをつけましたね。泳ぐのが速くなりますよ。", "With the fins, you'll swim faster."]],
+  helmet: [["pyon", "ヘルメット、かぶったじょ！ 頭ぶつけても、へっちゃらじゃ。", "Helmet on! I can bonk my head all I want."],
+    ["yana", "ヘルメットがあると、トロッコの頭の上のはりに当たっても、へいきです。", "With the helmet, hitting the beams above the minecart won't hurt."]],
+  booster: [["pyon", "ロケットブースター、つけたじょ！ ダッシュがびゅーんじゃ！", "Rocket Booster on! My dash goes zoom!"],
+    ["yana", "ロケットブースターですね。ダッシュが速くなります。", "The Rocket Booster makes your dash faster."]],
+  rod: [["pyon", "ひらいしん、持ったじょ！ 雷なんか、こわないけん。", "Lightning Rod ready! Thunder doesn't scare me."],
+    ["yana", "ひらいしんがあると、雷が当たらなくなります。", "With the lightning rod, lightning won't hit you."]],
+  kingCape: [["pyon", "王さまのマント、はおったじょ！ 吾輩、王さまの気分じゃ！", "Royal Cape on! I feel like a king!"],
+    ["yana", "王さまのマントですね。受けるダメージが、半分になります。", "The Royal Cape halves the damage you take."]]
+};
+
+// ヤナビスの説明の予約（ステージが入れかわっても消えないように、state の外に持つ）
+const gearTipQueue = [];
+
+// はじめて身につけたら true（ステージにもどったときのヤナビスの説明も、ここで予約する）
+function gearFirstOn(id) {
+  if (!GEAR_TIPS[id] || typeof Story === "undefined") return false;
+  const key = `gearOn_${id}`;
+  if (Story.data.seen[key]) return false;
+  Story.data.seen[key] = true;
+  Story.persist();
+  gearTipQueue.push(id);
+  return true;
+}
+
+// 予約しておいたヤナビスの説明を、ステージの中で流す
+function flushGearTips() {
+  const q = gearTipQueue.slice();
+  if (!q.length || !inGameplay()) return;
+  gearTipQueue.length = 0;
+  const lines = q.map(id => GEAR_TIPS[id]?.[1]).filter(Boolean);
+  if (lines.length) Chat.say(lines, true);
+}
+
+// 画面の左上（ステージ札の下）に、いま身につけているどうぐを ならべて出す
+function drawGearHud() {
+  if (typeof Shop === "undefined" || !Shop.gearList) return;
+  const worn = Shop.gearList().map(it => it.id).filter(id => Shop.has(id) && id !== "statue");
+  const bombs = bombReady() ? bombStock() : 0;
+  if (!worn.length && !bombs) return;
+  const keyHud = (state.keys ?? 0) > 0 || (state.keyItems ?? []).length > 0;
+  const x = keyHud ? 118 : 14;
+  const y = 90;
+  const size = 32;
+  const n = worn.length + (bombs ? 1 : 0);
+  const w = 62 + n * (size + 6);
+  ctx.save();
+  ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+  ctx.strokeStyle = "rgba(139, 106, 201, 0.72)";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, 40, 8);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#8b6ac9";
+  ctx.font = `900 14px ${FX.FONT}`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(language === "ja" ? "そうび" : "GEAR", x + 10, y + 21);
+  let ix = x + 56 + size / 2;
+  for (const id of worn) {
+    Shop.drawItem(id, ix, y + 20, size);
+    ix += size + 6;
+  }
+  if (bombs) {
+    Shop.drawItem("bomb", ix, y + 20, size);
+    ctx.fillStyle = "#7a4fa8";
+    ctx.font = `900 13px ${FX.FONT}`;
+    ctx.textAlign = "right";
+    ctx.fillText(`×${bombs}`, ix + size / 2 + 4, y + 33);
+  }
+  ctx.restore();
+}
+
 // どうぐが「そうび中」か（爆弾は Story.data.bombOn、まんじゅうはいつも）
 function gearIsOn(id) {
   if (id === "manju") return true;
@@ -11790,6 +11896,12 @@ function useInventoryGear(id) {
   if (!r) return;
   playSfx(r.on ? "equipSet" : "cursor");
   const name = Shop.itemName(id);
+  if (r.on && gearFirstOn(id)) {
+    const tip = GEAR_TIPS[id][0];
+    say(language === "ja" ? tip[1] : tip[2]);
+    if (state.mode === "playing") flushGearTips();
+    return;
+  }
   if (language === "ja") {
     const shoe = Shop.isShoe(id);
     say(r.on ? (r.removed.length ? GEAR_LINES_JA.shoeSwap : shoe ? GEAR_LINES_JA.shoeOn : GEAR_LINES_JA.on) : shoe ? GEAR_LINES_JA.shoeOff : GEAR_LINES_JA.off);

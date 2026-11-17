@@ -353,6 +353,8 @@
       owned()[it.id] = true;
       // 新しいくつを買ったら、それをはく（前のくつはぬぐ）
       if (isShoe(it.id)) { delete offMap()[it.id]; normalizeShoes(it.id); }
+      // 買ったどうぐは、ステージに入ったらヤナビスが説明する（はじめての1回だけ）
+      if (typeof gearFirstOn === "function") gearFirstOn(it.id);
       mochi(it.id === "statue" ? "statue" : it.id === "boots" ? "boots" : "thanks");
     }
     playSfx("powerUp");
