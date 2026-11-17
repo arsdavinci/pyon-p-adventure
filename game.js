@@ -2808,7 +2808,7 @@ function updateDoors() {
       if ((state.keys ?? 0) > 0) {
         state.keys -= 1;
         d.locked = false;
-        playSfx("unlock", d.x);
+        playSfx("barrierBreak", d.x);
         FX.floater(d.x + d.w / 2, d.y - 20, "OPEN!", { size: 28, color: "#c9f6ff", stroke: "#3f62c8", life: 1.1 });
         Chat.event("doorOpen");
       } else if ((state.gimmickHint ?? 0) <= 0) {
@@ -2819,6 +2819,7 @@ function updateDoors() {
       }
       continue;
     }
+    playSfx("doorEnter", d.x);
     enterArea(d.to, d.spawnX);
     return;
   }
@@ -6114,7 +6115,7 @@ function unlockAudio() {
 
 // 効果音ごとの音量の上乗せ（playSfx の中だけ 1 以外になる）
 let sfxBoost = 1;
-const SFX_BOOST = { laser: 3, enemyHit: 3, equipSet: 2.6, equip: 3, switchOn: 2.4, switchOff: 2.4, pyonJump: 2, pyonJump2: 2 };
+const SFX_BOOST = { laser: 3, enemyHit: 3, equipSet: 2.6, equip: 3, switchOn: 2.4, switchOff: 2.4, barrierBreak: 2, doorEnter: 2.2, goalFanfare: 2, pyonJump: 2, pyonJump2: 2 };
 
 function playTone({ start = 0, freq = 440, endFreq = freq, duration = 0.12, type = "sine", gain = 0.08, pan = 0 }) {
   const ctxAudio = getAudioContext();
@@ -6299,6 +6300,31 @@ function playSfxInner(name, x) {
     playTone({ start: 0.08, freq: 1318, endFreq: 1318, duration: 0.09, type: "triangle", gain: 0.05, pan });
     playTone({ start: 0.16, freq: 1568, endFreq: 2093, duration: 0.22, type: "sine", gain: 0.05, pan });
     if (name === "unlock") playNoise({ start: 0.02, duration: 0.2, gain: 0.03, filter: 3000 });
+  } else if (name === "barrierBreak") {
+    // バリア解除：「パリーン！」とわれて、キラキラ上がる
+    playNoise({ duration: 0.22, gain: 0.12, filter: 5200 });
+    playTone({ freq: 2637, endFreq: 1760, duration: 0.12, type: "square", gain: 0.035, pan });
+    playTone({ freq: 180, endFreq: 90, duration: 0.14, type: "sine", gain: 0.16, pan });
+    [1047, 1319, 1568, 2093, 2637].forEach((f, i) =>
+      playTone({ start: 0.12 + i * 0.05, freq: f, endFreq: f, duration: 0.1, type: i % 2 ? "triangle" : "square", gain: i % 2 ? 0.07 : 0.04, pan }));
+    playTone({ start: 0.38, freq: 3136, endFreq: 3520, duration: 0.25, type: "sine", gain: 0.035, pan });
+  } else if (name === "doorEnter") {
+    // 扉に入る：「ぷわぁ〜ん」とワープ（ムーニアンズの漫才の出囃子っぽく、ちょっとおどけた音）
+    playTone({ freq: 330, endFreq: 660, duration: 0.18, type: "triangle", gain: 0.08, pan: 0 });
+    playTone({ start: 0.02, freq: 660, endFreq: 1320, duration: 0.2, type: "sine", gain: 0.05, pan: 0 });
+    playTone({ start: 0.16, freq: 988, endFreq: 784, duration: 0.09, type: "square", gain: 0.035, pan: 0 });
+    playTone({ start: 0.25, freq: 1175, endFreq: 1175, duration: 0.14, type: "square", gain: 0.04, pan: 0 });
+    playNoise({ start: 0.05, duration: 0.3, gain: 0.02, filter: 6000 });
+  } else if (name === "goalFanfare") {
+    // ゴール：「チャラララ〜ン♪ チャンチャン！」（漫才のオチの「チャンチャン」で しめる）
+    [523, 659, 784, 1047].forEach((f, i) =>
+      playTone({ start: i * 0.07, freq: f, endFreq: f, duration: 0.1, type: "square", gain: 0.05, pan: 0 }));
+    playTone({ start: 0.28, freq: 1319, endFreq: 1397, duration: 0.32, type: "triangle", gain: 0.08, pan: 0 });
+    playTone({ start: 0.28, freq: 1047, endFreq: 1047, duration: 0.32, type: "square", gain: 0.03, pan: 0 });
+    playTone({ start: 0.7, freq: 1568, endFreq: 1568, duration: 0.09, type: "square", gain: 0.06, pan: 0 });
+    playTone({ start: 0.84, freq: 2093, endFreq: 2093, duration: 0.2, type: "square", gain: 0.06, pan: 0 });
+    playTone({ start: 0.84, freq: 1047, endFreq: 1047, duration: 0.2, type: "triangle", gain: 0.06, pan: 0 });
+    playNoise({ start: 0.84, duration: 0.25, gain: 0.03, filter: 7000 });
   } else if (name === "locked") {
     playTone({ freq: 196, endFreq: 185, duration: 0.09, type: "square", gain: 0.04, pan });
     playTone({ start: 0.11, freq: 185, endFreq: 165, duration: 0.14, type: "square", gain: 0.04, pan });
@@ -8141,6 +8167,7 @@ function checkGoal() {
   const f = level.flag;
   if (hit(state.player, rect(f.x - 46, f.y + 30, f.w + 92, f.h - 30))) {
     Chat.event("stageClear");
+    playSfx("goalFanfare", state.player.x);
     Story.beginStageClear({ boss: false });
   }
 }

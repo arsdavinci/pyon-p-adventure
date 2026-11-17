@@ -614,7 +614,7 @@
         if ((state.keys ?? 0) > 0) {
           state.keys -= 1;
           b.broken = true;
-          playSfx("unlock", b.x);
+          playSfx("barrierBreak", b.x);
           const y = p.y + p.h / 2;
           FX.explosion(b.x + b.w / 2, y, 110, ["#ffffff", "#9ee8ff", "#fff3a4"]);
           FX.flash("#c9f6ff", 0.3, 0.3);
