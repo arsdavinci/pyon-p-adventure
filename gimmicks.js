@@ -532,7 +532,7 @@
         }
       }
     }
-    playSfx("switch", box.x);
+    playSfx(state.switchOn ? "switchOn" : "switchOff", box.x);
     FX.flash(color, 0.16, 0.22);
     FX.shake(0.12);
     FX.add({ type: "ring", x: box.x + 24, y: box.y + 24, r: 12, grow: 420, w: 7, life: 0.4, color });

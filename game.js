@@ -6302,9 +6302,13 @@ function playSfxInner(name, x) {
   } else if (name === "locked") {
     playTone({ freq: 196, endFreq: 185, duration: 0.09, type: "square", gain: 0.04, pan });
     playTone({ start: 0.11, freq: 185, endFreq: 165, duration: 0.14, type: "square", gain: 0.04, pan });
-  } else if (name === "switch") {
-    playTone({ freq: 520, endFreq: 1040, duration: 0.08, type: "square", gain: 0.04, pan });
-    playTone({ start: 0.07, freq: 780, endFreq: 1560, duration: 0.12, type: "triangle", gain: 0.045, pan });
+  } else if (name === "switch" || name === "switchOn" || name === "switchOff") {
+    // スイッチ：「ポコッ」とたたいて「ピロリン♪」（青になるときは上がる、赤にもどるときは下がる）
+    playTone({ freq: 300, endFreq: 180, duration: 0.06, type: "sine", gain: 0.14, pan });
+    playNoise({ duration: 0.03, gain: 0.05, filter: 2400 });
+    const notes = name === "switchOff" ? [1568, 1319, 1047, 1319] : [1047, 1319, 1568, 2093];
+    notes.forEach((f, i) => playTone({ start: 0.05 + i * 0.055, freq: f, endFreq: f * 1.01, duration: 0.09, type: i % 2 ? "triangle" : "square", gain: i % 2 ? 0.08 : 0.045, pan }));
+    playTone({ start: 0.27, freq: notes[3] * 1.5, endFreq: notes[3] * 1.5, duration: 0.16, type: "sine", gain: 0.035, pan });
   } else if (name === "spring") {
     playTone({ freq: 220, endFreq: 1320, duration: 0.24, type: "sine", gain: 0.06, pan });
     playTone({ start: 0.02, freq: 330, endFreq: 1760, duration: 0.2, type: "triangle", gain: 0.03, pan });
