@@ -9609,7 +9609,9 @@ function drawStageBadge() {
   ctx.save();
   ctx.font = "800 24px Segoe UI, system-ui, sans-serif";
   ctx.textBaseline = "top";
-  const width = Math.max(ctx.measureText(label).width + 28, ctx.measureText(weaponLabel).width + 28);
+  // 右はしに、いま装備している武器の絵を出す（何を持っているか、ひと目でわかるように）
+  const ICON_W = hasEquippedWeapon() ? 78 : 0;
+  const width = Math.max(ctx.measureText(label).width + 28, ctx.measureText(weaponLabel).width + 28) + ICON_W;
   const badgeArt = artImage("ui-badge");
   if (badgeArt) {
     drawNineSlice(badgeArt, { x: 8, y: 8, w: width + 12, h: 80 }, 60, 30);
@@ -9632,6 +9634,7 @@ function drawStageBadge() {
   ctx.fillStyle = "#9ee8ff";
   ctx.strokeText(weaponLabel, 28, 52);
   ctx.fillText(weaponLabel, 28, 52);
+  if (ICON_W) drawWeaponIcon(14 + width - ICON_W / 2 - 16, 48, state.weaponPower, 0.85, 1);
   ctx.restore();
 }
 

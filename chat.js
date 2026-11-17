@@ -426,7 +426,7 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
       else if ((state.oxygen ?? 100) > 60) flags.o2 = false;
       if (p.y > 760) once("deep", "deep");
     } else {
-      if (p.y < -90 && p.grounded) once("sky", "sky");
+      // 「空のルートじゃ！」は、高いところに来ただけでは言わない（空のルートでない場所でも言ってしまうため）
       if (course?.climbStage && p.y > 800 && p.grounded) once("valley", "valley");
     }
     if (course?.bossStage && state.bossIntroPlayed) {
