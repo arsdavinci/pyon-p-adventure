@@ -14526,10 +14526,24 @@ function registerMoveTap(dir) {
   lastMoveTapAt = now;
 }
 
+// つながっているコントローラーのうち、ボタンをおしたものを使う
+// （マッパーなどの「見えないコントローラー」が先にならんでいても、本物のほうを読む）
+function activeGamepad() {
+  const pads = Array.from(navigator.getGamepads ? navigator.getGamepads() : []).filter(p => p && p.connected !== false && p.buttons?.length);
+  if (!pads.length) return null;
+  const busy = pads.find(p => p.buttons.some(b => b?.pressed) || p.axes.some((v, i) => i < 2 && Math.abs(v) > 0.6));
+  if (busy && busy.index !== gamepadState.padIndex) {
+    gamepadState.padIndex = busy.index;
+    if (typeof FX !== "undefined" && state) {
+      FX.floater(480, 80, language === "ja" ? "🎮 コントローラーをみつけたよ" : "🎮 Controller ready", { color: "#ffffff", stroke: "#7f67c8", size: 22, life: 1.4 });
+    }
+  }
+  return pads.find(p => p.index === gamepadState.padIndex) ?? pads.find(p => p.mapping === "standard") ?? pads[0];
+}
+
 function updateGamepad() {
   const now = performance.now();
-  const pads = navigator.getGamepads ? navigator.getGamepads() : [];
-  const pad = Array.from(pads).find(Boolean);
+  const pad = activeGamepad();
   if (!pad) {
     gamepadState.left = false;
     gamepadState.right = false;
@@ -15521,13 +15535,13 @@ function updateInventoryGamepadFocus(now, jumpPressed, runPressed, shootPressed)
     if (jumpPressed && !gamepadState.jumpLatch) startInventoryGrab(true);
     if (!jumpPressed && gamepadState.jumpLatch && state.inventoryGrab?.gamepad) releaseInventoryGrab();
     // LB（ボタン4）で 武器／どうぐ のタブを切りかえ
-    const padNow = Array.from(navigator.getGamepads ? navigator.getGamepads() : []).find(Boolean);
+    const padNow = activeGamepad();
     const lb = Boolean(padNow?.buttons[4]?.pressed);
     if (lb && !gamepadState.lbLatch) switchInventoryTab(inventoryGearTab() ? "weapons" : "gear");
     gamepadState.lbLatch = lb;
     if (shootPressed && !gamepadState.shootLatch && !inventoryGearTab()) {
       // ゲームパッド：X（ボタン2）＝すてる、Y（ボタン3）＝せいとん
-      const pad = Array.from(navigator.getGamepads ? navigator.getGamepads() : []).find(Boolean);
+      const pad = activeGamepad();
       if (pad?.buttons[3]?.pressed) runInventorySort();
       else openDeletePrompt();
     }
