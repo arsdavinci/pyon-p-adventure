@@ -7047,6 +7047,21 @@ function weaponLore(power) {
   return `${weaponName(power)} [${attribute}]` + (weaponAttribute(power) === "moon" ? t("loreClassic") : t("loreExperimental"));
 }
 
+// そうび画面で武器をえらんだときの、ぴょんぴーのひとこと。何度も聞くと飽きるので、
+// 1-1 と、その武器をはじめて見たときはかならず。あとは 10回に1回くらい（ほかは名前だけ、声なし）
+function weaponFocusLine(power) {
+  const sel = state.inventorySelection;
+  const d = state.weaponTalk;
+  if (!d || d.sel !== sel || d.power !== power) {
+    const key = `wc${power}`;
+    const first = typeof Story !== "undefined" && !Story.data.seen[key];
+    if (first && typeof Story !== "undefined") { Story.data.seen[key] = true; Story.persist(); }
+    state.weaponTalk = { sel, power, talk: first || lessonStage() || Math.random() < 0.1 };
+  }
+  if (state.weaponTalk.talk) return pyonpyWeaponComment(power);
+  return language === "ja" ? `ぴょんぴー「${weaponName(power)} ${weaponLevelLabel(power)}。」` : `Pyon-P: "${weaponName(power)}."`;
+}
+
 function pyonpyWeaponComment(power) {
   return language === "ja"
     ? `ぴょんぴー「${WEAPON_COMMENTS_JA[clamp(Math.floor(power), 1, WEAPON_COMMENTS_JA.length) - 1] ?? weaponName(power) + t("commentClassic")}」`
@@ -12196,7 +12211,7 @@ function inventoryFocusComment(power = state.weaponPower) {
   }
   if (mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST && power) {
     if (state.inventoryGrab) return "ぴょんぴー「同じ武器の上ではなすと合成、からっぽのマスではなすと移動、その場ではなすとそうびじゃ！」";
-    return pyonpyWeaponComment(power);
+    return weaponFocusLine(power);
   }
   const gearHere = mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST && !power ? inventoryGearAt(state.inventorySelection) : null;
   if (inventoryGearTab() && !gearHere && mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST) return "ぴょんぴー「どうぐは、よろず屋で買えるじょ。くつ・マント・ぶどうまんじゅうは、ここに入るけんな！」";

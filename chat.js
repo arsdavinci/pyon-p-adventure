@@ -380,6 +380,9 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
     }
   }
 
+  // くり返し起きる場面の「言う確率」（1-1 と、ゲームではじめてのときは かならず言う）
+  const REPEAT_RATE = { combo: 0.1, starGet: 0.1, keyGet: 0.2, respawn: 0.15, stageClear: 0.3, hurt: 0.15, death: 0.3, stolen: 0.25, stompBoost: 0.1, switchUsed: 0.1, chestOpen: 0.3, doorOpen: 0.3, fuse: 0.2, weaponGet: 0.3, idle: 0.5 };
+
   const URGENT = { stageStart: 1, map: 1, gameOver: 1, bossHalf: 1, stolen: 1, canFuse: 1, fallPit: 1, death: 1, timeUp: 1 };
 
   function say(lines, urgent = false) {
@@ -407,6 +410,14 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
     lastAt[name] = clock;
     const builder = BUILDERS[name];
     if (!builder) return;
+    // よく起きることへの ひとことは、何度も聞くと飽きる。1-1 ではいつも言い、
+    // ほかのステージでは、ゲーム全体で一度言ったあとは この確率でだけ言う
+    const rate = REPEAT_RATE[name];
+    if (rate !== undefined && !(typeof lessonStage === "function" && lessonStage())) {
+      const key = `said_${name}`;
+      if (Story.data.seen[key] && Math.random() >= rate) return;
+      Story.data.seen[key] = true;
+    }
     const lines = builder(arg);
     say(lines, !!URGENT[name] || !!lines?.urgent);
     idleT = Math.max(idleT, 9);
