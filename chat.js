@@ -435,7 +435,17 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
     return clamp(state.player.x / Math.max(400, goalX), 0, 1);
   }
 
+  // ゴールの旗・出口の扉の近くでは、会話を始めない（聞き終わる前にゴールしてしまうので）
+  function nearGoal() {
+    const p = state.player;
+    const px = p.x + p.w / 2;
+    const f = level?.flag;
+    if (f && f.x > 0 && Math.abs(f.x - px) < 1100) return true;
+    return (level?.doors ?? []).some(d => d.exit && Math.abs(d.x - px) < 900);
+  }
+
   function ambientPlaceOk(k) {
+    if (nearGoal()) return false;
     const course = courses[currentCourse];
     const n = course?.areaNo ?? 0;
     const last = (course?.areas?.length ?? 1) - 1;
