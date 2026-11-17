@@ -7846,7 +7846,7 @@ function updateItems(dt) {
           playSfx("snackStar", item.x);
           FX.starGet(item.x + item.w / 2, item.y + item.h / 2);
         }
-        if (item.type === "manju") eatBudouManju(item);
+        if (item.type === "manju") stashBudouManju(item);
         if (item.type === "power" && !addWeaponStock(item.weaponPower ?? 1)) {
           item.vy = -60;
           item.vx = pusherAwayFromPlayer(item) * 0.4;
@@ -7880,7 +7880,7 @@ function updateItems(dt) {
         playSfx("snackStar", item.x);
         FX.starGet(item.x + item.w / 2, item.y + item.h / 2);
       }
-      if (item.type === "manju") eatBudouManju(item);
+      if (item.type === "manju") stashBudouManju(item);
       if (item.type === "power" && !addWeaponStock(item.weaponPower ?? 1)) {
         item.vy = -260;
         item.vx = pusherAwayFromPlayer(item);
@@ -7894,6 +7894,16 @@ function updateItems(dt) {
 }
 
 // ぶどうまんじゅう：ライフもHPも満タン
+// ひろったぶどうまんじゅうは、その場で食べずに どうぐボックスへ（好きなときに食べる）。いっぱいなら、その場で食べる
+function stashBudouManju(item) {
+  const n = Math.max(0, Story.data.manjuStock | 0);
+  if (n >= 9) { eatBudouManju(item); return; }
+  Story.data.manjuStock = n + 1;
+  Story.persist();
+  playSfx("equip", item.x);
+  FX.floater(item.x, item.y - 30, language === "ja" ? `ぶどうまんじゅう ゲット！ どうぐに入れたじょ（${n + 1}個）` : `Grape Manju! Stored (${n + 1})`, { color: "#ffffff", stroke: "#a874d8", size: 20, life: 1.6 });
+}
+
 function eatBudouManju(item) {
   state.lives = MAX_LIVES;
   state.hp = MAX_HP;
