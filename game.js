@@ -4593,14 +4593,14 @@ function updatePlayer(dt) {
     p.jumpWas = true;
     spawnJumpSmoke(p.x + p.w / 2, p.y + p.h);
     FX.jump(p.x + p.w / 2, p.y + p.h);
-    playSfx("jump", p.x);
+    playSfx("pyonJump", p.x);
   }
   const canDoubleJump = Shop.has("double") || (hasEquippedWeapon() && isMechPower(state.weaponPower));
   if (wantsJump && !p.jumpWas && !p.grounded && (p.coyote ?? 0) <= 0 && !p.airJumped && canDoubleJump) {
     p.vy = trait === "moonFloat" ? -880 : -800;
     p.airJumped = true;
     p.jumpHeld = true;
-    playSfx("jump", p.x);
+    playSfx("pyonJump2", p.x);
     FX.jump(p.x + p.w / 2, p.y + p.h);
     FX.radial(p.x + p.w / 2, p.y + p.h, 8, { type: "star", speed: [80, 220], life: [0.3, 0.5], r: [4, 7], colors: FX.GOLD, spin: 8, vy: 60 });
   }
@@ -4612,7 +4612,7 @@ function updatePlayer(dt) {
   if (wantsJump && (p.grounded || p.coyote > 0) && !p.crouch) {
     spawnJumpSmoke(p.x + p.w / 2, p.y + p.h);
     FX.jump(p.x + p.w / 2, p.y + p.h);
-    playSfx("jump", p.x);
+    playSfx("pyonJump", p.x);
     p.vy = trait === "moonFloat" ? -990 : -900;
     // ダッシュしながらのジャンプは少し高く飛べる
     if (wantsRun && Math.abs(p.vx) > 260) p.vy *= 1.08;
@@ -6236,6 +6236,13 @@ function playSfxInner(name, x) {
     playTone({ start: 0.055, freq: 980, endFreq: 1380, duration: 0.12, type: "sine", gain: 0.04, pan });
   } else if (name === "jump") {
     playTone({ freq: 380, endFreq: 760, duration: 0.13, type: "sine", gain: 0.04, pan });
+  } else if (name === "pyonJump" || name === "pyonJump2") {
+    // ぴょんぴーのジャンプ：「ぴょんっ」（8bit っぽい、はねる2つの音＋キラッ）。2段ジャンプは少し高く
+    const k = name === "pyonJump2" ? 1.26 : 1;
+    playTone({ freq: 440 * k, endFreq: 1040 * k, duration: 0.075, type: "square", gain: 0.05, pan });
+    playTone({ start: 0.06, freq: 880 * k, endFreq: 1480 * k, duration: 0.09, type: "triangle", gain: 0.07, pan });
+    playTone({ start: 0.06, freq: 1760 * k, endFreq: 2960 * k, duration: 0.06, type: "sine", gain: 0.025, pan });
+    playTone({ start: 0.13, freq: 2349 * k, endFreq: 2349 * k, duration: 0.07, type: "sine", gain: 0.022, pan });
   } else if (name === "land") {
     playNoise({ duration: 0.07, gain: 0.03, filter: 420 });
   } else if (name === "gameStart") {
