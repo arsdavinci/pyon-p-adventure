@@ -247,10 +247,15 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
           ["pyon", "ややこしい仕様じゃな……。開発者、出てこい！", "What a fussy rule... Developer, show yourself!"]
         ];
       }
-      return Math.random() < 0.25 ? [pick([
+      // 「ピヨっとる」は 1ステージに1回だけ。言うときは、ほかの話を切って、その瞬間に言う
+      if (flags.dizzySaid || Math.random() >= 0.5) return null;
+      flags.dizzySaid = true;
+      const line = [pick([
         ["pyon", "ピヨっとるピヨっとる。今のうちじゃ！", "Dizzy, dizzy. Now's my chance!"],
         ["pyon", "ふむだけじゃ倒れんの、まだ納得しとらんけんな。", "For the record, I'm still not over the stomp-doesn't-KO thing."]
-      ])] : null;
+      ])];
+      line.urgent = true;
+      return line;
     },
     needKey: () => [["yana", "カギが必要です。空のルートや、あやしい場所をさがしてみましょう。", "You need a key. Try the sky route, or anywhere that looks suspicious."]],
     keyGet: () => [["pyon", "カギじゃ！ どっかに開けるもんがあるはずじょ。", "A key! There's gotta be something to open with it."]],
@@ -400,7 +405,7 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
     const builder = BUILDERS[name];
     if (!builder) return;
     const lines = builder(arg);
-    say(lines, !!URGENT[name]);
+    say(lines, !!URGENT[name] || !!lines?.urgent);
     idleT = Math.max(idleT, 9);
   }
 
