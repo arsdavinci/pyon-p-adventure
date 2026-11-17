@@ -221,8 +221,8 @@ window.STAGE_TALK = [
     talks: [
       [
         ["yana", "ぴょんぴーさん、鼻が赤くなっていますよ。", "Pyon-P, your nose is turning red."],
-        ["pyon", "トナカイの代わりに、ソリでも引こか？", "Should I pull a sleigh, reindeer-style?"],
-        ["yana", "ここ、すべるので引けませんよ。", "It's too slippery here to pull anything."]
+        ["pyon", "ほな、らんぴょん乗せて、ソリでも引こか？", "Then shall I give Ranpyon a sleigh ride?"],
+        ["yana", "いいですね。世界中の人たちに、笑顔をプレゼントしに行きましょう。", "Lovely. Let's go deliver smiles to everyone in the world."]
       ],
       [
         ["pyon", "なあヤナビス、フェスの持ち時間って何分じゃった？", "Yanabisu, how long is our slot at the Fest?"],
