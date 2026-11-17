@@ -22,7 +22,7 @@ const scoreCount = document.querySelector("#scoreCount");
 const lifeCount = document.querySelector("#lifeCount");
 const timeCount = document.querySelector("#timeCount");
 // ゲームのバージョン（更新するたびに1つ上げる。sw.js の CACHE_NAME の番号と同じにする）
-const GAME_VERSION = 214;
+const GAME_VERSION = 215;
 { const v = document.querySelector("#gameVersion"); if (v) v.textContent = `Ver. ${GAME_VERSION}`; }
 const stageCount = document.querySelector("#stageCount");
 const stageLabelEl = document.querySelector("#stageLabel");
@@ -4990,7 +4990,9 @@ function setCrouch(p, on) {
     return;
   }
   if (!p.crouch) return;
-  const standing = { x: p.x + 2, y: p.y - (STAND_H - CROUCH_H), w: p.w - 4, h: STAND_H - 2 };
+  // 立てるかは、体のはばぜんぶ（少し広め）で見る。前は はしを2pxずつ見ていなかったので、
+  // 天井のはしで立つと頭がめりこみ、トンネルの入口まで はじき飛ばされていた
+  const standing = { x: p.x - 2, y: p.y - (STAND_H - CROUCH_H), w: p.w + 4, h: STAND_H - 2 };
   const blocked = platforms.some(s => hit(standing, s)) || blocks.some(b => !b.broken && hit(standing, b));
   if (blocked) return;
   p.crouch = false;
@@ -5224,6 +5226,8 @@ function updateCrawlHint() {
   const p = state.player;
   const riding = hasEquippedWeapon() && isRideable(state.weaponPower);
   if (p.crouch || (!p.grounded && !riding)) return;
+  // 「↓でふせて くぐろう」は、さいしょの星（1-x）だけ。ロボットの注意は、どこでも
+  if (!riding && (courses[currentCourse]?.worldIndex ?? 0) > 0) return;
   for (const c of level.crawlSpots ?? []) {
     const atMouth = (p.x + p.w >= c.x - 24 && p.x + p.w <= c.x + 6) || (p.x <= c.x + c.w + 24 && p.x >= c.x + c.w - 6);
     if (!atMouth || Math.abs(p.y + p.h - c.y) > (riding ? 70 : 6)) continue;
