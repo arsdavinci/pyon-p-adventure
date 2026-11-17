@@ -105,6 +105,26 @@
     lastOne: ["それを売ったら手ぶらやで。この街で丸腰は、あぶないで。", "Sell that and you're unarmed. Not safe in this town."]
   };
   const noir = key => say(NOIR[key][0], NOIR[key][1]);
+  // よろず屋の店主モチまるのセリフ（声つき。台本の shop に入る。中身が変わる言葉は入れない。数字は画面の表示で見せる）
+  const MOCHI = {
+    first: ["まいど〜！ よろず屋『つきのわ』へようこそ。お代はルナコインでいただくで。", "Welcome to Tsukinowa General Store! I take payment in Luna Coins."],
+    more: ["まいど〜！ 新しい品が入ったで。見てってや！", "Welcome back! New stock just came in. Take a look!"],
+    again: ["まいど〜！ 今日はなに買うてく？", "Welcome back! What'll it be today?"],
+    branch: ["まいど〜！ ここのお店には、このあたりでしか売ってへん品もあるで。", "Welcome! This branch has a few things you won't find anywhere else."],
+    owned: ["それはもう持ってるで。だいじに使いや。", "You already own that one. Take good care of it."],
+    dream: ["それは夢の品や。こつこつ集めて、いつか買いに来てな。", "That one is a dream item. Keep saving and come back someday."],
+    poor: ["ルナコインが足りへんな。ためてまた来てや。", "Not enough Luna Coins. Save up and come back."],
+    manjuFull: ["かばんがもう いっぱいや。9個までやで。", "Your bag is full. Nine at most."],
+    manju: ["ぶどうまんじゅう、おまち！ かばんに入れといたで。", "One Grape Manju! It's in your bag."],
+    statue: ["……ほんまに買うたん！？ うちの店の家宝やで。大事にしてや！", "...You really bought it!? That's our family treasure. Take good care of it!"],
+    boots: ["これで、ふつうのゲームみたいに遊べるで。", "Now you can play it like a normal game."],
+    thanks: ["おおきに！ ええ買いもんしたな。", "Thanks! That's a fine purchase."],
+    noSell: ["売れる武器がないで。", "You have no weapons to sell."],
+    lastOne: ["それはそうび中の最後の1つやろ。手ぶらになってまうで。", "That's the last one you have equipped. You'd be empty-handed!"],
+    sold: ["買い取ったで！ まいどおおきに。", "Sold! Thanks a bunch."],
+    sellTab: ["いらん武器があったら買い取るで。強い武器ほど高う買うで。", "Got weapons you don't need? I'll buy them. The stronger, the better the price."]
+  };
+  const mochi = key => say(MOCHI[key][0], MOCHI[key][1]);
 
   const art = {};
   const load = (key, file) => {
@@ -195,7 +215,8 @@
 
   function say(ja, en) {
     // 武器屋では、ノワールの声を流す（声がないセリフは何も鳴らない）
-    if (isArms() && typeof Voice !== "undefined") Voice.play("shop", ja);
+    // 武器屋ではノワール、よろず屋ではモチまるの声（声がないセリフは何も鳴らない）
+    if (typeof Voice !== "undefined") Voice.play("shop", ja);
     line = [ja, en];
     lineT = 0;
   }
@@ -222,8 +243,7 @@
         scroll = 0;
         tab = 0;
         page = 0;
-        say("まいど〜！ ここのお店には、このあたりでしか売ってへん品もあるで。",
-          "Welcome! This branch has a few things you won't find anywhere else.");
+        mochi("branch");
       }
     });
   }
@@ -255,12 +275,7 @@
         const count = stock().length;
         const more = !first && count > (Story.data.seen[seenKey] ?? count);
         Story.data.seen[seenKey] = count;
-        say(first
-          ? "まいど〜！ よろず屋『つきのわ』へようこそ。お代はルナコインでいただくで。"
-          : more ? "まいど〜！ 新しい品が入ったで。見てってや！" : "まいど〜！ 今日はなに買うてく？",
-        first
-          ? "Welcome to Tsukinowa General Store! I take payment in Luna Coins."
-          : more ? "Welcome back! New stock just came in. Take a look!" : "Welcome back! What'll it be today?");
+        mochi(first ? "first" : more ? "more" : "again");
       }
     });
   }
@@ -294,15 +309,13 @@
     const w = wallet();
     if (!it.repeat && owns(it.id)) {
       playSfx("locked");
-      say("それはもう持ってるで。だいじに使いや。", "You already own that one. Take good care of it.");
+      mochi("owned");
       return;
     }
     if (pairs() < it.price) {
       playSfx("locked");
       if (isArms()) { noir("poor"); return; }
-      const lack = it.price - pairs();
-      say(it.id === "statue" ? "それは夢の品や。こつこつ集めて、いつか買いに来てな。" : `あと ${lack} 枚足りへんな。ためてまた来てや。`,
-        it.id === "statue" ? "That one is a dream item. Keep saving and come back someday." : `You're ${lack} coins short. Save up and come back.`);
+      mochi(it.id === "statue" ? "dream" : "poor");
       return;
     }
     if (it.id === "bomb" && bombCount() >= BOMB_MAX_SHOP) {
@@ -331,17 +344,16 @@
         w.kakiTotal += it.price;
         state.kakiTotal = w.kakiTotal;
         playSfx("locked");
-        say(`かばんがもう いっぱいや。${MANJU_MAX}個までやで。`, `Your bag is full. ${MANJU_MAX} at most.`);
+        mochi("manjuFull");
         return;
       }
       Story.data.manjuStock = manjuCount() + 1;
-      say(`ぶどうまんじゅう、おまち！ かばんに入れといたで（${manjuCount()}個）。`, `One Grape Manju! It's in your bag (${manjuCount()}).`);
+      mochi("manju");
     } else {
       owned()[it.id] = true;
       // 新しいくつを買ったら、それをはく（前のくつはぬぐ）
       if (isShoe(it.id)) { delete offMap()[it.id]; normalizeShoes(it.id); }
-      say(it.id === "statue" ? "……ほんまに買うたん！？ うちの店の家宝やで。大事にしてや！" : it.id === "boots" ? "これで、ふつうのゲームみたいに遊べるで。" : "おおきに！ ええ買いもんしたな。",
-        it.id === "statue" ? "...You actually bought it!? That was the shop's treasure. Take care of it!" : it.id === "boots" ? "Now you can play it like a normal game." : "Thank you kindly! A fine purchase.");
+      mochi(it.id === "statue" ? "statue" : it.id === "boots" ? "boots" : "thanks");
     }
     playSfx("powerUp");
     FX.firework(canvas.width * 0.7, 250, FX.GOLD);
@@ -439,7 +451,7 @@
     if (!entry) {
       playSfx("locked");
       if (isArms()) noir("noSell");
-      else say("売れる武器がないで。", "You have no weapons to sell.");
+      else mochi("noSell");
       return;
     }
     const w = wallet();
@@ -447,7 +459,7 @@
     if (entry.count <= 1 && w.weaponPower === entry.power && w.hasGun) {
       playSfx("locked");
       if (isArms()) noir("lastOne");
-      else say("それはそうび中の最後の1つやろ。手ぶらになってまうで。", "That's the last one you have equipped. You'd be empty-handed!");
+      else mochi("lastOne");
       return;
     }
     const price = sellPrice(entry.power);
@@ -466,8 +478,7 @@
     }
     playSfx("pickup");
     if (isArms()) noir("sold");
-    else say(`${weaponName(entry.power)}、買い取ったで！ ルナコイン ${price} 枚や。`,
-      `I'll take that ${weaponName(entry.power)}! Here's ${price} Luna Coins.`);
+    else mochi("sold");
     Story.persist();
     const rows = sellRowCount();
     if (!rows && page > 0) page -= 1;
@@ -481,7 +492,7 @@
     page = 0;
     playSfx("cursor");
     if (tab === 1 && isArms()) noir("sellTab");
-    else if (tab === 1) say("いらん武器があったら買い取るで。強い武器ほど高う買うで。", "Got weapons you don't need? I'll buy them. The stronger, the better the price.");
+    else if (tab === 1) mochi("sellTab");
   }
   const backRect = () => ({ x: 34, y: 20, w: 170, h: 46 });
 
