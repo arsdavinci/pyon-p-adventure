@@ -9104,6 +9104,37 @@ function drawHpMeter() {
   // わくの絵は、バーの上に重ねる（バーのところだけ、すけている）
   if (hpFrame) ctx.drawImage(hpFrame, x, y, w, h);
   ctx.restore();
+  drawTimeMeter();
+}
+
+// 制限時間（HP の左）。のこり 30 秒からは赤くゆれる。ボス戦は ∞
+function drawTimeMeter() {
+  const boss = !!courses[currentCourse]?.bossStage;
+  const t = Math.max(0, Math.ceil(state.time ?? 0));
+  const low = !boss && t <= 30;
+  const x = canvas.width - 366 - 130; // HP の左（右はしは 全画面・♪ のボタンと重なることがある）
+  const y = 18;
+  const w = 118;
+  const h = 44;
+  const wob = low ? Math.sin(performance.now() / 90) * 1.5 : 0;
+  ctx.save();
+  ctx.fillStyle = low ? "rgba(255, 228, 238, 0.92)" : "rgba(255, 255, 255, 0.82)";
+  ctx.strokeStyle = low ? "#ff5f9e" : "rgba(139, 106, 201, 0.8)";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, 22);
+  ctx.fill();
+  ctx.stroke();
+  ctx.textBaseline = "middle";
+  ctx.textAlign = "left";
+  ctx.font = `900 17px ${FX.FONT}`;
+  ctx.fillStyle = low ? "#ff3d7f" : "#8b6ac9";
+  ctx.fillText(language === "ja" ? "時間" : "TIME", x + 14, y + h / 2 + 1);
+  ctx.textAlign = "right";
+  ctx.font = `900 26px ${FX.FONT}`;
+  ctx.fillStyle = low ? "#ff3d7f" : "#5a3d9a";
+  ctx.fillText(boss ? "∞" : String(t), x + w - 14 + wob, y + h / 2 + 2);
+  ctx.restore();
 }
 
 function drawOxygenMeter() {
