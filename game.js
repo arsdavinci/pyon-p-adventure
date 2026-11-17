@@ -8154,7 +8154,8 @@ function damagePlayer(fell = false, sourceEnemy = null, canStealWeapon = false) 
     if (!Story.data.seen.hurtTalk) {
       Story.data.seen.hurtTalk = true;
       Story.persist();
-      Chat.event("hurt");
+      if (sourceEnemy?.boss && courses[currentCourse]?.bossStage) Chat.event("bossHit", sourceEnemy.bossKind ?? 0);
+      else Chat.event("hurt");
     } else {
       playHurtCry();
     }

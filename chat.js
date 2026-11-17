@@ -9,7 +9,61 @@
     pyon: { ja: "ぴょんぴー", en: "Pyon-P", color: "#7f67c8", initial: ["ぴ", "P"] },
     ran: { ja: "らんぴょん", en: "Ranpyon", color: "#ff5f9e", initial: ["ら", "R"], img: "portraitRan" },
     yana: { ja: "ヤナビス", en: "Yanabisu", color: "#e0559f", initial: ["ヤ", "Y"], img: "portraitYana" },
-    luva: { ja: "ザ・ルーヴァ・セレス", en: "Za-Luva Seles", color: "#6f6aa8", initial: ["ル", "L"], img: "portraitLuva", alt: "cardLuva" }
+    luva: { ja: "ザ・ルーヴァ・セレス", en: "Za-Luva Seles", color: "#6f6aa8", initial: ["ル", "L"], img: "portraitLuva", alt: "cardLuva" },
+    // ボス（戦っている最中のひとこと）。顔はボスの絵
+    boss0: { ja: "月あめキング", en: "Moon Candy King", color: "#e0a020", initial: ["月", "K"], src: "assets/boss-moon-candy-king.png" },
+    boss1: { ja: "ドーム司令官", en: "Dome Commander", color: "#e05a3a", initial: ["司", "C"], src: "assets/boss-mars-dome-commander.png" },
+    boss2: { ja: "クリスタルイエティ", en: "Crystal Yeti", color: "#3aa8d8", initial: ["イ", "Y"], src: "assets/boss-crystal-yeti.png" },
+    boss3: { ja: "マンタクイーン", en: "Manta Queen", color: "#3a7ad8", initial: ["マ", "Q"], src: "assets/boss-ocean-manta-queen.png" },
+    boss4: { ja: "ロボットキング", en: "Robot King", color: "#7a8a9a", initial: ["ロ", "R"], src: "assets/boss-mecha-robot-king.png" },
+    boss5: { ja: "魔王", en: "Demon Lord", color: "#c0266d", initial: ["魔", "D"], src: "assets/boss-demon-star-overlord.png" }
+  };
+
+  // ボス戦の最中のひとこと。悪役だけど、どこか憎めない（声は台本の boss に入る）
+  // start：戦いが始まってすぐ / hit：ぴょんぴーに当てたとき / hurt：体力が 3/4・1/4 になったとき / idle：ときどき
+  const BOSS_TALK = [
+    { // 月あめキング：あまえんぼうの王さま
+      start: [["さあ、あまーいおしおきの時間だよ！", "Time for a sweet, sweet punishment!"]],
+      hit: [["えへへ、当たった〜！ ごほうびに月あめあげよっか？", "Hee hee, got you! Want a moon candy as a prize?"], ["ぼく、王さまだもん！ 強いんだもん！", "I'm the king! So I'm strong!"]],
+      hurt: [["いたっ！ ……もう、王さまにはやさしくしてよぉ。", "Ouch! ...Hey, be nice to the king!"], ["月あめ、まだ半分も食べてないのにー！", "I haven't even finished my moon candy!"]],
+      idle: [["ねえねえ、終わったら、いっしょにおやつにしない？", "Hey, after this, wanna have a snack together?"]]
+    },
+    { // ドーム司令官：かたい軍人、でもまじめ
+      start: [["総員、戦闘配置！ ……総員といっても、わたし一人だがな！", "All hands, battle stations! ...All hands being just me!"]],
+      hit: [["命中！ 作戦どおりだ。訓練は、うそをつかん！", "Direct hit! Right on plan. Training never lies!"], ["これが火星ドーム式、きっちり攻撃だ！", "That's Mars Dome precision for you!"]],
+      hurt: [["ぐっ……。被害状況、報告しろ！ ……わたしだ！", "Ugh... Damage report! ...It's me!"], ["ネオンの電気代が……いや、今はそれどころではない！", "The neon power bill... no, not now!"]],
+      idle: [["休めの号令は、まだ出しておらんぞ！", "I haven't said 'at ease' yet!"]]
+    },
+    { // クリスタルイエティ：きらきら好きの、おっとり大男
+      start: [["きみも、きらっきらに固めてあげるね〜。", "I'll make you all sparkly and frozen too~"]],
+      hit: [["わあ、いまの、ちょっとキラッとしたね〜。", "Ooh, that one sparkled a little~"], ["ごめんね〜。でも手かげんは、とけちゃうから。", "Sorry~ But going easy would melt me."]],
+      hurt: [["あいたた……。水晶に、ひびが入っちゃったよ〜。", "Ouchie... My crystals cracked~"], ["さむいの平気だけど、いたいのは苦手なんだ〜。", "I'm fine with cold, but pain? Not so much~"]],
+      idle: [["ねえ、雪だるま、つくったことある？", "Hey, have you ever made a snowman?"]]
+    },
+    { // マンタクイーン：上品で高飛車な女王
+      start: [["ごきげんよう、うさぎさん。おぼれる準備はよろしくて？", "Good day, little rabbit. Ready to sink?"]],
+      hit: [["あら、ごめんあそばせ。ひれが当たってしまったわ。", "Oh my, pardon me. My fin slipped."], ["女王の前では、ひざまずくものよ。", "One kneels before the queen, dear."]],
+      hurt: [["んまっ！ わたくしのひれに、なんてことを！", "How dare you! My precious fins!"], ["……ちょっと、休憩をいただけるかしら。", "...Might I request a short break?"]],
+      idle: [["星の海は、静かでしょう？ ……あなたが来るまではね。", "The star sea is so quiet, isn't it? ...Until you showed up."]]
+    },
+    { // ロボットキング：カタコトで元気、ちょっとポンコツ
+      start: [["タタカイモード、キドウ！ ……セツメイショ、ドコダッケ。", "BATTLE MODE, ON! ...WHERE IS THE MANUAL."]],
+      hit: [["メイチュウ！ ピピピ、ジブンデモ ビックリ。", "DIRECT HIT! BEEP BEEP, EVEN I AM SURPRISED."], ["ケイサンドオリ。……タブン。", "AS CALCULATED. ...PROBABLY."]],
+      hurt: [["ダメージ ハッセイ！ ネジガ イッポン トンダ！", "DAMAGE DETECTED! A SCREW FLEW OFF!"], ["オイル、モレテル。……コレ、ナミダ？", "OIL LEAKING. ...ARE THESE TEARS?"]],
+      idle: [["ワライ、ッテ、ナンダ。データニ ナイ。", "WHAT IS 'LAUGHTER'. NOT IN MY DATA."]]
+    },
+    { // 魔王：いばっているけど、芸人の夢をすてきれない
+      start: [["ふはは！ 最後の舞台だ。……客席が、さみしいがな。", "Hah hah! The final stage. ...Though the seats are a bit empty."]],
+      hit: [["どうだ、魔王の力！ ……いまの、ちょっと決まっていただろう？", "Behold my power! ...That was pretty cool, wasn't it?"], ["笑いなど、いらぬ。……いらぬ、はずなのだ。", "Laughter is useless. ...It must be useless."]],
+      hurt: [["ぐぬっ……！ その動き、どこで習った！", "Ngh...! Where did you learn to move like that!"], ["ばかな……。なぜだ、胸がざわつく……。", "Impossible... Why is my heart stirring..."]],
+      idle: [["わしにも、むかし……いや、なんでもない。", "Long ago, I too... No. Never mind."]]
+    }
+  ];
+  const bossTalkLine = (kind, key) => {
+    const set = BOSS_TALK[kind]?.[key];
+    if (!set?.length) return null;
+    const line = set[Math.floor(Math.random() * set.length)];
+    return [[`boss${kind}`, line[0], line[1]]];
   };
 
   let els = null;
@@ -32,7 +86,7 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
   const lastAt = {};
   let clock = 0;
 
-  const COOLDOWN = { hurt: 7, combo: 12, starGet: 2, weaponGet: 2.5, stompBoost: 25, idle: 10, death: 3, respawn: 3, stolen: 6, needKey: 14, switchUsed: 40, keyGet: 2, stomp: 4, canFuse: 6 };
+  const COOLDOWN = { bossHit: 9, bossIdle: 16, hurt: 7, combo: 12, starGet: 2, weaponGet: 2.5, stompBoost: 25, idle: 10, death: 3, respawn: 3, stolen: 6, needKey: 14, switchUsed: 40, keyGet: 2, stomp: 4, canFuse: 6 };
 
   function dom() {
     if (els) return els;
@@ -192,6 +246,10 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
     timeUp: () => [["yana", "時間切れです！", "Time's up!"], ["pyon", "ゆっくりしすぎたわぁ", "I took my sweet time..."]],
     respawn: () => [["pyon", "三日月タクシーで復活じゃ！ 好きなとこにおりるじょ。", "Back on the Crescent Taxi! I'll hop off wherever I like."]],
     combo: () => [["pyon", "コンボじゃ！ ノってきたじょ！", "Combo! I'm on a roll!"]],
+    bossStart: kind => bossTalkLine(kind, "start"),
+    bossHit: kind => bossTalkLine(kind, "hit"),
+    bossHurt: kind => bossTalkLine(kind, "hurt"),
+    bossIdle: kind => bossTalkLine(kind, "idle"),
     bossHalf: () => [["yana", "ボスの体力、のこり半分です！", "The boss is down to half health!"], ["pyon", "あとひといきじゃ！", "Almost there!"]],
     stompBoost: () => [["pyon", "大ジャンプ！ 月までとどきそうじゃ！", "Super jump! I could reach the moon!"]],
     timeLow: () => [["yana", "のこり時間30秒です。いそいで！", "30 seconds left. Hurry!"]],
@@ -383,7 +441,7 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
   // くり返し起きる場面の「言う確率」（1-1 と、ゲームではじめてのときは かならず言う）
   const REPEAT_RATE = { combo: 0.1, starGet: 0.1, keyGet: 0.2, respawn: 0.15, stageClear: 0.3, hurt: 0.15, death: 0.3, stolen: 0.25, stompBoost: 0.1, switchUsed: 0.1, chestOpen: 0.3, doorOpen: 0.3, fuse: 0.1, weaponGet: 0.3, idle: 0.5 };
 
-  const URGENT = { stageStart: 1, map: 1, gameOver: 1, bossHalf: 1, stolen: 1, canFuse: 1, fallPit: 1, death: 1, timeUp: 1 };
+  const URGENT = { bossStart: 1, bossHurt: 1, stageStart: 1, map: 1, gameOver: 1, bossHalf: 1, stolen: 1, canFuse: 1, fallPit: 1, death: 1, timeUp: 1 };
 
   function say(lines, urgent = false) {
     if (!lines || !lines.length) return;
@@ -451,6 +509,16 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
     if (course?.bossStage && state.bossIntroPlayed) {
       const boss = state.enemies.find(e => e.boss && e.alive);
       if (boss && boss.hp / Math.max(1, boss.maxHp) < 0.5) once("bossHalf", "bossHalf");
+      // ボスのひとこと：始まってすぐ・体力 3/4 と 1/4・ときどき
+      if (boss) {
+        const kind = boss.bossKind ?? course.worldIndex ?? 0;
+        const ratio = boss.hp / Math.max(1, boss.maxHp);
+        if (!flags.bossStart) { flags.bossStart = true; event("bossStart", kind); }
+        if (ratio < 0.75 && !flags.bossHurt1) { flags.bossHurt1 = true; event("bossHurt", kind); }
+        if (ratio < 0.25 && !flags.bossHurt2) { flags.bossHurt2 = true; event("bossHurt", kind); }
+        flags.bossIdleT = (flags.bossIdleT ?? 0) + 0.25;
+        if (flags.bossIdleT > 22 && !queue.length) { flags.bossIdleT = 0; event("bossIdle", kind); }
+      }
     }
     for (let power = 1; power < MAX_WEAPON_POWER; power++) {
       if ((state.weaponInventory[power - 1] ?? 0) >= 2 && (nextFusionPower(power) !== null) && !flags[`fuse${power}`]) {
@@ -511,7 +579,7 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
     e.avatar.dataset.speaker = cur[0];
     e.avatar.style.borderColor = sp.color;
     const has = key => key && typeof Story !== "undefined" && Story.ok(Story.img[key]);
-    const custom = has(sp.img) ? Story.img[sp.img].src : has(sp.alt) ? Story.img[sp.alt].src : "";
+    const custom = sp.src ? sp.src : has(sp.img) ? Story.img[sp.img].src : has(sp.alt) ? Story.img[sp.alt].src : "";
     e.avatar.style.backgroundPosition = custom ? "50% 24%" : "";
     e.avatar.style.backgroundSize = custom ? "230%" : "";
     if (cur[0] === "pyon") {
@@ -760,7 +828,7 @@ ${L("タップで つける／はずす", "Tap to put on / take off")}`, b => {
     if (QUIET_MODES.includes(state.mode)) return;
     if (!cur && queue.length) {
       cur = queue.shift();
-      if (typeof Voice !== "undefined") Voice.play("chat", cur[1]);
+      if (typeof Voice !== "undefined") Voice.play(String(cur[0]).startsWith("boss") ? "boss" : "chat", cur[1]);
       shown = 0;
       hold = 0;
       quietT = 0;

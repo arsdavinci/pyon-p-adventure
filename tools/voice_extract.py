@@ -162,6 +162,14 @@ def main() -> None:
             if m:
                 add("boss", "pyon" if key.endswith("Pyon") else boss_who, unq(m.group(1)), "game.js", 0)
 
+    # ボス戦の最中のひとこと（chat.js の BOSS_TALK）：ステージ = boss
+    chat_src = (ROOT / "chat.js").read_text(encoding="utf-8")
+    talk = re.search(r"const BOSS_TALK = \[(.*?)\n  \];", chat_src, re.S).group(1)
+    for bi, part in enumerate(re.split(r"\n    \},?\s*\n    \{", talk)):
+        boss_who = "maou" if bi == 5 else f"boss{bi}"
+        for m in re.finditer(r'\[' + STR + r',\s*' + STR + r'\]', part):
+            add("boss", boss_who, unq(m.group(1)), "chat.js", 0)
+
     for sid, lines in story_lines().items():
         for who, text, line in lines:
             add(sid, who, text, "story.js", line)
