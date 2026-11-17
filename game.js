@@ -22,8 +22,8 @@ const scoreCount = document.querySelector("#scoreCount");
 const lifeCount = document.querySelector("#lifeCount");
 const timeCount = document.querySelector("#timeCount");
 // ゲームのバージョン（更新するたびに1つ上げる。sw.js の CACHE_NAME の番号と同じにする）
-const GAME_VERSION = 231;
-{ const v = document.querySelector("#gameVersion"); if (v) v.textContent = `Ver. ${GAME_VERSION}`; }
+const GAME_VERSION = 232;
+{ const v = document.querySelector("#gameVersion"); if (v) v.textContent = `Ver.1(${(GAME_VERSION / 100).toFixed(2)})`; } // 232 → Ver.1(2.32)
 const stageCount = document.querySelector("#stageCount");
 const stageLabelEl = document.querySelector("#stageLabel");
 const kakiLabelEl = document.querySelector("#kakiLabel");
