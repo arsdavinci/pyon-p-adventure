@@ -4743,9 +4743,12 @@ function updatePlayer(dt) {
   const shootFresh = wantsShoot && !p.shootHeld;
   p.shootHeld = wantsShoot;
   updateBombThrow(p);
-  // ロボット・戦闘機は、ボタンを押すたびに1発（おしっぱなしで連射しない）
-  const rideShot = hasEquippedWeapon() && isRideable(state.weaponPower);
-  if (wantsShoot && (!rideShot || shootFresh) && hasEquippedWeapon() && state.gun.cooldown <= 0) {
+  // どの銃も、ボタンを押した回数だけ撃つ（おしっぱなしで連射しない）。
+  // 撃てない間に押した分は、ほんの少しだけ覚えておいて、撃てるようになったらすぐ出す
+  if (shootFresh) p.shotBuffer = 0.2;
+  p.shotBuffer = Math.max(0, (p.shotBuffer ?? 0) - dt);
+  if (p.shotBuffer > 0 && hasEquippedWeapon() && state.gun.cooldown <= 0) {
+    p.shotBuffer = 0;
     const muzzle = playerMuzzle(p);
     shootBeam("player", muzzle.x, muzzle.y, p.facing, p.aim);
     state.gun.cooldown = weaponStage().cooldown;
@@ -4855,9 +4858,12 @@ function updateSwimmingPlayer(dt) {
   const shootFresh = wantsShoot && !p.shootHeld;
   p.shootHeld = wantsShoot;
   updateBombThrow(p);
-  // ロボット・戦闘機は、ボタンを押すたびに1発（おしっぱなしで連射しない）
-  const rideShot = hasEquippedWeapon() && isRideable(state.weaponPower);
-  if (wantsShoot && (!rideShot || shootFresh) && hasEquippedWeapon() && state.gun.cooldown <= 0) {
+  // どの銃も、ボタンを押した回数だけ撃つ（おしっぱなしで連射しない）。
+  // 撃てない間に押した分は、ほんの少しだけ覚えておいて、撃てるようになったらすぐ出す
+  if (shootFresh) p.shotBuffer = 0.2;
+  p.shotBuffer = Math.max(0, (p.shotBuffer ?? 0) - dt);
+  if (p.shotBuffer > 0 && hasEquippedWeapon() && state.gun.cooldown <= 0) {
+    p.shotBuffer = 0;
     const muzzle = playerMuzzle(p);
     shootBeam("player", muzzle.x, muzzle.y, p.facing, p.aim);
     state.gun.cooldown = weaponStage().cooldown;
