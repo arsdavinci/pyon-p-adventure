@@ -2249,3 +2249,22 @@ body[data-pad="switch"][data-layout="handheld"][data-orient="land"] .gb-frame-ar
   .overlay.is-gameover .gameover-art { height: min(22cqh, 230px); }
   .overlay.is-gameover .gameover-title { max-height: 17cqh; }
 }
+
+/* タイトルのロゴの右に、ゲームのバージョン（更新されたかが見てわかるように） */
+.game-version {
+  position: absolute;
+  top: 31%;
+  left: 64%;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 2px solid #c8b2ff;
+  color: #7f67c8;
+  font: 900 clamp(11px, 1.3vw, 16px) system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  z-index: 3;
+}
+body:not([data-game-mode="title"]) .game-version {
+  display: none;
+}
