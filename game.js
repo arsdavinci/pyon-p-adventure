@@ -10444,6 +10444,15 @@ function inventoryFocusTopMenu() {
   playSfx("cursor");
 }
 
+// 上のメニューから↓、もちものの一番上の段から↑で、「武器／どうぐ」タブへ
+function inventoryFocusTabs() {
+  if (fuseLessonOn()) return fuseLessonNudge();
+  state.inventoryFocusMode = INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST;
+  state.inventoryFocusArea = "itemList";
+  state.inventoryTabFocus = true;
+  playSfx("cursor");
+}
+
 function inventoryFocusItemList() {
   state.inventoryFocusMode = INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST;
   state.inventoryFocusArea = "itemList";
@@ -15568,7 +15577,7 @@ function handleInventoryKeyboardFocus(code, repeat = false) {
       return true;
     }
     if (!repeat && (code === "ArrowDown" || code === "KeyS")) {
-      inventoryFocusItemList();
+      inventoryFocusTabs();
       return true;
     }
     if (!repeat && (code === "Escape" || code === "KeyB")) {
@@ -15686,9 +15695,24 @@ function updateInventoryGamepadFocus(now, jumpPressed, runPressed, shootPressed)
       playSfx("cursor");
       gamepadState.inventoryMoveDelay = now + (freshMove ? 230 : 140);
     }
-    if (gamepadState.down && !gamepadState.downLatch) inventoryFocusItemList();
+    if (gamepadState.down && !gamepadState.downLatch) inventoryFocusTabs();
     if (jumpPressed && !gamepadState.jumpLatch) activateInventoryTopMenuButton();
     if (runPressed && !gamepadState.runLatch) leaveInventoryInnerFocus();
+    return;
+  }
+
+  // 「武器／どうぐ」タブをえらんでいるとき：←→で切りかえ、↓か A で中へ、↑で上のメニュー、B で中へもどる
+  if (mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST && state.inventoryTabFocus) {
+    if (gamepadState.left && !gamepadState.leftLatch) switchInventoryTab("weapons");
+    else if (gamepadState.right && !gamepadState.rightLatch) switchInventoryTab("gear");
+    else if ((gamepadState.down && !gamepadState.downLatch) || (jumpPressed && !gamepadState.jumpLatch) || (runPressed && !gamepadState.runLatch)) {
+      state.inventoryTabFocus = false;
+      playSfx("cursor");
+    } else if (gamepadState.up && !gamepadState.upLatch) {
+      state.inventoryTabFocus = false;
+      inventoryFocusTopMenu();
+    }
+    gamepadState.inventoryMoveDelay = now + 230;
     return;
   }
 
@@ -15699,7 +15723,7 @@ function updateInventoryGamepadFocus(now, jumpPressed, runPressed, shootPressed)
       gamepadState.inventoryMoveDelay = 0;
     } else if (freshMove || now >= gamepadState.inventoryMoveDelay) {
       if (moveDir === -5 && inventoryAtTopRow()) {
-        if (freshMove) inventoryFocusTopMenu();
+        if (freshMove) inventoryFocusTabs();
       } else moveInventorySelection(moveDir);
       gamepadState.inventoryMoveDelay = now + (freshMove ? 230 : 115);
     }
