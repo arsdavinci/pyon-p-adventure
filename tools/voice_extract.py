@@ -157,7 +157,7 @@ def main() -> None:
     block = re.search(r"const BOSS_STORY_LINES = \[(.*?)\n\];", game_src, re.S).group(1)
     for bi, part in enumerate(re.split(r"\n  \},?\s*\n  \{", block)):
         boss_who = "maou" if bi == 5 else f"boss{bi}"
-        for key in ("intro", "introPyon", "defeat", "defeatPyon"):
+        for key in ("intro", "introPyon", "defeat", "defeatPyon", "defeat2"):
             m = re.search(r"\b" + key + r": \[" + STR, part)
             if m:
                 add("boss", "pyon" if key.endswith("Pyon") else boss_who, unq(m.group(1)), "game.js", 0)

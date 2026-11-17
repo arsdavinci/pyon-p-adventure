@@ -836,37 +836,43 @@ const BOSS_STORY_LINES = [
     intro: ["魔王さまからあずかった『かけら』は、ふわふわ月あめ王国のたからものだよ！", "The shard the Demon Lord gave me is the treasure of my fluffy candy kingdom!"],
     introPyon: ["それ、みんなの笑いじょ。半分こもなしで、ぜんぶ返してもらうけん！", "That's everybody's laughter. No splitting it. I'm taking all of it back!"],
     defeat: ["やられたー！ ……あれ？ なんか、おなかの底から笑えてきたよ。かけら、返すね！", "I'm beaten! ...Huh? I feel like laughing from deep in my belly. Here, take the shard back!"],
-    defeatPyon: ["おおきに！ 今度フェスやるけん、月あめ持って見に来てだ！", "Thanks! We've got a Fest coming up. Bring some moon candy and come watch!"]
+    defeatPyon: ["おおきに！ 今度フェスやるけん、月あめ持って見に来てだ！", "Thanks! We've got a Fest coming up. Bring some moon candy and come watch!"],
+    defeat2: ["フェス、ほんとに行っていいの？ 月あめ、いっぱい持ってくね！", "I can really come to the fest? I'll bring lots of moon candy!"]
   },
   {
     intro: ["このかけらは火星ドームの動力にする。笑いなど、ネオンのこやしで十分だ！", "This shard will power my Mars dome. Laughter is nothing but fuel for neon!"],
     introPyon: ["笑いは電気代でないんじょ。みんなのもんじゃ、返してもらうけん！", "Laughter isn't a power bill. It belongs to everyone, so hand it over!"],
     defeat: ["ぐぬぬ……ネオンが消えたのに、なぜか胸が明るい。これが、笑いか……。持っていけ！", "Grr... the neon is out, yet my chest feels bright. So this is laughter... Take it!"],
-    defeatPyon: ["節電もできて一石二鳥でないか。司令官もフェス、見に来てだ！", "Saves power too. Two birds, one stone! Come see the Fest, Commander!"]
+    defeatPyon: ["節電もできて一石二鳥でないか。司令官もフェス、見に来てだ！", "Saves power too. Two birds, one stone! Come see the Fest, Commander!"],
+    defeat2: ["……了解した。フェス当日は、最前列で敬礼しよう。", "...Understood. On fest day, I'll salute from the front row."]
   },
   {
     intro: ["かけらは、この水晶の星でキラキラに固めておく。きみもいっしょに固めてあげる。", "I will keep the shard frozen in sparkle on this crystal planet. You can freeze along with it."],
     introPyon: ["固まる前に、こっちが先にとかしちゃる！ かけらも、あんたの顔もな！", "I'll melt it before that happens. The shard, and that frozen face of yours!"],
     defeat: ["きらきらに固めるつもりが、こっちの顔がゆるんじゃった……。ふふっ。かけら、どうぞ。", "I meant to freeze everything, but my own face has melted into a smile... Hehe. Here is the shard."],
-    defeatPyon: ["ええ笑顔でないか！ その顔でフェス見に来てだ！", "Now that's a great smile! Bring it to the Fest!"]
+    defeatPyon: ["ええ笑顔でないか！ その顔でフェス見に来てだ！", "Now that's a great smile! Bring it to the Fest!"],
+    defeat2: ["フェス、さむくないといいな〜。……あ、ぼくが行くと、さむくなっちゃうか。", "Hope the fest isn't cold~ ...Oh wait, it gets cold when I show up."]
   },
   {
     intro: ["このかけらは星の海の底にしずめたわ。あなたも泡にして、しずめてあげる。", "I have sunk the shard to the bottom of the star sea. I shall turn you to bubbles and sink you too."],
     introPyon: ["泳ぎは得意でないけど、笑いをしずめたままにはできんじょ！", "I'm no swimmer, but I can't leave laughter at the bottom of the sea!"],
     defeat: ["ぶくぶく……あら、泡といっしょに笑いがこみあげてきたわ。かけらは、あなたにあずけるわね。", "Bubble bubble... oh my, laughter is rising with the bubbles. I shall leave the shard with you."],
-    defeatPyon: ["おおきに、クイーン！ フェスの客席、いちばんええ水そう用意しとくけん！", "Thanks, Queen! I'll save you the best tank in the audience at the Fest!"]
+    defeatPyon: ["おおきに、クイーン！ フェスの客席、いちばんええ水そう用意しとくけん！", "Thanks, Queen! I'll save you the best tank in the audience at the Fest!"],
+    defeat2: ["よろしくてよ。いちばん大きな拍手は、わたくしが送ってさしあげるわ。", "Very well. I shall give you the biggest applause of all."]
   },
   {
     intro: ["カケラハ コウジョウノ ネンリョウ。ワライ、フヨウ。ハグルマニ マキコマレナ！", "SHARD IS FACTORY FUEL. LAUGHTER: NOT REQUIRED. GET CAUGHT IN THE GEARS!"],
     introPyon: ["笑いは不要でない、必要じゃ！ かわいいだけでのうて強いとこ、見せちゃるわ！", "Laughter is required, thank you! I'll show you I'm strong, not just cute!"],
     defeat: ["ハグルマ、カラマワリ……ピピ……ワライ、インストール カンリョウ。カケラ、ヘンキャク スル。", "GEARS SPINNING FREELY... BEEP... LAUGHTER: INSTALL COMPLETE. RETURNING SHARD."],
-    defeatPyon: ["アップデートできてよかったな！ フェスも予定に入れといてだ！", "Glad the update went through! Put the Fest on your schedule too!"]
+    defeatPyon: ["アップデートできてよかったな！ フェスも予定に入れといてだ！", "Glad the update went through! Put the Fest on your schedule too!"],
+    defeat2: ["フェス、カレンダーニ トウロク カンリョウ。……タノシミ、ト イウ キモチ、ハッケン。", "FEST ADDED TO CALENDAR. ...NEW FEELING DETECTED: 'EXCITED'."]
   },
   {
     intro: ["よくぞここまで来た。だが最後のかけらは渡さぬ。笑いなど、宇宙から消えてしまえばよいのだ！", "You have done well to come this far. But I will not give up the last shard. Laughter should vanish from the universe!"],
     introPyon: ["消させはせん。ここが終点でない、大冒険のクライマックスじゃ！", "Not on my watch. This isn't the end. It's the grand finale!"],
     defeat: ["ば、ばかな……。魔王星の夜が……明けていく……！", "I-impossible... The night of the Demon Star... is ending...!"],
-    defeatPyon: ["ほな、おはようさん。なあ魔王、ちょっと話、聞かせてだ。", "Good morning, then. Hey, Demon Lord. Tell me your story."]
+    defeatPyon: ["ほな、おはようさん。なあ魔王、ちょっと話、聞かせてだ。", "Good morning, then. Hey, Demon Lord. Tell me your story."],
+    defeat2: ["……わしの話など、だれも聞かんと思っておった。……聞いて、くれるのか。", "...I thought no one would ever listen to me. ...You will?"]
   }
 ];
 BOSS_STORY_LINES.forEach((line, i) => {
@@ -878,6 +884,8 @@ BOSS_STORY_LINES.forEach((line, i) => {
   BOSS_DEFEAT_DIALOGUES[i].bossEn = line.defeat[1];
   BOSS_DEFEAT_DIALOGUES[i].pyonJa = line.defeatPyon[0];
   BOSS_DEFEAT_DIALOGUES[i].pyonEn = line.defeatPyon[1];
+  BOSS_DEFEAT_DIALOGUES[i].boss2Ja = line.defeat2?.[0];
+  BOSS_DEFEAT_DIALOGUES[i].boss2En = line.defeat2?.[1];
 });
 
 const AREA_LANDMARKS = [
@@ -4356,6 +4364,13 @@ function advanceBossIntro() {
     playSfx("page");
   } else {
     if (state.mode === "bossOutro") {
+      const kind = state.bossOutroKind ?? 0;
+      if ((state.bossIntroStep ?? 0) === 1 && BOSS_DEFEAT_DIALOGUES[kind]?.boss2Ja) {
+        state.bossIntroStep = 2;
+        state.bossIntroTimer = 0;
+        playSfx("page");
+        return true;
+      }
       completeBossStageAfterOutro();
       return true;
     }
@@ -4415,6 +4430,8 @@ function beginBossDeath(boss) {
   state.beams = [];
   state.bossHazards = [];
   boss.hurtAnim = 9;
+  boss.downed = true;
+  boss.downT = 0;
   state.player.vx = 0;
   FX.hitStop(0.22);
   FX.slowMo(0.7, 0.3);
@@ -4436,6 +4453,7 @@ function updateBossDeath(dt) {
   state.bossDeathTimer -= dt;
   state.bossDeathTick -= dt;
   boss.defeated = 0.42;
+  boss.downT = Math.min(1, (boss.downT ?? 0) + dt * 1.4);
   const cx = boss.x + boss.w / 2;
   const cy = boss.y + boss.h / 2;
   if (state.bossDeathTick <= 0) {
@@ -4448,7 +4466,8 @@ function updateBossDeath(dt) {
     FX.bossFinale(cx, cy);
     playSfx("bossDown", cx);
     boss.defeated = 0;
-    boss.hurtAnim = 0;
+    boss.hurtAnim = 9;
+    boss.downT = 1;
     state.bossDeathBoss = null;
     startBossOutro(boss);
   }
@@ -9048,10 +9067,11 @@ function drawBossIntroOverlay() {
     ? (BOSS_DEFEAT_DIALOGUES[kind] ?? BOSS_DEFEAT_DIALOGUES[0])
     : (BOSS_DIALOGUES[kind] ?? BOSS_DIALOGUES[0]);
   const showingPyon = (state.bossIntroStep ?? 0) === 1;
-  const raw = showingPyon ? (language === "ja" ? lines.pyonJa : lines.pyonEn) : (language === "ja" ? lines.bossJa : lines.bossEn);
+  const lastBoss = outro && (state.bossIntroStep ?? 0) === 2;
+  const raw = showingPyon ? (language === "ja" ? lines.pyonJa : lines.pyonEn) : lastBoss ? (language === "ja" ? lines.boss2Ja : lines.boss2En) : (language === "ja" ? lines.bossJa : lines.bossEn);
   const text = raw.replace(/^ぴょんぴー「/, "").replace(/」$/, "").replace(/^Pyon-P: /, "");
   // ボスとぴょんぴーのかけあいも声で（台本の boss。行がかわったときに1回だけ流す）
-  const jaLine = showingPyon ? lines.pyonJa : lines.bossJa;
+  const jaLine = showingPyon ? lines.pyonJa : lastBoss ? lines.boss2Ja : lines.bossJa;
   if (jaLine && state.bossVoiceLine !== jaLine) {
     state.bossVoiceLine = jaLine;
     if (typeof Voice !== "undefined") Voice.play("boss", jaLine.replace(/^ぴょんぴー「/, "").replace(/」$/, ""));
@@ -13546,8 +13566,14 @@ function drawMoonianNova(colors) {
 
 function drawEnemies() {
   for (const e of state.enemies) {
-    if (!e.alive && e.defeated <= 0) continue;
+    if (!e.alive && e.defeated <= 0 && !e.downed) continue;
     if (e.tutorialHidden) continue;
+    if (e.downed) {
+      drawBossAlien(e);
+      // たおれこんだボスの上で、星がくるくる
+      drawDizzyStars({ x: e.x, y: e.y + e.h * 0.55, w: e.w, h: e.h, boss: false, stun: 1 });
+      continue;
+    }
     // ピヨりが終わる少し前（のこり0.7秒）から、ぷるぷるふるえて「もうすぐ起きる」と知らせる
     const waking = e.alive && !e.boss && e.stun > 0 && e.stun < 0.7;
     if (waking) {
@@ -13782,10 +13808,10 @@ function drawBossImage(e) {
   let img = poseImg || bossThemeImages[kind];
   if (!img || !img.complete || img.naturalWidth <= 0) img = bossThemeImages[kind];
   if (!img || !img.complete || img.naturalWidth <= 0) return false;
-  const dying = !e.alive;
+  const dying = !e.alive && !e.downed;
   const t = dying ? 1 - e.defeated / 0.42 : 0;
-  const alpha = (dying ? Math.max(0, 1 - t * 0.86) : 1) * (e.fade ?? 1);
-  const bob = dying ? 0 : Math.sin(performance.now() / 260 + e.x) * 3;
+  const alpha = (dying ? Math.max(0, 1 - t * 0.86) : 1) * (e.downed ? 1 : (e.fade ?? 1));
+  const bob = dying || e.downed ? 0 : Math.sin(performance.now() / 260 + e.x) * 3;
   const drawH = e.finalBoss ? 228 : e.h * 1.65;
   const drawW = drawH * (img.naturalWidth / img.naturalHeight);
   const dx = e.x + e.w / 2 - drawW / 2;
@@ -13793,6 +13819,17 @@ function drawBossImage(e) {
   const facingRight = (e.facing ?? (e.vx >= 0 ? 1 : -1)) > 0;
   ctx.save();
   ctx.globalAlpha = alpha;
+  if (e.downed) {
+    // その場で、うしろへ ばたん（足もとを軸に、たおれこむ）
+    const k = e.downT ?? 1;
+    const ease = 1 - Math.pow(1 - k, 3);
+    const px = e.x + e.w / 2;
+    const py = e.y + e.h + 4;
+    const bounce = k >= 1 ? 0 : Math.sin(k * Math.PI) * 6;
+    ctx.translate(px, py - bounce);
+    ctx.rotate((facingRight ? -1 : 1) * ease * Math.PI * 0.42);
+    ctx.translate(-px, -py);
+  }
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
   const red = enemyHitRed(e);
