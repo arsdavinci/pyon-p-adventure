@@ -22,7 +22,7 @@ const scoreCount = document.querySelector("#scoreCount");
 const lifeCount = document.querySelector("#lifeCount");
 const timeCount = document.querySelector("#timeCount");
 // ゲームのバージョン（更新するたびに1つ上げる。sw.js の CACHE_NAME の番号と同じにする）
-const GAME_VERSION = 215;
+const GAME_VERSION = 216;
 { const v = document.querySelector("#gameVersion"); if (v) v.textContent = `Ver. ${GAME_VERSION}`; }
 const stageCount = document.querySelector("#stageCount");
 const stageLabelEl = document.querySelector("#stageLabel");
@@ -5939,6 +5939,14 @@ function updateEnemyMovement(e, dt) {
   e.vy += GRAVITY * dt;
   moveEnemyAndCollide(e, dt);
   if (e.boss && e.y > canvas.height + 80) respawnBoss(e);
+  // ぴょんぴーの光線銃を持ったまま穴に落ちた敵：銃だけは、ぴょんぴーの近くにもどしてあげる
+  if (!e.boss && e.stolenWeapon && e.weaponPower && e.y > worldBottom() + 80) {
+    spawnWeaponDrop(e.x, e.y, e.weaponPower, false);
+    returnLostGun(state.items[state.items.length - 1]);
+    if (state.gun.holder === e.id) state.gun.holder = "inventory";
+    e.weaponPower = 0;
+    e.stolenWeapon = false;
+  }
   if (e.bumped && e.grounded && e.jumpCooldown <= 0) {
     e.vy = -680;
     e.grounded = false;
@@ -8142,6 +8150,18 @@ function spawnItem(x, y, type) {
   });
 }
 
+// 落ちてしまった自分の光線銃を、ぴょんぴーが さいごに立っていた場所の上に もどす
+function returnLostGun(item) {
+  const p = state.player;
+  const safe = state.lastSafe ?? { x: p.x, y: p.y + p.h };
+  item.x = safe.x + 60;
+  item.y = safe.y - 160;
+  item.vx = 0;
+  item.vy = 0;
+  item.life = 9999;
+  FX.floater(item.x, item.y - 20, language === "ja" ? "光線銃がもどってきた！" : "Your ray gun came back!", { color: "#ffffff", stroke: "#7f67c8", size: 20, life: 1.6 });
+}
+
 function spawnWeaponDrop(x, y, weaponPower, fresh = false) {
   if (fresh) announceRareDrop(x, y, weaponPower);
   state.items.push({
@@ -8229,7 +8249,11 @@ function updateItems(dt) {
       }
       item.life = 0;
     }
-    if (item.y > worldBottom() + 80) item.life = 0;
+    if (item.y > worldBottom() + 80) {
+      // うばわれていた自分の光線銃は、穴に落ちても消さない。さいごに立っていた場所の上にもどす
+      if (item.type === "power" && item.regained) returnLostGun(item);
+      else item.life = 0;
+    }
   }
   state.items = state.items.filter(item => item.life > 0);
 }
