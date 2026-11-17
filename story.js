@@ -35,7 +35,13 @@
     cgStage: "assets/cg-ending-stage.webp",
     cgFinale: "assets/cg-ending-finale.webp",
     titleKey: "assets/title-keyvisual.webp",
-    waraiStar: "assets/item-warai-star.webp"
+    waraiStar: "assets/item-warai-star.webp",
+    shard1: "assets/item-warai-shard-1.png",
+    shard2: "assets/item-warai-shard-2.png",
+    shard3: "assets/item-warai-shard-3.png",
+    shard4: "assets/item-warai-shard-4.png",
+    shard5: "assets/item-warai-shard-5.png",
+    shard6: "assets/item-warai-shard-6.png"
   };
   const img = {};
   for (const [key, src] of Object.entries(OPTIONAL)) {
@@ -1309,7 +1315,7 @@
   }
 
   // ---------- ワライスター ----------
-  function drawWaraiStar(x, y, r, lit = true) {
+  function drawWaraiStar(x, y, r, lit = true, shardIndex = null) {
     ctx.save();
     ctx.translate(x, y);
     if (lit) {
@@ -1318,6 +1324,14 @@
       ctx.drawImage(FX.glowSprite("#ffd85a"), -r * 2, -r * 2, r * 4, r * 4);
       ctx.globalCompositeOperation = "source-over";
       ctx.globalAlpha = 1;
+    }
+    const piece = shardIndex != null ? img["shard" + (shardIndex + 1)] : null;
+    if (lit && ok(piece)) {
+      // ボスからもらった、それぞれのかけらの絵（512px の画像に余白があるので大きめに）
+      const w = r * 3.6;
+      ctx.drawImage(piece, -w / 2, -w / 2, w, w);
+      ctx.restore();
+      return;
     }
     if (lit && ok(img.waraiStar)) {
       const w = r * 2.3;
@@ -1575,7 +1589,7 @@
           const lit = i < rc.shard;
           const isNew = i === rc.shard - 1;
           const s = isNew ? 1 + Math.max(0, 1 - (t - 2.3) * 2) * 0.9 + Math.sin(time * 6) * 0.06 : 1;
-          drawWaraiStar(px + pw - 64 - (5 - i) * 44 - 16, rowY, 17 * s, lit && (!isNew || t > 2.3));
+          drawWaraiStar(px + pw - 64 - (5 - i) * 44 - 16, rowY, 17 * s, lit && (!isNew || t > 2.3), i);
         }
         ctx.globalAlpha = pk;
       }
@@ -1918,7 +1932,7 @@
     ctx.textBaseline = "middle";
     ctx.fillStyle = "#ff5f9e";
     ctx.fillText(L("ワライスターのかけら", "Warai Star Shards"), 42, 44);
-    for (let i = 0; i < 6; i++) drawWaraiStar(58 + i * 40, 82, 15, i < shards);
+    for (let i = 0; i < 6; i++) drawWaraiStar(58 + i * 40, 82, 15, i < shards, i);
     ctx.textAlign = "right";
     ctx.fillStyle = "#d98a2b";
     ctx.fillText(`★ ${st.got}/${st.total}`, 336, 44);
