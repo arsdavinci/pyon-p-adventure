@@ -9048,6 +9048,12 @@ function drawBossIntroOverlay() {
   const showingPyon = (state.bossIntroStep ?? 0) === 1;
   const raw = showingPyon ? (language === "ja" ? lines.pyonJa : lines.pyonEn) : (language === "ja" ? lines.bossJa : lines.bossEn);
   const text = raw.replace(/^ぴょんぴー「/, "").replace(/」$/, "").replace(/^Pyon-P: /, "");
+  // ボスとぴょんぴーのかけあいも声で（台本の boss。行がかわったときに1回だけ流す）
+  const jaLine = showingPyon ? lines.pyonJa : lines.bossJa;
+  if (jaLine && state.bossVoiceLine !== jaLine) {
+    state.bossVoiceLine = jaLine;
+    if (typeof Voice !== "undefined") Voice.play("boss", jaLine.replace(/^ぴょんぴー「/, "").replace(/」$/, ""));
+  }
   const accent = showingPyon ? "#7f67c8" : boss.finalBoss ? "#c0266d" : "#ff5f9e";
   const speaker = showingPyon ? (language === "ja" ? "ぴょんぴー" : "Pyon-P") : Story.bossName(kind);
   const W = canvas.width;

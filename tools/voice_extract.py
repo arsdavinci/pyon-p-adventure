@@ -19,7 +19,8 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "assets" / "voice" / "script.json"
 
 NAMES = {"narr": "ナレーター", "pyon": "ぴょんぴー", "ran": "らんぴょん", "luva": "ザ・ルーヴァ・セレス",
-         "yana": "ヤナビス", "maou": "魔王", "mystery": "？？？", "kaguya": "かぐや様", "noir": "ノワール", "mochi": "モチまる"}
+         "yana": "ヤナビス", "maou": "魔王", "mystery": "？？？", "kaguya": "かぐや様", "noir": "ノワール", "mochi": "モチまる",
+         "boss0": "月あめキング", "boss1": "ドーム司令官", "boss2": "クリスタルイエティ", "boss3": "マンタクイーン", "boss4": "ロボットキング"}
 
 # アフレコブースのキャスト案（声のイメージ。ブースで直してOK）
 CAST = {
@@ -37,6 +38,16 @@ CAST = {
     "noir": {"name": "ノワール", "description": "メカの街の路地裏で、あやしい武器屋をやっている黒ネコのロボット。マフィアの取引みたいに、低く小声で、ねっとりしゃべる。関西弁まじりで、口ぐせは「ニャフフ」。悪そうだけど、どこかかわいい",
              "gender": "男性", "age": "40〜50代"},
     "mochi": {"name": "モチまる", "description": "ワールドマップのよろず屋『つきのわ』の店主。おもちみたいに白くてまるい、月うさぎの商人。人なつっこい関西弁で、明るく元気。口ぐせは「まいど〜！」。商売上手だけど、やさしい",
+              "gender": "男性", "age": "30〜40代"},
+    "boss0": {"name": "月あめキング", "description": "ふわふわ月あめ王国の王さま。あまくて、のんびりした、子どもっぽい王さま。わがままだけど憎めない",
+              "gender": "男性", "age": "40〜50代"},
+    "boss1": {"name": "ドーム司令官", "description": "火星ドームの司令官。軍隊っぽく、かたくてえらそうなしゃべり方。根はまじめ",
+              "gender": "男性", "age": "40〜50代"},
+    "boss2": {"name": "クリスタルイエティ", "description": "氷の国の大きな雪男。きらきらしたものが大好き。声は大きくて太いが、ちょっとおっとり",
+              "gender": "男性", "age": "30〜40代"},
+    "boss3": {"name": "マンタクイーン", "description": "星の海の女王のマンタ。上品でおごそか、少し高飛車なお姉さま口調",
+              "gender": "女性", "age": "30〜40代"},
+    "boss4": {"name": "ロボットキング", "description": "リング工場の王さまロボット。機械っぽい、カクカクした元気な話し方",
               "gender": "男性", "age": "30〜40代"},
     # ？？？は正体をかくした魔王
     "mystery": {"name": "魔王", "description": "低く太い、いばった魔王の声。じつは芸人を目指していた、どこかさみしげな老人", "gender": "男性", "age": "50代以上"},
@@ -140,6 +151,16 @@ def main() -> None:
     mochi = re.search(r"const MOCHI = \{(.*?)\n  \};", shop_src, re.S).group(1)
     for m in re.finditer(r'\w+: \[' + STR, mochi):
         add("shop", "mochi", unq(m.group(1)), "shop.js", 0)
+
+    # ボス戦の前後のかけあい（game.js の BOSS_STORY_LINES）：ステージ = boss。最後のボスは魔王
+    game_src = (ROOT / "game.js").read_text(encoding="utf-8")
+    block = re.search(r"const BOSS_STORY_LINES = \[(.*?)\n\];", game_src, re.S).group(1)
+    for bi, part in enumerate(re.split(r"\n  \},?\s*\n  \{", block)):
+        boss_who = "maou" if bi == 5 else f"boss{bi}"
+        for key in ("intro", "introPyon", "defeat", "defeatPyon"):
+            m = re.search(r"\b" + key + r": \[" + STR, part)
+            if m:
+                add("boss", "pyon" if key.endswith("Pyon") else boss_who, unq(m.group(1)), "game.js", 0)
 
     for sid, lines in story_lines().items():
         for who, text, line in lines:
