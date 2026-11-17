@@ -574,6 +574,7 @@
         p.coyote = 0;
         s.squish = 1;
         playSfx("spring", s.x);
+        Chat.event("spring");
         FX.squash(0.7, 1.36);
         FX.add({ type: "ring", x: s.x + s.w / 2, y: s.y, r: 10, grow: 300, w: 6, life: 0.3, color: "#fff3a4" });
         FX.radial(s.x + s.w / 2, s.y, 6, { type: "star", speed: [80, 240], life: [0.3, 0.55], r: [4, 7], colors: FX.GOLD, vy: -120, spin: 8 });

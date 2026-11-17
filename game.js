@@ -7691,7 +7691,10 @@ function explodeMissile(x, y, missile) {
     const ey = e.y + e.h / 2;
     const dist = Math.hypot(ex - x, ey - y);
     if (dist <= radius + Math.max(e.w, e.h) * 0.35) {
-      if (missile.bomb) damageEnemy(e, e.boss ? (e.maxHp ?? e.hp ?? 60) * BOMB_BOSS_RATE : 99, true);
+      if (missile.bomb) {
+        if (e.boss && typeof Story !== "undefined" && !Story.data.seen.tipBombBoss) { Story.data.seen.tipBombBoss = true; Chat.event("bombBoss"); }
+        damageEnemy(e, e.boss ? (e.maxHp ?? e.hp ?? 60) * BOMB_BOSS_RATE : 99, true);
+      }
       else damageEnemy(e, missile.damage ?? 1);
     }
   }
@@ -7740,6 +7743,7 @@ function updateBombThrow(p) {
     colors: ["#ff5fc8", "#ffd85a", "#ffffff"]
   });
   playSfx("whoosh", p.x);
+  Chat.event("bombThrow");
   FX.floater(p.x + p.w / 2, p.y - 26, language === "ja" ? `ポイッ！ のこり ${bombStock()}` : `Toss! ${bombStock()} left`, { color: "#ffffff", stroke: "#ff5fc8", size: 18, life: 1 });
 }
 
@@ -7890,6 +7894,7 @@ function spawnWeaponDrop(x, y, weaponPower, fresh = false) {
     x, y, type: "power",
     weaponPower,
     rare: fresh && isRareDrop(weaponPower),
+    regained: !fresh, // うばわれた自分の光線銃（ひろうと「取りかえしたじょ！」）
     w: 28, h: 28,
     // 水の中では、たおした場所でふわっと止まって、そこからゆっくりしずむ
     vx: isUnderwaterStage() ? 0 : -90 + Math.random() * 180,
@@ -7927,6 +7932,7 @@ function updateItems(dt) {
           FX.starGet(item.x + item.w / 2, item.y + item.h / 2);
         }
         if (item.type === "manju") stashBudouManju(item);
+        if (item.type === "power" && item.regained) Chat.event("gunBack");
         if (item.type === "power" && !addWeaponStock(item.weaponPower ?? 1)) {
           item.vy = -60;
           item.vx = pusherAwayFromPlayer(item) * 0.4;
@@ -7961,6 +7967,7 @@ function updateItems(dt) {
         FX.starGet(item.x + item.w / 2, item.y + item.h / 2);
       }
       if (item.type === "manju") stashBudouManju(item);
+      if (item.type === "power" && item.regained) Chat.event("gunBack");
       if (item.type === "power" && !addWeaponStock(item.weaponPower ?? 1)) {
         item.vy = -260;
         item.vx = pusherAwayFromPlayer(item);
@@ -7991,6 +7998,7 @@ function eatBudouManju(item) {
   playSfx("powerUp");
   FX.starGet(item.x + item.w / 2, item.y + item.h / 2);
   FX.floater(item.x + item.w / 2, item.y - 20, language === "ja" ? "ぶどうまんじゅう！ 満タン！" : "Grape Manju! Full!", { color: "#f3dcff", stroke: "#7a4fa8", size: 26, life: 1.4 });
+  if (state.mode !== "inventory") Chat.event("manjuEat");
 }
 
 function pusherAwayFromPlayer(item) {
@@ -8055,9 +8063,11 @@ function collectOxygenItems() {
     if (nearX && nearY) {
       o.taken = true;
       o.respawn = 7.5;
+      state.oxygenBefore = state.oxygen;
       state.oxygen = MAX_OXYGEN;
       state.score += 15;
       playSfx("bubble", o.x);
+      if ((state.oxygenBefore ?? MAX_OXYGEN) < MAX_OXYGEN * 0.4) Chat.event("breath");
       spawnBubbleBurst(o.x, o.y);
       FX.oxygen(o.x, o.y);
     }

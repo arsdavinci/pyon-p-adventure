@@ -86,7 +86,7 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
   const lastAt = {};
   let clock = 0;
 
-  const COOLDOWN = { bossHit: 9, bossIdle: 16, hurt: 7, combo: 12, starGet: 2, weaponGet: 2.5, stompBoost: 25, idle: 10, death: 3, respawn: 3, stolen: 6, needKey: 14, switchUsed: 40, keyGet: 2, stomp: 4, canFuse: 6 };
+  const COOLDOWN = { gunBack: 6, bombThrow: 20, spring: 15, hpLow: 25, breath: 20, bossHit: 9, bossIdle: 16, hurt: 7, combo: 12, starGet: 2, weaponGet: 2.5, stompBoost: 25, idle: 10, death: 3, respawn: 3, stolen: 6, needKey: 14, switchUsed: 40, keyGet: 2, stomp: 4, canFuse: 6 };
 
   function dom() {
     if (els) return els;
@@ -246,6 +246,38 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
     timeUp: () => [["yana", "時間切れです！", "Time's up!"], ["pyon", "ゆっくりしすぎたわぁ", "I took my sweet time..."]],
     respawn: () => [["pyon", "三日月タクシーで復活じゃ！ 好きなとこにおりるじょ。", "Back on the Crescent Taxi! I'll hop off wherever I like."]],
     combo: () => [["pyon", "コンボじゃ！ ノってきたじょ！", "Combo! I'm on a roll!"]],
+    // ---- こまかい場面のひとこと ----
+    manjuEat: () => [pick([
+      ["pyon", "ぶどうまんじゅう、うまっ！ 全回復じゃ！", "Grape Manju, yum! Fully healed!"],
+      ["pyon", "もぐもぐ……ライフもHPも満タンじゃ。もういっちょいけるじょ！", "Munch munch... Lives and HP all full. I can keep going!"],
+      ["pyon", "この味、生きかえるわ〜。全回復じょ！", "This flavor brings me back to life! Full heal!"]
+    ])],
+    bombThrow: () => [pick([
+      ["pyon", "ポイっ！ ドカーンといけ！", "Toss! Go boom!"],
+      ["pyon", "ネコネオン爆弾、くらえっ！", "Take this, Neko Neon Bomb!"]
+    ])],
+    bombBoss: () => [["yana", "爆弾は、ボスのガードもバリアも通りぬけます。たよりになりますね。", "Bombs go right through boss guards and barriers. Very handy."]],
+    spring: () => [pick([
+      ["pyon", "びよよーん！", "Boing!"],
+      ["pyon", "うひゃー、高い高い！", "Whoa, so high!"]
+    ])],
+    coins100: () => [pick([
+      ["pyon", "ルナコイン、100枚たまったじょ！ お店が楽しみじゃ。", "100 Luna Coins saved up! Can't wait to go shopping."],
+      ["pyon", "コインがじゃらじゃらじゃ。なに買おかな〜。", "Coins jingling! What should I buy~"]
+    ])],
+    lastLife: () => [["yana", "のこりライフ、1です。ここからは慎重にいきましょう。", "One life left. Let's be careful from here."], ["pyon", "わかっとる。……ちょっとドキドキするけどな。", "I know. ...My heart's pounding a bit, though."]],
+    hpLow: () => [pick([
+      ["pyon", "あかん、もうフラフラじゃ……！", "Uh-oh, I'm all wobbly...!"],
+      ["pyon", "HPがピンチじゃ。ぶどうまんじゅう、どっかにないかな。", "HP's in trouble. Got any Grape Manju around?"]
+    ])],
+    breath: () => [pick([
+      ["pyon", "ぷはーっ！ 生きかえったじょ。", "Pwah! I'm alive again!"],
+      ["pyon", "空気、おいしいわ〜。", "Air tastes so good~"]
+    ])],
+    gunBack: () => [pick([
+      ["pyon", "取りかえしたじょ！ もう はなさんけん！", "Got it back! Never letting go again!"],
+      ["pyon", "おかえり、吾輩の光線銃！", "Welcome back, my ray gun!"]
+    ])],
     bossStart: kind => bossTalkLine(kind, "start"),
     bossHit: kind => bossTalkLine(kind, "hit"),
     bossHurt: kind => bossTalkLine(kind, "hurt"),
@@ -439,7 +471,7 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
   }
 
   // くり返し起きる場面の「言う確率」（1-1 と、ゲームではじめてのときは かならず言う）
-  const REPEAT_RATE = { combo: 0.1, starGet: 0.1, keyGet: 0.2, respawn: 0.15, stageClear: 0.3, hurt: 0.15, death: 0.3, stolen: 0.25, stompBoost: 0.1, switchUsed: 0.1, chestOpen: 0.3, doorOpen: 0.3, fuse: 0.1, weaponGet: 0.3, idle: 0.5 };
+  const REPEAT_RATE = { manjuEat: 0.6, bombThrow: 0.15, spring: 0.12, coins100: 0.5, hpLow: 0.3, breath: 0.2, gunBack: 0.4, combo: 0.1, starGet: 0.1, keyGet: 0.2, respawn: 0.15, stageClear: 0.3, hurt: 0.15, death: 0.3, stolen: 0.25, stompBoost: 0.1, switchUsed: 0.1, chestOpen: 0.3, doorOpen: 0.3, fuse: 0.1, weaponGet: 0.3, idle: 0.5 };
 
   const URGENT = { bossStart: 1, bossHurt: 1, stageStart: 1, map: 1, gameOver: 1, bossHalf: 1, stolen: 1, canFuse: 1, fallPit: 1, death: 1, timeUp: 1 };
 
@@ -500,6 +532,12 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
     // 買った・つけたどうぐの説明（ヤナビス）が残っていたら、手があいたときに流す
     if (typeof gearTipQueue !== "undefined" && gearTipQueue.length && !queue.length && typeof flushGearTips === "function") flushGearTips();
     if (state.time < 30 && state.time > 0) once("timeLow", "timeLow");
+    if (state.hp <= 1 && state.lives > 0) once("hpLow", "hpLow");
+    else if (state.hp >= 3) flags.hpLow = false;
+    if (state.lives === 1) once("lastLife", "lastLife");
+    const hundred = Math.floor((state.kakiTotal ?? 0) / 100);
+    if (flags.coinHundred === undefined) flags.coinHundred = hundred;
+    else if (hundred > flags.coinHundred) { flags.coinHundred = hundred; event("coins100"); }
     if (course?.trait === "underwater") {
       if ((state.oxygen ?? 100) < 25) once("o2", "oxygenLow");
       else if ((state.oxygen ?? 100) > 60) flags.o2 = false;
