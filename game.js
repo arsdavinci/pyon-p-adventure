@@ -22,7 +22,7 @@ const scoreCount = document.querySelector("#scoreCount");
 const lifeCount = document.querySelector("#lifeCount");
 const timeCount = document.querySelector("#timeCount");
 // ゲームのバージョン（更新するたびに1つ上げる。sw.js の CACHE_NAME の番号と同じにする）
-const GAME_VERSION = 222;
+const GAME_VERSION = 223;
 { const v = document.querySelector("#gameVersion"); if (v) v.textContent = `Ver. ${GAME_VERSION}`; }
 const stageCount = document.querySelector("#stageCount");
 const stageLabelEl = document.querySelector("#stageLabel");
@@ -8906,7 +8906,7 @@ function drawGameWorld() {
   const zoom = title ? ZOOM : (state.viewZoom ?? ZOOM);
   ctx.scale(zoom, zoom);
   ctx.translate(-Math.round(cam * zoom) / zoom, -Math.round(camY * zoom) / zoom);
-  drawMountains();
+  // （むかしの三角形の山は、もう描かない）
   drawStageEnvironment();
   drawPlatforms();
   Gimmick.drawForeground();
