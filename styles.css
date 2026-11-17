@@ -2194,7 +2194,7 @@ body[data-layout="handheld"] .overlay .title-actions #startButton,
 body[data-layout="handheld"] .overlay .title-actions #settingsButton {
   background: transparent;
   border: clamp(12px, 3.2vh, 24px) solid transparent;
-  border-image: url("assets/ui-button-off.png") 58 fill / clamp(12px, 3.2vh, 24px) stretch;
+  border-image: url("assets/ui-button-off.png") 0 58 fill / 0 clamp(12px, 3.2vh, 24px) stretch;
   border-radius: 0;
   box-shadow: none;
   filter: drop-shadow(0 4px 6px rgba(60, 40, 120, 0.25));
@@ -2211,7 +2211,7 @@ body[data-layout="handheld"] .overlay .title-actions #settingsButton {
 body[data-layout="handheld"] .overlay .title-actions #newGameButton.is-focused,
 body[data-layout="handheld"] .overlay .title-actions #startButton.is-focused,
 body[data-layout="handheld"] .overlay .title-actions #settingsButton.is-focused {
-  border-image: url("assets/ui-button-on.png") 58 fill / clamp(12px, 3.2vh, 24px) stretch;
+  border-image: url("assets/ui-button-on.png") 0 58 fill / 0 clamp(12px, 3.2vh, 24px) stretch;
   box-shadow: none;
   color: #2c2650;
   filter: drop-shadow(0 0 10px rgba(255, 141, 183, 0.6));
@@ -2225,7 +2225,7 @@ body[data-layout="handheld"] .overlay .title-actions #newGameButton,
 body[data-layout="handheld"] .overlay .title-actions #startButton,
 body[data-layout="handheld"] .overlay .title-actions #settingsButton {
   border-width: calc(17 * var(--u));
-  border-image-width: calc(17 * var(--u));
+  border-image-width: 0 calc(17 * var(--u));
   padding: 0 calc(16 * var(--u));
   min-width: calc(250 * var(--u));
 }
