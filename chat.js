@@ -148,16 +148,20 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
     ])];
   }
 
+  // 合成の説明をしてよいステージか（1-1 と、その練習部屋だけ。もう合成したことがあれば言わない）
+  const fuseTalkStage = () => typeof lessonStage === "function" && lessonStage() && !Story.data.seen?.fuseGuide;
+
   const BUILDERS = {
     stageStart: stageStartLines,
     // はじめてさわる光線銃のときだけ、ひとこと（ムーンポッパーと、前にさわったことのある光線銃は、だまってひろう）
     weaponGet: info => {
       const isNew = !!info?.isNew && info.power !== 1;
       if (!isNew) return [];
-      return firstTime("tipWeapon") ? BUILDERS.fuseTeach() : [["pyon", "おっ、新しい光線銃でないか。ええでないか！", "Ooh, a new ray gun. Nice!"]];
+      return fuseTalkStage() && firstTime("tipWeapon") ? BUILDERS.fuseTeach() : [["pyon", "おっ、新しい光線銃でないか。ええでないか！", "Ooh, a new ray gun. Nice!"]];
     },
     fuse: name => [["pyon", "合体成功！ 強い光線銃になったじょ！", "Fusion complete! It's a stronger ray gun now!"]],
-    canFuse: name => firstTime("tipFuseHowTo") ? [
+    // 合成の説明は 1-1 で一度したので、ほかのステージでは もう言わない
+    canFuse: name => !fuseTalkStage() ? [] : firstTime("tipFuseHowTo") ? [
       ["yana", "同じ光線銃が2つそろいました。同じ光線銃を2つ合成すると、1つ上の新しい光線銃が生まれます。", "You now have two of the same ray gun. Fuse them to create the next, stronger one."],
       ...fuseHowTo(),
       ["yana", "月の武器🌙と星の武器⭐は別の種類です。同じ種類の、同じ武器どうしでしか合成できません。合成をくり返すと、それぞれ Lv8 まで進化しますよ。", "Moon 🌙 and star ⭐ weapons are different types; only the exact same weapon can be fused. Each line evolves up to Lv8."],
