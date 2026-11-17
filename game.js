@@ -4097,7 +4097,7 @@ const BOSS_MOVES = [
   // 6 魔王：ワープして、これまでのボスの技をぜんぶ使う
   [["darkorb", "rain", "warp", "wave"], ["laserMid", "ring", "warp", "lob", "laserLow"], ["laserCombo", "ring", "warp", "wave", "meteor"]]
 ];
-const BOSS_REST = [1.25, 1.0, 0.7];
+const BOSS_REST = [0.8, 0.6, 0.42]; // つぎの攻撃までの休み（前は 1.25 / 1.0 / 0.7）
 const BOSS_ORB_COLORS = {
   orb: ["#fff3a4", "#ff8db7", "#c8b2ff"],
   candy: ["#ffffff", "#ffb7dc", "#ffd1ed"],
@@ -4208,7 +4208,7 @@ function bossWave(e) {
   for (let i = 0; i < n; i++) {
     if (i === gap || i === gap + 1) continue;
     const telegraph = 0.75 + i * 0.1;
-    state.bossHazards.push({ type: "eruption", x: startX + dir * i * 100, y: 492, w: 72, h: 168, telegraph, active: 0, life: telegraph + 0.7, owner: e.id });
+    state.bossHazards.push({ type: "eruption", x: startX + dir * i * 100, y: 492, w: 72, h: LAVA_PILLAR_H, telegraph, active: 0, life: telegraph + 0.7, owner: e.id });
   }
   playSfx("equip", e.x);
 }
@@ -4243,10 +4243,35 @@ function bossLaser(e, level, delay = 0) {
   state.bossHazards.push({ type: "laser", level, x: a.left, w: a.right - a.left, y, h, delay, telegraph: 0.9, active: 0, hold: 0.55, life: 0.9 + 0.55 + 0.2, owner: e.id });
 }
 
+// ボスは、ぴょんぴーが どこにいて なにをしているかを見て、当たりそうな技をえらぶ
+// （上の足場にいれば火柱や上からの攻撃、遠ければ突進やジャンプ、近ければふみつぶし。同じ技はつづけない）
 function bossPickAction(e) {
   const sc = e.script;
-  const list = BOSS_MOVES[e.bossKind ?? 0]?.[sc.stage] ?? BOSS_MOVES[0][0];
-  const action = list[sc.step % list.length];
+  const p = state.player;
+  const list = (BOSS_MOVES[e.bossKind ?? 0]?.[sc.stage] ?? BOSS_MOVES[0][0]).slice();
+  if (!sc.swim) list.push("pillar");
+  const dx = Math.abs(p.x + p.w / 2 - (e.x + e.w / 2));
+  const high = p.y + p.h < GROUND_Y - 120;
+  const air = !p.grounded;
+  const score = a => {
+    let v = Math.random() * 1.6;
+    if (high) v += { pillar: 3.2, rain: 2.2, icicle: 2, meteor: 2, lob: 2, orb: 1.6, shard: 1.8, darkorb: 1.8, ring: 1.5, laserCombo: 1.5, wave: 1.2, dash: 1.4, warp: 1 }[a] ?? -1.5;
+    else v += { charge: 1.4, slide: 1.4, laserLow: 1.4, laserMid: 1.2, wave: 1.4, gear: 1.2, bounce: 1.2 }[a] ?? 0;
+    if (dx > 520) v += { charge: 2, slide: 2, dash: 2, leap: 1.8, orb: 1, shard: 1, pillar: 1 }[a] ?? 0;
+    else if (dx < 260) v += { leap: 2.4, charge: 1.2, wave: 1, pillar: 1.2 }[a] ?? 0;
+    if (air) v += { pillar: 0.8, orb: 0.6, laserMid: 0.8 }[a] ?? 0;
+    if (a === sc.last) v -= 4;
+    if (a === sc.last2) v -= 2.2;
+    return v;
+  };
+  let action = list[0];
+  let best = -Infinity;
+  for (const a of list) {
+    const v = score(a);
+    if (v > best) { best = v; action = a; }
+  }
+  sc.last2 = sc.last;
+  sc.last = action;
   sc.step += 1;
   sc.action = action;
   sc.phase = "wind";
@@ -4273,6 +4298,14 @@ function bossStartAction(e) {
     case "gear": volley(2 + (st >= 2 ? 1 : 0), 0.6); break;
     case "ring": volley(st >= 2 ? 2 : 1, 0.55); break;
     case "lob": bossLob(e, st >= 2 ? 4 : 3); bossRest(e, 1.2); break;
+    case "pillar": {
+      // ぴょんぴーの いる所と、にげそうな所に、天井までとどく火柱
+      const lead = clamp(p.vx * 0.5, -180, 180);
+      const xs = st >= 2 ? [pcx, pcx + lead + 150 * Math.sign(lead || 1), pcx - 150 * Math.sign(lead || 1)] : st >= 1 ? [pcx, pcx + lead + 140 * Math.sign(lead || 1)] : [pcx];
+      xs.forEach((x, i) => state.bossHazards.push({ type: "eruption", x: clamp(x, a.left + 60, a.right - 60), y: 492, w: 78, h: LAVA_PILLAR_H, telegraph: 0.8 + i * 0.18, active: 0, life: 0.8 + i * 0.18 + 0.75, owner: e.id }));
+      hold(1.1);
+      break;
+    }
     case "rain":
       fireBossPattern(e, { type: "rain", targetX: clamp(pcx, a.left + 120, a.right - 120), count: 3 + st });
       bossRest(e);
@@ -4421,8 +4454,14 @@ function updateBossScript(e, dt) {
       ready = Math.abs(dx) < 30;
     } else {
       const dx = bossHomeX(e) - e.x;
-      e.vx = Math.abs(dx) > 8 ? Math.sign(dx) * (quick ? 340 : 260) : 0;
+      e.vx = Math.abs(dx) > 8 ? Math.sign(dx) * (quick ? 380 : 300) : 0;
       ready = Math.abs(dx) < 16 && e.grounded;
+      // 待っているあいだも、ときどきねらって撃ってくる
+      sc.poke = (sc.poke ?? 1.4) - dt;
+      if (sc.poke <= 0 && ready) {
+        sc.poke = quick ? 1.1 : 1.6;
+        bossAimedOrbs(e, 1, 0, 230 + sc.stage * 30);
+      }
     }
     if (sc.t <= 0 && ready) bossPickAction(e);
   } else if (sc.phase === "wind") {
@@ -6079,7 +6118,7 @@ function fireBossPattern(boss, pattern) {
       x: clamp(pattern.targetX + side * spacing, boss.left + 80, boss.right - 80),
       y: 492,
       w: 72,
-      h: boss.finalBoss ? 210 : 168,
+      h: LAVA_PILLAR_H,
       telegraph: 0.84,
       active: 0,
       life: 1.45,
@@ -6097,10 +6136,12 @@ function updateBossHazards(dt) {
       continue;
     }
     h.life -= dt;
+    if (h.type === "eruption" && !h.rumbled) { h.rumbled = true; playSfx("lavaRumble", h.x); }
     if (h.telegraph > 0) {
       h.telegraph -= dt;
       if (h.telegraph <= 0) {
         h.active = h.type === "eruption" ? 0.55 : h.type === "laser" ? h.hold : 1;
+        if (h.type === "eruption") { playSfx("lavaBurst", h.x); FX.shake(0.12); }
         if (h.type === "laser") {
           playSfx("laser", state.player.x);
           FX.shake(0.15);
@@ -6128,6 +6169,9 @@ function updateBossHazards(dt) {
   }
   state.bossHazards = (state.bossHazards ?? []).filter(h => h.life > 0 && h.y < worldBottom() + 120);
 }
+
+// ボス戦の火柱の高さ：床から天井まで（上の足場にのっていても当たる。前ぶれを見てよける）
+const LAVA_PILLAR_H = 760;
 
 function eruptionBaseY() {
   return isUnderwaterStage() ? worldBottom() : GROUND_Y + 48;
@@ -6370,7 +6414,7 @@ function unlockAudio() {
 
 // 効果音ごとの音量の上乗せ（playSfx の中だけ 1 以外になる）
 let sfxBoost = 1;
-const SFX_BOOST = { swoop: 1.8, o2Beep: 2, bonk: 2, sizzle: 2, lavaRumble: 2, lavaErupt: 2, rockWhistle: 1.8, rockThud: 2, boltWarn: 2, thunder: 2, cartGo: 2, pickup: 3.2, break: 2.4, snackStar: 2, keyGet: 2.2, unlock: 2.2, powerUp: 1.8, spring: 2.2, enemyDefeat: 2.2, stompBoost: 2, respawn: 1.8, chest: 2, laser: 3, enemyHit: 3, equipSet: 2.6, equip: 3, switchOn: 2.4, switchOff: 2.4, barrierBreak: 2, doorEnter: 2.2, goalFanfare: 2, spikePoke: 2, piyo: 2, pyonLand: 1.6, dash: 1.8, fallWhistle: 2, combo: 2, stolen: 2, bubble: 2, timeWarn: 2, tick: 2, pyonJump: 2, pyonJump2: 2 };
+const SFX_BOOST = { lavaBurst: 2.2, swoop: 1.8, o2Beep: 2, bonk: 2, sizzle: 2, lavaRumble: 2, lavaErupt: 2, rockWhistle: 1.8, rockThud: 2, boltWarn: 2, thunder: 2, cartGo: 2, pickup: 3.2, break: 2.4, snackStar: 2, keyGet: 2.2, unlock: 2.2, powerUp: 1.8, spring: 2.2, enemyDefeat: 2.2, stompBoost: 2, respawn: 1.8, chest: 2, laser: 3, enemyHit: 3, equipSet: 2.6, equip: 3, switchOn: 2.4, switchOff: 2.4, barrierBreak: 2, doorEnter: 2.2, goalFanfare: 2, spikePoke: 2, piyo: 2, pyonLand: 1.6, dash: 1.8, fallWhistle: 2, combo: 2, stolen: 2, bubble: 2, timeWarn: 2, tick: 2, pyonJump: 2, pyonJump2: 2 };
 
 function playTone({ start = 0, freq = 440, endFreq = freq, duration = 0.12, type = "sine", gain = 0.08, pan = 0 }) {
   const ctxAudio = getAudioContext();
@@ -6625,6 +6669,11 @@ function playSfxInner(name, x) {
     playTone({ start: 0.1, freq: 1760, endFreq: 1760, duration: 0.06, type: "square", gain: 0.04, pan: 0 });
   } else if (name === "tick") {
     playTone({ freq: 1320, endFreq: 1320, duration: 0.03, type: "square", gain: 0.03, pan: 0 });
+  } else if (name === "lavaBurst") {
+    // 火柱がふき上がる：「ブワーッ！」
+    playNoise({ duration: 0.6, gain: 0.14, filter: 1400 });
+    playTone({ freq: 90, endFreq: 260, duration: 0.45, type: "sawtooth", gain: 0.07, pan });
+    playTone({ freq: 140, endFreq: 60, duration: 0.5, type: "sine", gain: 0.16, pan });
   } else if (name === "lavaRumble") {
     // 溶岩がせり上がる前：「ゴゴゴゴ…」
     playNoise({ duration: 0.7, gain: 0.08, filter: 260 });
@@ -9935,6 +9984,12 @@ function drawBossHazards() {
         ctx.globalAlpha = 0.95;
         ctx.drawImage(pillarArt, x - 10, y - 14, h.w + 20, h.h + 14);
         continue;
+      }
+      if (warning && h.h > 300) {
+        // 前ぶれ：これから火柱が立つところを、うすい柱で見せる（点めつ）
+        ctx.globalAlpha = 0.18 + Math.abs(Math.sin(performance.now() / 90)) * 0.22;
+        ctx.fillStyle = "#ff5a7a";
+        ctx.fillRect(x + 6, y, h.w - 12, h.h);
       }
       ctx.globalAlpha = warning ? 0.64 : 0.9;
       ctx.fillStyle = warning ? "rgba(255, 141, 183, 0.18)" : "rgba(255, 111, 82, 0.82)";
