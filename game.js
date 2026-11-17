@@ -888,6 +888,65 @@ BOSS_STORY_LINES.forEach((line, i) => {
   BOSS_DEFEAT_DIALOGUES[i].boss2En = line.defeat2?.[1];
 });
 
+// ボスをたおしたあとの かけあい（何往復か）。ぴょんぴーは「もう悪さしたらいかんで」と言って、お笑いフェスにさそう
+// ["b", …] はボス、["p", …] はぴょんぴー。声は台本の boss に入る
+const BOSS_OUTRO_TALK = [
+  [
+    ["b", "やられたー！ ……あれ？ なんか、おなかの底から笑えてきたよ。", "I lost! ...Huh? Something's making me laugh from deep in my tummy."],
+    ["p", "それが笑いの力じょ。かけら、返してもらうけんな。", "That's the power of laughter. I'm taking the shard back."],
+    ["b", "うん、返すよ……。でも、ぼく、また一人ぼっちの王さまだ。", "Okay, here... But now I'm a lonely king again."],
+    ["p", "何言うとん。今度、三日月大使館でお笑いフェスやるんじょ。見においでだ！", "What're you saying? We're holding a comedy fest at the Crescent Embassy. Come watch!"],
+    ["b", "ほんと！？ 月あめ、いっぱい持ってくね！", "Really!? I'll bring lots of moon candy!"],
+    ["p", "もう悪さしたらいかんで。約束じょ！", "No more mischief, okay? Promise!"],
+    ["b", "うん、約束！ ……指切り、月あめで いい？", "Promise! ...Can we pinky-swear with moon candy?"]
+  ],
+  [
+    ["b", "ぐぬぬ……ネオンが消えたのに、なぜか胸が明るい。これが、笑いか……。", "Grr... The neon's out, yet my chest feels bright. So this is laughter..."],
+    ["p", "そうじょ。電気代もかからんし、ええもんでないか。", "Yep. And it costs nothing in power. Not bad, huh?"],
+    ["b", "……かけらは返す。任務失敗だ。報告書に、なんと書けばよいのか。", "...I'll return the shard. Mission failed. What do I write in my report?"],
+    ["p", "「笑って負けました」でええんちゃう？ それより今度、お笑いフェスがあるけん、見に来てだ！", "'Lost while laughing' works, right? More importantly, there's a comedy fest soon. Come see it!"],
+    ["b", "フェス……。休暇申請を出さねばならんな。", "A fest... I'll have to file for leave."],
+    ["p", "もう悪さはせんこと。これは命令じょ！", "And no more mischief. That's an order!"],
+    ["b", "……了解した。フェス当日は、最前列で敬礼しよう。", "...Understood. On fest day, I'll salute from the front row."]
+  ],
+  [
+    ["b", "きらきらに固めるつもりが、こっちの顔がゆるんじゃった……。ふふっ。", "I meant to freeze you sparkly, but my own face melted... Heh heh."],
+    ["p", "ええ笑顔でないか！ 固めとくのは、もったいないじょ。", "That's a great smile! Too good to freeze."],
+    ["b", "かけら、どうぞ。ぼく、きらきらしたもの、ひとりじめしすぎてたね〜。", "Here's the shard. I was hogging all the sparkly things~"],
+    ["p", "わかればええんじょ。今度お笑いフェスがあるけん、その顔で見に来てだ！", "As long as you get it. There's a comedy fest soon. Come with that face!"],
+    ["b", "フェス、さむくないといいな〜。……あ、ぼくが行くと、さむくなっちゃうか。", "Hope the fest isn't cold~ ...Oh wait, it gets cold when I show up."],
+    ["p", "ほんなら、かき氷屋さんで出てもらおか。もう悪さしたらいかんで！", "Then you can run the shaved-ice stand. And no more mischief!"],
+    ["b", "うん、しないよ〜。かき氷、がんばるね〜。", "Okay, I won't~ I'll do my best with the shaved ice~"]
+  ],
+  [
+    ["b", "ぶくぶく……あら、泡といっしょに笑いがこみあげてきたわ。", "Blub blub... Oh my, laughter is bubbling up with the foam."],
+    ["p", "女王さまも、笑うたらかわいいでないか。", "You're cute when you laugh, Your Majesty."],
+    ["b", "お、おだまり！ ……かけらは、あなたにあずけるわ。", "S-silence! ...I'll leave the shard with you."],
+    ["p", "おおきに。今度お笑いフェスがあるけん、クイーンも見においでだ！", "Thanks! There's a comedy fest soon. You should come too, Queen!"],
+    ["b", "わたくしを招待するなんて、いい度胸ね。……席は、いちばん前かしら？", "Inviting me? How bold. ...Is my seat in the front row?"],
+    ["p", "いちばんええ水そう、用意しとくけん。もう悪さはなしじょ！", "I'll save you the best tank in the house. No more mischief!"],
+    ["b", "よろしくてよ。いちばん大きな拍手は、わたくしが送ってさしあげるわ。", "Very well. I shall give you the biggest applause of all."]
+  ],
+  [
+    ["b", "ハグルマ、カラマワリ……ピピ……ワライ、インストール カンリョウ。", "GEARS SPINNING... BEEP... LAUGHTER INSTALLED."],
+    ["p", "アップデート成功じゃな！", "Update successful!"],
+    ["b", "カケラ、ヘンキャク スル。……ワライ、ナカナカ イイ キノウ。", "RETURNING SHARD. ...LAUGHTER IS A FINE FEATURE."],
+    ["p", "今度お笑いフェスがあるけん、見に来てだ。もっとええデータ、とれるじょ！", "There's a comedy fest soon. Come watch. You'll get even better data!"],
+    ["b", "フェス、カレンダーニ トウロク カンリョウ。", "FEST ADDED TO CALENDAR."],
+    ["p", "それと、もう悪さしたらいかんで。約束じょ！", "And no more mischief. Promise!"],
+    ["b", "ヤクソク、ホゾン シマシタ。……タノシミ、ト イウ キモチ、ハッケン。", "PROMISE SAVED. ...NEW FEELING DETECTED: 'EXCITED'."]
+  ],
+  [
+    ["b", "ば、ばかな……。魔王星の夜が……明けていく……！", "I-impossible... The night of the Demon Star... is ending...!"],
+    ["p", "ほな、おはようさん。なあ魔王、なんで笑いを消そうとしたん？", "Well, good morning. Hey, Demon Lord, why'd you try to erase laughter?"],
+    ["b", "……わしも、むかしは芸人を目指しておった。だが、だれも笑わんかった。", "...Long ago, I wanted to be a comedian. But no one ever laughed."],
+    ["p", "ほうか……。ほな、今度のお笑いフェス、見に来てだ。客席から見る笑いも、ええもんじょ。", "I see... Then come to our comedy fest. Laughter looks great from the seats too."],
+    ["b", "わしを……招くというのか。あれだけ悪さをしたわしを。", "You'd... invite me? After all the harm I did?"],
+    ["p", "もう悪させんのやったら、だれでも大歓迎じょ！", "If you're done with mischief, everyone's welcome!"],
+    ["b", "……わしの話など、だれも聞かんと思っておった。……聞いて、くれるのか。", "...I thought no one would ever listen to me. ...You will?"]
+  ]
+];
+
 const AREA_LANDMARKS = [
   "outpost",
   "towers",
@@ -4358,15 +4417,15 @@ function updateBossIntro(dt) {
 function advanceBossIntro() {
   if (state.mode !== "bossIntro" && state.mode !== "bossOutro") return false;
   if ((state.bossIntroTimer ?? 0) < 0.25) return true;
-  if ((state.bossIntroStep ?? 0) === 0) {
+  if ((state.bossIntroStep ?? 0) === 0 && state.mode !== "bossOutro") {
     state.bossIntroStep = 1;
     state.bossIntroTimer = 0;
     playSfx("page");
   } else {
     if (state.mode === "bossOutro") {
-      const kind = state.bossOutroKind ?? 0;
-      if ((state.bossIntroStep ?? 0) === 1 && BOSS_DEFEAT_DIALOGUES[kind]?.boss2Ja) {
-        state.bossIntroStep = 2;
+      const talk = BOSS_OUTRO_TALK[state.bossOutroKind ?? 0] ?? BOSS_OUTRO_TALK[0];
+      if ((state.bossIntroStep ?? 0) + 1 < talk.length) {
+        state.bossIntroStep += 1;
         state.bossIntroTimer = 0;
         playSfx("page");
         return true;
@@ -9066,12 +9125,12 @@ function drawBossIntroOverlay() {
   const lines = outro
     ? (BOSS_DEFEAT_DIALOGUES[kind] ?? BOSS_DEFEAT_DIALOGUES[0])
     : (BOSS_DIALOGUES[kind] ?? BOSS_DIALOGUES[0]);
-  const showingPyon = (state.bossIntroStep ?? 0) === 1;
-  const lastBoss = outro && (state.bossIntroStep ?? 0) === 2;
-  const raw = showingPyon ? (language === "ja" ? lines.pyonJa : lines.pyonEn) : lastBoss ? (language === "ja" ? lines.boss2Ja : lines.boss2En) : (language === "ja" ? lines.bossJa : lines.bossEn);
+  const outroLine = outro ? ((BOSS_OUTRO_TALK[kind] ?? BOSS_OUTRO_TALK[0])[state.bossIntroStep ?? 0] ?? null) : null;
+  const showingPyon = outroLine ? outroLine[0] === "p" : (state.bossIntroStep ?? 0) === 1;
+  const raw = outroLine ? (language === "ja" ? outroLine[1] : outroLine[2]) : showingPyon ? (language === "ja" ? lines.pyonJa : lines.pyonEn) : (language === "ja" ? lines.bossJa : lines.bossEn);
   const text = raw.replace(/^ぴょんぴー「/, "").replace(/」$/, "").replace(/^Pyon-P: /, "");
   // ボスとぴょんぴーのかけあいも声で（台本の boss。行がかわったときに1回だけ流す）
-  const jaLine = showingPyon ? lines.pyonJa : lastBoss ? lines.boss2Ja : lines.bossJa;
+  const jaLine = outroLine ? outroLine[1] : showingPyon ? lines.pyonJa : lines.bossJa;
   if (jaLine && state.bossVoiceLine !== jaLine) {
     state.bossVoiceLine = jaLine;
     if (typeof Voice !== "undefined") Voice.play("boss", jaLine.replace(/^ぴょんぴー「/, "").replace(/」$/, ""));

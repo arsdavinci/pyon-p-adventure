@@ -157,10 +157,17 @@ def main() -> None:
     block = re.search(r"const BOSS_STORY_LINES = \[(.*?)\n\];", game_src, re.S).group(1)
     for bi, part in enumerate(re.split(r"\n  \},?\s*\n  \{", block)):
         boss_who = "maou" if bi == 5 else f"boss{bi}"
-        for key in ("intro", "introPyon", "defeat", "defeatPyon", "defeat2"):
+        for key in ("intro", "introPyon"):
             m = re.search(r"\b" + key + r": \[" + STR, part)
             if m:
                 add("boss", "pyon" if key.endswith("Pyon") else boss_who, unq(m.group(1)), "game.js", 0)
+
+    # ボスをたおしたあとの かけあい（game.js の BOSS_OUTRO_TALK）
+    outro = re.search(r"const BOSS_OUTRO_TALK = \[(.*?)\n\];", game_src, re.S).group(1)
+    for bi, part in enumerate(re.split(r"\n  \],?\s*\n  \[", outro)):
+        boss_who = "maou" if bi == 5 else f"boss{bi}"
+        for m in re.finditer(r'\["(b|p)", ' + STR, part):
+            add("boss", "pyon" if m.group(1) == "p" else boss_who, unq(m.group(2)), "game.js", 0)
 
     # ボス戦の最中のひとこと（chat.js の BOSS_TALK）：ステージ = boss
     chat_src = (ROOT / "chat.js").read_text(encoding="utf-8")
