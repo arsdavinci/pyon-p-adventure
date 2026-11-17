@@ -98,7 +98,8 @@ const ZOOM = 4 / 3;
 const VIEW_W = canvas.width / ZOOM;
 const VIEW_H = canvas.height / ZOOM;
 const GROUND_Y = 492;
-let soundEnabled = localStorage.getItem("pyonpSound") !== "off";
+// 音は、ページをひらくたびに ON から始める（OFF は、そのとき遊んでいるあいだだけ）
+let soundEnabled = true;
 let audioMaster = null;
 const WEAPON_DROP_RATES = [
   { power: 1, chance: 0.8 },
@@ -15562,6 +15563,7 @@ for (const eventName of ["contextmenu", "selectstart", "dragstart"]) {
 }
 document.addEventListener("pointerdown", unlockAudio, { passive: true });
 document.addEventListener("touchstart", unlockAudio, { passive: true });
+document.addEventListener("keydown", unlockAudio);
 document.addEventListener("touchmove", event => event.preventDefault(), { passive: false });
 
 state = newState();
