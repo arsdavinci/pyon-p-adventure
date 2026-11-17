@@ -13214,14 +13214,14 @@ function drawItems() {
         ctx.drawImage(FX.glowSprite("#ffd85a"), item.x + item.w / 2 - 40, item.y + item.h / 2 - 40, 80, 80);
         ctx.restore();
       }
-      const nextPower = previewWeaponPowerAfterPickup(dropPower);
       drawRayGun(item.x + item.w / 2, item.y + item.h / 2, 1, 0.88, dropPower);
       ctx.fillStyle = "#fff3a4";
       ctx.strokeStyle = "#7f67c8";
       ctx.lineWidth = 3;
       ctx.font = "bold 14px system-ui";
       ctx.textAlign = "center";
-      const label = nextPower > state.weaponPower ? `合体` : weaponLevelLabel(dropPower);
+      // 落ちている武器には、レベルだけを出す（「合体」の文字は出さない）
+      const label = weaponLevelLabel(dropPower);
       ctx.strokeText(label, item.x + item.w / 2 + 14, item.y + 4);
       ctx.fillText(label, item.x + item.w / 2 + 14, item.y + 4);
     }
