@@ -1085,23 +1085,23 @@ const STAGE_RECIPES = [
   // 月あめ平原
   [
     { title: ["はじめての道", "First Steps"], rooms: ["winding"] },
-    { title: ["空の島わたり", "Sky Islands"], kinds: ["islands", "mover", "pits", "shelf"], rooms: ["shaftUp"] },
+    { title: ["空の島わたり", "Sky Islands"], kinds: ["islands", "mover", "pits", "shelf"], rooms: ["shaftUp"], bonus: false },
     { title: ["月あめ山のぼり", "Candy Mountain"] }, // 山のぼりステージ
     { title: ["とりでのたたかい", "Fortress Fight"], kinds: ["pillars", "tower", "flat", "cliff"], rooms: ["arena", "cave"] }
   ],
   // 火星ネオンコロニー
   [
-    { title: ["マグマの谷とび", "Lava Leaps"], kinds: ["pits", "valley", "stairs", "flat"], rooms: ["shaftDown"] },
-    { title: ["地下トンネルたんけん", "Tunnel Dive"], kinds: ["tunnel", "crawlway", "pillars", "flat"], rooms: ["cave", "maze"] },
-    { title: ["トゲトゲ台地", "Spike Plateau"], kinds: ["spikeField", "shelf", "tower"], rooms: ["winding"] },
-    { title: ["火山のぼり", "Volcano Climb"], kinds: ["cliff", "stairs", "islands", "mover"], rooms: ["shaftUp", "arena"] }
+    { title: ["マグマの谷とび", "Lava Leaps"], kinds: ["pits", "valley", "stairs", "flat"], rooms: ["shaftDown", "winding"], noFinal: true },
+    { title: ["地下トンネルたんけん", "Tunnel Dive"], kinds: ["tunnel", "crawlway", "pillars", "flat"], rooms: ["cave", "maze"], bonus: false },
+    { title: ["トゲトゲ台地", "Spike Plateau"], kinds: ["spikeField", "shelf", "tower"], rooms: ["winding", "arena"] },
+    { title: ["火山のぼり", "Volcano Climb"], kinds: ["cliff", "stairs", "islands", "mover"], rooms: ["shaftUp", "arena", "cave"], noFinal: true, bonus: false }
   ],
   // クリスタル氷星
   [
-    { title: ["つるつる大すべり", "Slip and Slide"], kinds: ["pits", "stairs", "flat", "valley"], rooms: ["winding"] },
-    { title: ["氷の浮き島", "Frozen Isles"], kinds: ["islands", "mover", "shelf"], rooms: ["shaftUp"] },
-    { title: ["クリスタルの迷路", "Crystal Maze"], kinds: ["tunnel", "crawlway", "pillars", "spikeField"], rooms: ["maze", "cave"] },
-    { title: ["氷のとりで", "Ice Fortress"], kinds: ["tower", "cliff", "flat", "pillars"], rooms: ["arena", "shaftDown"] }
+    { title: ["つるつる大すべり", "Slip and Slide"], kinds: ["pits", "stairs", "flat", "valley"], rooms: ["winding", "shaftDown"] },
+    { title: ["氷の浮き島", "Frozen Isles"], kinds: ["islands", "mover", "shelf"], rooms: ["shaftUp", "maze"], bonus: false },
+    { title: ["クリスタルの迷路", "Crystal Maze"], kinds: ["tunnel", "crawlway", "pillars", "spikeField"], rooms: ["maze", "cave", "winding"], noFinal: true },
+    { title: ["氷のとりで", "Ice Fortress"], kinds: ["tower", "cliff", "flat", "pillars"], rooms: ["arena", "shaftDown", "cave"] }
   ],
   // 星の海（泳ぐステージ：sea = 岩の門のならび方）
   [
@@ -1114,20 +1114,20 @@ const STAGE_RECIPES = [
   ],
   // リングメカ工場
   [
-    { title: ["トロッコ大ぼうそう", "Runaway Cart"], kinds: ["cart", "mover", "flat", "pits"], rooms: ["winding"] },
-    { title: ["うごく足場の空", "Moving Sky"], kinds: ["islands", "mover", "shelf", "pits"], rooms: ["shaftUp"] },
-    { title: ["工場の迷路", "Factory Maze"], kinds: ["tunnel", "crawlway", "pillars", "spikeField"], rooms: ["maze", "arena"] },
-    { title: ["メカの塔", "Mecha Tower"], kinds: ["tower", "cliff", "stairs", "valley"], rooms: ["shaftDown", "cave"] }
+    { title: ["トロッコ大ぼうそう", "Runaway Cart"], kinds: ["cart", "mover", "flat", "pits"], rooms: ["cave", "winding"], noFinal: true, bonus: false },
+    { title: ["うごく足場の空", "Moving Sky"], kinds: ["islands", "mover", "shelf", "pits"], rooms: ["shaftUp", "arena", "maze"] },
+    { title: ["工場の迷路", "Factory Maze"], kinds: ["tunnel", "crawlway", "pillars", "spikeField"], rooms: ["maze", "arena", "shaftDown"], noFinal: true },
+    { title: ["メカの塔", "Mecha Tower"], kinds: ["tower", "cliff", "stairs", "valley"], rooms: ["shaftDown", "jumpGate", "shaftUp"], bonus: false }
   ],
   // 魔王星
   [
-    { title: ["トゲの荒野", "Thorn Wastes"], kinds: ["spikeField", "shelf", "pits"], rooms: ["winding"] },
-    { title: ["やみの浮き島", "Shadow Isles"], kinds: ["islands", "mover", "cliff"], rooms: ["shaftUp"] },
-    { title: ["魔王の地下道", "Demon Tunnels"], kinds: ["tunnel", "crawlway", "pillars", "flat"], rooms: ["cave", "maze"] },
-    { title: ["手下の大軍", "Minion Army"], kinds: ["flat", "pillars", "tower"], rooms: ["arena", "arena"] },
-    { title: ["ならくの穴", "The Abyss"], kinds: ["cliff", "stairs", "valley"], rooms: ["shaftDown", "shaftUp"] },
-    { title: ["まよいの城", "Castle of Confusion"], kinds: ["pits", "mover", "valley", "shelf"], rooms: ["maze", "winding"] },
-    { title: ["魔王城への道", "Road to the Demon Castle"], rooms: ["cave", "arena", "shaftUp"] }
+    { title: ["トゲの荒野", "Thorn Wastes"], kinds: ["spikeField", "shelf", "pits"], rooms: ["winding", "maze", "arena"] },
+    { title: ["やみの浮き島", "Shadow Isles"], kinds: ["islands", "mover", "cliff"], rooms: ["shaftUp", "cave", "maze"], noFinal: true, bonus: false },
+    { title: ["魔王の地下道", "Demon Tunnels"], kinds: ["tunnel", "crawlway", "pillars", "flat"], rooms: ["cave", "maze", "shaftDown", "arena"] },
+    { title: ["手下の大軍", "Minion Army"], kinds: ["flat", "pillars", "tower"], rooms: ["arena", "jumpGate", "winding"], bonus: false },
+    { title: ["ならくの穴", "The Abyss"], kinds: ["cliff", "stairs", "valley"], rooms: ["shaftDown", "jumpGate", "cave"], noFinal: true },
+    { title: ["まよいの城", "Castle of Confusion"], kinds: ["pits", "mover", "valley", "shelf"], rooms: ["maze", "winding", "arena", "shaftUp"], bonus: false },
+    { title: ["魔王城への道", "Road to the Demon Castle"], rooms: ["cave", "jumpGate", "shaftUp", "maze"] }
   ]
 ];
 
@@ -2073,7 +2073,54 @@ function groundUnder(course, x) {
   return top;
 }
 
+// 寄り道の小部屋の形（ステージごとに順番に変わる。となりのステージと同じ形にはならない）
+function bonusRoomLayout(kind) {
+  const walls = [rect(0, 492, 1400, 48), rect(-40, 0, 40, 540), rect(1400, 0, 40, 540)];
+  const coins = [];
+  const c = (x, y, i) => coins.push(coin(x, y, i % 2 ? "pea" : "kaki"));
+  if (kind === 1) {
+    // まん中の塔：段をのぼって、てっぺんのブロック
+    for (let i = 0; i < 8; i++) c(300 + i * 40, 440, i);
+    for (let i = 0; i < 6; i++) c(930 + i * 50, 440, i);
+    return { platforms: [...walls, rect(560, 400, 280, 32), rect(620, 300, 160, 32), rect(660, 200, 80, 32)],
+      blocks: [breakable(676, 60, "power"), breakable(330, 300, "hp"), breakable(1020, 300, "power")], coins, spikes: [] };
+  }
+  if (kind === 2) {
+    // コインの雨：アーチになったコインがいっぱい、ブロックは少なめ
+    for (let a = 0; a < 3; a++) for (let i = 0; i < 9; i++) c(260 + a * 340 + i * 30, 440 - Math.sin((i / 8) * Math.PI) * 170, i + a);
+    return { platforms: [...walls, rect(580, 330, 160, 28)], blocks: [breakable(636, 190, "power")], coins, spikes: [] };
+  }
+  if (kind === 3) {
+    // 右の棚：3だんの棚を、ジャンプでのぼっていく
+    for (let i = 0; i < 6; i++) c(260 + i * 60, 440, i);
+    for (let i = 0; i < 4; i++) c(1120 + i * 50, 120, i);
+    return { platforms: [...walls, rect(760, 400, 220, 28), rect(960, 300, 220, 28), rect(1120, 200, 280, 28)],
+      blocks: [breakable(820, 260, "power"), breakable(1240, 60, "hp"), breakable(1300, 60, "power")], coins, spikes: [] };
+  }
+  if (kind === 4) {
+    // トゲのごほうび：トゲの上の小さな足場をわたった先に、ブロック
+    for (let i = 0; i < 5; i++) c(560 + i * 90, 300, i);
+    return { platforms: [...walls, rect(520, 400, 70, 24), rect(700, 360, 70, 24), rect(880, 400, 70, 24)],
+      blocks: [breakable(1150, 350, "power"), breakable(1220, 350, "hp"), breakable(1290, 350, "power")], coins,
+      spikes: [{ x: 460, y: 470, w: 560, h: 22 }] };
+  }
+  if (kind === 5) {
+    // ジグザグ：左右にふりながら、上へ上へ
+    for (let i = 0; i < 5; i++) c(380 + i * 70, 440, i);
+    for (let i = 0; i < 3; i++) c(260 + i * 50, 140, i);
+    return { platforms: [...walls, rect(900, 400, 200, 26), rect(560, 310, 200, 26), rect(900, 220, 200, 26), rect(220, 180, 220, 26)],
+      blocks: [breakable(960, 80, "power"), breakable(600, 170, "hp"), breakable(300, 40, "power")], coins, spikes: [] };
+  }
+  // 0：はじめの形（2つの台とブロック）
+  for (let i = 0; i < 10; i++) c(200 + i * 100, 440 - (i % 3) * 40, i);
+  for (let i = 0; i < 4; i++) c(860 + i * 40, 250, i);
+  return { platforms: [...walls, rect(420, 360, 200, 32), rect(820, 300, 200, 32)],
+    blocks: [breakable(470, 220, "power"), breakable(560, 220, "hp"), breakable(870, 160, "hp")], coins, spikes: [] };
+}
+
+let bonusRoomCount = 0; // 作った小部屋の数（形を 1→2→…→5→0 の順に回して、ぜんぶの形が出るように）
 function makeBonusRoom(stageIndex, roomNo, returnTo) {
+  const layout = bonusRoomLayout(stageIndex === 0 ? 0 : (++bonusRoomCount) % 6);
   const room = {
     ...courses[stageIndex],
     climbStage: false,
@@ -2082,13 +2129,11 @@ function makeBonusRoom(stageIndex, roomNo, returnTo) {
     isRoom: true,
     top: 0,
     bottom: canvas.height,
-    platforms: [rect(0, 492, 1400, 48), rect(-40, 0, 40, 540), rect(1400, 0, 40, 540), rect(420, 360, 200, 32), rect(820, 300, 200, 32)],
-    blocks: [breakable(470, 220, "power"), breakable(560, 220, roomNo % 2 ? "power" : "hp"), breakable(870, 160, "hp")],
+    platforms: layout.platforms,
+    blocks: layout.blocks,
     gun: { x: 300, y: 430 }
   };
-  const coins = [];
-  for (let i = 0; i < 10; i++) coins.push(coin(200 + i * 100, 440 - (i % 3) * 40, i % 2 ? "pea" : "kaki"));
-  for (let i = 0; i < 4; i++) coins.push(coin(860 + i * 40, 250, i % 2 ? "pea" : "kaki"));
+  const coins = layout.coins;
   // 1-1 の小部屋は「合成の練習部屋」：決まった武器がおいてあって、ヤナビスが合成のしかたを教える
   if (stageIndex === 0) {
     room.tutorial = true;
@@ -2097,7 +2142,7 @@ function makeBonusRoom(stageIndex, roomNo, returnTo) {
   }
   room.level = {
     enemies: [], coins, starItems: [], oxygenItems: [], seaGates: [], lavaGeysers: [], lavaPools: [], rotatingFires: [],
-    keys: [], springs: [], chests: [],
+    keys: [], springs: [], chests: [], spikes: layout.spikes,
     flag: rect(-99999, 0, 1, 1),
     doors: [{ x: 120, y: 492 - DOOR_H, w: DOOR_W, h: DOOR_H, to: returnTo.area, spawnX: returnTo.x }]
   };
@@ -2318,6 +2363,56 @@ function makeWindingArea(base, worldIndex, difficulty, seed) {
   return area;
 }
 
+// 2段ジャンプの崖の部屋：穴のむこうに、ふつうのジャンプではとどかない高さの崖がある。
+// 2段ジャンプシューズ（かロボット）がないと こえられない。落ちると、ヤナビスがヒントをくれる
+// ふつうのジャンプは高さ 255 くらい（ダッシュ・月あめジャンプで 300 くらい）、2段ジャンプなら 390 より上までとどく
+const JUMP_GATE_RISE = 340;
+function makeJumpGateRoom(base, worldIndex, difficulty, seed) {
+  const rnd = seededRandom(seed * 13 + 7);
+  const W = 1700;
+  const ceil = GROUND_Y - 520;
+  const edge = 620 + Math.floor(rnd() * 3) * 40; // 手前の床のはし
+  const gap = 110;                               // 穴のはば
+  const ledgeY = GROUND_Y - JUMP_GATE_RISE;
+  const platforms = [
+    { ...rect(0, GROUND_Y, edge, canvas.height - GROUND_Y), terrain: true },
+    { ...rect(edge + gap, ledgeY, W - edge - gap, canvas.height - ledgeY), terrain: true },
+    rect(-80, ceil - 1400, 80, 2600), rect(W, ceil - 1400, 2800, 2600), rect(0, ceil - 1400, W, 1400)
+  ];
+  const coins = [];
+  // 2段ジャンプの道すじを、コインで見せる
+  for (let i = 0; i < 7; i++) {
+    const t = i / 6;
+    coins.push(coin(edge - 80 + t * (gap + 160), GROUND_Y - 60 - Math.sin(t * Math.PI * 0.9) * (JUMP_GATE_RISE + 40), i % 2 ? "pea" : "kaki"));
+  }
+  for (let i = 0; i < 5; i++) coins.push(coin(edge + gap + 160 + i * 90, ledgeY - 40, i % 2 ? "pea" : "kaki"));
+  const enemies = [];
+  const n = Math.min(4, 1 + Math.floor(difficulty / 10));
+  for (let i = 0; i < n; i++) {
+    const ex = edge + gap + 260 + i * 200;
+    const foe = i % 2 ? armedEnemy(ex, ledgeY - 42, edge + gap + 200, W - 200, Math.min(MAX_WEAPON_POWER, Math.max(2, Math.floor(difficulty / 3)))) : enemy(ex, ledgeY - 42, edge + gap + 200, W - 200);
+    foe.enemyKind = worldIndex;
+    enemies.push(foe);
+  }
+  const area = {
+    ...base, climbStage: false, climbMeta: null, puzzle: null, isMaze: true, indoor: true, enclosed: true,
+    needs: "double", gateEdge: edge,
+    top: ceil - 160, ceilingY: ceil, bottom: canvas.height, platforms,
+    blocks: [], gun: { x: 300, y: 430 }
+  };
+  area.level = {
+    ...emptyLevelBits(), enemies, coins, starItems: [], keys: [], spikes: [],
+    flag: rect(W - 150, ledgeY - 240, 28, 240), doors: []
+  };
+  return area;
+}
+
+// いま、その部屋に必要なものを持っているか（2段ジャンプ：シューズか、ロボット）
+function gateNeedMet(area = courses[currentCourse]) {
+  if (area?.needs !== "double") return true;
+  return Shop.has("double") || (hasEquippedWeapon() && isMechPower(state.weaponPower));
+}
+
 // たたかいの部屋：敵をぜんぶたおすと、出口の扉があく
 function makeArenaRoom(base, worldIndex, difficulty, seed) {
   const rnd = seededRandom(seed * 5 + 3);
@@ -2435,17 +2530,18 @@ function buildStageAreas(index) {
     const recipe = stageRecipe(worldIndex, areaIndex);
     if (recipe?.rooms) picked = recipe.rooms.slice();
     picked.forEach((k, i) => {
-      const sd = seedFor(1 + i);
+      const sd = seedFor(1 + i) + (i >= 4 ? 50 : 0);
       areas.push(k === "winding" ? makeWindingArea(base, worldIndex, diff, sd)
         : k === "shaftUp" ? makeShaftArea(base, worldIndex, areaIndex, diff, sd)
           : k === "shaftDown" ? makeShaftArea(base, worldIndex, areaIndex, diff, sd, true)
             : k === "arena" ? makeArenaRoom(base, worldIndex, diff, sd)
+              : k === "jumpGate" ? makeJumpGateRoom(base, worldIndex, diff, sd)
               : k === "maze" ? makeMazeArea(base, worldIndex, areaIndex, diff, sd)
                 : makeCaveArea(base, worldIndex, areaIndex, diff, sd));
       areas[areas.length - 1].indoor = true;
     });
-    // さいごはゴールの旗がある外の道
-    areas.push({ ...makeCourse(worldIndex, areaIndex, 99, seedFor(5)), theme: base.theme, gun: base.gun });
+    // さいごはゴールの旗がある外の道（noFinal のステージは、さいごの部屋の旗でゴール）
+    if (!recipe?.noFinal) areas.push({ ...makeCourse(worldIndex, areaIndex, 99, seedFor(5)), theme: base.theme, gun: base.gun });
   }
   // ★はステージ全体で3つ：最初の道・まん中の部屋のどれか1つ・最後の道
   const lastNo = areas.length - 1;
@@ -2456,8 +2552,10 @@ function buildStageAreas(index) {
     const lv = area.level;
     lv.chests = []; // カギは宝箱ではなく扉に使う
     const stars = lv.starItems ?? [];
+    lv.starItemsAll = stars.slice();
     if (n === 0) lv.starItems = stars.slice(0, 1);
     else if (n === lastNo) lv.starItems = stars.slice(2, 3).length ? stars.slice(2, 3) : stars.slice(-1);
+    // （さいごの部屋に★がないときは、下でほかの部屋から足す）
     else if (!middleStar && stars.length) { lv.starItems = stars.slice(0, 1); middleStar = true; }
     else lv.starItems = [];
     lv.doors = lv.doors ?? [];
@@ -2468,8 +2566,18 @@ function buildStageAreas(index) {
       lv.flag = rect(-99999, 0, 1, 1);
     }
   });
-  // 最初のエリアの途中に、寄り道の小部屋
+  // ★がステージ全体で3つより少なければ、★のある部屋からもう1つ出す
+  const starTotal = areas.reduce((sum, a) => sum + (a.level.starItems?.length ?? 0), 0);
+  if (starTotal < 3) {
+    for (const a of areas.slice(1)) {
+      if ((a.level.starItems?.length ?? 0) > 0) continue;
+      const pool = a.level.starItemsAll ?? [];
+      if (pool.length) { a.level.starItems = pool.slice(0, 1); break; }
+    }
+  }
+  // 最初のエリアの途中に、寄り道の小部屋（ないステージもある。形はステージごとにちがう）
   const first = areas[0];
+  const recipeHere = stageRecipe(worldIndex, areaIndex);
   // 寄り道の扉は、平らで安全な地面に
   const safe = (first.level.doorSpots ?? []).filter(d => d.x > 800 && d.x < 3900)
     .sort((a, b) => Math.abs(a.x - 2300) - Math.abs(b.x - 2300))[0];
@@ -2486,7 +2594,7 @@ function buildStageAreas(index) {
   };
   const freeX = [2300, 1900, 2800, 1500, 3200, 1200].find(doorFits);
   const spot = safe ? { x: safe.x - 40, y: safe.y, w: DOOR_W + 80 } : freeX ? wideGround(freeX) : null;
-  if (spot && !first.climbStage) {
+  if (spot && !first.climbStage && recipeHere?.bonus !== false) {
     const dx = clamp(safe ? safe.x : freeX, spot.x + 40, spot.x + spot.w - 40 - DOOR_W);
     const room = makeBonusRoom(index, index, { area: 0, x: dx });
     room.areas = areas;
@@ -2516,6 +2624,25 @@ function buildStageAreas(index) {
 // ぜんぶのワールドの、ボス以外のステージをエリア分けする
 for (let i = 0; i < courses.length; i++) {
   if (!courses[i].bossStage && !courses[i].finalStage) buildStageAreas(i);
+}
+
+// あとのステージほど難しく：敵の体力と速さが、ステージが進むごとに少しずつ上がる（1-1 はそのまま）
+function hardenEnemies(area, d) {
+  for (const e of area.level?.enemies ?? []) {
+    if (e.boss || e.hardened) continue;
+    e.hardened = true;
+    const extra = Math.floor(Math.max(0, d - 2) / 12); // 体力 +0〜+2（もともと、あとのステージほど体力は多い）
+    e.hp = (e.hp ?? 3) + extra;
+    e.maxHp = (e.maxHp ?? 3) + extra;
+    const fast = 1 + Math.min(0.45, Math.max(0, d - 2) * 0.014); // 速さ 最大1.45倍
+    e.vx = (e.vx ?? -86) * fast;
+    if (e.weaponPower) e.gunCooldown = Math.max(0.35, (e.gunCooldown ?? 0.6) - d * 0.006);
+  }
+}
+for (let i = 1; i < courses.length; i++) {
+  const c = courses[i];
+  if (c.bossStage || c.finalStage) continue;
+  for (const a of c.areas ?? [c]) hardenEnemies(a, c.difficulty ?? i);
 }
 
 // ---------- 置いた物のおかしな場所を直す（全エリア・読みこみ時に1回） ----------
@@ -4972,7 +5099,10 @@ function updateFinalStageHazards(dt) {
   if (!courses[currentCourse]?.finalStage) return;
   const p = state.player;
   for (const pool of state.lavaPools ?? []) {
-    if (hit(p, pool)) damagePlayer(false, null, false);
+    if (hit(p, pool)) {
+      if (p.invincible <= 0) playSfx("sizzle", p.x);
+      damagePlayer(false, null, false);
+    }
   }
   for (const fire of state.rotatingFires ?? []) {
     fire.angle += fire.speed * dt;
@@ -5004,7 +5134,7 @@ function updateCarts(dt) {
     const onIt = p.grounded && Math.abs(p.y + p.h - c.y) <= 6 && p.x + p.w > c.x + 4 && p.x < c.x + c.w - 4;
     if (m.state === "idle" && onIt) {
       m.state = "run";
-      playSfx("equip", c.x);
+      playSfx("cartGo", c.x);
       let told = false;
       try { told = localStorage.getItem("pyonpCartTip") === "1"; localStorage.setItem("pyonpCartTip", "1"); } catch (_) {}
       if (!told) {
@@ -5079,6 +5209,7 @@ function updateLowBars() {
   for (const b of level.lowBars ?? []) {
     if (p.x + p.w > b.x + 4 && p.x < b.x + b.w - 4 && p.y < b.y + b.h - 4 && p.y + p.h > b.y + 4) {
       if (shopGuards("bar")) return;
+      if (p.invincible <= 0) playSfx("bonk", p.x);
       damagePlayer(false, null, false);
       return;
     }
@@ -5184,8 +5315,7 @@ function updateOxygen(dt) {
     state.oxygenBeep = (state.oxygenBeep ?? 0) - dt;
     if (state.oxygenBeep <= 0) {
       state.oxygenBeep = state.oxygen <= 0 ? 0.45 : 0.9;
-      playTone({ freq: 1180, endFreq: 980, duration: 0.09, type: "square", gain: 0.03 });
-      playTone({ start: 0.12, freq: 1180, endFreq: 980, duration: 0.09, type: "square", gain: 0.03 });
+      playSfx("o2Beep");
     }
   }
   if (state.oxygen <= 0 && state.oxygenHurtCooldown <= 0) {
@@ -5232,13 +5362,14 @@ function updateLightning(dt) {
       const x = clamp(px + offset, 40, WORLD_WIDTH - 40);
       state.bolts.push({ x, t: -i * 0.25, landY: lavaRockLandingY(x) ?? worldBottom(), seed: Math.random() * 1000 });
     }
+    playSfx("boltWarn", px);
   }
   for (const b of state.bolts ?? []) {
     b.t += dt;
     const striking = b.t >= BOLT_WARN && b.t < BOLT_WARN + BOLT_STRIKE;
     if (striking && !b.flashed) {
       b.flashed = true;
-      playSfx("explosion", b.x);
+      playSfx("thunder", b.x);
       FX.shake(0.22);
       FX.flash("#fff7c2", 0.25, 0.15);
     }
@@ -5320,12 +5451,18 @@ function updateLavaGeysers(dt) {
   const p = state.player;
   for (const g of state.lavaGeysers ?? []) {
     const wasActive = g.active;
+    const before = g.timer ?? 0;
     g.timer = ((g.timer ?? 0) + dt) % g.period;
     g.active = g.timer > LAVA_ERUPT_AT && g.timer < LAVA_END_AT;
-    if (g.active && !wasActive) eruptLavaRocks(g);
+    const near = Math.abs(g.x + g.w / 2 - (p.x + p.w / 2)) < 900;
+    if (near && before < LAVA_ERUPT_AT - 0.75 && g.timer >= LAVA_ERUPT_AT - 0.75) playSfx("lavaRumble", g.x);
+    if (g.active && !wasActive) {
+      if (near) playSfx("lavaErupt", g.x);
+      eruptLavaRocks(g);
+    }
     if (!g.active) continue;
     const jet = { x: g.x, y: (g.baseY ?? canvas.height) - g.h, w: g.w, h: g.h };
-    if (hit(p, jet) && p.invincible <= 0 && !shopGuards("lava")) damagePlayer(false, null, false);
+    if (hit(p, jet) && p.invincible <= 0 && !shopGuards("lava")) { playSfx("sizzle", p.x); damagePlayer(false, null, false); }
   }
   updateLavaRocks(dt);
 }
@@ -5365,7 +5502,6 @@ function eruptLavaRocks(g) {
       done: false
     });
   });
-  playSfx("explosion", cx);
   FX.shake(0.18);
 }
 
@@ -5387,12 +5523,13 @@ function updateLavaRocks(dt) {
     rock.t += dt;
     rock.spin += dt * 7;
     const r = lavaRockRect(rock);
+    if (r && !rock.whistled) { rock.whistled = true; playSfx("rockWhistle", rock.tx); }
     if (r && hit(state.player, r) && state.player.invincible <= 0 && !shopGuards("lava")) damagePlayer(false, null, false);
     if (rock.t >= ROCK_RISE + ROCK_WARN) {
       rock.done = true;
       if (rock.landY !== null) {
         spawnBlockPoof(rock.tx, rock.landY - 8);
-        playSfx("break", rock.tx);
+        playSfx("rockThud", rock.tx);
         FX.shake(0.1);
       }
     }
@@ -5799,6 +5936,7 @@ function updateFlyingEnemy(e, dt) {
     if (e.flyTimer <= 0 && Math.abs(dx) < 300) {
       e.flyPhase = "dive";
       e.flyTimer = 1.1;
+      playSfx("swoop", e.x);
       e.diveX = p.x + p.w / 2;
       e.diveY = p.y + p.h / 2;
       e.attackAnim = 0.3;
@@ -6232,7 +6370,7 @@ function unlockAudio() {
 
 // 効果音ごとの音量の上乗せ（playSfx の中だけ 1 以外になる）
 let sfxBoost = 1;
-const SFX_BOOST = { laser: 3, enemyHit: 3, equipSet: 2.6, equip: 3, switchOn: 2.4, switchOff: 2.4, barrierBreak: 2, doorEnter: 2.2, goalFanfare: 2, spikePoke: 2, piyo: 2, pyonLand: 1.6, dash: 1.8, fallWhistle: 2, combo: 2, stolen: 2, bubble: 2, timeWarn: 2, tick: 2, pyonJump: 2, pyonJump2: 2 };
+const SFX_BOOST = { swoop: 1.8, o2Beep: 2, bonk: 2, sizzle: 2, lavaRumble: 2, lavaErupt: 2, rockWhistle: 1.8, rockThud: 2, boltWarn: 2, thunder: 2, cartGo: 2, pickup: 3.2, break: 2.4, snackStar: 2, keyGet: 2.2, unlock: 2.2, powerUp: 1.8, spring: 2.2, enemyDefeat: 2.2, stompBoost: 2, respawn: 1.8, chest: 2, laser: 3, enemyHit: 3, equipSet: 2.6, equip: 3, switchOn: 2.4, switchOff: 2.4, barrierBreak: 2, doorEnter: 2.2, goalFanfare: 2, spikePoke: 2, piyo: 2, pyonLand: 1.6, dash: 1.8, fallWhistle: 2, combo: 2, stolen: 2, bubble: 2, timeWarn: 2, tick: 2, pyonJump: 2, pyonJump2: 2 };
 
 function playTone({ start = 0, freq = 440, endFreq = freq, duration = 0.12, type = "sine", gain = 0.08, pan = 0 }) {
   const ctxAudio = getAudioContext();
@@ -6410,8 +6548,11 @@ function playSfxInner(name, x) {
     playTone({ freq: 220, endFreq: 36, duration: 0.9, type: "sawtooth", gain: 0.07, pan });
     playTone({ start: 0.05, freq: 880, endFreq: 1760, duration: 0.5, type: "sine", gain: 0.04, pan });
   } else if (name === "break") {
-    playNoise({ duration: 0.1, gain: 0.04, filter: 1500 });
-    playTone({ freq: 300, endFreq: 150, duration: 0.09, type: "square", gain: 0.03, pan });
+    // ブロックをこわす：「ガシャッ」とくだけて、「ポコン」と中身が出る
+    playNoise({ duration: 0.14, gain: 0.09, filter: 2200 });
+    playTone({ freq: 320, endFreq: 120, duration: 0.1, type: "square", gain: 0.06, pan });
+    playTone({ freq: 140, endFreq: 70, duration: 0.12, type: "sine", gain: 0.12, pan });
+    playTone({ start: 0.08, freq: 660, endFreq: 1320, duration: 0.08, type: "triangle", gain: 0.06, pan });
   } else if (name === "keyGet" || name === "unlock") {
     playTone({ freq: 1046, endFreq: 1046, duration: 0.09, type: "triangle", gain: 0.05, pan });
     playTone({ start: 0.08, freq: 1318, endFreq: 1318, duration: 0.09, type: "triangle", gain: 0.05, pan });
@@ -6484,6 +6625,57 @@ function playSfxInner(name, x) {
     playTone({ start: 0.1, freq: 1760, endFreq: 1760, duration: 0.06, type: "square", gain: 0.04, pan: 0 });
   } else if (name === "tick") {
     playTone({ freq: 1320, endFreq: 1320, duration: 0.03, type: "square", gain: 0.03, pan: 0 });
+  } else if (name === "lavaRumble") {
+    // 溶岩がせり上がる前：「ゴゴゴゴ…」
+    playNoise({ duration: 0.7, gain: 0.08, filter: 260 });
+    playTone({ freq: 70, endFreq: 95, duration: 0.7, type: "sawtooth", gain: 0.05, pan });
+    playTone({ start: 0.2, freq: 140, endFreq: 180, duration: 0.4, type: "triangle", gain: 0.04, pan });
+  } else if (name === "lavaErupt") {
+    // 溶岩がふき出す：「ドバァッ！」＋ ごぼごぼ
+    playTone({ freq: 120, endFreq: 45, duration: 0.35, type: "sine", gain: 0.2, pan });
+    playNoise({ duration: 0.45, gain: 0.14, filter: 900 });
+    [0.1, 0.18, 0.27, 0.36].forEach((t, i) => playTone({ start: t, freq: 300 + i * 70, endFreq: 520 + i * 60, duration: 0.06, type: "sine", gain: 0.06, pan }));
+  } else if (name === "rockWhistle") {
+    // 岩が落ちてくる：「ひゅるるる…」
+    playTone({ freq: 1500, endFreq: 500, duration: 0.5, type: "triangle", gain: 0.05, pan });
+    playTone({ freq: 1530, endFreq: 520, duration: 0.5, type: "sine", gain: 0.03, pan });
+  } else if (name === "rockThud") {
+    // 岩が地面に落ちた：「ドスン！」
+    playTone({ freq: 110, endFreq: 45, duration: 0.18, type: "sine", gain: 0.2, pan });
+    playNoise({ duration: 0.16, gain: 0.1, filter: 700 });
+    playTone({ start: 0.03, freq: 240, endFreq: 120, duration: 0.08, type: "square", gain: 0.04, pan });
+  } else if (name === "boltWarn") {
+    // 雷が落ちる前：「ジジジッ」
+    for (let i = 0; i < 4; i++) playNoise({ start: i * 0.07, duration: 0.04, gain: 0.05, filter: 5200 });
+    playTone({ freq: 2400, endFreq: 3000, duration: 0.3, type: "square", gain: 0.015, pan });
+  } else if (name === "thunder") {
+    // 雷：「ピシャーン！ ゴロゴロ…」
+    playNoise({ duration: 0.12, gain: 0.16, filter: 6000 });
+    playTone({ freq: 1800, endFreq: 400, duration: 0.12, type: "square", gain: 0.05, pan });
+    playNoise({ start: 0.1, duration: 0.8, gain: 0.08, filter: 300 });
+    playTone({ start: 0.1, freq: 60, endFreq: 40, duration: 0.7, type: "sine", gain: 0.12, pan });
+  } else if (name === "cartGo") {
+    // トロッコが走り出す：「ガタン、ゴトン」
+    playNoise({ duration: 0.08, gain: 0.08, filter: 1200 });
+    playTone({ freq: 160, endFreq: 120, duration: 0.08, type: "square", gain: 0.06, pan });
+    playNoise({ start: 0.2, duration: 0.08, gain: 0.07, filter: 900 });
+    playTone({ start: 0.2, freq: 130, endFreq: 100, duration: 0.08, type: "square", gain: 0.06, pan });
+    playTone({ start: 0.35, freq: 880, endFreq: 1320, duration: 0.18, type: "triangle", gain: 0.04, pan });
+  } else if (name === "swoop") {
+    // 空の敵が急降下：「ヒューン！」
+    playTone({ freq: 1400, endFreq: 380, duration: 0.32, type: "triangle", gain: 0.06, pan });
+    playNoise({ duration: 0.25, gain: 0.03, filter: 3000 });
+  } else if (name === "o2Beep") {
+    playTone({ freq: 1180, endFreq: 980, duration: 0.09, type: "square", gain: 0.05, pan: 0 });
+    playTone({ start: 0.12, freq: 1180, endFreq: 980, duration: 0.09, type: "square", gain: 0.05, pan: 0 });
+  } else if (name === "bonk") {
+    // 頭をぶつけた：「ゴンッ」
+    playTone({ freq: 420, endFreq: 260, duration: 0.12, type: "square", gain: 0.07, pan });
+    playTone({ freq: 210, endFreq: 140, duration: 0.14, type: "sine", gain: 0.12, pan });
+  } else if (name === "sizzle") {
+    // 溶岩にふれた：「ジュッ」
+    playNoise({ duration: 0.22, gain: 0.1, filter: 4200 });
+    playTone({ freq: 900, endFreq: 300, duration: 0.18, type: "sawtooth", gain: 0.03, pan });
   } else if (name === "locked") {
     playTone({ freq: 196, endFreq: 185, duration: 0.09, type: "square", gain: 0.04, pan });
     playTone({ start: 0.11, freq: 185, endFreq: 165, duration: 0.14, type: "square", gain: 0.04, pan });
@@ -8353,6 +8545,8 @@ function startMoonRespawn() {
   spawnJumpSmoke(p.x + p.w / 2, p.y - 60);
   FX.respawnSparkle(p.x + p.w / 2, p.y);
   Chat.event("respawn");
+  // 2段ジャンプの崖で落ちたら、ヤナビスがヒント
+  if (typeof gateNeedMet === "function" && !gateNeedMet()) Chat.event("needDouble");
 }
 
 function goalLocked() {

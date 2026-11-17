@@ -86,7 +86,7 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
   const lastAt = {};
   let clock = 0;
 
-  const COOLDOWN = { gunBack: 6, bombThrow: 20, spring: 15, hpLow: 25, breath: 20, bossHit: 9, bossIdle: 16, hurt: 7, combo: 12, starGet: 2, weaponGet: 2.5, stompBoost: 25, idle: 10, death: 3, respawn: 3, stolen: 6, needKey: 14, switchUsed: 40, keyGet: 2, stomp: 4, canFuse: 6 };
+  const COOLDOWN = { needDouble: 25, gunBack: 6, bombThrow: 20, spring: 15, hpLow: 25, breath: 20, bossHit: 9, bossIdle: 16, hurt: 7, combo: 12, starGet: 2, weaponGet: 2.5, stompBoost: 25, idle: 10, death: 3, respawn: 3, stolen: 6, needKey: 14, switchUsed: 40, keyGet: 2, stomp: 4, canFuse: 6 };
 
   function dom() {
     if (els) return els;
@@ -246,6 +246,13 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
     timeUp: () => [["yana", "時間切れです！", "Time's up!"], ["pyon", "ゆっくりしすぎたわぁ", "I took my sweet time..."]],
     respawn: () => [["pyon", "三日月タクシーで復活じゃ！ 好きなとこにおりるじょ。", "Back on the Crescent Taxi! I'll hop off wherever I like."]],
     combo: () => [["pyon", "コンボじゃ！ ノってきたじょ！", "Combo! I'm on a roll!"]],
+    // 2段ジャンプがないと こえられない崖（落ちたあと・立ちつくしているとき）
+    needDouble: () => [
+      ["yana", "ここは、2段ジャンプシューズがないと、こえられそうにありませんね。", "Looks like you can't get past here without the Double Jump Shoes."],
+      ["yana", "シューズは、ワールドマップのよろず屋で売っていましたよ。", "The general store on the world map sells them."],
+      ["pyon", "……買いに行くしかないか。ルナコイン、たりるかな。", "...Guess I've gotta go buy them. Hope I've got enough coins."]
+    ],
+    needDoubleHave: () => [["yana", "2段ジャンプの出番です。空中で、もう1回ジャンプしてください。", "Time for the double jump. Jump once more in midair!"]],
     // ---- こまかい場面のひとこと ----
     manjuEat: () => [pick([
       ["pyon", "ぶどうまんじゅう、うまっ！ 全回復じゃ！", "Grape Manju, yum! Fully healed!"],
@@ -531,6 +538,13 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
     }
     // 買った・つけたどうぐの説明（ヤナビス）が残っていたら、手があいたときに流す
     if (typeof gearTipQueue !== "undefined" && gearTipQueue.length && !queue.length && typeof flushGearTips === "function") flushGearTips();
+    // 2段ジャンプの崖：持っていなければ、しばらく立ちつくしたらヒント。持っていれば、使いかたのひとこと
+    if (course?.needs === "double" && typeof gateNeedMet === "function") {
+      if (!gateNeedMet(course)) {
+        flags.gateT = (flags.gateT ?? 0) + 0.25;
+        if (flags.gateT > 14) once("gateHint", "needDouble");
+      } else if (p.x > (course.gateEdge ?? 600) - 260) once("gateHave", "needDoubleHave");
+    }
     if (state.time < 30 && state.time > 0) once("timeLow", "timeLow");
     if (state.hp <= 1 && state.lives > 0) once("hpLow", "hpLow");
     else if (state.hp >= 3) flags.hpLow = false;
