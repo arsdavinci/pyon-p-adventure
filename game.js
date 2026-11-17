@@ -22,7 +22,7 @@ const scoreCount = document.querySelector("#scoreCount");
 const lifeCount = document.querySelector("#lifeCount");
 const timeCount = document.querySelector("#timeCount");
 // ゲームのバージョン（更新するたびに1つ上げる。sw.js の CACHE_NAME の番号と同じにする）
-const GAME_VERSION = 229;
+const GAME_VERSION = 230;
 { const v = document.querySelector("#gameVersion"); if (v) v.textContent = `Ver. ${GAME_VERSION}`; }
 const stageCount = document.querySelector("#stageCount");
 const stageLabelEl = document.querySelector("#stageLabel");
@@ -5137,6 +5137,7 @@ function updateStageTraits(dt) {
   if (trait === "marsLava") updateLavaGeysers(dt);
   if (trait === "demonPulse") updateLightning(dt);
   updateFinalStageHazards(dt);
+  Hazards.update(dt); // 惑星ごとのしかけ（hazards.js）
   if (trait === "factoryBelt" && state.player.grounded) {
     const support = platformUnderBody(state.player);
     if (support?.conveyor) {
@@ -8967,6 +8968,7 @@ function drawGameWorld() {
   drawPlatforms();
   Gimmick.drawForeground();
   drawStageHazards();
+  Hazards.draw();
   drawSpikes();
   drawRailsAndBars();
   drawDoors();
@@ -8982,7 +8984,9 @@ function drawGameWorld() {
   drawEnemies();
   if (!title) drawPlayer();
   FX.drawWorld();
+  if (!title) Hazards.drawDark();
   ctx.restore();
+  if (!title) Hazards.drawOverlay();
 }
 
 // ---------- 「タイトルにもどる？」（会話シーン・エンディング・ポーズから） ----------
