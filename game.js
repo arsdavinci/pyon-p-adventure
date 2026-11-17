@@ -22,7 +22,7 @@ const scoreCount = document.querySelector("#scoreCount");
 const lifeCount = document.querySelector("#lifeCount");
 const timeCount = document.querySelector("#timeCount");
 // ゲームのバージョン（更新するたびに1つ上げる。sw.js の CACHE_NAME の番号と同じにする）
-const GAME_VERSION = 227;
+const GAME_VERSION = 228;
 { const v = document.querySelector("#gameVersion"); if (v) v.textContent = `Ver. ${GAME_VERSION}`; }
 const stageCount = document.querySelector("#stageCount");
 const stageLabelEl = document.querySelector("#stageLabel");
@@ -185,22 +185,22 @@ const WEAPON_NAMES_JA = [
   "ムーニアン・ファイター"
 ];
 const WEAPON_STAGES = [
-  { name: "weapon-moon-01-moon-popper", count: 1, damage: 1, range: 220, speed: 560, width: 24, height: 7, spread: 0, cooldown: 0.42, pattern: "forward", colors: ["#fff3a4","#bff8ff","#ff9bd4"] },
-  { name: "weapon-moon-02-twinmoon-shooter", count: 2, damage: 2, range: 360, speed: 720, width: 34, height: 8, spread: 10, cooldown: 0.36, pattern: "both", colors: ["#fff3a4","#c9f6ff","#c8b2ff"] },
-  { name: "weapon-moon-03-milkyway-cannon", count: 3, damage: 3, range: 500, speed: 820, width: 38, height: 8, spread: 12, cooldown: 0.32, pattern: "spread", colors: ["#ffd1ed","#d9ffd6","#c8b2ff"] },
-  { name: "weapon-moon-04-orbit-ring", count: 5, damage: 4, range: 640, speed: 900, width: 40, height: 9, spread: 0, cooldown: 0.3, pattern: "radial", colors: ["#d9ffd6","#fff3a4","#61f2a5"] },
-  { name: "weapon-moon-05-ribbon-laser", count: 5, damage: 5, range: 780, speed: 980, width: 44, height: 9, spread: 10, cooldown: 0.27, pattern: "fan", colors: ["#fff3a4","#ffd1ed","#9ee8ff"] },
-  { name: "weapon-moon-06-nebula-fan", count: 7, damage: 6, range: 920, speed: 1060, width: 50, height: 10, spread: 0, cooldown: 0.25, pattern: "fan", colors: ["#ffd1ed","#9ee8ff","#a976ff"] },
-  { name: "weapon-moon-07-comet-reverse", count: 7, damage: 7, range: 1060, speed: 1140, width: 54, height: 11, spread: 0, cooldown: 0.23, pattern: "bothSpread", colors: ["#c9f6ff","#ffffff","#64d2ff"] },
-  { name: "weapon-moon-08-moonian-nova", count: 9, damage: 8, range: 1200, speed: 1220, width: 60, height: 12, spread: 12, cooldown: 0.21, pattern: "spread", colors: ["#ffffff","#fff3a4","#ff8db7"] },
-  { name: "weapon-star-01-saturn-splitter", count: 4, damage: 1, range: 240, speed: 600, width: 26, height: 7, spread: 0, cooldown: 0.42, pattern: "cross", colors: ["#fff6a6","#ffb86b","#ffffff"] },
-  { name: "weapon-star-02-aquarium-spear", count: 2, damage: 2, range: 380, speed: 740, width: 34, height: 8, spread: 0, cooldown: 0.36, pattern: "wave", colors: ["#bff8ff","#4fe3ff","#ffffff"] },
-  { name: "weapon-star-03-quasar-drive", count: 3, damage: 3, range: 520, speed: 840, width: 38, height: 8, spread: 0, cooldown: 0.32, pattern: "fan", colors: ["#ffffff","#ffd85a","#ff5f9e"] },
-  { name: "weapon-star-04-galaxy-boomerang", count: 4, damage: 4, range: 660, speed: 920, width: 40, height: 9, spread: 18, cooldown: 0.3, pattern: "bothSpread", colors: ["#d7c8ff","#ffffff","#7d8cff"] },
-  { name: "weapon-star-05-black-hole-pulse", count: 6, damage: 5, range: 800, speed: 1000, width: 44, height: 10, spread: 0, cooldown: 0.27, pattern: "radial", pierce: 1, colors: ["#2d245d","#9ee8ff","#ffffff"] },
-  { name: "weapon-star-06-cosmo-crown", count: 7, damage: 6, range: 940, speed: 1080, width: 50, height: 10, spread: 0, cooldown: 0.25, pattern: "crown", colors: ["#fff3a4","#ff8db7","#ffffff"] },
-  { name: "weapon-star-07-supernova-360", count: 10, damage: 7, range: 1080, speed: 1160, width: 54, height: 11, spread: 0, cooldown: 0.23, pattern: "radial", pierce: 2, colors: ["#ffffff","#fff3a4","#ff3d7f"] },
-  { name: "weapon-star-08-stellar-guardian-cannon", count: 8, damage: 8, range: 1220, speed: 1240, width: 60, height: 12, spread: 0, cooldown: 0.21, pattern: "homing", explosion: 110, colors: ["#ffffff","#9ee8ff","#ff3d7f"] },
+  { name: "weapon-moon-01-moon-popper", count: 1, damage: 1, range: 260, speed: 600, width: 24, height: 7, spread: 0, cooldown: 0.42, pattern: "forward", colors: ["#fff3a4","#bff8ff","#ff9bd4"] },
+  { name: "weapon-moon-02-twinmoon-shooter", count: 2, damage: 2, range: 380, speed: 720, width: 32, height: 8, spread: 0, cooldown: 0.36, pattern: "both", colors: ["#fff3a4","#c9f6ff","#c8b2ff"] },
+  { name: "weapon-moon-03-milkyway-cannon", count: 3, damage: 3, range: 520, speed: 820, width: 38, height: 8, spread: 0, cooldown: 0.32, pattern: "spread", colors: ["#ffd1ed","#d9ffd6","#c8b2ff"] },
+  { name: "weapon-moon-04-orbit-ring", count: 9, damage: 4, range: 640, speed: 900, width: 40, height: 9, spread: 0, cooldown: 0.3, pattern: "orbit", colors: ["#d9ffd6","#fff3a4","#61f2a5"] },
+  { name: "weapon-moon-05-ribbon-laser", count: 3, damage: 5, range: 820, speed: 1150, width: 64, height: 9, spread: 0, cooldown: 0.16, pattern: "spread", pierce: 1, auto: true, colors: ["#fff3a4","#ffd1ed","#9ee8ff"] },
+  { name: "weapon-moon-06-nebula-fan", count: 7, damage: 6, range: 920, speed: 1080, width: 50, height: 10, spread: 0, cooldown: 0.15, pattern: "fan", pierce: 1, auto: true, colors: ["#ffd1ed","#9ee8ff","#a976ff"] },
+  { name: "weapon-moon-07-comet-reverse", count: 8, damage: 8, range: 1100, speed: 1300, width: 60, height: 11, spread: 0, cooldown: 0.09, pattern: "bothSpread", pierce: 2, auto: true, colors: ["#c9f6ff","#ffffff","#64d2ff"] },
+  { name: "weapon-moon-08-moonian-nova", count: 9, damage: 10, range: 1300, speed: 1400, width: 66, height: 13, spread: 0, cooldown: 0.08, pattern: "spread", pierce: 3, explosion: 70, auto: true, colors: ["#ffffff","#fff3a4","#ff8db7"] },
+  { name: "weapon-star-01-saturn-splitter", count: 6, damage: 1, range: 260, speed: 620, width: 26, height: 7, spread: 0, cooldown: 0.42, pattern: "cross", colors: ["#fff6a6","#ffb86b","#ffffff"] },
+  { name: "weapon-star-02-aquarium-spear", count: 2, damage: 2, range: 420, speed: 760, width: 34, height: 8, spread: 0, cooldown: 0.36, pattern: "wave", pierce: 1, colors: ["#bff8ff","#4fe3ff","#ffffff"] },
+  { name: "weapon-star-03-quasar-drive", count: 3, damage: 3, range: 1100, speed: 1300, width: 46, height: 8, spread: 0, cooldown: 0.32, pattern: "spread", pierce: 1, colors: ["#ffffff","#ffd85a","#ff5f9e"] },
+  { name: "weapon-star-04-galaxy-boomerang", count: 4, damage: 4, range: 760, speed: 900, width: 40, height: 12, spread: 0, cooldown: 0.3, pattern: "boomerang", pierce: 3, colors: ["#d7c8ff","#ffffff","#7d8cff"] },
+  { name: "weapon-star-05-black-hole-pulse", count: 8, damage: 5, range: 800, speed: 1000, width: 44, height: 10, spread: 0, cooldown: 0.2, pattern: "radial", front: 2, pierce: 2, auto: true, colors: ["#2d245d","#9ee8ff","#ffffff"] },
+  { name: "weapon-star-06-cosmo-crown", count: 9, damage: 6, range: 960, speed: 1100, width: 50, height: 10, spread: 0, cooldown: 0.16, pattern: "crown", pierce: 1, auto: true, colors: ["#fff3a4","#ff8db7","#ffffff"] },
+  { name: "weapon-star-07-supernova-360", count: 16, damage: 8, range: 1100, speed: 1200, width: 54, height: 11, spread: 0, cooldown: 0.12, pattern: "radial", front: 3, pierce: 3, auto: true, colors: ["#ffffff","#fff3a4","#ff3d7f"] },
+  { name: "weapon-star-08-stellar-guardian-cannon", count: 10, damage: 10, range: 1400, speed: 1300, width: 60, height: 12, spread: 0, cooldown: 0.14, pattern: "homing", explosion: 140, auto: true, colors: ["#ffffff","#9ee8ff","#ff3d7f"] },
   { name: "Moonian Mecha", count: 26, damage: 27, range: 2660, speed: 2020, width: 92, height: 22, spread: 0, cooldown: 0.116, pattern: "homing", explosion: 175, colors: ["#ffffff","#ff8db7","#9ee8ff"] },
   { name: "Moonian Mecha Lv2", count: 28, damage: 30, range: 2720, speed: 2040, width: 92, height: 22, spread: 0, cooldown: 0.112, pattern: "homing", explosion: 180, colors: ["#ffffff","#ff8db7","#9ee8ff"] },
   { name: "Moonian Mecha Lv3", count: 30, damage: 33, range: 2780, speed: 2060, width: 92, height: 22, spread: 0, cooldown: 0.108, pattern: "homing", explosion: 185, colors: ["#ffffff","#ff8db7","#9ee8ff"] },
@@ -4921,11 +4921,11 @@ function updatePlayer(dt) {
   const shootFresh = wantsShoot && !p.shootHeld;
   p.shootHeld = wantsShoot;
   updateBombThrow(p);
-  // どの銃も、ボタンを押した回数だけ撃つ（おしっぱなしで連射しない）。
+  // Lv1〜4 の銃は、ボタンを押した回数だけ撃つ。Lv5 からは押しっぱなしで連射できる（weaponAutoFire）。
   // 撃てない間に押した分は、ほんの少しだけ覚えておいて、撃てるようになったらすぐ出す
   if (shootFresh) p.shotBuffer = 0.2;
   p.shotBuffer = Math.max(0, (p.shotBuffer ?? 0) - dt);
-  if (p.shotBuffer > 0 && hasEquippedWeapon() && state.gun.cooldown <= 0) {
+  if ((p.shotBuffer > 0 || (wantsShoot && weaponAutoFire())) && hasEquippedWeapon() && state.gun.cooldown <= 0) {
     p.shotBuffer = 0;
     const muzzle = playerMuzzle(p);
     shootBeam("player", muzzle.x, muzzle.y, p.facing, p.aim);
@@ -5038,11 +5038,11 @@ function updateSwimmingPlayer(dt) {
   const shootFresh = wantsShoot && !p.shootHeld;
   p.shootHeld = wantsShoot;
   updateBombThrow(p);
-  // どの銃も、ボタンを押した回数だけ撃つ（おしっぱなしで連射しない）。
+  // Lv1〜4 の銃は、ボタンを押した回数だけ撃つ。Lv5 からは押しっぱなしで連射できる（weaponAutoFire）。
   // 撃てない間に押した分は、ほんの少しだけ覚えておいて、撃てるようになったらすぐ出す
   if (shootFresh) p.shotBuffer = 0.2;
   p.shotBuffer = Math.max(0, (p.shotBuffer ?? 0) - dt);
-  if (p.shotBuffer > 0 && hasEquippedWeapon() && state.gun.cooldown <= 0) {
+  if ((p.shotBuffer > 0 || (wantsShoot && weaponAutoFire())) && hasEquippedWeapon() && state.gun.cooldown <= 0) {
     p.shotBuffer = 0;
     const muzzle = playerMuzzle(p);
     shootBeam("player", muzzle.x, muzzle.y, p.facing, p.aim);
@@ -6880,7 +6880,10 @@ function shootBeam(owner, x, y, dir, aimAngle = null) {
   }
   const beamSpeed = owner === "player" ? stage.speed : stage.speed * 0.5;
   const base = aimAngle ?? (dir >= 0 ? 0 : Math.PI);
-  playSfx("laser", x);
+  if (owner !== "player" || !stage.auto || performance.now() - (shootBeam.lastSfx ?? 0) > 110) {
+    playSfx("laser", x);
+    if (owner === "player") shootBeam.lastSfx = performance.now();
+  }
   if (owner === "player") FX.muzzle(x, y, Math.cos(base) >= -0.01 ? 1 : -1, stage.colors);
   if (stage.pattern === "homing" && owner === "player" && isRideable(state.weaponPower)) {
     shootMechMissile(x, y, dir, stage);
@@ -6915,6 +6918,8 @@ function shootBeam(owner, x, y, dir, aimAngle = null) {
       power: owner === "player" ? state.weaponPower : stage.damage,
       pierce: stage.pierce ?? 0,
       wave: stage.pattern === "wave" ? side : 0,
+      boomerang: stage.pattern === "boomerang",
+      explosion: owner === "player" ? stage.explosion : undefined,
       distance: 0,
       range: stage.range
     });
@@ -6992,13 +6997,27 @@ function shootHomingMissiles(owner, x, y, dir, stage) {
   }
 }
 
+// 押しっぱなしで撃ちつづけられる武器か（月・星とも Lv5 から）
+function weaponAutoFire() {
+  return !!weaponStage().auto && !isRideable(state.weaponPower);
+}
+
 function weaponAngles(stage, dir, base = null) {
   const facing = base ?? (dir >= 0 ? 0 : Math.PI);
   const spreadAngles = (count, arc) => Array.from({ length: count }, (_, i) => facing + (i - (count - 1) / 2) * arc);
   // 全方向：向いている方向を1本目にする（左を向いたら、まっすぐ左にも飛ぶ）
-  if (stage.pattern === "radial") return Array.from({ length: stage.count }, (_, i) => facing + i * Math.PI * 2 / stage.count);
+  // 全方向＋前に何本か（front）。前の火力が落ちないように
+  if (stage.pattern === "radial") return [...Array.from({ length: stage.count }, (_, i) => facing + i * Math.PI * 2 / stage.count), ...spreadAngles(stage.front ?? 0, 0.1)];
   if (stage.pattern === "both") return [facing, facing + Math.PI];
-  if (stage.pattern === "bothSpread") return [facing - 0.16, facing + 0.16, facing + Math.PI - 0.16, facing + Math.PI + 0.16];
+  // オービットリング：前に3本＋まわりをぐるっと
+  if (stage.pattern === "orbit") return [...spreadAngles(3, 0.12), ...Array.from({ length: stage.count - 3 }, (_, i) => facing + (i + 0.5) * Math.PI * 2 / (stage.count - 3))];
+  // コメットリバース：前にたくさん、うしろにも少し
+  if (stage.pattern === "bothSpread") {
+    const front = Math.ceil(stage.count * 0.6);
+    const back = stage.count - front;
+    return [...spreadAngles(front, 0.1), ...Array.from({ length: back }, (_, i) => facing + Math.PI + (i - (back - 1) / 2) * 0.14)];
+  }
+  if (stage.pattern === "boomerang") return spreadAngles(stage.count, 0.14);
   if (stage.pattern === "fan") return spreadAngles(stage.count, 0.16);
   if (stage.pattern === "cross") return [facing, facing - 0.36, facing + 0.36, facing - Math.PI / 2, facing + Math.PI / 2, facing + Math.PI];
   if (stage.pattern === "crown") return [facing, ...spreadAngles(stage.count - 1, 0.13).map(a => a - 0.45)];
@@ -7635,6 +7654,14 @@ function updateBeams(dt) {
     b.x += stepX;
     b.y += stepY;
     b.distance += b.wave ? straight : Math.hypot(stepX, stepY);
+    // ギャラクシーブーメラン：半分まで飛んだら、もどってくる
+    if (b.boomerang && !b.returned && b.distance > b.range * 0.5) {
+      b.returned = true;
+      b.vx = -b.vx;
+      b.vy = -(b.vy ?? 0);
+      b.angle += Math.PI;
+
+    }
     b.life -= dt;
     if (b.distance >= b.range) b.life = 0;
     if (b.bossOrb) {
