@@ -2284,6 +2284,7 @@ function updateSpikes() {
   const p = state.player;
   for (const sp of level.spikes ?? []) {
     if (p.x + p.w > sp.x + 6 && p.x < sp.x + sp.w - 6 && p.y + p.h > sp.y + 6 && p.y < sp.y + sp.h) {
+      if (p.invincible <= 0) playSfx("spikePoke", p.x);
       damagePlayer(false, null, false);
       // はね上げて、トゲの上にい続けないようにする
       if (p.vy >= 0) p.vy = -520;
@@ -3772,7 +3773,16 @@ function update(dt) {
   state.stompLateBoostTimer = Math.max(0, (state.stompLateBoostTimer ?? 0) - dt);
   state.playClock = (state.playClock ?? 0) + dt;
   // ボス戦は、時間を気にせず じっくり戦えるように、時間がへらない
-  if (!courses[currentCourse]?.bossStage) state.time -= dt;
+  if (!courses[currentCourse]?.bossStage) {
+    const before = Math.ceil(state.time);
+    state.time -= dt;
+    const after = Math.ceil(state.time);
+    // のこり 30 秒で「ピピッ」、のこり 10 秒からは 1 秒ごとに「カチッ」
+    if (after !== before && after > 0) {
+      if (after === 30) playSfx("timeWarn");
+      else if (after <= 10) playSfx("tick");
+    }
+  }
   // 時間切れ：HP にかかわらず、その場でアウト（ヤナビス「時間切れです！」→ ぴょんぴー「ゆっくりしすぎたわぁ」）
   if (state.time <= 0) {
     state.time = 0;
@@ -4559,6 +4569,9 @@ function updatePlayer(dt) {
   const dxInput = (movingRight ? 1 : 0) - (movingLeft ? 1 : 0);
   const doubleTapRun = isDoubleTapRunActive(dxInput);
   const wantsRun = isRunHeld(dxInput) || doubleTapRun;
+  // ダッシュを始めたとき（動いていて、地面にいるとき）に「シュタッ」
+  if (wantsRun && !p.runWas && dxInput && p.grounded && state.mode === "playing") playSfx("dash", p.x);
+  p.runWas = wantsRun;
   const wantsShoot = (!tut || tut.shoot) && (keys.has("KeyX") || keys.has("KeyY") || keys.has("KeyJ") || gamepadState.shoot || (!bombReady() && bombButtonHeld()));
   const trait = currentStageTrait();
   const slippery = trait === "iceSlide" && !Shop.has("spikeShoes");
@@ -4656,7 +4669,9 @@ function updatePlayer(dt) {
   }
   p.invincible = Math.max(0, p.invincible - dt);
 
+  const fallSpeed = p.grounded ? 0 : p.vy;
   moveAndCollide(p, dt);
+  if (p.grounded && fallSpeed > 700) playSfx("pyonLand", p.x);
   // 閉じたエリアでやられたときにもどる場所（さいごに立っていた安全な床）
   // （ふせているあいだは覚えない。ほふく前進のすき間でやられると、立った体が岩にうまって、屋根の上に出てしまっていた）
   if (p.grounded && !p.crouch && !p.onCart && !(level.spikes ?? []).some(sp => p.x + p.w > sp.x - 30 && p.x < sp.x + sp.w + 30 && Math.abs(p.y + p.h - sp.y - sp.h) < 30)) {
@@ -4667,6 +4682,7 @@ function updatePlayer(dt) {
   if (p.grounded) state.pitDoomSaid = false;
   else if (!state.pitDoomSaid && p.vy > 150 && pitIsHopeless(p, trait)) {
     state.pitDoomSaid = true;
+    playSfx("fallWhistle", p.x);
     Chat.event("fallPit");
   }
   if (p.y > worldBottom() + 100) damagePlayer(true);
@@ -5566,12 +5582,14 @@ function damageEnemy(e, amount = 1, pure = false) {
     return;
   }
   state.score += FX.enemyDefeat(e);
+  if (FX.S.combo >= 3) playSfx("combo", e.x + e.w / 2);
   if (FX.S.combo === 3) Chat.event("combo");
 }
 
 function stunEnemy(e) {
   if (e.boss && courses[currentCourse]?.bossStage && (!state.bossIntroPlayed || state.mode === "bossIntro")) return;
   if (!e.boss) Chat.event("stomp");
+  playSfx("piyo", e.x + e.w / 2);
   // ふんでピヨらせたら、少し長めに動けなくする（2秒では短すぎた）
   e.stun = e.boss ? 0.35 : 3.5;
   e.alert = 1;
@@ -6115,7 +6133,7 @@ function unlockAudio() {
 
 // 効果音ごとの音量の上乗せ（playSfx の中だけ 1 以外になる）
 let sfxBoost = 1;
-const SFX_BOOST = { laser: 3, enemyHit: 3, equipSet: 2.6, equip: 3, switchOn: 2.4, switchOff: 2.4, barrierBreak: 2, doorEnter: 2.2, goalFanfare: 2, pyonJump: 2, pyonJump2: 2 };
+const SFX_BOOST = { laser: 3, enemyHit: 3, equipSet: 2.6, equip: 3, switchOn: 2.4, switchOff: 2.4, barrierBreak: 2, doorEnter: 2.2, goalFanfare: 2, spikePoke: 2, piyo: 2, pyonLand: 1.6, dash: 1.8, fallWhistle: 2, combo: 2, stolen: 2, bubble: 2, timeWarn: 2, tick: 2, pyonJump: 2, pyonJump2: 2 };
 
 function playTone({ start = 0, freq = 440, endFreq = freq, duration = 0.12, type = "sine", gain = 0.08, pan = 0 }) {
   const ctxAudio = getAudioContext();
@@ -6325,6 +6343,48 @@ function playSfxInner(name, x) {
     playTone({ start: 0.84, freq: 2093, endFreq: 2093, duration: 0.2, type: "square", gain: 0.06, pan: 0 });
     playTone({ start: 0.84, freq: 1047, endFreq: 1047, duration: 0.2, type: "triangle", gain: 0.06, pan: 0 });
     playNoise({ start: 0.84, duration: 0.25, gain: 0.03, filter: 7000 });
+  } else if (name === "spikePoke") {
+    // トゲ：「チクッ！」＋「ぴゃっ」とはね上がる
+    playTone({ freq: 2800, endFreq: 2200, duration: 0.04, type: "square", gain: 0.06, pan });
+    playNoise({ duration: 0.05, gain: 0.06, filter: 6000 });
+    playTone({ start: 0.05, freq: 700, endFreq: 1500, duration: 0.12, type: "triangle", gain: 0.08, pan });
+  } else if (name === "piyo") {
+    // ふんでピヨらせた：「ポヨン」＋ ひよこの「ピヨピヨ」
+    playTone({ freq: 220, endFreq: 440, duration: 0.09, type: "sine", gain: 0.12, pan });
+    [0.1, 0.22].forEach(t => {
+      playTone({ start: t, freq: 2200, endFreq: 2900, duration: 0.05, type: "sine", gain: 0.05, pan });
+      playTone({ start: t + 0.05, freq: 2900, endFreq: 2400, duration: 0.05, type: "sine", gain: 0.045, pan });
+    });
+  } else if (name === "pyonLand") {
+    // 高いところからの着地：「とすっ」
+    playTone({ freq: 160, endFreq: 90, duration: 0.07, type: "sine", gain: 0.12, pan });
+    playNoise({ duration: 0.05, gain: 0.035, filter: 700 });
+  } else if (name === "dash") {
+    // ダッシュ：「シュタッ」
+    playNoise({ duration: 0.14, gain: 0.05, filter: 3800 });
+    playTone({ freq: 600, endFreq: 1100, duration: 0.08, type: "triangle", gain: 0.04, pan });
+  } else if (name === "fallWhistle") {
+    // 穴に落ちる：「ひゅ〜〜〜」（下がっていく笛）
+    playTone({ freq: 1600, endFreq: 260, duration: 0.9, type: "sine", gain: 0.06, pan });
+    playTone({ freq: 1610, endFreq: 262, duration: 0.9, type: "triangle", gain: 0.02, pan });
+  } else if (name === "combo") {
+    // コンボ：「ピロリロ♪」
+    [1319, 1568, 1976, 2637].forEach((f, i) => playTone({ start: i * 0.045, freq: f, endFreq: f, duration: 0.07, type: "square", gain: 0.035, pan }));
+  } else if (name === "stolen") {
+    // 武器をうばわれた：「シュッ」＋「ガーン」
+    playNoise({ duration: 0.1, gain: 0.06, filter: 4200 });
+    playTone({ start: 0.08, freq: 392, endFreq: 392, duration: 0.12, type: "square", gain: 0.05, pan });
+    playTone({ start: 0.2, freq: 330, endFreq: 311, duration: 0.3, type: "square", gain: 0.05, pan });
+  } else if (name === "bubble") {
+    // 空気のあわ：「ポコッ」
+    playTone({ freq: 400, endFreq: 1300, duration: 0.07, type: "sine", gain: 0.1, pan });
+    playTone({ start: 0.06, freq: 700, endFreq: 1700, duration: 0.06, type: "sine", gain: 0.06, pan });
+  } else if (name === "timeWarn") {
+    // のこり時間が少ない：「ピピッ」
+    playTone({ freq: 1760, endFreq: 1760, duration: 0.06, type: "square", gain: 0.04, pan: 0 });
+    playTone({ start: 0.1, freq: 1760, endFreq: 1760, duration: 0.06, type: "square", gain: 0.04, pan: 0 });
+  } else if (name === "tick") {
+    playTone({ freq: 1320, endFreq: 1320, duration: 0.03, type: "square", gain: 0.03, pan: 0 });
   } else if (name === "locked") {
     playTone({ freq: 196, endFreq: 185, duration: 0.09, type: "square", gain: 0.04, pan });
     playTone({ start: 0.11, freq: 185, endFreq: 165, duration: 0.14, type: "square", gain: 0.04, pan });
@@ -7878,7 +7938,7 @@ function collectOxygenItems() {
       o.respawn = 7.5;
       state.oxygen = MAX_OXYGEN;
       state.score += 15;
-      playSfx("pickup", o.x);
+      playSfx("bubble", o.x);
       spawnBubbleBurst(o.x, o.y);
       FX.oxygen(o.x, o.y);
     }
@@ -8024,6 +8084,7 @@ function damagePlayer(fell = false, sourceEnemy = null, canStealWeapon = false) 
       state.gun.holder = sourceEnemy.id;
       // はじめてうばわれたときは、画面を止めて「踏み返せば取りもどせる」と教える
       // （この説明は 1-1 だけ。ほかのステージでは、いつもの一言だけ）
+      playSfx("stolen", sourceEnemy.x);
       if (!(lessonStage() && Tutorial.onStolen(sourceEnemy))) Chat.event("stolen");
       sourceEnemy.gunCooldown = sourceEnemy.boss ? 0.2 : 0.5;
     }
