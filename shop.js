@@ -68,7 +68,41 @@
       en: ["Lightning Rod", "Lightning can't hit you anymore."] },
     { id: "kingCape", world: 5, price: 800, color: "#ff3d7f", mark: "♛",
       ja: ["王さまのマント", "受けるダメージが半分になる。"],
-      en: ["Royal Cape", "Halves the damage you take."] }
+      en: ["Royal Cape", "Halves the damage you take."] },
+    // ---- ステージのしかけ（hazards.js）に対抗する道具。その惑星のお店だけで売る ----
+    { id: "starParasol", from: 5, world: 0, price: 160, color: "#fff7b0", mark: "☂", noArt: true,
+      ja: ["ながれぼしパラソル", "流れ星が当たらなくなる。"],
+      en: ["Meteor Parasol", "Shooting stars can't hit you anymore."] },
+    { id: "heavyPack", world: 1, price: 220, color: "#ffd9a0", mark: "▣", noArt: true,
+      ja: ["ずっしりリュック", "砂あらしに押されなくなる。"],
+      en: ["Heavy Backpack", "Sandstorms can't push you anymore."] },
+    { id: "magmaBrella", world: 1, price: 280, color: "#ff7a3d", mark: "☂", noArt: true,
+      ja: ["マグマがさ", "火山弾が当たらなくなる。"],
+      en: ["Magma Umbrella", "Volcanic bombs can't hit you anymore."] },
+    { id: "icicleHat", world: 2, price: 260, color: "#bff4ff", mark: "▲", noArt: true,
+      ja: ["つららよけぼうし", "つららが当たらなくなる。"],
+      en: ["Icicle Hat", "Icicles can't hit you anymore."] },
+    { id: "furCoat", world: 2, price: 320, color: "#ffffff", mark: "❆", noArt: true,
+      ja: ["もこもこコート", "ふぶきに押されなくなる。"],
+      en: ["Fluffy Coat", "Blizzards can't push you anymore."] },
+    { id: "anchor", world: 3, price: 340, color: "#9ee8ff", mark: "⚓", noArt: true,
+      ja: ["いかりのおもり", "海流に流されなくなる。"],
+      en: ["Anchor Weight", "Ocean currents can't sweep you away."] },
+    { id: "floatRing", world: 3, price: 400, color: "#ff8db7", mark: "◎", noArt: true,
+      ja: ["うずしおうきわ", "うずしおに すいこまれなくなる。"],
+      en: ["Whirlpool Float", "Whirlpools can't pull you in."] },
+    { id: "springHat", world: 4, price: 380, color: "#ffd06a", mark: "♒", noArt: true,
+      ja: ["ばねぼうし", "落ちてくる荷物を、ぼよんとはね返す。"],
+      en: ["Spring Hat", "Falling cargo bounces right off you."] },
+    { id: "mirror", world: 4, price: 460, color: "#e0e6ff", mark: "◈", noArt: true,
+      ja: ["はんしゃミラー", "レーザーゲートが当たらなくなる。"],
+      en: ["Reflect Mirror", "Laser gates can't hurt you anymore."] },
+    { id: "lantern", world: 5, price: 450, color: "#fff3a4", mark: "✺", noArt: true,
+      ja: ["ふわぴかランタン", "まっ暗やみで、ぴょんぴーの頭の上に光る玉がうかんで、まわりを明るくてらす。"],
+      en: ["Floaty Glow Lantern", "In pitch darkness, a glowing orb floats above Pyon-P and lights up the area."] },
+    { id: "darkCharm", world: 5, price: 520, color: "#c27bff", mark: "✧", noArt: true,
+      ja: ["やみよけおまもり", "やみの流れ星が当たらなくなる。"],
+      en: ["Dark Ward Charm", "Dark meteors can't hit you anymore."] }
   ];
 
   // ---------- メカの街のあやしい武器屋「ネコネオン」 ----------
@@ -137,7 +171,7 @@
   load("armsKeeper", "arms-keeper");
   load("armsBg", "arms-bg");
   load("bomb", "item-bomb");
-  for (const it of ITEMS) load(it.id, it.file ?? `shop-item-${it.id}`);
+  for (const it of ITEMS) if (!it.noArt) load(it.id, it.file ?? `shop-item-${it.id}`);
   const ok = im => im && im.complete && im.naturalWidth > 0;
 
   let sel = 0;
@@ -203,7 +237,28 @@
   }
   const itemName = id => { const it = id === "bomb" ? BOMB : ITEMS.find(x => x.id === id); return it ? L(it.ja[0], it.en[0]) : id; };
   const itemDesc = id => { const it = id === "bomb" ? BOMB : ITEMS.find(x => x.id === id); return it ? L(it.ja[1], it.en[1]) : ""; };
-  const itemIcon = id => { if (id === "bomb") return "assets/item-bomb.png"; const it = ITEMS.find(x => x.id === id); return `assets/${it?.file ?? `shop-item-${id}`}.png`; };
+  // 絵のない道具は、色の丸＋しるしのアイコンをその場で作る（チャット欄の持ち物用）
+  const markIcons = {};
+  function markIconUrl(it) {
+    if (markIcons[it.id]) return markIcons[it.id];
+    const cv = document.createElement("canvas");
+    cv.width = cv.height = 96;
+    const c = cv.getContext("2d");
+    c.fillStyle = it.color;
+    c.strokeStyle = "#ffffff";
+    c.lineWidth = 6;
+    c.beginPath();
+    c.arc(48, 48, 42, 0, Math.PI * 2);
+    c.fill();
+    c.stroke();
+    c.fillStyle = "#5a3d9a";
+    c.font = `900 44px ${FX.FONT}`;
+    c.textAlign = "center";
+    c.textBaseline = "middle";
+    c.fillText(it.mark, 48, 50);
+    return (markIcons[it.id] = cv.toDataURL());
+  }
+  const itemIcon = id => { if (id === "bomb") return "assets/item-bomb.png"; const it = ITEMS.find(x => x.id === id); if (it?.noArt) return markIconUrl(it); return `assets/${it?.file ?? `shop-item-${id}`}.png`; };
   const unlocked = () => unlockedCourse >= UNLOCK_COURSE;
 
   function wallet() {

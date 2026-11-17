@@ -31,7 +31,7 @@
     whirl: [["yana", "うずしおです！ まん中に近づくと、すいこまれます。", "A whirlpool! Get near the center and you'll be sucked in."], ["pyon", "ぐるぐる、目が回るじょ〜！", "Round and round, I'm getting dizzy!"]],
     crate: [["yana", "工場の荷物が落ちてきます。影を見て、よけてください。", "Factory cargo is falling. Watch the shadows and dodge."], ["pyon", "あぶない工場じゃなぁ！", "What a dangerous factory!"]],
     laser: [["yana", "レーザーゲートです。光が消えたすきに、通りぬけてください。", "Laser gates. Slip through while the beam is off."], ["pyon", "タイミングが大事じゃな！", "It's all about timing!"]],
-    dark: [["yana", "ここから先は、まっ暗です。ぴょんぴーさんのまわりしか見えません。", "It's pitch dark ahead. You can only see around yourself."], ["pyon", "ら、らんぴょん、明かり持ってきてー！", "R-Ranpyon, bring a light!"]],
+    dark: [["yana", "ここから先は、まっ暗やみです。光線銃のあかりと、敵の目の光をたよりに進んでください。", "It's pitch dark ahead. Rely on your ray gun's glow and the enemies' shining eyes."], ["pyon", "ら、らんぴょん、明かり持ってきてー！", "R-Ranpyon, bring a light!"]],
     darkStar: [["yana", "やみの流れ星です。紫の印に気をつけて！", "Dark meteors! Watch for the purple marks!"], ["pyon", "魔王の星は、ぶっそうじゃなぁ！", "The Demon Star sure is dangerous!"]]
   };
 
@@ -43,8 +43,28 @@
     dark: { colors: ["#e3c2ff", "#a259ff", "#3a1a6a"], mark: "#c27bff", warn: 0.85, dur: 0.45, slant: 300, r: 24 }
   };
 
+  // しかけに対抗する道具（その惑星のよろず屋で売っている。shop.js）
+  const GUARD = { star: "starParasol", fire: "magmaBrella", icicle: "icicleHat", crate: "springHat", dark: "darkCharm", laser: "mirror", whirl: "floatRing", sand: "heavyPack", snow: "furCoat", current: "anchor" };
+  const has = id => typeof Shop !== "undefined" && Shop.has(id);
+  const guarded = kind => has(GUARD[kind]);
+  let guardShownAt = 0;
+  function guardFx(kind, x, y) {
+    const now = performance.now();
+    if (now - guardShownAt < 1200) return;
+    guardShownAt = now;
+    const p = state.player;
+    FX.floater(x ?? p.x + p.w / 2, y ?? p.y - 20, `${Shop.itemName(GUARD[kind])}！`, { color: "#ffffff", stroke: "#7f67c8", size: 22, life: 1 });
+    playSfx("equip", p.x);
+  }
+
+  const DARK_HINT = {
+    buy: [["yana", "まっ暗で進みにくいですね……。この星のよろず屋で『ふわぴかランタン』を買うと、もっと楽にクリアできるかもしれません。", "It's hard to get around in this darkness... If you buy the Floaty Glow Lantern at this planet's shop, it might be much easier."], ["pyon", "ほな、こんど よってみるじょ！", "Then I'll stop by next time!"]],
+    wear: [["yana", "ふわぴかランタンを持っていますね。持ち物で つけると、まわりが明るくなりますよ。", "You have the Floaty Glow Lantern. Turn it on from your items to light things up."]]
+  };
+
   let S = null;
   let owner = null;
+  let darkCv = null;
 
   function course() { return courses[currentCourse]; }
 
@@ -83,7 +103,8 @@
 
   function reset(cfg) {
     owner = state;
-    S = { fallT: 2.5, fallers: [], bubbleT: 1.5, bubbles: [], gust: { phase: "calm", t: 3, dir: 1 }, whirlT: 3, whirls: [], lasers: [], streaks: [], riding: null };
+    S = { fallT: 2.5, fallers: [], bubbleT: 1.5, bubbles: [], gust: { phase: "calm", t: 3, dir: 1 }, whirlT: 3, whirls: [], lasers: [], streaks: [], riding: null,
+      beamN: 0, flash: 0, orb: null, darkT: 0, hinted: false };
     if (cfg && on(cfg, "laser")) {
       const gap = Math.max(560, 900 - cfg.a * 90);
       let i = 0;
@@ -135,7 +156,15 @@
       if (pos.k < 1) {
         if (!f.whistled) { f.whistled = true; playSfx("rockWhistle", f.x); }
         const r = f.look.r;
-        if (p.x < pos.x + r && p.x + p.w > pos.x - r && p.y < pos.y + r && p.y + p.h > pos.y - r) hurt();
+        if (p.x < pos.x + r && p.x + p.w > pos.x - r && p.y < pos.y + r && p.y + p.h > pos.y - r) {
+          if (guarded(f.kind)) {
+            // 道具ではじく：その場でくだけて消える
+            f.landed = true;
+            f.done = f.t;
+            FX.hit(pos.x, pos.y, f.look.colors);
+            guardFx(f.kind);
+          } else hurt();
+        }
       } else if (!f.landed) {
         f.landed = true;
         f.done = f.t + 0.35;
@@ -143,7 +172,10 @@
         FX.shake(0.1);
         FX.hit(f.x, f.land - 10, f.look.colors);
         // 着地のしゅんかんに、すぐ横にいても当たる
-        if (Math.abs(p.x + p.w / 2 - f.x) < f.look.r + 18 && Math.abs(p.y + p.h - f.land) < 40) hurt();
+        if (Math.abs(p.x + p.w / 2 - f.x) < f.look.r + 18 && Math.abs(p.y + p.h - f.land) < 40) {
+          if (guarded(f.kind)) guardFx(f.kind);
+          else hurt();
+        }
       }
     }
     S.fallers = S.fallers.filter(f => !f.done || f.t < f.done);
@@ -322,7 +354,7 @@
         g.t = (water ? 3 : 4.2) - Math.min(1.4, cfg.a * 0.25) + Math.random() * 1.2;
       }
     }
-    if (g.phase === "blow" && state.mode === "playing") {
+    if (g.phase === "blow" && state.mode === "playing" && !guarded(water ? "current" : cfg.plan.gustLook)) {
       const force = (water ? 120 + cfg.a * 14 : 170 + cfg.a * 28) * (p.grounded ? 0.75 : 1);
       const nx = p.x + g.dir * force * dt;
       if (!solidAt({ x: nx, y: p.y + 4, w: p.w, h: p.h - 8 })) p.x = clamp(nx, 0, WORLD_WIDTH - p.w);
@@ -352,6 +384,7 @@
       const d = Math.hypot(w.x - cx, w.y - cy);
       if (d < 240 && w.life > 0.4 && state.mode === "playing") {
         intro("whirl");
+        if (guarded("whirl")) { if (d < 120) guardFx("whirl"); continue; }
         const pull = (1 - d / 240) * (160 + cfg.a * 12) * dt;
         const nx = p.x + (w.x - cx) / (d || 1) * pull;
         const ny = p.y + (w.y - cy) / (d || 1) * pull;
@@ -401,7 +434,10 @@
       if (Math.abs(p.x + p.w / 2 - l.x) < 500) intro("laser");
       if (st === "on" && !l.wasOn && Math.abs(p.x - l.x) < 600) playSfx("switchOn", l.x);
       l.wasOn = st === "on";
-      if (st === "on" && p.x < l.x + 9 && p.x + p.w > l.x - 9 && p.y < l.bottom && p.y + p.h > l.top) hurt();
+      if (st === "on" && p.x < l.x + 9 && p.x + p.w > l.x - 9 && p.y < l.bottom && p.y + p.h > l.top) {
+        if (guarded("laser")) guardFx("laser");
+        else hurt();
+      }
     }
   }
 
@@ -453,7 +489,32 @@
     if (on(cfg, "current")) updateWind(dt, cfg, "current");
     if (on(cfg, "whirl")) updateWhirls(dt, cfg);
     if (on(cfg, "laser")) updateLasers();
-    if (on(cfg, "dark") && state.mode === "playing") intro("dark");
+    if (on(cfg, "dark")) updateDark(dt);
+  }
+
+  // ---------- まっ暗やみ ----------
+  function updateDark(dt) {
+    const p = state.player;
+    if (state.mode === "playing") intro("dark");
+    // 撃ったしゅんかん、光線銃のあかりがパッと広がる
+    const n = state.beams.filter(b => b.owner === "player").length;
+    if (n > S.beamN) S.flash = 1;
+    S.beamN = n;
+    S.flash = Math.max(0, S.flash - dt * 2.6);
+    // ふわぴかランタンの光る玉：ぴょんぴーの頭の上を、ぷかぷか ついてくる
+    const now = performance.now() / 1000;
+    const tx = p.x + p.w / 2 - (p.facing || 1) * 18 + Math.sin(now * 1.7) * 8;
+    const ty = p.y - 34 + Math.sin(now * 2.6) * 7;
+    if (!S.orb) S.orb = { x: tx, y: ty };
+    const k = 1 - Math.exp(-dt * 6);
+    S.orb.x += (tx - S.orb.x) * k;
+    S.orb.y += (ty - S.orb.y) * k;
+    // しばらく進んだら、ヤナビスがランタンのことを教える（ステージごとに1回）
+    if (state.mode === "playing") S.darkT += dt;
+    if (!S.hinted && S.darkT > 8 && !has("lantern") && typeof Chat !== "undefined") {
+      S.hinted = true;
+      Chat.say(Shop.owns("lantern") ? DARK_HINT.wear : DARK_HINT.buy, false);
+    }
   }
 
   // 世界の中（カメラの中）に描くもの
@@ -513,20 +574,151 @@
     ctx.restore();
   }
 
-  // まっ暗やみ（カメラの中で、ぴょんぴーのまわりだけ明るく）
+  // まっ暗やみ：ふだんは何も見えない。見えるのは
+  //   ・光線銃のほんのりしたあかり（撃つと一瞬広がる）・光る弾のまわり
+  //   ・雷が落ちるときのまわり・落ちてくるものと、その印
+  //   ・敵の光る目
+  //   ・ふわぴかランタンをつけていれば、頭の上の光る玉のまわり（広い）
   function drawDark() {
     const cfg = active();
     if (!cfg || owner !== state || !S || !on(cfg, "dark")) return;
+    const W = canvas.width;
+    const H = canvas.height;
+    darkCv ??= document.createElement("canvas");
+    if (darkCv.width !== W || darkCv.height !== H) { darkCv.width = W; darkCv.height = H; }
+    const d = darkCv.getContext("2d");
+    const T = ctx.getTransform();
+    d.setTransform(1, 0, 0, 1, 0, 0);
+    d.globalCompositeOperation = "source-over";
+    d.clearRect(0, 0, W, H);
+    d.fillStyle = "rgba(6, 2, 18, 0.985)";
+    d.fillRect(0, 0, W, H);
+    d.setTransform(T);
+    d.globalCompositeOperation = "destination-out";
+    const light = (x, y, r, a = 1) => {
+      const g = d.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, `rgba(0,0,0,${a})`);
+      g.addColorStop(0.5, `rgba(0,0,0,${a * 0.7})`);
+      g.addColorStop(1, "rgba(0,0,0,0)");
+      d.fillStyle = g;
+      d.beginPath();
+      d.arc(x, y, r, 0, Math.PI * 2);
+      d.fill();
+    };
+    const column = (x, top, bottom, w, a) => {
+      const g = d.createLinearGradient(x - w, 0, x + w, 0);
+      g.addColorStop(0, "rgba(0,0,0,0)");
+      g.addColorStop(0.5, `rgba(0,0,0,${a})`);
+      g.addColorStop(1, "rgba(0,0,0,0)");
+      d.fillStyle = g;
+      d.fillRect(x - w, top, w * 2, bottom - top);
+    };
     const p = state.player;
-    const sx = p.x + p.w / 2;
-    const sy = p.y + p.h / 2;
-    const r = Math.max(230, 400 - cfg.a * 22);
-    const g = ctx.createRadialGradient(sx, sy, r * 0.3, sx, sy, r);
-    g.addColorStop(0, "rgba(10, 4, 28, 0)");
-    g.addColorStop(1, "rgba(10, 4, 28, 0.93)");
+    const px = p.x + p.w / 2;
+    const py = p.y + p.h / 2;
+    const lantern = has("lantern");
+    if (lantern && S.orb) light(S.orb.x, S.orb.y + 40, Math.max(260, 440 - cfg.a * 22), 1);
+    // 光線銃のあかり（銃がないときは、ぴょんぴーがやっと見えるくらい）
+    const gun = hasEquippedWeapon();
+    light(px + (gun ? (p.facing || 1) * 16 : 0), py, (gun ? 105 : 58) + S.flash * 230, gun ? 0.85 : 0.55);
+    // 光る弾
+    let count = 0;
+    for (const b of state.beams) {
+      if (++count > 48) break;
+      light(b.x + b.w / 2, b.y + b.h / 2, b.bomb ? 150 : b.owner === "player" ? 80 : 60, 0.8);
+    }
+    // 雷：前ぶれでうすく、落ちたしゅんかんは まわりが大きく明るく
+    const top = viewTop() - 40;
+    for (const b of state.bolts ?? []) {
+      if (b.t < 0) continue;
+      if (b.t < BOLT_WARN) {
+        const k = b.t / BOLT_WARN;
+        column(b.x, top, b.landY, 40 + k * 50, 0.2 + k * 0.4);
+        light(b.x, b.landY, 60 + k * 70, 0.35 + k * 0.45);
+      } else {
+        const fade = b.t < BOLT_WARN + BOLT_STRIKE ? 1 : clamp(1 - (b.t - BOLT_WARN - BOLT_STRIKE) / 0.25, 0, 1);
+        column(b.x, top, b.landY, 380 * fade + 60, fade);
+        light(b.x, b.landY, 420 * fade + 60, fade);
+      }
+    }
+    // 落ちてくるもの（印と本体）
+    for (const f of S.fallers) {
+      if (f.landed) continue;
+      light(f.x, f.land, 75, 0.75);
+      if (f.t >= f.look.warn) { const pos = fallerPos(f); light(pos.x, pos.y, 110, 0.9); }
+    }
     ctx.save();
-    ctx.fillStyle = g;
-    ctx.fillRect(viewLeft() - 400, viewTop() - 400, viewW() + 800, canvas.height + 800);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(darkCv, 0, 0);
+    ctx.restore();
+    drawEnemyEyes();
+    if (lantern && S.orb) drawOrb(S.orb.x, S.orb.y);
+  }
+
+  // やみの中で光る、敵の目
+  function drawEnemyEyes() {
+    const now = performance.now() / 1000;
+    const left = viewLeft() - 100;
+    const right = viewLeft() + viewW() + 100;
+    ctx.save();
+    for (const e of state.enemies) {
+      if (!e.alive || e.tutorialHidden || e.x + e.w < left || e.x > right) continue;
+      // ときどき まばたき
+      if (Math.sin(now * 1.1 + (e.x % 97)) > 0.985) continue;
+      const f = e.facing ?? -1;
+      const ex = e.x + e.w / 2 + f * e.w * 0.16;
+      const ey = e.y + e.h * 0.34;
+      const gap = Math.max(7, e.w * 0.14);
+      const r = Math.max(3, Math.min(9, e.w * 0.055));
+      const col = e.boss ? "#ff3d5a" : "#ffe36a";
+      ctx.shadowColor = col;
+      ctx.shadowBlur = 16;
+      ctx.fillStyle = col;
+      for (const sx of [-1, 1]) {
+        ctx.beginPath();
+        ctx.ellipse(ex + sx * gap / 2, ey, r, r * 1.3, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = "#ffffff";
+      for (const sx of [-1, 1]) {
+        ctx.beginPath();
+        ctx.arc(ex + sx * gap / 2 + f * r * 0.3, ey - r * 0.3, r * 0.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+
+  // ふわぴかランタンの光る玉
+  function drawOrb(x, y) {
+    const now = performance.now() / 1000;
+    const pulse = 1 + Math.sin(now * 4) * 0.08;
+    ctx.save();
+    const halo = ctx.createRadialGradient(x, y, 0, x, y, 46 * pulse);
+    halo.addColorStop(0, "rgba(255, 247, 194, 0.85)");
+    halo.addColorStop(0.4, "rgba(255, 227, 106, 0.35)");
+    halo.addColorStop(1, "rgba(255, 227, 106, 0)");
+    ctx.fillStyle = halo;
+    ctx.beginPath();
+    ctx.arc(x, y, 46 * pulse, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowColor = "#fff3a4";
+    ctx.shadowBlur = 20;
+    ctx.fillStyle = "#fffbe0";
+    ctx.beginPath();
+    ctx.arc(x, y, 13 * pulse, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    // きらきら
+    ctx.fillStyle = "#ffffff";
+    for (let i = 0; i < 3; i++) {
+      const a = now * 2 + i * 2.1;
+      ctx.globalAlpha = 0.5 + Math.sin(now * 6 + i) * 0.4;
+      ctx.beginPath();
+      ctx.arc(x + Math.cos(a) * 24, y + Math.sin(a) * 18, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
   }
 

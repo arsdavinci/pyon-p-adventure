@@ -22,7 +22,7 @@ const scoreCount = document.querySelector("#scoreCount");
 const lifeCount = document.querySelector("#lifeCount");
 const timeCount = document.querySelector("#timeCount");
 // ゲームのバージョン（更新するたびに1つ上げる。sw.js の CACHE_NAME の番号と同じにする）
-const GAME_VERSION = 230;
+const GAME_VERSION = 231;
 { const v = document.querySelector("#gameVersion"); if (v) v.textContent = `Ver. ${GAME_VERSION}`; }
 const stageCount = document.querySelector("#stageCount");
 const stageLabelEl = document.querySelector("#stageLabel");
@@ -12281,7 +12281,30 @@ const GEAR_TIPS = {
   rod: [["pyon", "ひらいしん、持ったじょ！ 雷なんか、こわないけん。", "Lightning Rod ready! Thunder doesn't scare me."],
     ["yana", "ひらいしんがあると、雷が当たらなくなります。", "With the lightning rod, lightning won't hit you."]],
   kingCape: [["pyon", "王さまのマント、はおったじょ！ 吾輩、王さまの気分じゃ！", "Royal Cape on! I feel like a king!"],
-    ["yana", "王さまのマントですね。受けるダメージが、半分になります。", "The Royal Cape halves the damage you take."]]
+    ["yana", "王さまのマントですね。受けるダメージが、半分になります。", "The Royal Cape halves the damage you take."]],
+  // ステージのしかけに対抗する道具（声はまだ）
+  starParasol: [["pyon", "ながれぼしパラソル、さしたじょ！ 星がふっても へっちゃらじゃ。", "Meteor Parasol up! Falling stars don't bother me."],
+    ["yana", "ながれぼしパラソルがあると、流れ星が当たらなくなります。", "With the Meteor Parasol, shooting stars can't hit you."]],
+  heavyPack: [["pyon", "ずっしりリュック、せおったじょ！ おもたいけど、ふんばれるけん。", "Heavy Backpack on! Heavy, but I can hold my ground."],
+    ["yana", "ずっしりリュックがあると、砂あらしに押されなくなります。", "With the Heavy Backpack, sandstorms can't push you."]],
+  magmaBrella: [["pyon", "マグマがさ、さしたじょ！ 火山弾なんか、はじいちゃる。", "Magma Umbrella up! I'll bounce those bombs away."],
+    ["yana", "マグマがさがあると、火山弾が当たらなくなります。", "With the Magma Umbrella, volcanic bombs can't hit you."]],
+  icicleHat: [["pyon", "つららよけぼうし、かぶったじょ！ 上からきても だいじょうぶじゃ。", "Icicle Hat on! Bring on the icicles."],
+    ["yana", "つららよけぼうしがあると、つららが当たらなくなります。", "With the Icicle Hat, icicles can't hit you."]],
+  furCoat: [["pyon", "もこもこコート、着たじょ！ ぬくぬくで、ふぶきもへっちゃらじゃ。", "Fluffy Coat on! Nice and warm, blizzards are nothing."],
+    ["yana", "もこもこコートがあると、ふぶきに押されなくなります。", "With the Fluffy Coat, blizzards can't push you."]],
+  anchor: [["pyon", "いかりのおもり、つけたじょ！ 流されんけんな。", "Anchor Weight on! I won't get swept away."],
+    ["yana", "いかりのおもりがあると、海流に流されなくなります。", "With the Anchor Weight, currents can't sweep you away."]],
+  floatRing: [["pyon", "うずしおうきわ、はめたじょ！ ぐるぐるせんですむわ。", "Whirlpool Float on! No more spinning."],
+    ["yana", "うずしおうきわがあると、うずしおに すいこまれなくなります。", "With the Whirlpool Float, whirlpools can't pull you in."]],
+  springHat: [["pyon", "ばねぼうし、かぶったじょ！ 荷物も ぼよーんじゃ！", "Spring Hat on! Cargo goes boing!"],
+    ["yana", "ばねぼうしがあると、落ちてくる荷物を はね返せます。", "With the Spring Hat, falling cargo bounces off you."]],
+  mirror: [["pyon", "はんしゃミラー、持ったじょ！ レーザーも はね返すけん。", "Reflect Mirror ready! Lasers bounce right off."],
+    ["yana", "はんしゃミラーがあると、レーザーゲートが当たらなくなります。", "With the Reflect Mirror, laser gates can't hurt you."]],
+  lantern: [["pyon", "ふわぴかランタン、つけたじょ！ まっ暗でも、よう見えるわ。", "Floaty Glow Lantern on! Now I can see in the dark."],
+    ["yana", "ふわぴかランタンがあると、まっ暗やみでも、まわりを明るくてらしてくれます。", "The Floaty Glow Lantern lights up the area around you in the dark."]],
+  darkCharm: [["pyon", "やみよけおまもり、つけたじょ！ やみの流れ星も こわないけん。", "Dark Ward Charm on! Dark meteors don't scare me."],
+    ["yana", "やみよけおまもりがあると、やみの流れ星が当たらなくなります。", "With the Dark Ward Charm, dark meteors can't hit you."]]
 };
 
 // ヤナビスの説明の予約（ステージが入れかわっても消えないように、state の外に持つ）
