@@ -22,7 +22,7 @@ const scoreCount = document.querySelector("#scoreCount");
 const lifeCount = document.querySelector("#lifeCount");
 const timeCount = document.querySelector("#timeCount");
 // ゲームのバージョン（更新するたびに1つ上げる。sw.js の CACHE_NAME の番号と同じにする）
-const GAME_VERSION = 219;
+const GAME_VERSION = 220;
 { const v = document.querySelector("#gameVersion"); if (v) v.textContent = `Ver. ${GAME_VERSION}`; }
 const stageCount = document.querySelector("#stageCount");
 const stageLabelEl = document.querySelector("#stageLabel");
@@ -8412,9 +8412,10 @@ function takeStarSubstitute(s, alt) {
   if (alt === "manju") stashBudouManju({ x: s.x, y: s.y, w: 0, h: 0 });
   else if (alt === "bomb") {
     Story.data.bombStock = Math.min(BOMB_MAX, bombStock() + 1);
+    Story.data.bombOn = true; // ひろった爆弾は、すぐ使えるように装備する（どうぐタブに入る）
     Story.persist();
     playSfx("equip", s.x);
-    FX.floater(s.x, s.y - 30, language === "ja" ? "ネコネオン爆弾 ゲット！" : "Bomb get!", { color: "#ffffff", stroke: "#ff5fc8", size: 22, life: 1.4 });
+    FX.floater(s.x, s.y - 30, language === "ja" ? "ネコネオン爆弾 ゲット！ どうぐに入れたじょ（Xで投げる）" : "Bomb get! In your gear (X to throw)", { color: "#ffffff", stroke: "#ff5fc8", size: 22, life: 1.4 });
   } else {
     state.kakiTotal += 15;
     state.coinTotal += 15;
