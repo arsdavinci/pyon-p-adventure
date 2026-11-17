@@ -345,7 +345,7 @@
       movie = null;
       if (state.mode === "movie") state.mode = prev;
       lastTime = performance.now();
-      if (onEnd) onEnd();
+      if (onEnd) onEnd(started); // started = 動画が流れたか（ファイルがなければ false）
     };
     // 読みこみに時間がかかっても待つ（スマホの回線でも流れるように）
     const timer = setTimeout(() => { if (!started) finish(); }, 12000);

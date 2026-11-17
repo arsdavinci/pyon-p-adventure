@@ -22,7 +22,7 @@ const scoreCount = document.querySelector("#scoreCount");
 const lifeCount = document.querySelector("#lifeCount");
 const timeCount = document.querySelector("#timeCount");
 // ゲームのバージョン（更新するたびに1つ上げる。sw.js の CACHE_NAME の番号と同じにする）
-const GAME_VERSION = 221;
+const GAME_VERSION = 222;
 { const v = document.querySelector("#gameVersion"); if (v) v.textContent = `Ver. ${GAME_VERSION}`; }
 const stageCount = document.querySelector("#stageCount");
 const stageLabelEl = document.querySelector("#stageLabel");
@@ -4701,7 +4701,13 @@ function updateBossDeath(dt) {
     boss.downT = 1;
     state.bossDeathBoss = null;
     // ボスごとの「たおしたあと」ムービー（assets/video/bossdownN.mp4）があれば流してから、会話へ
-    Story.playMovie(`bossdown${boss.bossKind ?? 0}`, () => startBossOutro(boss));
+    // 動画が流れたときは、動画の中で会話がすむので、そのまま次へ（ステージクリア）。なければ今までどおり会話
+    Story.playMovie(`bossdown${boss.bossKind ?? 0}`, played => {
+      if (played) {
+        state.bossOutroKind = boss.bossKind ?? 0;
+        completeBossStageAfterOutro();
+      } else startBossOutro(boss);
+    });
   }
 }
 
