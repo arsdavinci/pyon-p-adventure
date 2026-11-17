@@ -22,7 +22,7 @@ const scoreCount = document.querySelector("#scoreCount");
 const lifeCount = document.querySelector("#lifeCount");
 const timeCount = document.querySelector("#timeCount");
 // ゲームのバージョン（更新するたびに1つ上げる。sw.js の CACHE_NAME の番号と同じにする）
-const GAME_VERSION = 218;
+const GAME_VERSION = 219;
 { const v = document.querySelector("#gameVersion"); if (v) v.textContent = `Ver. ${GAME_VERSION}`; }
 const stageCount = document.querySelector("#stageCount");
 const stageLabelEl = document.querySelector("#stageLabel");
@@ -4305,7 +4305,9 @@ function bossStartAction(e) {
       // ぴょんぴーの いる所と、にげそうな所に、天井までとどく火柱
       const lead = clamp(p.vx * 0.5, -180, 180);
       const xs = st >= 2 ? [pcx, pcx + lead + 150 * Math.sign(lead || 1), pcx - 150 * Math.sign(lead || 1)] : st >= 1 ? [pcx, pcx + lead + 140 * Math.sign(lead || 1)] : [pcx];
-      xs.forEach((x, i) => state.bossHazards.push({ type: "eruption", x: clamp(x, a.left + 60, a.right - 60), y: 492, w: 78, h: LAVA_PILLAR_H, telegraph: 0.8 + i * 0.18, active: 0, life: 0.8 + i * 0.18 + 0.75, owner: e.id }));
+      // ボスごとに、その星らしい柱にする（月あめ・溶岩・つらら・電気・やみ）
+      const look = ["candy", "lava", "ice", "lava", "spark", "dark"][e.bossKind ?? 0] ?? "lava";
+      xs.forEach((x, i) => state.bossHazards.push({ type: "eruption", look, x: clamp(x, a.left + 60, a.right - 60), y: 492, w: 78, h: LAVA_PILLAR_H, telegraph: 0.8 + i * 0.18, active: 0, life: 0.8 + i * 0.18 + 0.75, owner: e.id }));
       hold(1.1);
       break;
     }
@@ -6130,6 +6132,7 @@ function fireBossPattern(boss, pattern) {
     const side = i - (pattern.count - 1) / 2;
     state.bossHazards.push({
       type: "eruption",
+      look: ["candy", "lava", "ice", "lava", "spark", "dark"][boss.bossKind ?? 0] ?? "lava",
       x: clamp(pattern.targetX + side * spacing, boss.left + 80, boss.right - 80),
       y: 492,
       w: 72,
@@ -6151,12 +6154,12 @@ function updateBossHazards(dt) {
       continue;
     }
     h.life -= dt;
-    if (h.type === "eruption" && !h.rumbled) { h.rumbled = true; playSfx("lavaRumble", h.x); }
+    if (h.type === "eruption" && !h.rumbled) { h.rumbled = true; playSfx(h.look === "ice" ? "iceCrack" : h.look === "spark" ? "boltWarn" : "lavaRumble", h.x); }
     if (h.telegraph > 0) {
       h.telegraph -= dt;
       if (h.telegraph <= 0) {
         h.active = h.type === "eruption" ? 0.55 : h.type === "laser" ? h.hold : 1;
-        if (h.type === "eruption") { playSfx("lavaBurst", h.x); FX.shake(0.12); }
+        if (h.type === "eruption") { playSfx(h.look === "ice" ? "iceSpike" : h.look === "spark" ? "thunder" : "lavaBurst", h.x); FX.shake(0.12); }
         if (h.type === "laser") {
           playSfx("laser", state.player.x);
           FX.shake(0.15);
@@ -6187,6 +6190,73 @@ function updateBossHazards(dt) {
 
 // ボス戦の火柱の高さ：床から天井まで（上の足場にのっていても当たる。前ぶれを見てよける）
 const LAVA_PILLAR_H = 760;
+
+// ボスごとの柱の絵：つらら（下から氷のトゲ）・月あめ（しましま）・電気（ジグザグの光）・やみ（むらさきの炎）
+function drawThemedPillar(h, x, y) {
+  const t = performance.now() / 1000;
+  const H = h.h;
+  ctx.save();
+  if (h.look === "ice") {
+    // 下から つき上がる、つららの柱
+    const n = Math.ceil(H / 70);
+    for (let i = 0; i < n; i++) {
+      const by = y + H - i * 70;
+      const g = ctx.createLinearGradient(x, by - 90, x + h.w, by);
+      g.addColorStop(0, "#ffffff");
+      g.addColorStop(0.5, "#9ee8ff");
+      g.addColorStop(1, "#4fb6e8");
+      ctx.fillStyle = g;
+      ctx.strokeStyle = "#e8fbff";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x + 4, by);
+      ctx.lineTo(x + h.w / 2 + Math.sin(i * 1.7) * 10, by - 96);
+      ctx.lineTo(x + h.w - 4, by);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
+  } else if (h.look === "candy") {
+    ctx.fillStyle = "#ffd1ed";
+    ctx.fillRect(x, y, h.w, H);
+    ctx.fillStyle = "#ff8db7";
+    for (let k = -2; k < H / 40 + 2; k++) {
+      const yy = y + k * 40 + (t * 120) % 40;
+      ctx.beginPath();
+      ctx.moveTo(x, yy);
+      ctx.lineTo(x + h.w, yy - 22);
+      ctx.lineTo(x + h.w, yy - 6);
+      ctx.lineTo(x, yy + 16);
+      ctx.fill();
+    }
+  } else if (h.look === "spark") {
+    ctx.globalAlpha = 0.85;
+    ctx.fillStyle = "rgba(255, 243, 164, 0.35)";
+    ctx.fillRect(x, y, h.w, H);
+    ctx.strokeStyle = "#fff3a4";
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    for (let yy = 0; yy <= H; yy += 30) ctx.lineTo(x + h.w / 2 + Math.sin(yy * 0.3 + t * 40) * 16, y + yy);
+    ctx.stroke();
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  } else {
+    const g = ctx.createLinearGradient(x, 0, x + h.w, 0);
+    g.addColorStop(0, "rgba(118, 70, 200, 0)");
+    g.addColorStop(0.5, "rgba(169, 118, 255, 0.92)");
+    g.addColorStop(1, "rgba(118, 70, 200, 0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(x - 8, y, h.w + 16, H);
+    ctx.fillStyle = "rgba(255, 209, 237, 0.8)";
+    for (let i = 0; i < 6; i++) {
+      ctx.beginPath();
+      ctx.arc(x + h.w / 2 + Math.sin(t * 5 + i) * 18, y + ((t * 300 + i * 120) % H), 7, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
 
 function eruptionBaseY() {
   return isUnderwaterStage() ? worldBottom() : GROUND_Y + 48;
@@ -6429,7 +6499,7 @@ function unlockAudio() {
 
 // 効果音ごとの音量の上乗せ（playSfx の中だけ 1 以外になる）
 let sfxBoost = 1;
-const SFX_BOOST = { lavaBurst: 2.2, swoop: 1.8, o2Beep: 2, bonk: 2, sizzle: 2, lavaRumble: 2, lavaErupt: 2, rockWhistle: 1.8, rockThud: 2, boltWarn: 2, thunder: 2, cartGo: 2, pickup: 3.2, break: 2.4, snackStar: 2, keyGet: 2.2, unlock: 2.2, powerUp: 1.8, spring: 2.2, enemyDefeat: 2.2, stompBoost: 2, respawn: 1.8, chest: 2, laser: 3, enemyHit: 3, equipSet: 2.6, equip: 3, switchOn: 2.4, switchOff: 2.4, barrierBreak: 2, doorEnter: 2.2, goalFanfare: 2, spikePoke: 2, piyo: 2, pyonLand: 1.6, dash: 1.8, fallWhistle: 2, combo: 2, stolen: 2, bubble: 2, timeWarn: 2, tick: 2, pyonJump: 2, pyonJump2: 2 };
+const SFX_BOOST = { iceCrack: 2, iceSpike: 2, lavaBurst: 2.2, swoop: 1.8, o2Beep: 2, bonk: 2, sizzle: 2, lavaRumble: 2, lavaErupt: 2, rockWhistle: 1.8, rockThud: 2, boltWarn: 2, thunder: 2, cartGo: 2, pickup: 3.2, break: 2.4, snackStar: 2, keyGet: 2.2, unlock: 2.2, powerUp: 1.8, spring: 2.2, enemyDefeat: 2.2, stompBoost: 2, respawn: 1.8, chest: 2, laser: 3, enemyHit: 3, equipSet: 2.6, equip: 3, switchOn: 2.4, switchOff: 2.4, barrierBreak: 2, doorEnter: 2.2, goalFanfare: 2, spikePoke: 2, piyo: 2, pyonLand: 1.6, dash: 1.8, fallWhistle: 2, combo: 2, stolen: 2, bubble: 2, timeWarn: 2, tick: 2, pyonJump: 2, pyonJump2: 2 };
 
 function playTone({ start = 0, freq = 440, endFreq = freq, duration = 0.12, type = "sine", gain = 0.08, pan = 0 }) {
   const ctxAudio = getAudioContext();
@@ -6684,6 +6754,15 @@ function playSfxInner(name, x) {
     playTone({ start: 0.1, freq: 1760, endFreq: 1760, duration: 0.06, type: "square", gain: 0.04, pan: 0 });
   } else if (name === "tick") {
     playTone({ freq: 1320, endFreq: 1320, duration: 0.03, type: "square", gain: 0.03, pan: 0 });
+  } else if (name === "iceCrack") {
+    // 氷にひびが入る：「ピキピキッ」
+    for (let i = 0; i < 4; i++) playTone({ start: i * 0.08, freq: 2400 + i * 300, endFreq: 1800, duration: 0.04, type: "square", gain: 0.04, pan });
+    playNoise({ duration: 0.3, gain: 0.04, filter: 6500 });
+  } else if (name === "iceSpike") {
+    // つららが つき上がる：「ジャキーン！」
+    playNoise({ duration: 0.18, gain: 0.12, filter: 7000 });
+    playTone({ freq: 1200, endFreq: 2600, duration: 0.14, type: "triangle", gain: 0.08, pan });
+    playTone({ start: 0.08, freq: 2637, endFreq: 2637, duration: 0.25, type: "sine", gain: 0.05, pan });
   } else if (name === "lavaBurst") {
     // 火柱がふき上がる：「ブワーッ！」
     playNoise({ duration: 0.6, gain: 0.14, filter: 1400 });
@@ -10044,6 +10123,7 @@ function drawBossHazards() {
       const x = h.x - h.w / 2;
       const baseY = eruptionBaseY();
       const y = baseY - h.h;
+      if (h.look && h.look !== "lava" && !warning) { drawThemedPillar(h, x, y); continue; }
       const pillarArt = warning ? null : artImage("hazard-lava-pillar");
       if (pillarArt) {
         ctx.globalAlpha = 0.95;
