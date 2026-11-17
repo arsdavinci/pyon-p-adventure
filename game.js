@@ -22,7 +22,7 @@ const scoreCount = document.querySelector("#scoreCount");
 const lifeCount = document.querySelector("#lifeCount");
 const timeCount = document.querySelector("#timeCount");
 // ゲームのバージョン（更新するたびに1つ上げる。sw.js の CACHE_NAME の番号と同じにする）
-const GAME_VERSION = 213;
+const GAME_VERSION = 214;
 { const v = document.querySelector("#gameVersion"); if (v) v.textContent = `Ver. ${GAME_VERSION}`; }
 const stageCount = document.querySelector("#stageCount");
 const stageLabelEl = document.querySelector("#stageLabel");
@@ -8285,6 +8285,38 @@ function collectCoins() {
   }
 }
 
+// ライフが満タンのときの★のかわり（★ごとに1回だけランダムで決める）。★を取った数には、そのまま数える
+const STAR_SUBSTITUTES = ["coins", "manju", "bomb"];
+function starSubstitute(s) {
+  if (state.lives < MAX_LIVES) return null;
+  if (!s.alt) s.alt = STAR_SUBSTITUTES[Math.floor(Math.random() * STAR_SUBSTITUTES.length)];
+  return s.alt;
+}
+
+function drawStarSubstitute(x, y, alt) {
+  ctx.save();
+  if (alt === "manju" && budouManjuImage.complete && budouManjuImage.naturalWidth) ctx.drawImage(budouManjuImage, x - 22, y - 22, 44, 44);
+  else if (alt === "bomb" && typeof Shop !== "undefined") Shop.drawItem("bomb", x, y, 42);
+  else for (let i = 0; i < 3; i++) drawKakipi(x - 14 + i * 14, y + (i % 2 ? -8 : 4), "kaki");
+  ctx.restore();
+}
+
+function takeStarSubstitute(s, alt) {
+  if (alt === "manju") stashBudouManju({ x: s.x, y: s.y, w: 0, h: 0 });
+  else if (alt === "bomb") {
+    Story.data.bombStock = Math.min(BOMB_MAX, bombStock() + 1);
+    Story.persist();
+    playSfx("equip", s.x);
+    FX.floater(s.x, s.y - 30, language === "ja" ? "ネコネオン爆弾 ゲット！" : "Bomb get!", { color: "#ffffff", stroke: "#ff5fc8", size: 22, life: 1.4 });
+  } else {
+    state.kakiTotal += 15;
+    state.coinTotal += 15;
+    playSfx("pickup", s.x);
+    FX.floater(s.x, s.y - 30, language === "ja" ? "ルナコイン ×15！" : "Luna Coins x15!", { color: "#fff3a4", stroke: "#d98a2b", size: 22, life: 1.4 });
+  }
+  FX.starGet(s.x, s.y);
+}
+
 function collectStarItems() {
   const p = state.player;
   for (const s of state.starItems) {
@@ -8294,6 +8326,8 @@ function collectStarItems() {
     if (nearX && nearY) {
       s.taken = true;
       state.score += 50;
+      const alt = starSubstitute(s);
+      if (alt) { takeStarSubstitute(s, alt); continue; }
       state.lives = Math.min(MAX_LIVES, state.lives + 1);
       playSfx("snackStar", s.x);
       spawnStarBurst(s.x, s.y);
@@ -13489,7 +13523,7 @@ function drawCoins(t) {
   for (const s of state.starItems) {
     if (s.taken) continue;
     const y = s.y + Math.sin(t * 5.6 + s.bob) * 5;
-    drawCollectibleStar(s.x, y, s.r);
+    drawCollectibleStar(s.x, y, s.r, starSubstitute(s));
   }
   for (const o of state.oxygenItems ?? []) {
     if (o.taken) continue;
@@ -13524,7 +13558,23 @@ function drawOxygenBubble(x, y, r) {
   ctx.restore();
 }
 
-function drawCollectibleStar(x, y, r) {
+function drawCollectibleStar(x, y, r, alt = null) {
+  // ライフが満タンのときは、★のかわりの アイテムを見せる
+  if (alt) { drawStarSubstitute(x, y, alt); return; }
+  const lifeArt = artImage("item-life-star");
+  if (lifeArt) {
+    ctx.save();
+    const glow = ctx.createRadialGradient(x, y, 2, x, y, r * 2);
+    glow.addColorStop(0, "rgba(255, 255, 255, 0.7)");
+    glow.addColorStop(1, "rgba(255, 216, 90, 0)");
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(x, y, r * 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.drawImage(lifeArt, x - r * 1.5, y - r * 1.5, r * 3, r * 3);
+    ctx.restore();
+    return;
+  }
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(performance.now() / 360);
