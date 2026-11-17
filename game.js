@@ -22,7 +22,7 @@ const scoreCount = document.querySelector("#scoreCount");
 const lifeCount = document.querySelector("#lifeCount");
 const timeCount = document.querySelector("#timeCount");
 // ゲームのバージョン（更新するたびに1つ上げる。sw.js の CACHE_NAME の番号と同じにする）
-const GAME_VERSION = 226;
+const GAME_VERSION = 227;
 { const v = document.querySelector("#gameVersion"); if (v) v.textContent = `Ver. ${GAME_VERSION}`; }
 const stageCount = document.querySelector("#stageCount");
 const stageLabelEl = document.querySelector("#stageLabel");
@@ -8795,11 +8795,40 @@ function endGame(title, label, message = null, options = {}) {
   startButton.textContent = gameOverContinueAvailable ? (language === "ja" ? "このステージから復活" : "Continue") : (language === "ja" ? "マップにもどる" : "Back to Map");
   overlay.classList.remove("hidden");
   Story.refreshTitleUi();
+  setupGameOverButtons();
   if (window.Bgm) {
     Bgm.stop(0.2);
     Bgm.jingle("gameOver");
   }
   Chat.event("gameOver");
+}
+
+// ゲームオーバーの画面は「このステージから / マップにもどる / タイトルにもどる」の3つ（十字キーでえらべる）
+function setupGameOverButtons() {
+  const ja = language === "ja";
+  const stageBtn = document.querySelector("#newGameButton");
+  const settingsBtn = document.querySelector("#settingsButton");
+  if (stageBtn) {
+    stageBtn.textContent = ja ? `${stageLabel()} の最初から` : `Retry ${stageLabel()}`;
+    stageBtn.classList.toggle("hidden", !gameOverContinueAvailable);
+    delete stageBtn.dataset.armed;
+  }
+  startButton.textContent = ja ? "マップにもどる" : "Back to Map";
+  if (settingsBtn) settingsBtn.textContent = ja ? "タイトルにもどる" : "Back to Title";
+  titleFocusIndex = 0;
+  syncTitleFocus();
+}
+
+function gameOverToTitle() {
+  if (FX.transitioning()) return;
+  playSfx("decide");
+  if (typeof Voice !== "undefined") Voice.stop();
+  FX.startTransition({ type: "fade", dur: 0.6, onMid: () => {
+    gameOverContinueAvailable = false;
+    gameOverContinueCost = 0;
+    Story.returnToTitle();
+    lastTime = performance.now();
+  } });
 }
 
 function kakipiRank() {
@@ -15484,8 +15513,8 @@ function updateGamepad() {
   } else if (!overlay.classList.contains("hidden")) {
     const anyStartPressed = jumpPressed || shootPressed || runPressed || startPressed || selectPressed;
     const anyStartLatched = gamepadState.jumpLatch || gamepadState.shootLatch || gamepadState.runLatch || gamepadState.startLatch || gamepadState.selectLatch;
-    if (state.mode === "title" && gamepadState.up && !gamepadState.upLatch) moveTitleFocus(-1);
-    if (state.mode === "title" && gamepadState.down && !gamepadState.downLatch) moveTitleFocus(1);
+    if ((state.mode === "title" || state.mode === "ended") && gamepadState.up && !gamepadState.upLatch) moveTitleFocus(-1);
+    if ((state.mode === "title" || state.mode === "ended") && gamepadState.down && !gamepadState.downLatch) moveTitleFocus(1);
     if (anyStartPressed && !anyStartLatched) confirmOverlay();
     gamepadState.leftLatch = gamepadState.left;
     gamepadState.rightLatch = gamepadState.right;
@@ -15671,7 +15700,7 @@ function handleKeyDown(code, event = { repeat: false }) {
     handleInventoryKeyboardFocus(code, event.repeat);
     return;
   }
-  if (!overlay.classList.contains("hidden") && state.mode === "title" && !event.repeat) {
+  if (!overlay.classList.contains("hidden") && (state.mode === "title" || state.mode === "ended") && !event.repeat) {
     if (code === "ArrowUp" || code === "KeyW") return moveTitleFocus(-1);
     if (code === "ArrowDown" || code === "KeyS") return moveTitleFocus(1);
     if (["KeyX", "KeyY", "KeyJ"].includes(code)) return confirmOverlay();
@@ -15693,6 +15722,7 @@ function titleMenuButtons() {
 
 function syncTitleFocus() {
   const buttons = titleMenuButtons();
+  if (state?.mode === "ended" && (titleFocusIndex < 0 || titleFocusIndex >= buttons.length)) titleFocusIndex = 0;
   if (titleFocusIndex < 0 || titleFocusIndex >= buttons.length) {
     // 読みこめるものがあれば「つづきから」、なければ「はじめから」を選んでおく
     const canLoad = readSaveSlots().some(Boolean) || Story.hasSave();
@@ -15710,14 +15740,13 @@ function moveTitleFocus(dir) {
   const next = clamp(titleFocusIndex + dir, 0, buttons.length - 1);
   if (next === titleFocusIndex) return;
   titleFocusIndex = next;
-  Story.refreshTitleUi(); // 「セーブを消してはじめる？」の確認を取り消す
+  if (state.mode === "title") Story.refreshTitleUi(); // 「セーブを消してはじめる？」の確認を取り消す
   syncTitleFocus();
   playSfx("cursor");
 }
 
 function confirmOverlay() {
-  if (state?.mode === "ended" && gameOverContinueAvailable) continueFromGameOver();
-  else if (state?.mode === "title" && !pendingCourseStart) {
+  if (state?.mode === "ended" || (state?.mode === "title" && !pendingCourseStart)) {
     syncTitleFocus();
     (titleMenuButtons()[titleFocusIndex] ?? startButton).click();
   } else pendingCourseStart ? startCurrentCourse() : startGame();
@@ -15747,7 +15776,7 @@ document.addEventListener("visibilitychange", () => {
 });
 startButton.addEventListener("click", () => {
   unlockAudio();
-  if (state?.mode === "ended" && gameOverContinueAvailable) continueFromGameOver();
+  if (state?.mode === "ended") startGame(); // ゲームオーバー：マップにもどる
   else pendingCourseStart ? startCurrentCourse() : startGame();
 });
 
@@ -16450,12 +16479,17 @@ if (debugParams.get("stage") === "final") {
 document.querySelector("#newGameButton")?.addEventListener("click", event => {
   event.stopPropagation();
   unlockAudio();
+  if (state?.mode === "ended") {
+    if (gameOverContinueAvailable) continueFromGameOver(); // このステージの最初から
+    return;
+  }
   // セーブファイル（3つ）は消さずに、そのまま最初からはじめる。ファイルを消したいときはセーブ画面の X で
   startGame(true);
 });
 document.querySelector("#settingsButton")?.addEventListener("click", event => {
   event.stopPropagation();
   unlockAudio();
+  if (state?.mode === "ended") return gameOverToTitle();
   openSettingsMenu();
 });
 // 画面の右上の「♪ ON / OFF」（ゲーム中でも、いつでも切りかえられる）
