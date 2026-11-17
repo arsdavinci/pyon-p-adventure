@@ -84,7 +84,9 @@ const RIDE_ARMOR = 0.3;
 const ENEMY_HP_BY_WORLD = [3, 4, 6, 8, 10, 12];
 const FLYER_HP_BY_WORLD = [2, 3, 4, 5, 6, 8];
 // ピンチのとき（HP 2 以下か、のこりライフ 1）は、たおした敵がライフの星を落としやすい
-const PITY_STAR_CHANCE = 0.14;
+const PITY_STAR_CHANCE = 0.05; // 大人でも手ごたえがあるように、少なめ（前は 0.14）
+// ライフの星のブロックから、ほんとうに星が出る確率（ほかはルナコイン）。1-1 はいつも出る
+const HP_BLOCK_STAR_CHANCE = 0.35;
 const STOMP_BOUNCE_VY = -540;
 const BOSS_STOMP_BOUNCE_VY = -700;
 const STOMP_BOOST_VY = -1040;
@@ -7592,6 +7594,13 @@ function spawnBlockContents(block, k) {
     // 武器ブロックの半分は、ルナコインがはじける（武器は出にくい）
     for (let i = 0; i < 4; i++) {
       const c = coin(block.x + block.w / 2 + (i - 1.5) * 34 + k * 20, block.y - 40 - (i % 2) * 24 - k * 40, i % 2 ? "pea" : "kaki");
+      state.coinItems.push({ ...c, taken: false });
+    }
+    return;
+  }
+  if (block.item === "hp" && currentCourse !== 0 && Math.random() >= HP_BLOCK_STAR_CHANCE) {
+    for (let i = 0; i < 3; i++) {
+      const c = coin(block.x + block.w / 2 + (i - 1) * 34 + k * 20, block.y - 40 - (i % 2) * 24 - k * 40, "kaki");
       state.coinItems.push({ ...c, taken: false });
     }
     return;
