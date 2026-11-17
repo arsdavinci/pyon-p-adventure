@@ -381,7 +381,7 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
   }
 
   // くり返し起きる場面の「言う確率」（1-1 と、ゲームではじめてのときは かならず言う）
-  const REPEAT_RATE = { combo: 0.1, starGet: 0.1, keyGet: 0.2, respawn: 0.15, stageClear: 0.3, hurt: 0.15, death: 0.3, stolen: 0.25, stompBoost: 0.1, switchUsed: 0.1, chestOpen: 0.3, doorOpen: 0.3, fuse: 0.2, weaponGet: 0.3, idle: 0.5 };
+  const REPEAT_RATE = { combo: 0.1, starGet: 0.1, keyGet: 0.2, respawn: 0.15, stageClear: 0.3, hurt: 0.15, death: 0.3, stolen: 0.25, stompBoost: 0.1, switchUsed: 0.1, chestOpen: 0.3, doorOpen: 0.3, fuse: 0.1, weaponGet: 0.3, idle: 0.5 };
 
   const URGENT = { stageStart: 1, map: 1, gameOver: 1, bossHalf: 1, stolen: 1, canFuse: 1, fallPit: 1, death: 1, timeUp: 1 };
 
