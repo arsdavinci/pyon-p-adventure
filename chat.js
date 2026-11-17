@@ -248,12 +248,15 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
         ];
       }
       // 「ピヨっとる」は 1ステージに1回だけ。言うときは、ほかの話を切って、その瞬間に言う
+      // 「ふむだけじゃ倒れんの…」は、ゲーム全体で 1-4 の1回だけ
+      if (typeof stageLabel === "function" && stageLabel() === "1-4" && firstTime("tipStompGrumble")) {
+        const grumble = [["pyon", "ふむだけじゃ倒れんの、まだ納得しとらんけんな。", "For the record, I'm still not over the stomp-doesn't-KO thing."]];
+        grumble.urgent = true;
+        return grumble;
+      }
       if (flags.dizzySaid || Math.random() >= 0.5) return null;
       flags.dizzySaid = true;
-      const line = [pick([
-        ["pyon", "ピヨっとるピヨっとる。今のうちじゃ！", "Dizzy, dizzy. Now's my chance!"],
-        ["pyon", "ふむだけじゃ倒れんの、まだ納得しとらんけんな。", "For the record, I'm still not over the stomp-doesn't-KO thing."]
-      ])];
+      const line = [["pyon", "ピヨっとるピヨっとる。今のうちじゃ！", "Dizzy, dizzy. Now's my chance!"]];
       line.urgent = true;
       return line;
     },
