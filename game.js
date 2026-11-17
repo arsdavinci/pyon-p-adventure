@@ -1216,6 +1216,20 @@ function makeCourse(worldIndex, areaIndex, layout = areaIndex, seed = null) {
   }));
 }
 
+// 足場の中にうまってしまったコインは、その足場の上に出す（取れないコインが出ないように）
+// up=false：天井にうまったとき用に、足場の下へ出す（ブロックからはじけたコイン）
+function unburyCoin(c, up = true) {
+  const solids = (courses[currentCourse]?.platforms ?? []).concat((courses[currentCourse]?.level?.blocks ?? []).filter(b => !b.breakable && b.phase === undefined));
+  const r = c.r ?? 14;
+  let out = c;
+  for (let guard = 0; guard < 4; guard++) {
+    const inside = solids.find(p => out.x + r > p.x && out.x - r < p.x + p.w && out.y + r > p.y && out.y - r < p.y + p.h);
+    if (!inside) break;
+    out = { ...out, y: up ? inside.y - r - 16 : inside.y + inside.h + r + 8 };
+  }
+  return out;
+}
+
 // 足場とかさなったコイン・敵はとりのぞく（あとから足した空のルートとぶつかったとき）
 function clearStuckThings(course) {
   const solid = pt => course.platforms.some(p => pt.x > p.x + 2 && pt.x < p.x + p.w - 2 && pt.y > p.y + 2 && pt.y < p.y + p.h - 2);
@@ -3070,7 +3084,7 @@ function newState() {
       facing: 1
     },
     enemies: level.enemies.map((e, id) => ({ ...e, id, spawnX: e.x, spawnY: e.y, alive: true, defeated: 0, alert: e.boss ? 1 : 0, trick: 0, grounded: true, jumpCooldown: 0, gunCooldown: 0, attackAnim: 0, hurtAnim: 0, hp: e.hp ?? 1, maxHp: e.maxHp ?? e.hp ?? 1, facing: e.vx >= 0 ? 1 : -1 })),
-    coinItems: (level.coins ?? []).map(c => ({ ...c, taken: false })),
+    coinItems: (level.coins ?? []).map(c => ({ ...unburyCoin(c), taken: false })),
     starItems: (level.starItems ?? []).map(s => ({ ...s, taken: false })),
     oxygen: MAX_OXYGEN,
     oxygenHurtCooldown: 0,
@@ -7684,14 +7698,14 @@ function spawnBlockContents(block, k) {
     // 武器ブロックの半分は、ルナコインがはじける（武器は出にくい）
     for (let i = 0; i < 4; i++) {
       const c = coin(block.x + block.w / 2 + (i - 1.5) * 34 + k * 20, block.y - 40 - (i % 2) * 24 - k * 40, i % 2 ? "pea" : "kaki");
-      state.coinItems.push({ ...c, taken: false });
+      state.coinItems.push({ ...unburyCoin(c, false), taken: false });
     }
     return;
   }
   if (block.item === "hp" && currentCourse !== 0 && Math.random() >= HP_BLOCK_STAR_CHANCE) {
     for (let i = 0; i < 3; i++) {
       const c = coin(block.x + block.w / 2 + (i - 1) * 34 + k * 20, block.y - 40 - (i % 2) * 24 - k * 40, "kaki");
-      state.coinItems.push({ ...c, taken: false });
+      state.coinItems.push({ ...unburyCoin(c, false), taken: false });
     }
     return;
   }
