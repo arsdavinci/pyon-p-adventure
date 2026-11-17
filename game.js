@@ -6568,7 +6568,8 @@ function shootHomingMissiles(owner, x, y, dir, stage) {
 function weaponAngles(stage, dir, base = null) {
   const facing = base ?? (dir >= 0 ? 0 : Math.PI);
   const spreadAngles = (count, arc) => Array.from({ length: count }, (_, i) => facing + (i - (count - 1) / 2) * arc);
-  if (stage.pattern === "radial") return Array.from({ length: stage.count }, (_, i) => i * Math.PI * 2 / stage.count);
+  // 全方向：向いている方向を1本目にする（左を向いたら、まっすぐ左にも飛ぶ）
+  if (stage.pattern === "radial") return Array.from({ length: stage.count }, (_, i) => facing + i * Math.PI * 2 / stage.count);
   if (stage.pattern === "both") return [facing, facing + Math.PI];
   if (stage.pattern === "bothSpread") return [facing - 0.16, facing + 0.16, facing + Math.PI - 0.16, facing + Math.PI + 0.16];
   if (stage.pattern === "fan") return spreadAngles(stage.count, 0.16);
