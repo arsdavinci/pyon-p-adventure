@@ -22,8 +22,27 @@ const scoreCount = document.querySelector("#scoreCount");
 const lifeCount = document.querySelector("#lifeCount");
 const timeCount = document.querySelector("#timeCount");
 // ゲームのバージョン（更新するたびに1つ上げる。sw.js の CACHE_NAME の番号と同じにする）
-const GAME_VERSION = 235;
+const GAME_VERSION = 236;
 { const v = document.querySelector("#gameVersion"); if (v) v.textContent = `Ver.1(${(GAME_VERSION / 100).toFixed(2)})`; } // 232 → Ver.1(2.32)
+// スマホのゲーム機の画面では、ロゴの大きさと位置がちがうので、ロゴの帯の右はしのすぐ下に合わせて置く（PC は styles.css の位置）
+function placeGameVersion() {
+  const v = document.querySelector("#gameVersion");
+  const logo = document.querySelector(".brand-logo");
+  if (!v || !logo) return;
+  if (document.body.dataset.layout !== "handheld" || !logo.offsetWidth) {
+    v.style.left = v.style.top = v.style.right = "";
+    return;
+  }
+  const box = v.offsetParent?.getBoundingClientRect();
+  const r = logo.getBoundingClientRect();
+  if (!box) return;
+  v.style.left = "auto";
+  v.style.right = `${Math.max(4, box.right - (r.left + r.width * 0.99))}px`;
+  v.style.top = `${r.bottom - box.top + 1}px`;
+}
+window.addEventListener("resize", () => setTimeout(placeGameVersion, 50));
+window.addEventListener("load", () => { placeGameVersion(); setTimeout(placeGameVersion, 600); setTimeout(placeGameVersion, 1500); });
+setInterval(placeGameVersion, 1000);
 const stageCount = document.querySelector("#stageCount");
 const stageLabelEl = document.querySelector("#stageLabel");
 const kakiLabelEl = document.querySelector("#kakiLabel");
