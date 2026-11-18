@@ -22,7 +22,7 @@ const scoreCount = document.querySelector("#scoreCount");
 const lifeCount = document.querySelector("#lifeCount");
 const timeCount = document.querySelector("#timeCount");
 // ゲームのバージョン（更新するたびに1つ上げる。sw.js の CACHE_NAME の番号と同じにする）
-const GAME_VERSION = 233;
+const GAME_VERSION = 234;
 { const v = document.querySelector("#gameVersion"); if (v) v.textContent = `Ver.1(${(GAME_VERSION / 100).toFixed(2)})`; } // 232 → Ver.1(2.32)
 const stageCount = document.querySelector("#stageCount");
 const stageLabelEl = document.querySelector("#stageLabel");
@@ -3905,6 +3905,7 @@ function loop(now) {
 }
 
 function update(dt) {
+  if (TrialEnd.isOpen()) return; // 体験版のおわりの画面を出しているあいだは、ゲームを止める
   if (state.mode === "title") {
     updateGamepad();
     updateHud();
@@ -8797,7 +8798,7 @@ function nextCourse() {
   const clearedCourse = currentCourse;
   completedCourses.add(currentCourse);
   campaignKeep = campaignSnapshotFromState();
-  unlockedCourse = Math.max(unlockedCourse, Math.min(currentCourse + 1, courses.length - 1));
+  unlockedCourse = Math.max(unlockedCourse, Math.min(currentCourse + 1, lastPlayableCourse()));
   const newWorld = courses[unlockedCourse]?.worldIndex ?? oldWorld;
   mapWalkFrom = clearedCourse;
   mapWalkTo = unlockedCourse;
@@ -8806,6 +8807,8 @@ function nextCourse() {
   overlay.classList.add("hidden");
   lastTime = performance.now();
   if (newWorld !== oldWorld) maybePlayWorldIntro(newWorld);
+  // 体験版：マンタクイーンをたおしたら「体験版はここまで / COMING SOON」と感想フォーム
+  if (TrialEnd.isTrialEnd(clearedCourse)) TrialEnd.open();
 }
 
 function endGame(title, label, message = null, options = {}) {
@@ -15684,6 +15687,7 @@ window.addEventListener("keydown", event => {
 
 // キーボードと画面のボタン（タッチ）で共通の入力処理
 function handleKeyDown(code, event = { repeat: false }) {
+  if (TrialEnd.isOpen()) return;
   if (state?.mode === "title" && state.settingsMenu) {
     if (!event.repeat || ["ArrowLeft", "ArrowRight", "KeyA", "KeyD"].includes(code)) handleSettingsKey(code);
     return;
@@ -16526,6 +16530,9 @@ const debugLocal = ["localhost", "127.0.0.1", "[::1]"].includes(window.location.
 const debugParams = new URLSearchParams(debugLocal ? window.location.search : "");
 if (debugParams.get("stage") === "final") {
   startDirectCourse(courses.length - 1);
+} else if (debugParams.get("stage") === "trialend") {
+  // ローカル確認用：体験版のおわりの画面だけを出す（?stage=trialend）
+  TrialEnd.open();
 } else if (/^\d-\d$/.test(debugParams.get("stage") ?? "")) {
   const [dw, da] = debugParams.get("stage").split("-").map(Number);
   startDirectCourse((STAGE_START_INDICES[dw - 1] ?? 0) + da - 1);

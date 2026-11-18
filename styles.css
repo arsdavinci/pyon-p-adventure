@@ -2266,3 +2266,170 @@ body[data-pad="switch"][data-layout="handheld"][data-orient="land"] .gb-frame-ar
 body:not([data-game-mode="title"]) .game-version {
   display: none;
 }
+
+/* ---------- 体験版のおわり（trial.js） ---------- */
+.trial-end {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: clamp(10px, 3%, 28px);
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(255, 209, 237, 0.55), transparent 45%),
+    radial-gradient(circle at 85% 80%, rgba(158, 232, 255, 0.5), transparent 45%),
+    linear-gradient(160deg, #3b2a78 0%, #6a4fc0 55%, #9a7ae0 100%);
+  font-family: "M PLUS Rounded 1c", system-ui, sans-serif;
+  color: #3d2c78;
+  container-type: inline-size;
+}
+.trial-card {
+  position: relative;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: clamp(16px, 3vw, 30px);
+  border-radius: 26px;
+  background: rgba(255, 251, 255, 0.95);
+  border: 3px solid #c8b2ff;
+  box-shadow: 0 10px 0 rgba(40, 24, 90, 0.35), 0 0 40px rgba(255, 209, 237, 0.6);
+  text-align: center;
+}
+.trial-badge {
+  display: inline-block;
+  align-self: center;
+  padding: 3px 14px;
+  border-radius: 999px;
+  background: #ff8db7;
+  color: #fff;
+  font-weight: 900;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+}
+.trial-title {
+  margin: 8px 0 4px;
+  font-size: clamp(24px, 4.2vw, 40px);
+  font-weight: 900;
+  color: #6a4fc0;
+  text-shadow: 0 3px 0 #ffd1ed;
+}
+.trial-thanks { margin: 0 0 14px; font-weight: 800; font-size: clamp(13px, 1.8vw, 17px); }
+.trial-soon {
+  margin: 0 0 18px;
+  padding: 14px 16px 12px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #2c2650, #4b3a96);
+  color: #fff;
+}
+.trial-soon-head {
+  font-weight: 900;
+  font-size: clamp(20px, 3.4vw, 30px);
+  letter-spacing: 0.12em;
+  color: #ffe36a;
+  text-shadow: 0 0 12px rgba(255, 227, 106, 0.8);
+}
+.trial-soon p { margin: 6px 0 10px; line-height: 1.7; font-weight: 700; font-size: clamp(12px, 1.7vw, 15px); }
+.trial-pyon { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.trial-pyon img { width: 54px; height: 54px; border-radius: 50%; background: #fff; border: 3px solid #ffd1ed; object-fit: cover; }
+.trial-pyon span {
+  position: relative;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: #fff;
+  color: #3d2c78;
+  font-weight: 800;
+  font-size: clamp(12px, 1.6vw, 14px);
+  text-align: left;
+}
+.trial-form { text-align: left; }
+.trial-form h2 { margin: 0 0 4px; text-align: center; font-size: clamp(17px, 2.6vw, 23px); font-weight: 900; color: #6a4fc0; }
+.trial-lead { margin: 0 0 12px; text-align: center; font-weight: 700; font-size: clamp(12px, 1.6vw, 14px); line-height: 1.6; color: #6b5aa8; }
+.trial-form label { display: block; margin: 0 0 10px; font-weight: 800; font-size: 14px; }
+.trial-form label em { margin-left: 8px; font-style: normal; font-size: 11px; font-weight: 700; color: #8b82b3; }
+.trial-form input,
+.trial-form textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 4px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  border: 2px solid #d9ccff;
+  background: #fff;
+  font: 700 15px "M PLUS Rounded 1c", system-ui, sans-serif;
+  color: #3d2c78;
+  resize: vertical;
+}
+.trial-form input:focus,
+.trial-form textarea:focus { outline: none; border-color: #ff8db7; box-shadow: 0 0 0 3px rgba(255, 141, 183, 0.25); }
+.trial-fun > span { white-space: nowrap; }
+.trial-fun { display: flex; align-items: center; gap: 12px; margin: 0 0 10px; font-weight: 800; font-size: 14px; }
+.trial-stars { display: flex; gap: 4px; }
+.trial-end .trial-stars button {
+  all: unset;
+  box-sizing: border-box;
+  border: 0;
+  background: none;
+  padding: 0 2px;
+  font-size: 32px;
+  line-height: 1;
+  color: #e3dcf7;
+  cursor: pointer;
+  transition: transform 0.12s, color 0.12s;
+}
+.trial-end .trial-stars button.on { color: #ffc93d; text-shadow: 0 2px 0 #e6a21f; }
+.trial-end .trial-stars button:hover { transform: scale(1.15); }
+.trial-trap { position: absolute !important; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.trial-send {
+  display: block;
+  margin: 6px auto 0;
+  padding: 12px 34px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ff9fc6, #ff6fa6);
+  color: #fff;
+  font: 900 17px "M PLUS Rounded 1c", system-ui, sans-serif;
+  box-shadow: 0 5px 0 #d94f86;
+  cursor: pointer;
+}
+.trial-send:active { transform: translateY(3px); box-shadow: 0 2px 0 #d94f86; }
+.trial-send:disabled { opacity: 0.7; cursor: default; }
+.trial-result { margin: 12px 0 0; padding: 10px 14px; border-radius: 12px; text-align: center; font-weight: 800; line-height: 1.6; background: #ffe9f3; color: #a11f68; }
+.trial-result.ok { background: #e3fbf5; color: #0b6d60; }
+.trial-actions { display: flex; justify-content: center; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
+.trial-actions button {
+  padding: 9px 22px;
+  border-radius: 999px;
+  border: 2px solid #c8b2ff;
+  background: #f4efff;
+  color: #6a4fc0;
+  font: 900 14px "M PLUS Rounded 1c", system-ui, sans-serif;
+  cursor: pointer;
+}
+
+/* 横に広い画面（PC・タブレット横）では、左にお礼とCOMING SOON、右にフォームで1画面におさめる */
+/* せまい画面：もどるボタンはフォームの下（いちばん下） */
+.trial-card { display: flex; flex-direction: column; }
+.trial-left { display: contents; }
+.trial-form { order: 1; }
+.trial-actions { order: 2; }
+@container (min-width: 760px) {
+  .trial-left { display: block; }
+  .trial-card {
+    display: grid;
+    grid-template-columns: 1fr 1.15fr;
+    gap: 22px;
+    align-items: start;
+    max-width: 1120px;
+  }
+  .trial-soon { margin-bottom: 0; }
+  .trial-form h2 { margin-top: 2px; }
+  .trial-form label { margin-bottom: 7px; }
+  .trial-fun { margin-bottom: 6px; }
+}
+
+.trial-end.trial-full {
+  position: fixed;
+  z-index: 1000;
+  padding: max(12px, env(safe-area-inset-top)) 12px max(16px, env(safe-area-inset-bottom));
+}

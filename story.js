@@ -141,7 +141,7 @@
   }
 
   function applyToGame() {
-    unlockedCourse = clamp(data.unlocked | 0, 0, courses.length - 1);
+    unlockedCourse = clamp(data.unlocked | 0, 0, lastPlayableCourse()); // 体験版では星の海のボスまで
     completedCourses = new Set(data.completed.filter(i => i >= 0 && i < courses.length));
     campaignKeep = data.keep ? JSON.parse(JSON.stringify(data.keep)) : null;
     if (campaignKeep) {
@@ -1399,7 +1399,7 @@
     };
     // クリアしたら、すぐに記録する（結果の画面でアプリを閉じても、クリアが消えない）
     completedCourses.add(currentCourse);
-    unlockedCourse = Math.max(unlockedCourse, Math.min(currentCourse + 1, courses.length - 1));
+    unlockedCourse = Math.max(unlockedCourse, Math.min(currentCourse + 1, lastPlayableCourse()));
     campaignKeep = campaignSnapshotFromState();
     persist();
     state.mode = "stageClear";
