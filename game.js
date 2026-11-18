@@ -22,7 +22,7 @@ const scoreCount = document.querySelector("#scoreCount");
 const lifeCount = document.querySelector("#lifeCount");
 const timeCount = document.querySelector("#timeCount");
 // ゲームのバージョン（更新するたびに1つ上げる。sw.js の CACHE_NAME の番号と同じにする）
-const GAME_VERSION = 234;
+const GAME_VERSION = 235;
 { const v = document.querySelector("#gameVersion"); if (v) v.textContent = `Ver.1(${(GAME_VERSION / 100).toFixed(2)})`; } // 232 → Ver.1(2.32)
 const stageCount = document.querySelector("#stageCount");
 const stageLabelEl = document.querySelector("#stageLabel");
@@ -103,8 +103,11 @@ const ZOOM = 4 / 3;
 const VIEW_W = canvas.width / ZOOM;
 const VIEW_H = canvas.height / ZOOM;
 const GROUND_Y = 492;
-// 音は、ページをひらくたびに ON から始める（OFF は、そのとき遊んでいるあいだだけ）
-let soundEnabled = true;
+// 音は、ページをひらくたびに PC は ON、スマホ・タブレットは OFF から始める
+// （スマホは、下の音量の小窓の「♪ OFF」ボタンをタップすると鳴る。タップが音を出す許可になる）
+let soundEnabled = typeof Handheld === "undefined" || Handheld.detect() === "pc";
+// iPhone のマナーモード（消音スイッチ）でも、ゲームの音は鳴らす（ON にしたときだけ鳴るので）
+try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (_) {}
 let audioMaster = null;
 const WEAPON_DROP_RATES = [
   { power: 1, chance: 0.8 },
@@ -3467,6 +3470,8 @@ function toggleSound() {
   localStorage.setItem("pyonpSound", soundEnabled ? "on" : "off");
   if (audioCtx) applyVolumes();
   if (!soundEnabled && typeof Voice !== "undefined") Voice.stop();
+  // ON にしたタップの中で、曲のファイルも鳴らせるようにしておく（iPhone はタップの中でしか鳴らせない）
+  if (soundEnabled) Story.primeMusic();
   Story.refreshTitleUi();
 }
 
@@ -16519,6 +16524,10 @@ for (const eventName of ["contextmenu", "selectstart", "dragstart"]) {
 }
 document.addEventListener("pointerdown", unlockAudio, { passive: true });
 document.addEventListener("touchstart", unlockAudio, { passive: true });
+// iPhone は「指をはなしたとき」と「クリック」でないと音の許可にならないので、そこでも
+for (const eventName of ["touchend", "click"]) {
+  document.addEventListener(eventName, () => { unlockAudio(); if (soundEnabled) Story.primeMusic(); }, { passive: true });
+}
 document.addEventListener("keydown", unlockAudio);
 document.addEventListener("touchmove", event => event.preventDefault(), { passive: false });
 
@@ -16560,6 +16569,13 @@ document.querySelector("#soundToggle")?.addEventListener("click", event => {
   toggleSound();
   if (soundEnabled) playSfx("decide");
   event.currentTarget.blur();
+});
+// スマホ：下の音量の小窓の「♪ ON / OFF」
+document.querySelector("#gbSoundButton")?.addEventListener("click", event => {
+  event.stopPropagation();
+  unlockAudio();
+  toggleSound();
+  if (soundEnabled) playSfx("decide");
 });
 document.querySelector("#soundButton")?.addEventListener("click", event => {
   event.stopPropagation();

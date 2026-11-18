@@ -1995,10 +1995,9 @@
     }
     const sound = document.querySelector("#soundButton");
     if (sound) sound.textContent = (typeof soundEnabled !== "undefined" && soundEnabled) ? "♪ ON" : "♪ OFF";
-    const toggle = document.querySelector("#soundToggle");
-    if (toggle) {
+    for (const toggle of document.querySelectorAll("#soundToggle, #gbSoundButton")) {
       const on = typeof soundEnabled !== "undefined" && soundEnabled;
-      toggle.textContent = on ? "♪ ON" : "♪ OFF";
+      toggle.textContent = toggle.id === "gbSoundButton" ? (on ? "♪" : "♪ OFF") : (on ? "♪ ON" : "♪ OFF");
       toggle.setAttribute("aria-pressed", on ? "true" : "false");
     }
     if (typeof syncTitleFocus === "function") syncTitleFocus();
@@ -2060,7 +2059,8 @@
     } catch (_) {
       tr.gain = null;
     }
-    audio.addEventListener("canplaythrough", () => { tr.ready = true; }, { once: true });
+    // iPhone は canplaythrough が来ないことがあるので、再生できるようになった合図ならどれでも
+    for (const ev of ["canplaythrough", "canplay", "loadeddata"]) audio.addEventListener(ev, () => { tr.ready = true; }, { once: true });
     audio.addEventListener("error", () => { tr.missing = true; }, { once: true });
     audio.src = `assets/bgm/${name}.mp3`;
     return tr;
@@ -2076,7 +2076,7 @@
     tr.audio.currentTime = 0;
     clearInterval(tr.fade);
     setFileVol(tr, 0.7);
-    tr.audio.play().catch(() => { tr.missing = true; });
+    tr.audio.play().catch(err => playFailed(tr, err));
     fileJingle = tr;
     return true;
   }
@@ -2102,6 +2102,40 @@
     }, 30);
   }
 
+  const ALL_TRACKS = ["title", "opening", "story", "select", "map", "bossAppear", "boss", "finalBoss", "ending", "credits", "stageClear",
+    "world0", "world1", "world2", "world3", "world4", "world5"];
+
+  // 再生をことわられたとき：タップの許可がないだけなら、次のタップでもう一度（ファイルがないときだけ、あきらめる）
+  let musicBlocked = false;
+  function playFailed(tr, err) {
+    if (err && err.name === "NotAllowedError") { musicBlocked = true; primed = false; }
+    else if (err && err.name !== "AbortError") tr.missing = true;
+  }
+
+  // タップの中で、ぜんぶの曲を一度だけ鳴らして止める（iPhone は、こうしないと あとから曲を鳴らせない）
+  let primed = false;
+  function primeMusic() {
+    if (primed || typeof soundEnabled === "undefined" || !soundEnabled) return;
+    primed = true;
+    for (const name of ALL_TRACKS) fileTrack(name);
+    for (const tr of Object.values(fileTracks)) {
+      if (tr.missing) continue;
+      const a = tr.audio;
+      if (tr === filePlaying || tr === fileJingle) {
+        a.muted = false;
+        a.play().catch(err => playFailed(tr, err));
+        continue;
+      }
+      a.muted = true;
+      const p = a.play();
+      if (p) p.then(() => {
+        if (tr !== filePlaying && tr !== fileJingle) a.pause();
+        a.muted = false;
+      }).catch(err => { a.muted = false; playFailed(tr, err); });
+    }
+    if (musicBlocked) { musicBlocked = false; lastWant = null; }
+  }
+
   let preloaded = false;
   const HURRY_TIME = 60;
   let lastHurry = false;
@@ -2112,8 +2146,7 @@
     // ぜんぶの曲を先に読み込んでおく（切りかえの瞬間に、すぐ鳴らせるように）
     if (!preloaded) {
       preloaded = true;
-      for (const name of ["title", "opening", "story", "select", "map", "bossAppear", "boss", "finalBoss", "ending", "credits", "stageClear",
-        "world0", "world1", "world2", "world3", "world4", "world5"]) fileTrack(name);
+      for (const name of ALL_TRACKS) fileTrack(name);
     }
     const duck = state.mode === "paused" || (state.mode === "inventory" && want !== "select");
     const tr = want ? fileTrack(want) : null;
@@ -2132,7 +2165,7 @@
         Bgm.stop(0.3);
         tr.audio.currentTime = 0;
         setFileVol(tr, 0);
-        tr.audio.play().catch(() => { tr.missing = true; });
+        tr.audio.play().catch(err => playFailed(tr, err));
         fadeFile(tr, duck ? 0.2 : 0.6, false);
         filePlaying = tr;
       } else if (want && !loading) {
@@ -2175,6 +2208,9 @@
   }
 
   window.Story = {
+    primeMusic,
+    // 確認用：いま流れている曲のファイル
+    musicState: () => ({ src: filePlaying?.audio.src ?? null, playing: !!filePlaying && !filePlaying.audio.paused, muted: !!filePlaying?.audio.muted, blocked: musicBlocked }),
     get data() { return data; },
     talkBox, drawTalkPortrait,
     movieLoading,

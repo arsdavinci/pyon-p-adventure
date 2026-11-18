@@ -450,6 +450,7 @@
       }
     };
     volBox.addEventListener("pointerdown", event => {
+      if (event.target.closest("#gbSoundButton")) return; // ♪ ON/OFF ボタンは、なぞらずにタップで切りかえ
       event.preventDefault();
       event.stopPropagation();
       if (typeof unlockAudio === "function") unlockAudio();

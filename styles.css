@@ -2433,3 +2433,38 @@ body:not([data-game-mode="title"]) .game-version {
   z-index: 1000;
   padding: max(12px, env(safe-area-inset-top)) 12px max(16px, env(safe-area-inset-bottom));
 }
+
+/* スマホ：音量の小窓の「♪ ON / OFF」ボタン（はじめは OFF）
+   OFF のとき：小窓いっぱいの「♪ OFF」ボタン（タップで音が鳴る）
+   ON のとき ：左はしに小さな「♪」ボタン（タップで OFF）＋ 音量メーター */
+.gb-sound-button { display: none; }
+body[data-layout="handheld"] .gb-sound-button {
+  display: block;
+  flex: none;
+  min-width: 0;
+  padding: 0 0.5em;
+  height: 72%;
+  border: 2px solid rgba(158, 239, 255, 0.6);
+  border-radius: 999px;
+  background: rgba(158, 239, 255, 0.16);
+  color: #e9fbff;
+  font: 900 max(11px, 0.85em) system-ui, sans-serif;
+  line-height: 1;
+  white-space: nowrap;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+body[data-layout="handheld"] .gb-volume .gb-vol-icon { display: none; }
+body[data-layout="handheld"] .gb-volume:has(.gb-sound-button[aria-pressed="false"]) { padding: 0 6px; }
+body[data-layout="handheld"] .gb-volume:has(.gb-sound-button[aria-pressed="false"]) .gb-vol-meter,
+body[data-layout="handheld"] .gb-volume:has(.gb-sound-button[aria-pressed="false"]) .gb-vol-num { display: none; }
+body[data-layout="handheld"] .gb-sound-button[aria-pressed="false"] {
+  flex: 1 1 auto;
+  height: 80%;
+  border-color: rgba(255, 141, 183, 0.95);
+  background: rgba(255, 141, 183, 0.88);
+  color: #ffffff;
+  font-size: max(12px, 1em);
+  animation: gb-sound-blink 1.6s ease-in-out infinite;
+}
+@keyframes gb-sound-blink { 50% { box-shadow: 0 0 10px rgba(255, 141, 183, 0.95); } }
