@@ -24,7 +24,7 @@ function pcKeys(text) {
     .replace(/([Pp]ress |[Ww]ith |[Hh]old |then |  )([AB])(?=[\s.,!:]|$)/g, (_, pre, b) => `${pre}${b} (${KEY[b]})`);
 }
 
-// localStorage の "pyonpSettings" に保存する。はじめは今までと同じ（音はぜんぶ 10、A=ジャンプ B=ダッシュ X=こうげき Y=爆弾）
+// localStorage の "pyonpSettings" に保存する。はじめは、音はぜんぶ 10、A=ジャンプ B=ダッシュ X=爆弾 Y=こうげき
 const Settings = (() => {
   "use strict";
 
@@ -34,7 +34,7 @@ const Settings = (() => {
   // かならずどれかのボタンに要る役目（爆弾はなくてもよい）
   const REQUIRED = ["jump", "dash", "attack"];
   // pad：画面のゲーム機の A・B・X・Y のならび。"switch" = 上X・左Y・右A・下B（はじめはこちら） / "classic" = 上Y・左X・右B・下A
-  const DEFAULT = { master: 100, bgm: 10, voice: 10, sfx: 10, pad: "switch", timeLimit: true, buttons: { A: "jump", B: "dash", X: "attack", Y: "bomb" }, v: 4 };
+  const DEFAULT = { master: 100, bgm: 10, voice: 10, sfx: 10, pad: "switch", timeLimit: true, buttons: { A: "jump", B: "dash", X: "bomb", Y: "attack" }, v: 5 };
   // ゲーム中に、そのボタンが出すキー（キーボードと同じ処理に流す）
   const ACTION_CODE = { jump: "Space", dash: "KeyB", attack: "KeyX", bomb: "KeyC" };
   // 画面のボタンがもともと出すキー → どのボタンか
@@ -59,13 +59,13 @@ const Settings = (() => {
       if (!isFinite(d.master)) d.master = 100;
       for (const b of BUTTONS) if (!ACTIONS.includes(d.buttons[b])) d.buttons[b] = DEFAULT.buttons[b];
       d.timeLimit = saved.timeLimit !== false;
-      // 過去の標準配置だけを更新し、自分で選んだ配置は引き継ぐ。
-      if ((saved.v ?? 1) < 4 && d.buttons.A === "jump" && d.buttons.B === "dash" &&
-          ((d.buttons.X === "bomb" && d.buttons.Y === "attack") ||
-           ((saved.v ?? 1) < 3 && d.buttons.X === "attack" && d.buttons.Y === "attack"))) {
+      // 標準は X=爆弾・Y=こうげき。前の標準（X=こうげき・Y=爆弾／もっと前の X・Y どちらもこうげき）のままの人だけ、
+      // 新しい標準にする。それ以外の、自分でえらんだ配置は引きつぐ。
+      if ((saved.v ?? 1) < 5 && d.buttons.A === "jump" && d.buttons.B === "dash" && d.buttons.X === "attack" &&
+          (d.buttons.Y === "bomb" || ((saved.v ?? 1) < 3 && d.buttons.Y === "attack"))) {
         d.buttons = { ...DEFAULT.buttons };
       }
-      d.v = 4;
+      d.v = 5;
       // ジャンプ・ダッシュ・こうげきのどれかがないまま残っていたら、はじめの割り当てにもどす（遊べなくならないように）
       if (REQUIRED.some(a => !BUTTONS.some(b => d.buttons[b] === a))) d.buttons = { ...DEFAULT.buttons };
       return d;

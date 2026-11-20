@@ -34,7 +34,47 @@ const LANDFORM_COLORS = {
   ice: ["#c2faf8", "#75bddd", "#726ead"]
 };
 
+// 斜面の地面は、形も色も変わらないので、1回だけ別のキャンバスに描いてとっておき、毎フレームはその絵を1枚はるだけにする。
+// （前は毎フレーム、切りぬき・グラデーション・もよう・地面の絵を描き直していて、斜面が見える場面だけ重くなっていた）
+const shapedGroundCache = new Map();
+let shapedGroundCourse = -1;
+
 function drawShapedGround(p, theme) {
+  if (shapedGroundCourse !== currentCourse) {
+    // ほかのステージの絵は捨てる（スマホのメモリを使いすぎない）
+    shapedGroundCache.clear();
+    shapedGroundCourse = currentCourse;
+  }
+  // 地面の絵がまだ読みこめていないうちに作った絵は、読みこめたら作り直す
+  const ok = img => (img?.complete && img.naturalWidth > 0 ? 1 : 0);
+  const ready = ok(moonGround) + ok(stageGroundImages[theme.imageIndex]) * 2;
+  let art = shapedGroundCache.get(p);
+  if (!art || art.ready !== ready) {
+    art = renderShapedGround(p, theme);
+    art.ready = ready;
+    shapedGroundCache.set(p, art);
+  }
+  ctx.drawImage(art, p.x, p.y, p.w, p.h);
+}
+
+function renderShapedGround(p, theme) {
+  const scale = ZOOM; // ふだんの画面の拡大率で作っておく（はったときに、にじまない）
+  const art = document.createElement("canvas");
+  art.width = Math.ceil(p.w * scale);
+  art.height = Math.ceil(p.h * scale);
+  const screen = ctx;
+  ctx = art.getContext("2d");
+  try {
+    ctx.scale(scale, scale);
+    ctx.translate(-p.x, -p.y);
+    paintShapedGround(p, theme);
+  } finally {
+    ctx = screen;
+  }
+  return art;
+}
+
+function paintShapedGround(p, theme) {
   const points = p.profile;
   const palette = LANDFORM_COLORS[p.material];
   ctx.save();

@@ -28,6 +28,11 @@
       ["pyon", "やったじょ！ 踏んでひよらせて、撃ってとどめじゃな。", "Got it! Stomp to make them dizzy, then shoot to finish!"],
       ["yana", "そのとおりです。ここからは、自由に進んでください。", "Exactly. From here on, go wherever you like."]
     ],
+    // 倒したすぐあとに、ダッシュのしかたも教える。「B」のところは、せっていのダッシュのボタン（キーボードは Shift）に合わせて出す
+    dash: [
+      ["yana", "あ、それと。Bボタンをおしたまま進むと、ダッシュで速く走れます。", "Oh, and one more thing. Hold B while moving to dash."],
+      ["yana", "行きたい方向の十字キーを、すばやく2回おしても、ダッシュできますよ。", "You can also dash by quickly tapping the D-pad twice in the direction you want to go."]
+    ],
     stolen: [
       ["pyon", "あっ！ こいつら、吾輩の光線銃うばいやった！", "Hey! That thing stole my ray gun!"],
       ["yana", "うばわれた光線銃は、その敵を上からふむと落とします。ひろえば取りもどせますよ。", "Stomp that enemy from above and it will drop your ray gun. Pick it up to get it back."]
@@ -94,6 +99,11 @@
   let lastPhase = null;
   let missN = 0;
   let farT = 0;
+  // 敵が歩いてくるのを待たずに、なにかボタンを押したら、敵がビュッと来て すぐ「いまです！」
+  let hurry = false;
+  let hurryT = 0;
+  let heldBefore = new Set();
+  let padBefore = true;
 
   const seen = key => !!(typeof Story !== "undefined" && Story.data.seen[key]);
   const mark = key => {
@@ -104,9 +114,34 @@
   const say = key => Chat.say(LINES[key], true);
   const aDown = () => keys.has("Space") || gamepadState.jump;
 
+  // なにかのボタン（キー・画面のボタン・コントローラー）を、新しく押したか
+  function anyFreshPress() {
+    let fresh = false;
+    for (const k of keys) if (!heldBefore.has(k)) fresh = true;
+    heldBefore = new Set(keys);
+    const g = gamepadState;
+    const pad = !!(g.jump || g.run || g.shoot || g.bomb || g.left || g.right || g.up || g.down);
+    if (pad && !padBefore) fresh = true;
+    padBefore = pad;
+    return fresh;
+  }
+
+  // ダッシュの説明。「Bボタン」を、せっていのダッシュのボタン（キーボードは Shift）に合わせる。
+  // はじめの設定（B）のときは文を変えないので、声もそのまま合う
+  function dashLines() {
+    const name = playButtonLabel("dash");
+    const first = LINES.dash[0];
+    const pcPad = typeof controlMode !== "undefined" && controlMode === "pc"; // PC では「B」に（Esc）がそえられてしまうので、丸文字で出す
+    const line = !name || (name === "Ⓑ" && !pcPad) ? first
+      : name === "Shift" ? ["yana", first[1].replace("Bボタン", "Shift"), first[2].replace("Hold B", "Hold Shift")]
+        : ["yana", first[1].replace("Bボタン", `${name} `), first[2].replace("Hold B", `Hold ${name}`)];
+    return [line, LINES.dash[1]];
+  }
+
   function reset() {
     nagN = 0; nagT = 0; nagWant = false; autoShoot = 0; autoT = 0;
     phaseT = 0; lastPhase = null; missN = 0; farT = 0;
+    hurry = false; hurryT = 0;
     phase = null;
     enemy = null;
     jumpQueued = false;
@@ -129,6 +164,8 @@
     enemy.weaponPower = 0;
     phase = "approach";
     aWas = true;
+    heldBefore = new Set(keys);
+    padBefore = true;
     say("intro");
   }
 
@@ -287,7 +324,7 @@
     if (phase !== lastPhase) { lastPhase = phase; phaseT = 0; }
     phaseT += dt;
     // 見はり：会話の場面が長すぎる（会話が止まっている）ときは、先へ進める
-    if ((phase === "talkStomp" || phase === "talkDone" || phase === "stolenTalk" || phase === "regainTalk") && phaseT > 25) {
+    if ((phase === "talkStomp" || phase === "talkDone" || phase === "stolenTalk" || phase === "regainTalk") && phaseT > 45) {
       Chat.next();
       talkSaid = true;
     }
@@ -297,10 +334,23 @@
       phaseT = 0;
     }
 
+    // 歩いてくるのを待っているあいだに、なにかボタンを押したら：説明を切り上げて、敵がビュッと走ってくる
+    // （なにも押さなければ、今までどおり歩いてくるのを待つ）
+    if (phase === "approach" || phase === "thiefCome") {
+      if (anyFreshPress() && !hurry) { hurry = true; hurryT = 0; }
+      if (hurry) {
+        hurryT += dt;
+        if (Chat.busy()) Chat.next();
+        // 穴やかべで来られないときは、すぐ ぴょんぴーの前に呼ぶ
+        if (hurryT > 0.9 && gap(enemy) > NEAR && state.player.grounded) { bringEnemyNear(enemy, NEAR - 30); hurryT = 0; }
+      }
+    }
+
     switch (phase) {
       case "approach":
       case "thiefCome":
         if (gap(enemy) <= NEAR && state.player.grounded && !Chat.busy()) {
+          hurry = false;
           phase = phase === "approach" ? "waitJump" : "thiefWait";
           say(phase === "waitJump" ? "now" : "stolenNow");
           playSfx("cursor");
@@ -401,6 +451,12 @@
         return false;
       }
       case "talkDone":
+        if (!talkSaid) {
+          // 「やったじょ！」のあとに、ダッシュのしかたもつづけて教える
+          Chat.say([...LINES.defeated, ...dashLines()], true);
+          talkSaid = true;
+          return true;
+        }
         if (talkDone("defeated")) {
           mark("tutorialStomp");
           reset();
@@ -445,6 +501,11 @@
     switch (phase) {
       case "approach":
       case "thiefCome":
+        // ボタンを押して急がせたときは、待たずに走ってくる（行きすぎないように、近くではゆるめる）
+        if (hurry) {
+          walkToward(e, dt, Math.min(1400, Math.max(260, (gap(e) - NEAR + 40) * 9)));
+          return true;
+        }
         // ヤナビスの説明を言い終わるまでは、少し手前で待つ（「いまです！」で説明を切らないように）
         if (Chat.busy() && gap(e) <= NEAR + 120) {
           e.vx = 0;

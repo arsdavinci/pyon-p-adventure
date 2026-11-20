@@ -13,7 +13,8 @@ if (typeof FX === "undefined" || typeof Story === "undefined" || typeof Chat ===
   throw new Error("Old page shell was cached. Clearing the cache and reloading.");
 }
 const canvas = document.querySelector("#game");
-const ctx = canvas.getContext("2d");
+// landforms.js が、斜面の絵を1回だけ別のキャンバスに描いておくときに、一時的にさしかえる（だから let）
+let ctx = canvas.getContext("2d");
 const overlay = document.querySelector("#overlay");
 const startButton = document.querySelector("#startButton");
 const kakiCount = document.querySelector("#kakiCount");
@@ -22,7 +23,7 @@ const scoreCount = document.querySelector("#scoreCount");
 const lifeCount = document.querySelector("#lifeCount");
 const timeCount = document.querySelector("#timeCount");
 // ゲームのバージョン（更新するたびに1つ上げる。sw.js の CACHE_NAME の番号と同じにする）
-const GAME_VERSION = 240;
+const GAME_VERSION = 241;
 { const v = document.querySelector("#gameVersion"); if (v) v.textContent = `Ver.1(${(GAME_VERSION / 100).toFixed(2)})`; } // 232 → Ver.1(2.32)
 // スマホのゲーム機の画面では、ロゴの大きさと位置がちがうので、ロゴの帯の右はしのすぐ下に合わせて置く（PC は styles.css の位置）
 function placeGameVersion() {
@@ -237,7 +238,7 @@ const WEAPON_STAGES = [
 const TEXT = {
   ja: {
     title: "ぴょんぴーの大冒険",
-    controls: "移動: ← → / A D、ジャンプ: Space、ダッシュ: Shift、攻撃: J / X",
+    controls: "移動: ← → / A D、ジャンプ: Space、ダッシュ: Shift、攻撃: J / Y、爆弾: X",
     start: "Start",
     next: "Spaceでスタート",
     allClear: "全クリア！",
@@ -277,7 +278,7 @@ const TEXT = {
   },
   en: {
     title: "Pyon-P Adventure",
-    controls: "Move: Arrow / A D. Jump: Space. Dash: Shift. Attack: J / X.",
+    controls: "Move: Arrow / A D. Jump: Space. Dash: Shift. Attack: J / Y. Bomb: X.",
     start: "Start",
     next: "Press Space to start",
     allClear: "All Clear!",
@@ -725,6 +726,26 @@ let pauseSelection = 0;
 let campaignKeep = null;
 let platforms = [];
 let blocks = [];
+// 足場と、こわれていないブロックをまとめたもの。中身が変わったときだけ作り直す。
+// （前は、敵1体・アイテム1個ごとに毎フレーム作り直していて、むだなゴミがたくさん出ていた）
+// 返ってきた配列は書きかえないこと
+let solidCache = [];
+let solidPlatforms = null;
+let solidBlocks = null;
+let solidCount = -1;
+let solidSig = 0;
+function solidList() {
+  let sig = blocks.length;
+  for (let i = 0; i < blocks.length; i++) if (blocks[i].broken) sig = (Math.imul(sig, 31) + i + 1) | 0;
+  if (solidPlatforms !== platforms || solidBlocks !== blocks || solidCount !== platforms.length || solidSig !== sig) {
+    solidPlatforms = platforms;
+    solidBlocks = blocks;
+    solidCount = platforms.length;
+    solidSig = sig;
+    solidCache = platforms.concat(blocks.filter(b => !b.broken));
+  }
+  return solidCache;
+}
 let level = { enemies: [], coins: [], flag: rect(5000, 252, 28, 240) };
 
 const STAGE_THEMES = [
@@ -3012,7 +3033,7 @@ function enterArea(to, spawnX) {
       p.y = (sp ? sp.y : g ? surfaceY(g, spawnX + 20) : 492) - p.h;
       // 床やブロックの中に出てしまったら、その上に立たせる（うまったまま動くと、横へふき飛ばされて落ちていた）
       for (let guard = 0; guard < 6; guard++) {
-        const inside = platforms.concat(blocks.filter(b => !b.broken)).find(s => hit(p, s));
+        const inside = solidList().find(s => hit(p, s));
         if (!inside) break;
         p.y = surfaceY(inside, p.x + p.w / 2) - p.h;
       }
@@ -4841,7 +4862,7 @@ function updateMoonRespawn(dt) {
     p.vy = 0;
     p.onCrescent = false;
     p.invincible = 1.2;
-    const landSolids = platforms.concat(blocks.filter(b => !b.broken));
+    const landSolids = solidList();
     const startX = p.x;
     for (let guard = 0; guard < 12; guard++) {
       const inside = landSolids.find(s => hit(p, s));
@@ -5587,7 +5608,7 @@ function updateLavaGeysers(dt) {
 // x の真上から落ちてきた石が最初に当たる足場の高さ（なければ null ＝ 穴に落ちていく）
 function lavaRockLandingY(x) {
   let top = null;
-  for (const s of platforms.concat(blocks.filter(b => !b.broken))) {
+  for (const s of solidList()) {
     if (x < s.x || x > s.x + s.w) continue;
     const y = surfaceY(s, x);
     if (top === null || y < top) top = y;
@@ -5761,7 +5782,7 @@ function applyStompBounce(enemySource, boosted = false) {
 }
 
 function moveAndCollide(body, dt) {
-  const solid = platforms.concat(blocks.filter(b => !b.broken));
+  const solid = solidList();
   const oldX = body.x;
   body.x += body.vx * dt;
   for (const s of solid) {
@@ -6418,7 +6439,7 @@ function syncEnemyFacing(e) {
 }
 
 function moveEnemyAndCollide(e, dt) {
-  const solid = platforms.concat(blocks.filter(b => !b.broken));
+  const solid = solidList();
   const wasGrounded = e.grounded;
   const oldX = e.x;
   e.bumped = false;
@@ -6457,7 +6478,7 @@ function hasSupportUnder(e) {
     w: e.w - 10,
     h: 10
   };
-  return platforms.concat(blocks.filter(b => !b.broken)).some(s => hit(probe, s));
+  return solidList().some(s => hit(probe, s));
 }
 
 function hasGroundAhead(e, dir) {
@@ -6467,7 +6488,7 @@ function hasGroundAhead(e, dir) {
     w: 18,
     h: 18
   };
-  return platforms.concat(blocks.filter(b => !b.broken)).some(s => hit(probe, s));
+  return solidList().some(s => hit(probe, s));
 }
 
 function getGapAhead(e, dir) {
@@ -6480,7 +6501,7 @@ function getGapAhead(e, dir) {
       w: 16,
       h: 24
     };
-    if (platforms.concat(blocks.filter(b => !b.broken)).some(s => hit(probe, s))) return d;
+    if (solidList().some(s => hit(probe, s))) return d;
   }
   return 999;
 }
@@ -6492,7 +6513,7 @@ function hasWallAhead(e, dir) {
     w: 12,
     h: e.h - 14
   };
-  return platforms.concat(blocks.filter(b => !b.broken)).some(s => hit(probe, s));
+  return solidList().some(s => hit(probe, s));
 }
 
 function updateGun(dt) {
@@ -8165,7 +8186,8 @@ const BOMB_MAX = 5;
 const BOMB_RADIUS = 320; // 爆発の広さ（画面の大部分の敵をまきこむ）
 const bombStock = () => (typeof Story !== "undefined" ? Math.max(0, Story.data.bombStock | 0) : 0);
 // 爆弾は、そうびの欄で「装備」して、1個以上あるときだけ投げる。そうでないときは、爆弾ボタンも銃のボタンになる
-const bombButtonHeld = () => keys.has("KeyY") || keys.has("KeyC") || keys.has("KeyK") || !!gamepadState.bomb;
+// キーボードの X・Y キーは、せっていの X・Y ボタンと同じ役目に読みかえてある（keyboardCode）。C・K はいつも爆弾
+const bombButtonHeld = () => keys.has("KeyC") || keys.has("KeyK") || !!gamepadState.bomb;
 const bombReady = () => bombStock() > 0 && typeof Story !== "undefined" && Story.data.bombOn !== false;
 function shootButtonHeld() {
   return keys.has("KeyX") || keys.has("KeyJ") || gamepadState.shoot ||
@@ -8175,15 +8197,20 @@ function shootButtonHeld() {
 // 画面のボタンは設定どおりに、キーボードは実際に押せるキーを表示する。
 function playButtonLabel(action) {
   const keyboard = lastInputDevice === "keyboard" || (!lastInputDevice && controlMode === "pc");
-  if (keyboard) {
-    if (action === "jump") return "Space";
-    if (action === "bomb") return "Y";
-    return bombReady() ? "X / J" : "X / Y";
-  }
-  return Settings.BUTTONS.filter(b => {
+  // せっていで、その役目になっているボタン（爆弾を持っていないあいだは、爆弾ボタンも銃のボタン）
+  const buttons = Settings.BUTTONS.filter(b => {
     const assigned = Settings.data.buttons[b];
     return assigned === action || (action === "attack" && assigned === "bomb" && !bombReady());
-  }).map(b => ({ A: "Ⓐ", B: "Ⓑ", X: "Ⓧ", Y: "Ⓨ" })[b]).join(" / ");
+  });
+  if (keyboard) {
+    // キーボード：X・Y キーは せっていの X・Y ボタンと同じ役目。ほかは決まったキー
+    const xy = buttons.filter(b => b === "X" || b === "Y");
+    if (action === "jump") return "Space";
+    if (action === "dash") return "Shift";
+    if (action === "bomb") return xy.length ? xy.join(" / ") : "C";
+    return [...xy, "J"].slice(0, 2).join(" / ");
+  }
+  return buttons.map(b => ({ A: "Ⓐ", B: "Ⓑ", X: "Ⓧ", Y: "Ⓨ" })[b]).join(" / ");
 }
 
 // 店とステージで初入手の記録を共有する。保存は入手処理の最後に行う。
@@ -8437,7 +8464,7 @@ function updateItems(dt) {
     item.x += item.vx * dt;
     item.y += item.vy * dt;
     item.grounded = false;
-    for (const s of platforms.concat(blocks.filter(b => !b.broken))) {
+    for (const s of solidList()) {
       if (!hit(item, s)) continue;
       if (item.vy > 0 || (s.profile && oldFeet <= surfaceY(s, oldCenter) + 0.01)) {
         item.y = surfaceY(s, item.x + item.w / 2) - item.h;
@@ -8979,17 +9006,24 @@ function stageLabel(index = currentCourse) {
   return course ? `${course.worldIndex + 1}-${course.areaIndex + 1}` : "1-1";
 }
 
+// 毎フレーム呼ばれるので、中身が変わったときだけ画面（DOM）に書く
+function setHudText(el, value) {
+  const text = String(value);
+  if (el && el.textContent !== text) el.textContent = text;
+}
+
 function updateHud() {
-  document.body.dataset.gameMode = state.mode;
+  if (document.body.dataset.gameMode !== state.mode) document.body.dataset.gameMode = state.mode;
   // ゲームオーバーのときだけ、しょんぼりぴょんぴーの絵を出す（index.html の .gameover-art）
   overlay.classList.toggle("is-gameover", state.mode === "ended");
-  document.body.dataset.overlayOpen = overlay.classList.contains("hidden") ? "false" : "true";
-  stageCount.textContent = stageLabel();
-  kakiCount.textContent = state.kakiTotal;
-  if (peaCount) peaCount.textContent = state.peaTotal;
-  scoreCount.textContent = state.score;
-  lifeCount.textContent = `${"★".repeat(clamp(state.lives, 0, MAX_LIVES))}${"☆".repeat(MAX_LIVES - clamp(state.lives, 0, MAX_LIVES))}`;
-  timeCount.textContent = !stageHasTimeLimit() && state.mode !== "worldMap" ? "∞" : Math.max(0, Math.ceil(state.time));
+  const overlayOpen = overlay.classList.contains("hidden") ? "false" : "true";
+  if (document.body.dataset.overlayOpen !== overlayOpen) document.body.dataset.overlayOpen = overlayOpen;
+  setHudText(stageCount, stageLabel());
+  setHudText(kakiCount, state.kakiTotal);
+  setHudText(peaCount, state.peaTotal);
+  setHudText(scoreCount, state.score);
+  setHudText(lifeCount, `${"★".repeat(clamp(state.lives, 0, MAX_LIVES))}${"☆".repeat(MAX_LIVES - clamp(state.lives, 0, MAX_LIVES))}`);
+  setHudText(timeCount, !stageHasTimeLimit() && state.mode !== "worldMap" ? "∞" : Math.max(0, Math.ceil(state.time)));
 }
 
 function draw() {
@@ -12613,7 +12647,7 @@ function drawInventoryGearCard(r, id) {
   ctx.fillStyle = "#7f67c8";
   ctx.font = `900 21px ${FX.FONT}`;
   const act = id === "manju" ? (ja ? "A で食べる（ライフとHPが満タン）" : "A: eat (full lives & HP)")
-    : id === "bomb" ? (on ? (ja ? "A ではずす" : "A: unequip") : (ja ? "A でそうび" : "A: equip"))
+    : id === "bomb" ? (on ? (ja ? `A ではずす（${playButtonLabel("bomb") || "ばくだんボタン"} で投げる）` : `A: unequip (${playButtonLabel("bomb") || "Bomb button"} throws)`) : (ja ? "A でそうび" : "A: equip"))
     : on ? (ja ? "A ではずす" : "A: take off") : (Shop.isShoe(id) ? (ja ? "A ではく（くつは1足だけ）" : "A: wear (one pair only)") : (ja ? "A でつける" : "A: put on"));
   ctx.fillText(pcKeys(act), cx, r.y + r.h - 47);
   ctx.restore();
@@ -13245,9 +13279,10 @@ function drawStageBackgroundImage(img, mirrorImg, cam) {
   const mirrorReady = mirrorImg?.complete && mirrorImg.naturalWidth > 0;
   const pairW = mirrorReady ? drawW * 2 : drawW;
   const parallax = (cam * 0.08) % pairW;
-  for (let x = -parallax - pairW; x < canvas.width + pairW; x += pairW) {
-    ctx.drawImage(img, x, y, drawW, drawH);
-    if (mirrorReady) ctx.drawImage(mirrorImg, x + drawW, y, drawW, drawH);
+  // 画面に入るぶんだけ描く（前は、画面の外の絵も毎回 4 枚よぶんに描いていた）
+  for (let x = parallax > 0 ? -parallax : -parallax - pairW; x < canvas.width; x += pairW) {
+    if (x + drawW > 0) ctx.drawImage(img, x, y, drawW, drawH);
+    if (mirrorReady && x + drawW < canvas.width && x + pairW > 0) ctx.drawImage(mirrorImg, x + drawW, y, drawW, drawH);
   }
 }
 
@@ -13438,9 +13473,10 @@ function drawPastelBackgroundImage(cam) {
   const pairW = secondReady ? drawW * 2 : drawW;
   const parallax = (cam * 0.12) % pairW;
 
-  for (let x = -parallax - pairW; x < canvas.width + pairW; x += pairW) {
-    ctx.drawImage(pastelBackground, x, y, drawW, drawH);
-    if (secondReady) ctx.drawImage(pastelBackground2, x + drawW, y, drawW, drawH);
+  // 画面に入るぶんだけ描く（前は、画面の外の絵も毎回 4 枚よぶんに描いていた）
+  for (let x = parallax > 0 ? -parallax : -parallax - pairW; x < canvas.width; x += pairW) {
+    if (x + drawW > 0) ctx.drawImage(pastelBackground, x, y, drawW, drawH);
+    if (secondReady && x + drawW < canvas.width && x + pairW > 0) ctx.drawImage(pastelBackground2, x + drawW, y, drawW, drawH);
   }
 }
 
@@ -15434,7 +15470,7 @@ function drawPlayerSprite(p) {
 function isPlayerVisuallyOnGround(p) {
   if (p.swimming || p.vy < -40) return false;
   const probe = rect(p.x + 5, p.y + p.h, p.w - 10, 10);
-  return platforms.concat(blocks.filter(b => !b.broken)).some(s => hit(probe, s));
+  return solidList().some(s => hit(probe, s));
 }
 
 function drawPlayerRunSprite(p) {
@@ -15796,10 +15832,19 @@ function updateGamepad() {
   gamepadState.shootLatch = shootPressed;
 }
 
+// キーボードの X・Y キーは、ゲーム中だけ、せっていの X・Y ボタンと同じ役目にする（はじめは X=爆弾・Y=こうげき）。
+// はなすときは、押したときと同じキーをはなす
+const keyboardHeldCodes = {};
+function keyboardCode(raw, repeat) {
+  if (raw !== "KeyX" && raw !== "KeyY") return raw;
+  if (!repeat || !keyboardHeldCodes[raw]) keyboardHeldCodes[raw] = Settings.mapCode(raw, inGameplay());
+  return keyboardHeldCodes[raw];
+}
+
 window.addEventListener("keydown", event => {
   lastInputDevice = "keyboard";
   unlockAudio();
-  const code = normalizeInputCode(event);
+  const code = keyboardCode(normalizeInputCode(event), event.repeat);
   if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", "Tab", "Enter"].includes(code)) event.preventDefault();
   handleKeyDown(code, event);
 });
@@ -15937,7 +15982,12 @@ function handleKeyUp(code) {
   keys.delete(code);
 }
 
-window.addEventListener("keyup", event => handleKeyUp(normalizeInputCode(event)));
+window.addEventListener("keyup", event => {
+  const raw = normalizeInputCode(event);
+  const code = keyboardHeldCodes[raw] ?? raw;
+  delete keyboardHeldCodes[raw];
+  handleKeyUp(code);
+});
 // ほかの画面に切りかえたら、おしっぱなしのキーをはなす（もどったときに、勝手に走りつづけていた）
 window.addEventListener("blur", () => keys.clear());
 // アプリがかくれたら、ポーズして音を止める。もどったら音をもどす
