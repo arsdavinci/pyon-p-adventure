@@ -22,7 +22,7 @@ const scoreCount = document.querySelector("#scoreCount");
 const lifeCount = document.querySelector("#lifeCount");
 const timeCount = document.querySelector("#timeCount");
 // ゲームのバージョン（更新するたびに1つ上げる。sw.js の CACHE_NAME の番号と同じにする）
-const GAME_VERSION = 239;
+const GAME_VERSION = 240;
 { const v = document.querySelector("#gameVersion"); if (v) v.textContent = `Ver.1(${(GAME_VERSION / 100).toFixed(2)})`; } // 232 → Ver.1(2.32)
 // スマホのゲーム機の画面では、ロゴの大きさと位置がちがうので、ロゴの帯の右はしのすぐ下に合わせて置く（PC は styles.css の位置）
 function placeGameVersion() {
@@ -3462,6 +3462,16 @@ function updateCamera(dt, snap = false) {
     state.viewZoom = (state.viewZoom ?? ZOOM) + (wantZoom - (state.viewZoom ?? ZOOM)) * Math.min(1, dt * 4);
     const lookDown = keys.has("ArrowDown") || keys.has("KeyS") || gamepadState.down;
     if (lookDown && p.grounded) targetY = Math.max(targetY, Math.min(camY + 12, p.y - 60));
+  }
+  // ポータルを見せるときは、そこを画面のまん中に
+  if (state.cameraLook && !snap) {
+    const look = state.cameraLook;
+    const lx = clamp(look.x - VIEW_W / 2, 0, WORLD_WIDTH - VIEW_W);
+    state.camera += (lx - state.camera) * Math.min(1, dt * 3.2);
+    targetY = look.y - VIEW_H * 0.55;
+    targetY = clamp(targetY, minY, maxY);
+    state.cameraY = camY + (targetY - camY) * Math.min(1, dt * 3.2);
+    return;
   }
   targetY = clamp(targetY, minY, maxY);
   if (snap) {
