@@ -1,4 +1,4 @@
-const CACHE_NAME = "pyon-p-adventure-v238";
+const CACHE_NAME = "pyon-p-adventure-v239";
 // 絵・声は、公開のたびに消さない別の入れ物にとっておく（前は公開するたびに、遊ぶ人が全部ダウンロードし直していた）。
 // 同じ名前で絵をさしかえても、下の「うらで新しいか聞く」しくみで、次に開いたときに新しい絵になる。
 // ぜんぶ捨ててやり直したいときだけ、この番号を上げる
@@ -10,6 +10,7 @@ const APP_SHELL = [
   "./index.html",
   "./styles.css",
   "./game.js",
+  "./landforms.js",
   "./bgm.js",
   "./fx.js",
   "./voice.js",

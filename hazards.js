@@ -80,7 +80,7 @@
   function solidAt(r) {
     for (const s of platforms) {
       if (s.passThrough || s.oneWay) continue;
-      if (r.x < s.x + s.w && r.x + r.w > s.x && r.y < s.y + s.h && r.y + r.h > s.y) return true;
+      if (hit(r, s)) return true;
     }
     return false;
   }

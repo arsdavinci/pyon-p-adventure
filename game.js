@@ -22,7 +22,7 @@ const scoreCount = document.querySelector("#scoreCount");
 const lifeCount = document.querySelector("#lifeCount");
 const timeCount = document.querySelector("#timeCount");
 // ゲームのバージョン（更新するたびに1つ上げる。sw.js の CACHE_NAME の番号と同じにする）
-const GAME_VERSION = 238;
+const GAME_VERSION = 239;
 { const v = document.querySelector("#gameVersion"); if (v) v.textContent = `Ver.1(${(GAME_VERSION / 100).toFixed(2)})`; } // 232 → Ver.1(2.32)
 // スマホのゲーム機の画面では、ロゴの大きさと位置がちがうので、ロゴの帯の右はしのすぐ下に合わせて置く（PC は styles.css の位置）
 function placeGameVersion() {
@@ -1117,14 +1117,14 @@ const STAGE_RECIPES = [
   ],
   // 火星ネオンコロニー
   [
-    { title: ["マグマの谷とび", "Lava Leaps"], kinds: ["pits", "valley", "stairs", "flat"], rooms: ["shaftDown", "winding"], noFinal: true },
+    { title: ["マグマの二段峡谷", "Magma Split Canyon"], landmark: "rift", kinds: ["pits", "valley", "stairs", "flat"], rooms: ["shaftDown", "winding"], noFinal: true },
     { title: ["地下トンネルたんけん", "Tunnel Dive"], kinds: ["tunnel", "crawlway", "pillars", "flat"], rooms: ["cave", "maze"], bonus: false },
     { title: ["トゲトゲ台地", "Spike Plateau"], kinds: ["spikeField", "shelf", "tower"], rooms: ["winding", "arena"] },
     { title: ["火山のぼり", "Volcano Climb"], kinds: ["cliff", "stairs", "islands", "mover"], rooms: ["shaftUp", "arena", "cave"], noFinal: true, bonus: false }
   ],
   // クリスタル氷星
   [
-    { title: ["つるつる大すべり", "Slip and Slide"], kinds: ["pits", "stairs", "flat", "valley"], rooms: ["winding", "shaftDown"] },
+    { title: ["水晶のハーフパイプ", "Crystal Halfpipe"], landmark: "halfpipe", kinds: ["pits", "stairs", "flat", "valley"], rooms: ["winding", "shaftDown"] },
     { title: ["氷の浮き島", "Frozen Isles"], kinds: ["islands", "mover", "shelf"], rooms: ["shaftUp", "maze"], bonus: false },
     { title: ["クリスタルの迷路", "Crystal Maze"], kinds: ["tunnel", "crawlway", "pillars", "spikeField"], rooms: ["maze", "cave", "winding"], noFinal: true },
     { title: ["氷のとりで", "Ice Fortress"], kinds: ["tower", "cliff", "flat", "pillars"], rooms: ["arena", "shaftDown", "cave"] }
@@ -1193,7 +1193,7 @@ function makeCourse(worldIndex, areaIndex, layout = areaIndex, seed = null) {
   if (climb) platforms = climb.platforms;
   // ふつうのステージは、区間をつないだ、その場所だけの通路にする
   const chunk = !bossStage && !finalStage && trait !== "underwater" && !climb
-    ? buildChunkCourse({ seed: seed ?? (STAGE_START_INDICES[worldIndex] + areaIndex) * 3, difficulty, trait, endX: 3500, worldEnd: 3900, kinds: recipe?.kinds ?? CHUNK_KINDS })
+    ? buildChunkCourse({ seed: seed ?? (STAGE_START_INDICES[worldIndex] + areaIndex) * 3, difficulty, trait, endX: 3500, worldEnd: 3900, landmark: layout === areaIndex ? recipe?.landmark : null, kinds: recipe?.kinds ?? CHUNK_KINDS })
     : null;
   // 外の道は 3900 まで。その先は高いかべ
   if (chunk) chunk.platforms.push(rect(3900, -1200, WORLD_WIDTH - 3900 + 200, canvas.height + 1248));
@@ -1265,6 +1265,7 @@ function makeCourse(worldIndex, areaIndex, layout = areaIndex, seed = null) {
   const pitGeysers = chunk && trait === "marsLava"
     ? chunk.pitXs.filter((_, i, a) => a.length <= 4 || i % Math.ceil(a.length / 4) === 0).slice(0, 4).map((x, i) => lavaGeyser(x - 36, (i * 1.1 + 0.5) % 4.2))
     : null;
+  if (chunk?.riftVent) pitGeysers.unshift(chunk.riftVent);
   const lavaGeysers = pitGeysers ? pitGeysers : trait === "marsLava" && !finalStage ? [
     lavaGeyser(980, 1.1),
     lavaGeyser(1780, 2.3),
@@ -1316,16 +1317,16 @@ function unburyCoin(c, up = true) {
   const r = c.r ?? 14;
   let out = c;
   for (let guard = 0; guard < 4; guard++) {
-    const inside = solids.find(p => out.x + r > p.x && out.x - r < p.x + p.w && out.y + r > p.y && out.y - r < p.y + p.h);
+    const inside = solids.find(p => out.x + r > p.x && out.x - r < p.x + p.w && out.y + r > surfaceY(p, out.x) && out.y - r < p.y + p.h);
     if (!inside) break;
-    out = { ...out, y: up ? inside.y - r - 16 : inside.y + inside.h + r + 8 };
+    out = { ...out, y: up ? surfaceY(inside, out.x) - r - 16 : inside.y + inside.h + r + 8 };
   }
   return out;
 }
 
 // 足場とかさなったコイン・敵はとりのぞく（あとから足した空のルートとぶつかったとき）
 function clearStuckThings(course) {
-  const solid = pt => course.platforms.some(p => pt.x > p.x + 2 && pt.x < p.x + p.w - 2 && pt.y > p.y + 2 && pt.y < p.y + p.h - 2);
+  const solid = pt => course.platforms.some(p => pt.x > p.x + 2 && pt.x < p.x + p.w - 2 && pt.y > surfaceY(p, pt.x) + 2 && pt.y < p.y + p.h - 2);
   const lv = course.level;
   lv.coins = lv.coins.filter(c => !solid(c));
   lv.enemies = lv.enemies.filter(e => e.boss || !solid({ x: e.x + e.w / 2, y: e.y + e.h / 2 }));
@@ -1549,7 +1550,7 @@ const CRAWL_GAP = 42; // ほふく前進のすき間（ふせると30、立つ�
 const CHUNK_KINDS = ["pits", "stairs", "spikeField", "pillars", "tunnel", "islands", "valley", "tower", "mover", "shelf", "flat", "cliff"];
 const HIGH_Y = 240; // 地面のいちばん高いところ
 
-function buildChunkCourse({ seed, difficulty, trait, endX = 4860, worldEnd = WORLD_WIDTH, kinds = CHUNK_KINDS }) {
+function buildChunkCourse({ seed, difficulty, trait, endX = 4860, worldEnd = WORLD_WIDTH, landmark = null, kinds = CHUNK_KINDS }) {
   const rnd = seededRandom(seed);
   const pick = arr => arr[Math.floor(rnd() * arr.length)];
   const between = (a, b) => a + rnd() * (b - a);
@@ -1578,6 +1579,30 @@ function buildChunkCourse({ seed, difficulty, trait, endX = 4860, worldEnd = WOR
   let x = 620;
   let gy = GROUND_Y;
   ground(0, GROUND_Y, 620);
+
+  if (landmark === "rift") {
+    // 上は二枚の岩橋。下は谷底で短く跳ぶルート。両側にひと息つける平らな岸を残す。
+    P.push(shapedGround(x, [[0, gy], [65, gy], [270, 610], [385, 610]], "basalt"));
+    P.push(shapedGround(x + 485, [[0, 610], [120, 610], [345, gy], [430, gy]], "basalt"));
+    ledge(x + 145, gy - 78, 230, 32);
+    ledge(x + 470, gy - 96, 200, 34);
+    out.riftVent = { ...lavaGeyser(x + 435 - 36, 0.5), h: 208, rimY: 610 };
+    for (const [dx, y] of [[165, gy - 118], [285, gy - 118], [395, gy - 178], [535, gy - 136],
+                           [265, 561], [365, 564], [436, 525], [515, 564], [610, 551]]) addCoin(x + dx, y);
+    out.rewardSpots.push({ x: x + 595, y: gy - 152 });
+    x += 915;
+  } else if (landmark === "halfpipe") {
+    const pipe = shapedGround(x, [[0, gy], [74, gy], [245, 590], [350, 627], [475, 627],
+      [565, 590], [800, 430], [864, 430], [990, gy], [1250, gy]], "ice");
+    P.push(pipe);
+    for (const dx of [105, 195, 285, 380, 473, 568, 663, 760]) addCoin(x + dx, surfaceY(pipe, x + dx) - 36);
+    // リップで跳ぶと上の氷棚へ。そのまま滑る道は下で合流する。
+    ledge(x + 947, 337, 258, 28);
+    addCoin(x + 874, 339);
+    addCoin(x + 924, 297);
+    out.rewardSpots.push({ x: x + 1010, y: 288 });
+    x += 1250;
+  }
 
   const C = {
     // すきまをとびこえる
@@ -2032,12 +2057,12 @@ courses[0] = {
   theme: STAGE_THEMES[0],
   platforms: [
     rect(0, 492, 980, 48),
-    rect(1120, 492, 980, 48),
+    shapedGround(1120, [[0, 492], [66, 492], [320, 356], [425, 334], [486, 334], [730, 460], [822, 492], [980, 492]], "candy"),
     rect(2240, 492, 840, 48),
     rect(3240, 492, 1960, 48),
     rect(520, 376, 220, 36),
-    rect(1280, 350, 180, 36),
-    rect(1680, 278, 210, 36),
+    rect(1300, 260, 145, 30),
+    rect(1680, 238, 174, 30),
     rect(2450, 376, 220, 36),
     rect(2860, 304, 170, 36),
     rect(3520, 372, 240, 36),
@@ -2046,7 +2071,6 @@ courses[0] = {
   ],
   blocks: [
     rect(760, 396, 48, 96),
-    rect(1980, 396, 48, 96),
     rect(2150, 348, 48, 144),
     rect(3150, 396, 48, 96),
     rect(4620, 348, 48, 144)
@@ -2054,15 +2078,17 @@ courses[0] = {
   level: {
     enemies: [
       enemy(700, 444, 590, 910),
-      enemy(1450, 444, 1260, 1780),
+      enemy(1450, 304, 1260, 1780),
       enemy(2650, 444, 2380, 3000),
       enemy(3700, 444, 3300, 3900),
       enemy(4300, 444, 4020, 4580)
     ],
     coins: [
-      coin(580, 326, "kaki"), coin(660, 326, "pea"), coin(1330, 300, "kaki"), coin(1734, 228, "pea"),
+      coin(580, 326, "kaki"), coin(660, 326, "pea"), coin(1360, 214, "kaki"), coin(1740, 190, "pea"),
       coin(2510, 326, "kaki"), coin(2920, 254, "pea"), coin(3590, 322, "kaki"), coin(4050, 250, "pea"),
-      coin(4480, 330, "kaki"), coin(4550, 330, "pea"), coin(4810, 430, "kaki")
+      coin(4480, 330, "kaki"), coin(4550, 330, "pea"), coin(4810, 430, "kaki"),
+      coin(1220, 434, "kaki"), coin(1310, 386, "pea"), coin(1400, 338, "kaki"),
+      coin(1500, 302, "pea"), coin(1582, 290, "kaki"), coin(1690, 340, "pea"), coin(1780, 388, "kaki")
     ],
     starItems: [
       starItem(930, 430),
@@ -2610,7 +2636,7 @@ function buildStageAreas(index) {
   const crawls = first.level.crawlSpots ?? [];
   // 予備：広くて、上に何もない地面
   const wideGround = x => first.platforms
-    .filter(p => p.w >= 200 && !p.mover && !p.conveyor && p.y >= 300 && p.h < 1000 && x > p.x + 40 && x + DOOR_W < p.x + p.w - 40)
+    .filter(p => p.w >= 200 && !p.profile && !p.mover && !p.conveyor && p.y >= 300 && p.h < 1000 && x > p.x + 40 && x + DOOR_W < p.x + p.w - 40)
     .sort((a, b) => a.y - b.y)[0];
   const doorFits = x => {
     const g = wideGround(x);
@@ -2682,19 +2708,20 @@ function areaSolids(area) {
 }
 
 function pointInRects(x, y, rects, pad = 2) {
-  return rects.some(p => x > p.x + pad && x < p.x + p.w - pad && y > p.y + pad && y < p.y + p.h - pad);
+  return rects.some(p => x > p.x + pad && x < p.x + p.w - pad && y > surfaceY(p, x) + pad && y < p.y + p.h - pad);
 }
 
 function rectHitsAny(r, rects, except = null) {
-  return rects.some(p => p !== except && r.x < p.x + p.w && r.x + r.w > p.x && r.y < p.y + p.h && r.y + r.h > p.y);
+  return rects.some(p => p !== except && hit(r, p));
 }
 
 // x のまっすぐ下で、y より下にある一番上の地面
 function surfaceBelow(area, x, y) {
   let best = null;
   for (const p of area.platforms) {
-    if (p.mover || x < p.x + 4 || x > p.x + p.w - 4 || p.y < y) continue;
-    if (best === null || p.y < best) best = p.y;
+    if (p.mover || x < p.x + 4 || x > p.x + p.w - 4) continue;
+    const top = surfaceY(p, x);
+    if (top >= y && (best === null || top < best)) best = top;
   }
   return best;
 }
@@ -2982,12 +3009,12 @@ function enterArea(to, spawnX) {
       const sp = courses[currentCourse].spawn;
       const g = sp ? null : groundUnder(courses[currentCourse], spawnX + 20);
       p.x = sp ? sp.x : spawnX;
-      p.y = (sp ? sp.y : g ? g.y : 492) - p.h;
+      p.y = (sp ? sp.y : g ? surfaceY(g, spawnX + 20) : 492) - p.h;
       // 床やブロックの中に出てしまったら、その上に立たせる（うまったまま動くと、横へふき飛ばされて落ちていた）
       for (let guard = 0; guard < 6; guard++) {
         const inside = platforms.concat(blocks.filter(b => !b.broken)).find(s => hit(p, s));
         if (!inside) break;
-        p.y = inside.y - p.h;
+        p.y = surfaceY(inside, p.x + p.w / 2) - p.h;
       }
       state.lastSafe = { x: p.x, y: p.y + p.h };
       // 扉から出てすぐは、敵は少し待ってから撃つ
@@ -3419,7 +3446,8 @@ function updateCamera(dt, snap = false) {
     let floor = -Infinity;
     for (const s of platforms) {
       if (s.x >= x1 || s.x + s.w <= x0) continue;
-      if (s.y > feet + 40 && s.y < feet + 620 && s.y > floor) floor = s.y;
+      const y = surfaceY(s, p.facing > 0 ? x1 : x0);
+      if (y > feet + 40 && y < feet + 620 && y > floor) floor = y;
     }
     let wantZoom = ZOOM;
     // 入りくんだエリア（建物の中）は下に落ちる心配がないので、引かずにぴょんぴーをアップで追う
@@ -4808,8 +4836,8 @@ function updateMoonRespawn(dt) {
     for (let guard = 0; guard < 12; guard++) {
       const inside = landSolids.find(s => hit(p, s));
       if (!inside) break;
-      if (p.y + p.h - inside.y <= 220) {
-        p.y = inside.y - p.h - 1;
+      if (p.y + p.h - surfaceY(inside, p.x + p.w / 2) <= 220) {
+        p.y = surfaceY(inside, p.x + p.w / 2) - p.h - 1;
         continue;
       }
       // 高い岩のかべの中におりたときは、屋根の上ではなく、横のあいている場所へ（前は画面のずっと上に出てしまっていた）
@@ -4821,7 +4849,7 @@ function updateMoonRespawn(dt) {
           if (!landSolids.some(s => hit(probe, s))) { p.x = nx; moved = true; break; }
         }
       }
-      if (!moved) p.y = inside.y - p.h - 1;
+      if (!moved) p.y = surfaceY(inside, p.x + p.w / 2) - p.h - 1;
     }
     FX.respawnSparkle(p.x + p.w / 2, p.y + p.h / 2);
     state.mode = "playing";
@@ -4865,7 +4893,8 @@ function updatePlayer(dt) {
   // しゃがんだままでも B（ダッシュ）をおすと、はやいほふく前進
   const accel = crawl ? (wantsRun ? 1500 : 900) : slippery ? (wantsRun ? 1380 : 820) : wantsRun ? 2100 : 1250;
   const boost = Shop.has("booster") ? 1.2 : 1; // ロケットブースター：ダッシュが速い
-  const maxSpeed = crawl ? (wantsRun ? 190 * boost : 75) : slippery ? (wantsRun ? 410 * boost : 270) : wantsRun ? 360 * boost : 235;
+  const previousVx = p.vx;
+  let maxSpeed = crawl ? (wantsRun ? 190 * boost : 75) : slippery ? (wantsRun ? 410 * boost : 270) : wantsRun ? 360 * boost : 235;
 
   if (movingLeft) {
     p.vx -= accel * dt;
@@ -4876,6 +4905,18 @@ function updatePlayer(dt) {
     p.facing = 1;
   }
   if (!movingLeft && !movingRight) p.vx *= slippery ? 0.985 : FRICTION;
+
+  if (slippery && p.grounded && !crawl) {
+    const floor = platformUnderBody(p);
+    if (floor?.material === "ice") {
+      const footX = p.x + p.w / 2;
+      const grade = (surfaceY(floor, footX + 2) - surfaceY(floor, footX - 2)) / 4;
+      // 通常速度を超えるのは下りの加速だけ。谷底を過ぎても得た勢いを持ち越せる。
+      const carriedSpeed = Math.max(maxSpeed, Math.abs(previousVx));
+      p.vx = clamp(p.vx, -carriedSpeed, carriedSpeed) + grade * 520 * dt;
+      maxSpeed += 105;
+    }
+  }
 
   if (p.grounded) p.airJumped = false;
   // 着地したら（はじき上げられた直後の、まだ地面にいる1コマはのぞく）、または点滅が終わったら、なし
@@ -4991,7 +5032,7 @@ function pitIsHopeless(p, trait) {
   for (const q of solids) {
     if (q.x + q.w < L || q.x > R) continue;
     if (q.y >= bottom) continue;
-    if (q.y >= feet - reach) return false;
+    if (Math.max(surfaceY(q, L), surfaceY(q, R), surfaceY(q, p.x + p.w / 2)) >= feet - reach) return false;
   }
   return feet > (courses[currentCourse]?.ceilingY ?? -Infinity);
 }
@@ -5538,7 +5579,8 @@ function lavaRockLandingY(x) {
   let top = null;
   for (const s of platforms.concat(blocks.filter(b => !b.broken))) {
     if (x < s.x || x > s.x + s.w) continue;
-    if (top === null || s.y < top) top = s.y;
+    const y = surfaceY(s, x);
+    if (top === null || y < top) top = y;
   }
   return top;
 }
@@ -5710,23 +5752,25 @@ function applyStompBounce(enemySource, boosted = false) {
 
 function moveAndCollide(body, dt) {
   const solid = platforms.concat(blocks.filter(b => !b.broken));
+  const oldX = body.x;
   body.x += body.vx * dt;
   for (const s of solid) {
+    if (s.profile && followGround(body, s, oldX)) continue;
     if (!hit(body, s)) continue;
     if (body.vx > 0) body.x = s.x - body.w;
     if (body.vx < 0) body.x = s.x + s.w;
     body.vx = 0;
   }
 
+  const oldFeet = body.y + body.h;
   body.y += body.vy * dt;
   body.grounded = false;
   for (const s of solid) {
     if (!hit(body, s)) continue;
-    if (body.vy > 0) {
-      body.y = s.y - body.h;
+    if (body.vy > 0 || (s.profile && oldFeet <= surfaceY(s, oldX + body.w / 2) + 0.01)) {
+      body.y = surfaceY(s, body.x + body.w / 2) - body.h;
       body.grounded = true;
-    }
-    if (body.vy < 0) {
+    } else if (body.vy < 0) {
       body.y = s.y + s.h;
       if (s.breakable) breakBlock(s);
       if (s.switchBox) Gimmick.hitSwitch(s);
@@ -6370,6 +6414,7 @@ function moveEnemyAndCollide(e, dt) {
   e.bumped = false;
   e.x += e.vx * dt;
   for (const s of solid) {
+    if (s.profile && followGround(e, s, oldX)) continue;
     if (!hit(e, s)) continue;
     if (e.vx > 0) e.x = s.x - e.w;
     if (e.vx < 0) e.x = s.x + s.w;
@@ -6382,15 +6427,15 @@ function moveEnemyAndCollide(e, dt) {
   }
   e.allowDrop = false;
 
+  const oldFeet = e.y + e.h;
   e.y += e.vy * dt;
   e.grounded = false;
   for (const s of solid) {
     if (!hit(e, s)) continue;
-    if (e.vy > 0) {
-      e.y = s.y - e.h;
+    if (e.vy > 0 || (s.profile && oldFeet <= surfaceY(s, oldX + e.w / 2) + 0.01)) {
+      e.y = surfaceY(s, e.x + e.w / 2) - e.h;
       e.grounded = true;
-    }
-    if (e.vy < 0) e.y = s.y + s.h;
+    } else if (e.vy < 0) e.y = s.y + s.h;
     e.vy = 0;
   }
 }
@@ -8377,13 +8422,15 @@ function updateItems(dt) {
     }
     item.life -= dt;
     item.vy += GRAVITY * dt;
+    const oldFeet = item.y + item.h;
+    const oldCenter = item.x + item.w / 2;
     item.x += item.vx * dt;
     item.y += item.vy * dt;
     item.grounded = false;
     for (const s of platforms.concat(blocks.filter(b => !b.broken))) {
       if (!hit(item, s)) continue;
-      if (item.vy > 0) {
-        item.y = s.y - item.h;
+      if (item.vy > 0 || (s.profile && oldFeet <= surfaceY(s, oldCenter) + 0.01)) {
+        item.y = surfaceY(s, item.x + item.w / 2) - item.h;
         item.vy = item.type === "hp" ? -360 : item.type === "manju" ? -150 : -180;
         item.vx *= item.type === "hp" ? 1.03 : item.type === "manju" ? 0.4 : 0.75;
         item.grounded = true;
@@ -10052,7 +10099,7 @@ function drawStageHazards() {
       const k = (g.timer - LAVA_WARN_AT) / (LAVA_ERUPT_AT - LAVA_WARN_AT);
       const blink = 0.6 + Math.sin(performance.now() / 1000 * (10 + k * 26)) * 0.4;
       const gx = g.x + g.w / 2;
-      const groundY = lavaRockLandingY(gx) ?? GROUND_Y;
+      const groundY = g.rimY ?? lavaRockLandingY(gx) ?? GROUND_Y;
       ctx.fillStyle = `rgba(255, 80, 50, ${(0.3 + k * 0.5) * blink})`;
       ctx.beginPath();
       ctx.ellipse(gx, groundY + 2, g.w * (0.5 + k * 0.35), 9 + k * 7, 0, 0, Math.PI * 2);
@@ -13472,6 +13519,10 @@ function drawPlatforms() {
   const viewR = state.camera + VIEW_W + 60;
   for (const p of platforms) {
     if (p.x > viewR || p.x + p.w < viewL) continue;
+    if (p.profile) {
+      drawShapedGround(p, theme);
+      continue;
+    }
     if (p.terrain) {
       drawTerrainBody(p, theme);
       drawMoonRock({ x: p.x, y: p.y, w: p.w, h: 48 }, theme?.ground[0] ?? "#f4e9cc", theme?.ground[1] ?? "#cfc7d6");
@@ -15488,7 +15539,7 @@ function drawPlayerFallback(p) {
 }
 
 function hit(a, b) {
-  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > surfaceY(b, a.x + a.w / 2);
 }
 
 function clamp(value, min, max) {
