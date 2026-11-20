@@ -129,7 +129,7 @@
       "...Nyahaha. Welcome, little bunny. I sell guns you won't find out front. Moon and star, up to Lv7."],
     again: ["ニャフフ……また来たんか。今日はどの銃にする？ 爆弾もあるで。", "Nyahaha... back again? Which gun today? I've got bombs too."],
     gun: ["まいどあり。……どこで買うたかは、ないしょやで。", "Pleasure doing business. ...You didn't get it from me, nyah."],
-    bomb: ["まいど、ニャフ。爆弾、かばんに入れといたで。ばくだんボタンでポイや。", "Thanks, nyah. Bomb's in your bag. Toss it with the bomb button."],
+    bomb: ["まいど、ニャフ。爆弾、かばんに入れといたで。", "Thanks, nyah. Bomb's in your bag."],
     bombMax: ["爆弾は5個までや。あぶないからな、ニャフ。", "Five bombs max. Safety first, nyah."],
     full: ["持ち物がいっぱいや。いらん銃を売るか、合成してから来ぃ。", "Your bag is full. Sell or fuse something first."],
     poor: ["……ルナコインが足りんのう。出直してきぃ、ニャフ。", "...Not enough Luna Coins. Come back later, nyah."],
@@ -373,7 +373,7 @@
       mochi(it.id === "statue" ? "dream" : "poor");
       return;
     }
-    if (it.id === "bomb" && bombCount() >= BOMB_MAX_SHOP) {
+    if (it.id === "bomb" && bombCount() >= BOMB_MAX) {
       playSfx("locked");
       noir("bombMax");
       return;
@@ -388,9 +388,9 @@
     state.kakiTotal = w.kakiTotal;
     state.peaTotal = 0;
     if (it.id === "bomb") {
-      Story.data.bombStock = bombCount() + 1;
-      Story.data.bombOn = true; // 買ったら、そうびの欄で装備した状態にする
-      noir("bomb");
+      const hint = receiveBomb();
+      if (hint) say(...hint);
+      else noir("bomb");
     } else if (it.power) {
       noir("gun");
     } else if (it.id === "manju") {
@@ -418,7 +418,6 @@
     Story.persist();
   }
 
-  const BOMB_MAX_SHOP = 5;
   const bombCount = () => Math.max(0, Story.data.bombStock | 0);
   // 買った銃を、持ち物のあいているマスへ。いっぱいなら false
   function addGun(w, power) {

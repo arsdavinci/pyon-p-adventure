@@ -6,24 +6,19 @@
   // ---- セリフ（声の台本にも入る。["だれ", "日本語", "English"]） ----
   const LINES = {
     intro: [
-      ["yana", "前から敵が走ってきます。A でジャンプして、上から踏んでみてください。", "An enemy is running at you. Press A to jump and stomp on it."]
+      ["yana", "敵がきますよ。近くにきたら、ぴょんと 頭にのってみましょう！", "Here comes an enemy! When it gets close, jump onto its head."]
     ],
     now: [
-      ["yana", "いまです！ A！", "Now! Press A!"]
+      ["yana", "いまです！ ぴょーん！", "Now! Jump!"]
     ],
     stomped: [
       ["pyon", "あれ？ 踏んだのに、こいつやられんじょ！ ふつうのゲームじゃったら、踏んだら倒せるもんでないか？", "Huh? I stomped it and it's still up! In most games, stomping beats them!"],
       ["yana", "この宇宙の敵は、踏まれてもひよるだけです。目を回しとるあいだは、さわっても平気ですけん。", "Enemies here just get dizzy when stomped. While they're dizzy, touching them is safe."],
-      ["yana", "とどめは光線銃です。X か Y で撃ってみてください。", "Finish it with your ray gun. Press X or Y to shoot."]
+      ["yana", "目を回しているうちに、光線銃で ねらってみましょう！", "While it’s dizzy, give your ray gun a try!"]
     ],
-    // 撃つ練習で、X・Y 以外を押したり、なかなか撃たなかったりしたとき（順番に、だんだん荒くなる）
-    nag1: [["yana", "X か Y を押してください。", "Press X or Y."]],
-    nag2: [["yana", "X！と Y！ですってば！", "X! And Y! I said X and Y!"]],
-    nag3: [["yana", "えーーーくす！とー！ワイ！！！", "EEEX! AAAND! WHYYY!!!"]],
-    nag4: [["yana", "わざとですよね？", "You're doing this on purpose, aren't you?"]],
-    nag5: [["yana", "私はいいですよ。ここで何時間いても", "I don't mind. We can stay here for hours."]],
-    nag6: [["yana", "あなたの大切な時間をどうぞ無駄にしてください", "Please, go ahead and waste your precious time."]],
-    nagAuto: [["yana", "私が勝手に押します！", "Fine, I'll press it myself!"]],
+    nag1: [["yana", "ぴょんぴーさん、ねらいは ばっちり。あとは ひと押しです！", "Your aim is spot on, Pyon-P. Just tap the shoot button!"]],
+    nag2: [["pyon", "お星さまが くるくるしとる！ いまがチャンスじゃな。", "Look at those stars spinning! This is my chance."]],
+    nagAuto: [["yana", "いっしょに いきますよ。せーの、ピュン！", "Let’s take this shot together. Ready… zap!"]],
     defeated: [
       ["pyon", "やったじょ！ 踏んでひよらせて、撃ってとどめじゃな。", "Got it! Stomp to make them dizzy, then shoot to finish!"],
       ["yana", "そのとおりです。ここからは、自由に進んでください。", "Exactly. From here on, go wherever you like."]
@@ -33,29 +28,9 @@
       ["yana", "うばわれた光線銃は、その敵を上からふむと落とします。ひろえば取りもどせますよ。", "Stomp that enemy from above and it will drop your ray gun. Pick it up to get it back."]
     ],
     stolenNow: [
-      ["yana", "いまです！ A で踏み返してください！", "Now! Press A and stomp it back!"]
+      ["yana", "いまです！ ジャンプで踏み返しましょう！", "Now! Jump and stomp it back!"]
     ],
-    // 合成の練習部屋（★の扉）をスルーしようとしたとき。さわるたびに、ヤナビスがだんだん荒くなる
-    gate1: [
-      ["yana", "ポータルです！ そこの入口に入ってみましょう！ ……よくスルーできますね！", "A portal! Go in that entrance! ...How can you just walk past it?!"],
-      ["pyon", "なんや、めんどくさいなぁ。", "Ugh, what a hassle."]
-    ],
-    gate2: [
-      ["yana", "なんで！！ 入りましょうってば！", "Why?! Go in, I said!"]
-    ],
-    gate3: [
-      ["yana", "ぴょんぴーさん、聞こえてますか？ 入口はうしろです。う・し・ろ！", "Pyon-P, can you hear me? The entrance is behind you. BE-HIND!"],
-      ["pyon", "わかっとるって……。", "I know, I know..."]
-    ],
-    gate4: [
-      ["yana", "……いいかげんにしてください。入れって言うとるでしょうが！", "...That's enough. I'm TELLING you to go in!"]
-    ],
-    gate5: [
-      ["yana", "もう知りません。わたしが入れます。", "That's it. I'll put you in myself."]
-    ],
-    gatePushed: [
-      ["pyon", "そんなんあり！？", "You can DO that?!"]
-    ],
+    portal: [["yana", "★のとびらで 武器を合成できますよ。↑で寄り道、右にすすむと冒険のつづきです！", "Want to fuse two weapons? Press ↑ at the star door, or keep going right to explore!"]],
     regained: [
       ["pyon", "落としたじょ！ 吾輩の光線銃、かえしてもらうけんな！", "It dropped it! I'm taking my ray gun back!"],
       ["yana", "落ちた光線銃にさわれば、また使えます。", "Touch the dropped ray gun to use it again."]
@@ -86,7 +61,7 @@
   let nagT = 0;
   let nagWant = false;
   let wrongWas = true;
-  let autoShoot = 0; // 0 = まだ / 1 = 言い終わるのを待つ / 2 = ヤナビスが X を押している
+  let autoShoot = 0; // 0 = まだ / 1 = 言い終わるのを待つ / 2 = ヤナビスが射撃のお手本を見せている
   let autoT = 0;
   let bounceNext = null;
   // どの場面でも止まったままにならないための見はり
@@ -105,7 +80,6 @@
   const aDown = () => keys.has("Space") || gamepadState.jump;
 
   function reset() {
-    if (autoShoot === 2) keys.delete("KeyX");
     nagN = 0; nagT = 0; nagWant = false; autoShoot = 0; autoT = 0;
     phaseT = 0; lastPhase = null; missN = 0; farT = 0;
     phase = null;
@@ -189,92 +163,24 @@
     return true;
   }
 
-  // ---- 1-1：★の扉（合成の練習部屋）に入るまで、少し先から進めない ----
-  const GATE_AHEAD = 600; // 扉からこれだけ右に、見えないかべ
-  let gateCount = 0;
-  let gateTouching = false;
-  let gatePush = null; // { yx, t, said }
-
-  function gateDoor() {
-    if (currentCourse !== 0 || (courses[0]?.areaNo ?? 0) !== 0) return null;
-    if (typeof fuseGuideDone === "function" && fuseGuideDone()) return null;
-    const door = (level.doors ?? []).find(d => d.bonus);
-    if (!door || state.areaMemo?.[door.to]?.dropsGiven) return null;
-    return door;
-  }
-
-  function updateGate(dt) {
-    const door = gateDoor();
-    if (!door) {
-      gatePush = null;
-      return false;
+  // 初めての合成部屋は寄り道。入口の手前を安全にして、近づいたときだけ声をかける。
+  function inviteToWorkshop() {
+    if (currentCourse !== 0 || (courses[0].areaNo ?? 0) !== 0 || fuseGuideDone() || state.workshopInvited) return;
+    const door = level.doors?.find(d => d.bonus);
+    if (!door || state.areaMemo?.[door.to]?.dropsGiven) return;
+    if (!state.workshopCleared) {
+      state.workshopCleared = true;
+      state.enemies = state.enemies.filter(e => e.boss || e === enemy || e.x < door.x - 500 || e.x > door.x + 1500);
     }
-    const wallX = door.x + GATE_AHEAD;
-    // 扉に入るまで、かべの手前と先の敵は出さない
-    if (state.gateFiltered !== true) {
-      state.gateFiltered = true;
-      state.enemies = state.enemies.filter(e => e.boss || e.x < door.x - 500 || e.x > wallX + 900 || e === enemy);
+    if (!phase && Math.abs(state.player.x - door.x) < 270) {
+      state.workshopInvited = true;
+      say("portal");
     }
-    const p = state.player;
-    // 「ポータルです！」のあいだは、カメラがポータル（扉）をまん中に映す。言い終わったら、ぴょんぴーにもどる
-    if (state.cameraLook) {
-      const look = state.cameraLook;
-      look.t += dt;
-      p.vx = 0;
-      if (look.t > 1.6 && (!Chat.busy() || look.t > 9)) {
-        state.cameraLook = null;
-        return false;
-      }
-      updateCamera(dt);
-      return true;
-    }
-    if (gatePush) {
-      // ヤナビスが飛んできて、ぴょんぴーを扉まで押していく
-      gatePush.t += dt;
-      const target = door.x + door.w / 2 - p.w / 2;
-      if (gatePush.t < 0.9) {
-        // 右から飛んでくる
-        gatePush.yx += (p.x + p.w + 6 - gatePush.yx) * Math.min(1, dt * 6);
-      } else {
-        if (!gatePush.said) {
-          gatePush.said = true;
-          Chat.say(LINES.gatePushed, true);
-        }
-        p.facing = 1;
-        p.x = Math.max(target, p.x - 300 * dt);
-        gatePush.yx = p.x + p.w + 6;
-        if (p.x <= target + 1 && !FX.transitioning() && gatePush.t > 1.6) {
-          gatePush = null;
-          enterArea(door.to, door.spawnX);
-          return true;
-        }
-      }
-      p.vx = 0;
-      updateCamera(dt);
-      return true;
-    }
-    if (p.x + p.w > wallX) {
-      p.x = wallX - p.w;
-      p.vx = Math.min(0, p.vx);
-      if (!gateTouching) {
-        gateTouching = true;
-        gateCount += 1;
-        playSfx("locked", p.x);
-        if (gateCount >= 5) {
-          Chat.say(LINES.gate5, true);
-          gatePush = { yx: state.camera + VIEW_W + 80, t: 0, said: false };
-        } else {
-          Chat.say(LINES[`gate${gateCount}`], true);
-          state.cameraLook = { x: door.x + door.w / 2, y: door.y + door.h / 2, t: 0 };
-        }
-      }
-    } else if (p.x + p.w < wallX - 80) gateTouching = false;
-    return false;
   }
 
   // プレイ中に毎フレーム呼ぶ。true を返したら、そのフレームは画面を止める（ほかの更新をしない）
   function update(dt) {
-    if (updateGate(dt)) return true;
+    inviteToWorkshop();
     if (!phase) return false;
     const a = aDown();
     const aFresh = a && !aWas;
@@ -342,7 +248,6 @@
         return true;
       case "shoot": {
         if (!enemy.alive) {
-          if (autoShoot === 2) keys.delete("KeyX");
           autoShoot = 0;
           phase = "talkDone";
           return true;
@@ -359,7 +264,6 @@
         }
         // ヤナビスが撃ちはじめて4秒たっても倒れないときは、そのまま倒す（どんなときも止まらない）
         if (autoShoot === 2 && autoT > 4) {
-          keys.delete("KeyX");
           damageEnemy(enemy, 99);
           return false;
         }
@@ -368,30 +272,28 @@
           const pl = state.player;
           pl.facing = enemy.x + enemy.w / 2 >= pl.x + pl.w / 2 ? 1 : -1;
         }
-        // ヤナビスが代わりに X を押す（押したりはなしたりして、何発も撃つ）
+        // ヤナビスのお手本の経過時間を進める
         if (autoShoot === 2) {
           autoT += dt;
-          if (autoT % 0.3 < 0.12) keys.add("KeyX"); else keys.delete("KeyX");
           return false;
         }
         if (autoShoot === 1) {
           if (!Chat.busy()) { autoShoot = 2; autoT = 0; }
           return false;
         }
-        const p = state.player;
-        // 撃っているあいだは、なにも言わない
-        if (p.shootHeld) { nagT = 0; nagWant = false; return false; }
-        // X・Y 以外のボタン（A・B）を押した
-        const wrong = keys.has("Space") || keys.has("KeyB") || gamepadState.jump || gamepadState.run;
+        // ボタンを押し直しているあいだは練習を見守る。
+        if (shootButtonHeld() && !state.player.shootHeld) { nagT = 0; nagWant = false; return false; }
+        // 射撃に使わないボタンを押した
+        const wrong = keys.has("Space") || keys.has("KeyB") || gamepadState.jump || gamepadState.run || (bombReady() && bombButtonHeld());
         if (wrong && !wrongWas) nagWant = true;
         wrongWas = wrong;
         // しばらく撃たなかったときも、次のひとことへ
         if (!Chat.busy()) nagT += dt;
-        if (nagN > 0 && nagT > 7) nagWant = true;
+        if (nagT > 7) nagWant = true;
         if (nagWant && !Chat.busy()) {
           nagWant = false;
           nagT = 0;
-          if (nagN < 6) {
+          if (nagN < 2) {
             nagN += 1;
             say(`nag${nagN}`);
           } else {
@@ -523,7 +425,6 @@
 
   // ぴょんぴーの操作をしぼる
   function lock() {
-    if (gatePush) return { move: false, jump: false, shoot: false };
     switch (phase) {
       case "approach":
       case "waitJump":
@@ -555,18 +456,16 @@
 
   // チュートリアル中は、いつものかけあいは出さない
   function muteChat() {
-    return !!phase || !!gatePush;
+    return !!phase;
   }
 
   // 画面のまん中に出す、大きなボタンの案内
   function draw() {
-    drawGatePush();
     if (!phase) return;
-    let text = null;
-    const pc = typeof controlMode !== "undefined" && controlMode === "pc";
-    if (phase === "waitJump" || phase === "thiefWait") text = pc ? L("Space でジャンプ！", "Space to jump!") : L("Ⓐ でジャンプ！", "Ⓐ to jump!");
-    else if (phase === "shoot") text = pc ? L("X / J で撃とう！", "X / J to shoot!") : L("Ⓧ か Ⓨ で撃とう！", "Ⓧ or Ⓨ to shoot!");
-    if (!text) return;
+    const jump = phase === "waitJump" || phase === "thiefWait";
+    if (!jump && phase !== "shoot") return;
+    const button = playButtonLabel(jump ? "jump" : "attack");
+    const text = jump ? L(button + " でジャンプ！", button + " to jump!") : L(button + " で うとう！", button + " to shoot!");
     const t = performance.now() / 1000;
     const s = 1 + Math.sin(t * 6) * 0.05;
     ctx.save();
@@ -588,38 +487,8 @@
     ctx.restore();
   }
 
-  // ぴょんぴーを押しこむヤナビス
-  function drawGatePush() {
-    if (!gatePush) return;
-    const im = Story.img.portraitYana;
-    const p = state.player;
-    const sx = (gatePush.yx - state.camera) * ZOOM;
-    const bob = Math.sin(performance.now() / 120) * 4;
-    const sy = (p.y + p.h - state.cameraY) * ZOOM + bob;
-    const h = 120;
-    ctx.save();
-    if (Story.ok(im)) {
-      const w = h * (im.naturalWidth / im.naturalHeight);
-      ctx.drawImage(im, sx, sy - h, w, h);
-    } else {
-      ctx.fillStyle = "#e0559f";
-      ctx.beginPath();
-      ctx.arc(sx + 40, sy - 50, 40, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    if (gatePush.t > 0.9) {
-      ctx.font = "900 30px system-ui, sans-serif";
-      ctx.fillStyle = "#ffffff";
-      ctx.strokeStyle = "#e0559f";
-      ctx.lineWidth = 6;
-      ctx.textAlign = "center";
-      ctx.strokeText(L("えいっ！", "Hup!"), sx + 30, sy - h - 10);
-      ctx.fillText(L("えいっ！", "Hup!"), sx + 30, sy - h - 10);
-    }
-    ctx.restore();
-  }
-
   window.Tutorial = { LINES, stageStart, update, moveEnemy, onStomp, onStolen, lock, consumeJump, muteChat, draw, reset, active: () => !!phase,
+    demoShooting: () => phase === "shoot" && autoShoot === 2 && autoT % 0.3 < 0.12,
     // チュートリアル中の、練習の相手ではない敵（終わるまでかくしておく）
     hidesEnemy: e => !!phase && !!enemy && e !== enemy && !e.boss };
 })();

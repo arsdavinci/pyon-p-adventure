@@ -555,7 +555,7 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
         if (flags.gateT > 14) once("gateHint", "needDouble");
       } else if (p.x > (course.gateEdge ?? 600) - 260) once("gateHave", "needDoubleHave");
     }
-    if (state.time < 30 && state.time > 0) once("timeLow", "timeLow");
+    if (stageHasTimeLimit() && !Tutorial.active() && state.time < 30 && state.time > 0) once("timeLow", "timeLow");
     if (state.hp <= 1 && state.lives > 0) once("hpLow", "hpLow");
     else if (state.hp >= 3) flags.hpLow = false;
     if (state.lives === 1) once("lastLife", "lastLife");
@@ -699,7 +699,7 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
           Story.persist();
           const on = Story.data.bombOn;
           playSfx(on ? "equip" : "cursor");
-          gearSay(on ? "爆弾をそうびしたじょ！ Xでポイじゃ" : "爆弾をはずしたじょ。Xも銃になる", on ? "Bombs equipped! Toss with X" : "Bombs off. X shoots again");
+          gearSay(on ? "爆弾をそうびしたじょ！" : "爆弾をはずしたじょ。", on ? "Bombs equipped!" : "Bombs off.");
         } else if (id === "manju") {
           const r = Shop.useManju();
           if (r === true) gearSay("ぶどうまんじゅう、もぐもぐ！", "Munch munch, Grape Manju!");
@@ -747,7 +747,7 @@ ${desc}`;
       gearBox.appendChild(b);
     };
     if (bombs > 0) {
-      add("bomb", L("ネコネオン爆弾", "Neko Neon Bomb"), L("タップで そうび／はずす（そうび中は Xで投げる）", "Tap to equip / unequip (X throws while equipped)"), b => {
+      add("bomb", L("ネコネオン爆弾", "Neko Neon Bomb"), L("タップで そうび／はずす", "Tap to equip / unequip"), b => {
         const n = document.createElement("i");
         n.textContent = bombOn ? `×${bombs}` : "OFF";
         if (!bombOn) b.classList.add("is-off");

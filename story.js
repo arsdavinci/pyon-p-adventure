@@ -1383,7 +1383,7 @@
     const starTotal = courseStarTotal(currentCourse);
     const coins = state.coinItems.filter(c => c.taken).length;
     const coinTotal = state.coinItems.length;
-    const timeBonus = Math.ceil(Math.max(0, state.time) / 5) * 5;
+    const timeBonus = Settings.data.timeLimit || opts.boss ? Math.ceil(Math.max(0, state.time) / 5) * 5 : 0;
     const perfect = coinTotal > 0 && coins === coinTotal;
     const scoreFrom = state.score;
     state.score += timeBonus + (perfect ? 100 : 0) + (opts.boss ? 200 : 0);
@@ -2177,7 +2177,7 @@
     if (filePlaying) filePlaying.audio.muted = !soundEnabled;
     // 残り時間が少なくなったら、曲を速くしてせかす（60秒から）
     const inStage = ["playing", "paused", "inventory", "respawning", "dying"].includes(state.mode) && typeof state.time === "number";
-    const hurry = inStage && state.time <= HURRY_TIME && !courses[currentCourse]?.bossStage;
+    const hurry = inStage && stageHasTimeLimit() && !Tutorial.active() && state.time <= HURRY_TIME;
     if (hurry && !lastHurry && state.mode === "playing" && typeof playTone === "function") {
       // 「急いで！」の合図
       for (let i = 0; i < 3; i++) playTone({ start: i * 0.16, freq: 1320, endFreq: 1180, duration: 0.11, type: "square", gain: 0.035 });

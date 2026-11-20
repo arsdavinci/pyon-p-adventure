@@ -22,7 +22,7 @@ const scoreCount = document.querySelector("#scoreCount");
 const lifeCount = document.querySelector("#lifeCount");
 const timeCount = document.querySelector("#timeCount");
 // ゲームのバージョン（更新するたびに1つ上げる。sw.js の CACHE_NAME の番号と同じにする）
-const GAME_VERSION = 237;
+const GAME_VERSION = 238;
 { const v = document.querySelector("#gameVersion"); if (v) v.textContent = `Ver.1(${(GAME_VERSION / 100).toFixed(2)})`; } // 232 → Ver.1(2.32)
 // スマホのゲーム機の画面では、ロゴの大きさと位置がちがうので、ロゴの帯の右はしのすぐ下に合わせて置く（PC は styles.css の位置）
 function placeGameVersion() {
@@ -237,7 +237,7 @@ const WEAPON_STAGES = [
 const TEXT = {
   ja: {
     title: "ぴょんぴーの大冒険",
-    controls: "移動: ← → / A D、ジャンプ: Space、ダッシュ: Shift、攻撃: J / X / Y",
+    controls: "移動: ← → / A D、ジャンプ: Space、ダッシュ: Shift、攻撃: J / X",
     start: "Start",
     next: "Spaceでスタート",
     allClear: "全クリア！",
@@ -277,7 +277,7 @@ const TEXT = {
   },
   en: {
     title: "Pyon-P Adventure",
-    controls: "Move: Arrow / A D. Jump: Space. Dash: Shift. Attack: J / X / Y.",
+    controls: "Move: Arrow / A D. Jump: Space. Dash: Shift. Attack: J / X.",
     start: "Start",
     next: "Press Space to start",
     allClear: "All Clear!",
@@ -572,6 +572,7 @@ let pendingCourseStart = false;
 let language = localStorage.getItem("pyonpLanguage") || "ja";
 // 端末は毎回自動で判定する。タイトルのボタンで切り替えたときだけ、その回のあいだ手動の選択を優先する
 let controlMode = Handheld.detect();
+let lastInputDevice = null;
 
 let currentCourse = 0;
 let unlockedCourse = 0;
@@ -3284,7 +3285,7 @@ function newState() {
     bossDeathTimer: 0,
     bossDeathTick: 0,
     bossDeathBoss: null,
-    time: 120,
+    time: courses[currentCourse].areas ? 520 : courses[currentCourse].bossStage ? 180 : 120,
     score: 0,
     coinTotal: 0,
     kakiTotal: 0,
@@ -3433,16 +3434,6 @@ function updateCamera(dt, snap = false) {
     state.viewZoom = (state.viewZoom ?? ZOOM) + (wantZoom - (state.viewZoom ?? ZOOM)) * Math.min(1, dt * 4);
     const lookDown = keys.has("ArrowDown") || keys.has("KeyS") || gamepadState.down;
     if (lookDown && p.grounded) targetY = Math.max(targetY, Math.min(camY + 12, p.y - 60));
-  }
-  // ポータルを見せるときは、そこを画面のまん中に
-  if (state.cameraLook && !snap) {
-    const look = state.cameraLook;
-    const lx = clamp(look.x - VIEW_W / 2, 0, WORLD_WIDTH - VIEW_W);
-    state.camera += (lx - state.camera) * Math.min(1, dt * 3.2);
-    targetY = look.y - VIEW_H * 0.55;
-    targetY = clamp(targetY, minY, maxY);
-    state.cameraY = camY + (targetY - camY) * Math.min(1, dt * 3.2);
-    return;
   }
   targetY = clamp(targetY, minY, maxY);
   if (snap) {
@@ -3684,9 +3675,6 @@ function continueFromGameOver() {
   const stageStarsGot = state.stageStarsGot;
   state = newState();
   restoreCampaignSnapshot(snapshot);
-  // 復活しても、時間・取った★・エリアの入口は、ふつうに始めたときと同じにする（前は時間が 120 秒しかなかった）
-  if (courses[currentCourse].areas) state.time = 520;
-  else if (courses[currentCourse].bossStage) state.time = 180;
   state.areaMemo = areaMemo;
   state.stageStarsGot = stageStarsGot;
   const continueSpawn = courses[currentCourse].spawn;
@@ -3779,10 +3767,6 @@ function beginCourse(index) {
   state = newState();
   restoreCampaignSnapshot(snapshot);
   for (const p of state.inventoryItems ?? []) if (p) markDex(p);
-  // エリアが何個もあるステージは、時間を長めにする
-  if (courses[index].areas) state.time = 520;
-  // ボス戦は、弱い武器でも落ちついて戦えるように長め
-  else if (courses[index].bossStage) state.time = 180;
   state.mode = "playing";
   pendingCourseStart = false;
   overlay.classList.add("hidden");
@@ -4009,8 +3993,9 @@ function update(dt) {
   state.stompBoostTimer = Math.max(0, (state.stompBoostTimer ?? 0) - dt);
   state.stompLateBoostTimer = Math.max(0, (state.stompLateBoostTimer ?? 0) - dt);
   state.playClock = (state.playClock ?? 0) + dt;
-  // ボス戦は、時間を気にせず じっくり戦えるように、時間がへらない
-  if (!courses[currentCourse]?.bossStage) {
+  // 操作を練習している時間は制限時間に数えない。
+  const timerRunning = stageHasTimeLimit() && !Tutorial.active();
+  if (timerRunning) {
     const before = Math.ceil(state.time);
     state.time -= dt;
     const after = Math.ceil(state.time);
@@ -4021,7 +4006,7 @@ function update(dt) {
     }
   }
   // 時間切れ：HP にかかわらず、その場でアウト（ヤナビス「時間切れです！」→ ぴょんぴー「ゆっくりしすぎたわぁ」）
-  if (state.time <= 0) {
+  if (timerRunning && state.time <= 0) {
     state.time = 0;
     startDeathFall(false, true);
     updateHud();
@@ -4868,7 +4853,7 @@ function updatePlayer(dt) {
   // ダッシュを始めたとき（動いていて、地面にいるとき）に「シュタッ」
   if (wantsRun && !p.runWas && dxInput && p.grounded && state.mode === "playing") playSfx("dash", p.x);
   p.runWas = wantsRun;
-  const wantsShoot = (!tut || tut.shoot) && (keys.has("KeyX") || keys.has("KeyY") || keys.has("KeyJ") || gamepadState.shoot || (!bombReady() && bombButtonHeld()));
+  const wantsShoot = (!tut || tut.shoot) && (shootButtonHeld() || Tutorial.demoShooting());
   const trait = currentStageTrait();
   const slippery = trait === "iceSlide" && !Shop.has("spikeShoes");
   // しゃがむ（地面で↓）。しゃがんだまま←→で、ほふく前進。敵の弾は頭の上を通りすぎる
@@ -4945,7 +4930,7 @@ function updatePlayer(dt) {
   p.aim = p.crouch ? (p.facing < 0 ? Math.PI : 0) : playerAimAngle(p, dxInput);
   const shootFresh = wantsShoot && !p.shootHeld;
   p.shootHeld = wantsShoot;
-  updateBombThrow(p);
+  updateBombThrow(p, !tut);
   // Lv1〜4 の銃は、ボタンを押した回数だけ撃つ。Lv5 からは押しっぱなしで連射できる（weaponAutoFire）。
   // 撃てない間に押した分は、ほんの少しだけ覚えておいて、撃てるようになったらすぐ出す
   if (shootFresh) p.shotBuffer = 0.2;
@@ -5043,7 +5028,7 @@ function updateSwimmingPlayer(dt) {
   const dxInput = (movingRight ? 1 : 0) - (movingLeft ? 1 : 0);
   const doubleTapRun = isDoubleTapRunActive(dxInput);
   const wantsRun = isRunHeld(dxInput) || doubleTapRun;
-  const wantsShoot = keys.has("KeyX") || keys.has("KeyY") || keys.has("KeyJ") || gamepadState.shoot || (!bombReady() && bombButtonHeld());
+  const wantsShoot = shootButtonHeld();
   const dx = dxInput;
   const dy = (movingDown ? 1 : 0) - (movingUp ? 1 : 0);
   const len = Math.hypot(dx, dy) || 1;
@@ -5107,7 +5092,7 @@ function updateFlyingPlayer(dt) {
   p.vy += ((dy / len) * speed - p.vy) * Math.min(1, dt * 7);
   if (dx) p.facing = dx;
   p.aim = p.facing < 0 ? Math.PI : 0;
-  const wantsShoot = keys.has("KeyX") || keys.has("KeyY") || keys.has("KeyJ") || gamepadState.shoot || (!bombReady() && bombButtonHeld());
+  const wantsShoot = shootButtonHeld();
   const shootFresh = wantsShoot && !p.shootHeld;
   p.shootHeld = wantsShoot;
   updateBombThrow(p);
@@ -8125,14 +8110,49 @@ const BOMB_MAX = 5;
 const BOMB_RADIUS = 320; // 爆発の広さ（画面の大部分の敵をまきこむ）
 const bombStock = () => (typeof Story !== "undefined" ? Math.max(0, Story.data.bombStock | 0) : 0);
 // 爆弾は、そうびの欄で「装備」して、1個以上あるときだけ投げる。そうでないときは、爆弾ボタンも銃のボタンになる
-const bombButtonHeld = () => keys.has("KeyC") || keys.has("KeyK") || !!gamepadState.bomb;
+const bombButtonHeld = () => keys.has("KeyY") || keys.has("KeyC") || keys.has("KeyK") || !!gamepadState.bomb;
 const bombReady = () => bombStock() > 0 && typeof Story !== "undefined" && Story.data.bombOn !== false;
-function updateBombThrow(p) {
-  const wants = bombReady() && bombButtonHeld();
-  const fresh = wants && !p.bombHeld;
-  p.bombHeld = wants;
-  if (!fresh || state.mode !== "playing") return;
+function shootButtonHeld() {
+  return keys.has("KeyX") || keys.has("KeyJ") || gamepadState.shoot ||
+    (!bombReady() && !state.player.bombThrownThisPress && bombButtonHeld());
+}
+
+// 画面のボタンは設定どおりに、キーボードは実際に押せるキーを表示する。
+function playButtonLabel(action) {
+  const keyboard = lastInputDevice === "keyboard" || (!lastInputDevice && controlMode === "pc");
+  if (keyboard) {
+    if (action === "jump") return "Space";
+    if (action === "bomb") return "Y";
+    return bombReady() ? "X / J" : "X / Y";
+  }
+  return Settings.BUTTONS.filter(b => {
+    const assigned = Settings.data.buttons[b];
+    return assigned === action || (action === "attack" && assigned === "bomb" && !bombReady());
+  }).map(b => ({ A: "Ⓐ", B: "Ⓑ", X: "Ⓧ", Y: "Ⓨ" })[b]).join(" / ");
+}
+
+// 店とステージで初入手の記録を共有する。保存は入手処理の最後に行う。
+function receiveBomb() {
+  const first = !Story.data.seen.bombControls && bombStock() === 0;
+  Story.data.bombStock = Math.min(BOMB_MAX, bombStock() + 1);
+  Story.data.bombOn = true;
+  Story.data.seen.bombControls = true;
+  if (!first) return null;
+  const button = playButtonLabel("bomb");
+  return button
+    ? [`爆弾ゲット！ ${button} でポイッと投げられるよ！`, `Got a bomb! Press ${button} to toss it!`]
+    : ["爆弾ゲット！ せっていで「ばくだん」のボタンをえらんでね。", "Got a bomb! Assign a Bomb button in Settings to throw it."];
+}
+
+function updateBombThrow(p, allowed = true) {
+  const held = bombButtonHeld();
+  const fresh = held && !p.bombHeld;
+  p.bombHeld = held;
+  if (!held) p.bombThrownThisPress = false;
+  if (!allowed || !fresh || !bombReady() || state.mode !== "playing") return;
+  p.bombThrownThisPress = true;
   Story.data.bombStock = bombStock() - 1;
+  Story.data.seen.bombControls = true; // 以前のセーブから持ち越した爆弾も入手済み
   Story.persist();
   const swim = isUnderwaterStage();
   const dir = p.facing || 1;
@@ -8471,11 +8491,11 @@ function drawStarSubstitute(x, y, alt) {
 function takeStarSubstitute(s, alt) {
   if (alt === "manju") stashBudouManju({ x: s.x, y: s.y, w: 0, h: 0 });
   else if (alt === "bomb") {
-    Story.data.bombStock = Math.min(BOMB_MAX, bombStock() + 1);
-    Story.data.bombOn = true; // ひろった爆弾は、すぐ使えるように装備する（どうぐタブに入る）
+    const hint = receiveBomb();
+    if (hint) Chat.say([["yana", ...hint]], true);
     Story.persist();
     playSfx("equip", s.x);
-    FX.floater(s.x, s.y - 30, language === "ja" ? "ネコネオン爆弾 ゲット！ どうぐに入れたじょ（Xで投げる）" : "Bomb get! In your gear (X to throw)", { color: "#ffffff", stroke: "#ff5fc8", size: 22, life: 1.4 });
+    FX.floater(s.x, s.y - 30, language === "ja" ? "ネコネオン爆弾 ゲット！" : "Neko-Neon Bomb!", { color: "#ffffff", stroke: "#ff5fc8", size: 22, life: 1.4 });
   } else {
     state.kakiTotal += 15;
     state.coinTotal += 15;
@@ -8912,7 +8932,7 @@ function updateHud() {
   if (peaCount) peaCount.textContent = state.peaTotal;
   scoreCount.textContent = state.score;
   lifeCount.textContent = `${"★".repeat(clamp(state.lives, 0, MAX_LIVES))}${"☆".repeat(MAX_LIVES - clamp(state.lives, 0, MAX_LIVES))}`;
-  timeCount.textContent = courses[currentCourse]?.bossStage && state.mode !== "worldMap" ? "∞" : Math.max(0, Math.ceil(state.time));
+  timeCount.textContent = !stageHasTimeLimit() && state.mode !== "worldMap" ? "∞" : Math.max(0, Math.ceil(state.time));
 }
 
 function draw() {
@@ -9835,10 +9855,14 @@ function drawHpMeter() {
 }
 
 // 制限時間（HP の左）。のこり 30 秒からは赤くゆれる。ボス戦は ∞
+function stageHasTimeLimit() {
+  return Settings.data.timeLimit && !courses[currentCourse]?.bossStage;
+}
+
 function drawTimeMeter() {
-  const boss = !!courses[currentCourse]?.bossStage;
+  const limited = stageHasTimeLimit();
   const t = Math.max(0, Math.ceil(state.time ?? 0));
-  const low = !boss && t <= 30;
+  const low = limited && t <= 30;
   const x = canvas.width - 366 - 130; // HP の左（右はしは 全画面・♪ のボタンと重なることがある）
   const y = 18;
   const w = 118;
@@ -9860,7 +9884,7 @@ function drawTimeMeter() {
   ctx.textAlign = "right";
   ctx.font = `900 26px ${FX.FONT}`;
   ctx.fillStyle = low ? "#ff3d7f" : "#5a3d9a";
-  ctx.fillText(boss ? "∞" : String(t), x + w - 14 + wob, y + h / 2 + 2);
+  ctx.fillText(limited ? String(t) : "∞", x + w - 14 + wob, y + h / 2 + 2);
   ctx.restore();
 }
 
@@ -11152,7 +11176,7 @@ function openSaveMenu(loadOnly = false) {
 
 // ---------- せってい画面（タイトルの「せってい」から） ----------
 // 音のオン・オフ、BGM・セリフ・効果音の大きさ（0〜10）、A/B/X/Y ボタンの役目
-const SETTINGS_ROWS = ["sound", "bgm", "voice", "sfx", "pad", "A", "B", "X", "Y", "reset", "close"];
+const SETTINGS_ROWS = ["sound", "bgm", "voice", "sfx", "pad", "A", "B", "X", "Y", "timeLimit", "reset", "close"];
 
 // ---------- 画面のゲーム機の A・B・X・Y のならび（せっていで切りかえ） ----------
 // スイッチ式の本体の絵（assets/gb-controls-switch.webp・gb-land-switch.webp）がそろったら、切りかえられる
@@ -11231,6 +11255,9 @@ function settingsChange(row, dir) {
     applyVolumes();
   } else if (Settings.BUTTONS.includes(row)) {
     Settings.cycleButton(row, dir);
+  } else if (row === "timeLimit") {
+    Settings.data.timeLimit = !Settings.data.timeLimit;
+    Settings.save();
   } else if (row === "pad") {
     Settings.setPad(Settings.data.pad === "switch" ? "classic" : "switch");
     applyPadLayout();
@@ -11275,10 +11302,10 @@ function settingsRowRect(i) {
   const colW = 570;
   const left = canvas.width / 2 - colW - 12;
   const right = canvas.width / 2 + 12;
-  // 左：音・BGM・セリフ・効果音・ボタンのならび（5つ） / 右：A・B・X・Y / 下：もどす・とじる
+  // 左：音・BGM・セリフ・効果音・ボタンのならび（5つ） / 右：A・B・X・Y・制限時間 / 下：もどす・とじる
   if (i < 5) return { x: left, y: 100 + i * 90, w: colW, h: 78 };
-  if (i < 9) return { x: right, y: 100 + (i - 5) * 90, w: colW, h: 78 };
-  return { x: i === 9 ? left : right, y: 560, w: colW, h: 72 };
+  if (i < 10) return { x: right, y: 100 + (i - 5) * 90, w: colW, h: 78 };
+  return { x: SETTINGS_ROWS[i] === "reset" ? left : right, y: 560, w: colW, h: 72 };
 }
 
 function handleSettingsPointer(px, py) {
@@ -11325,7 +11352,7 @@ function drawSettingsMenu() {
     sound: ja ? "音" : "Sound", bgm: "BGM", voice: ja ? "セリフ" : "Voices", sfx: ja ? "効果音" : "Effects",
     A: ja ? "A ボタン" : "A button", B: ja ? "B ボタン" : "B button", X: ja ? "X ボタン" : "X button", Y: ja ? "Y ボタン" : "Y button",
     reset: ja ? "はじめの設定にもどす" : "Reset to default", close: ja ? "とじる" : "Close",
-    pad: ja ? "ならび" : "Layout"
+    pad: ja ? "ならび" : "Layout", timeLimit: ja ? "時間制限" : "Timer"
   };
   SETTINGS_ROWS.forEach((row, i) => {
     const r = settingsRowRect(i);
@@ -11367,6 +11394,10 @@ function drawSettingsMenu() {
       ctx.fillStyle = "#5a3d9a";
       ctx.font = `900 30px ${FX.FONT}`;
       ctx.fillText(String(v), vx + vw + 32, r.y + r.h / 2 + 1);
+    } else if (row === "timeLimit") {
+      ctx.fillText("◀", vx, r.y + r.h / 2 + 1);
+      ctx.fillText("▶", vx + vw, r.y + r.h / 2 + 1);
+      ctx.fillText(Settings.data.timeLimit ? (ja ? "あり" : "On") : (ja ? "なし" : "Off"), vx + vw / 2, r.y + r.h / 2 + 1);
     } else if (row === "pad") {
       // ボタンのならび：スイッチ式（上X・右A） / いままでの形（上Y・右B）
       ctx.fillText("◀", vx, r.y + r.h / 2 + 1);
@@ -12411,7 +12442,7 @@ function useInventoryGear(id) {
     Story.data.bombOn = Story.data.bombOn === false;
     Story.persist();
     playSfx(Story.data.bombOn ? "equipSet" : "cursor");
-    say(language === "ja" ? (Story.data.bombOn ? "爆弾をそうびしたじょ！ Xでポイじゃ！" : "爆弾をはずしたじょ。Xも銃になるじょ。") : (Story.data.bombOn ? "Bombs equipped! Toss with X!" : "Bombs off. X shoots again."));
+    say(language === "ja" ? (Story.data.bombOn ? "爆弾をそうびしたじょ！" : "爆弾をはずしたじょ。") : (Story.data.bombOn ? "Bombs equipped!" : "Bombs off."));
     return;
   }
   if (id === "manju") {
@@ -12525,7 +12556,7 @@ function drawInventoryGearCard(r, id) {
   ctx.fillStyle = "#7f67c8";
   ctx.font = `900 21px ${FX.FONT}`;
   const act = id === "manju" ? (ja ? "A で食べる（ライフとHPが満タン）" : "A: eat (full lives & HP)")
-    : id === "bomb" ? (on ? (ja ? "A ではずす（Xは銃になる）" : "A: unequip (X shoots)") : (ja ? "A でそうび（Xで投げる）" : "A: equip (X throws)"))
+    : id === "bomb" ? (on ? (ja ? "A ではずす" : "A: unequip") : (ja ? "A でそうび" : "A: equip"))
     : on ? (ja ? "A ではずす" : "A: take off") : (Shop.isShoe(id) ? (ja ? "A ではく（くつは1足だけ）" : "A: wear (one pair only)") : (ja ? "A でつける" : "A: put on"));
   ctx.fillText(pcKeys(act), cx, r.y + r.h - 47);
   ctx.restore();
@@ -12961,7 +12992,7 @@ function inventoryFocusComment(power = state.weaponPower) {
   }
   const gearHere = mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST && !power ? inventoryGearAt(state.inventorySelection) : null;
   if (inventoryGearTab() && !gearHere && mode === INVENTORY_FOCUS_MODES.INSIDE_ITEM_LIST) return "ぴょんぴー「どうぐは、よろず屋で買えるじょ。くつ・マント・ぶどうまんじゅうは、ここに入るけんな！」";
-  if (gearHere === "bomb") return gearIsOn("bomb") ? "ぴょんぴー「ネコネオン爆弾じゃ！ Xでポイっと投げたら、まわりの敵がまとめてドカーンじゃ！」" : "ぴょんぴー「爆弾、はずしとるじょ。Aでそうびしたら、Xで投げられるじょ。」";
+  if (gearHere === "bomb") return gearIsOn("bomb") ? "ぴょんぴー「ネコネオン爆弾じゃ！ ポイっと投げたら、まわりの敵がまとめてドカーンじゃ！」" : "ぴょんぴー「爆弾、はずしとるじょ。Aでそうびできるじょ。」";
   if (gearHere === "manju") return "ぴょんぴー「ぶどうまんじゅうじゃ！ Aで食べたら、ライフもHPも満タンじょ！」";
   if (gearHere) {
     const shoe = Shop.isShoe(gearHere);
@@ -15482,6 +15513,7 @@ function activeGamepad() {
   const pads = Array.from(navigator.getGamepads ? navigator.getGamepads() : []).filter(p => p && p.connected !== false && p.buttons?.length);
   if (!pads.length) return null;
   const busy = pads.find(p => p.buttons.some(b => b?.pressed) || p.axes.some((v, i) => i < 2 && Math.abs(v) > 0.6));
+  if (busy) lastInputDevice = "pad";
   if (busy && busy.index !== gamepadState.padIndex) {
     gamepadState.padIndex = busy.index;
     if (typeof FX !== "undefined" && state) {
@@ -15502,6 +15534,7 @@ function updateGamepad() {
     gamepadState.jump = false;
     gamepadState.run = false;
     gamepadState.shoot = false;
+    gamepadState.bomb = false;
     gamepadState.start = false;
     gamepadState.select = false;
     return;
@@ -15703,6 +15736,7 @@ function updateGamepad() {
 }
 
 window.addEventListener("keydown", event => {
+  lastInputDevice = "keyboard";
   unlockAudio();
   const code = normalizeInputCode(event);
   if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", "Tab", "Enter"].includes(code)) event.preventDefault();
@@ -16525,6 +16559,7 @@ function inGameplay() {
 }
 
 function pressTouchControl(code) {
+  lastInputDevice = "touch";
   unlockAudio();
   const mapped = Settings.mapCode(code, inGameplay());
   touchHeldCodes[code] = mapped;
@@ -16534,8 +16569,7 @@ function pressTouchControl(code) {
 function releaseTouchControl(code) {
   const mapped = touchHeldCodes[code] ?? code;
   delete touchHeldCodes[code];
-  handleKeyUp(mapped);
-  if (mapped !== code) keys.delete(code);
+  if (!Object.values(touchHeldCodes).includes(mapped)) handleKeyUp(mapped);
 }
 
 for (const eventName of ["contextmenu", "selectstart", "dragstart"]) {
