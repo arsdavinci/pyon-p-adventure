@@ -23,7 +23,7 @@ const scoreCount = document.querySelector("#scoreCount");
 const lifeCount = document.querySelector("#lifeCount");
 const timeCount = document.querySelector("#timeCount");
 // ゲームのバージョン（更新するたびに1つ上げる。sw.js の CACHE_NAME の番号と同じにする）
-const GAME_VERSION = 242;
+const GAME_VERSION = 243;
 { const v = document.querySelector("#gameVersion"); if (v) v.textContent = `Ver.1(${(GAME_VERSION / 100).toFixed(2)})`; } // 232 → Ver.1(2.32)
 // スマホのゲーム機の画面では、ロゴの大きさと位置がちがうので、ロゴの帯の右はしのすぐ下に合わせて置く（PC は styles.css の位置）
 function placeGameVersion() {

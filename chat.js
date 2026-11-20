@@ -407,8 +407,11 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
     if (typeof Story === "undefined") return false;
     if (Story.data.seen[key]) return false;
     Story.data.seen[key] = true;
+    firstTimeHits += 1;
     return true;
   }
+  let viaOnce = false;
+  let firstTimeHits = 0; // event() が「いまのセリフは、はじめての1回だけのものか」を見分けるのに使う
   // ---- ステージごとのひとりごと（1つ）と、ヤナビスとのなにげない会話（2つ）。一度言ったら、もう言わない ----
   // ステージに入って、ひとりごと → 会話 → 会話 の順。だれもしゃべっていない静かなときにだけ流す
   let stageT = 0;
@@ -482,7 +485,7 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
       Story.persist();
       lastAmbientClock = clock;
       lastAmbientAt = stageT;
-      say(lines);
+      say(markKeep(lines));
       return;
     }
   }
@@ -491,6 +494,39 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
   const REPEAT_RATE = { manjuEat: 0.6, bombThrow: 0.15, spring: 0.12, coins100: 0.5, hpLow: 0.3, breath: 0.2, gunBack: 0.4, combo: 0.1, starGet: 0.1, keyGet: 0.2, respawn: 0.15, stageClear: 0.3, hurt: 0.15, death: 0.3, stolen: 0.25, stompBoost: 0.1, switchUsed: 0.1, chestOpen: 0.3, doorOpen: 0.3, fuse: 0.1, weaponGet: 0.3, idle: 0.5 };
 
   const URGENT = { bossStart: 1, bossHurt: 1, stageStart: 1, map: 1, gameOver: 1, bossHalf: 1, stolen: 1, canFuse: 1, fallPit: 1, death: 1, timeUp: 1 };
+
+  // ---- だいじなセリフ（はじめての1回だけの話・ステージのはじめの話・その場の説明）は、いつものひとことで上書きしない ----
+  // だいじなセリフには keep の印をつける。それを話しているあいだは、
+  //   ・何度も聞ける いつものひとこと（「ピヨっとる」など）は、言わずにとばす
+  //   ・べつの だいじなセリフは、切らずに うしろにつづける
+  // 場面がかわるとき（ステージのはじめ・マップ・ボス登場・ゲームオーバー）だけは、今までどおり切りかえる
+  const SCENE_CHANGE = { stageStart: 1, map: 1, gameOver: 1, bossStart: 1 };
+  const markKeep = lines => { for (const l of lines) if (Array.isArray(l)) l.keep = true; return lines; };
+  // この出来事が、いま「はじめての1回だけの話」になりうるか（なりえないなら、だいじな話のあいだは何もしない）
+  function mayBeFirst(name) {
+    const seen = typeof Story !== "undefined" ? Story.data.seen : {};
+    if (name === "stomp") return !seen.tipStomp || (typeof stageLabel === "function" && stageLabel() === "1-4" && !seen.tipStompGrumble);
+    // うばわれたときの話は、4回目までが1回きり
+    if (name === "stolen") return !seen.tipStolen || (seen.stolenN ?? 0) <= 3;
+    if (name === "weaponGet") return !seen.tipWeapon;
+    if (name === "canFuse") return !seen.tipFuseHowTo || !seen.tipFuseRemind;
+    if (name === "stageClear") return !seen.tipShop;
+    return false;
+  }
+
+  function keepTalking() {
+    if (queue.some(l => l.keep)) return true;
+    if (!cur || !cur.keep) return false;
+    if (shown < [...L(cur[1], cur[2])].length) return true;
+    if (typeof Voice !== "undefined" && Voice.busy && Voice.busy()) return true;
+    return voiced ? quietT < 0.6 : hold < 1.2 + [...L(cur[1], cur[2])].length * 0.045;
+  }
+
+  // ほかのファイルから呼ぶ say（その場の説明・チュートリアル）は、だいじなセリフとしてあつかう
+  function sayKeep(lines, urgent = false) {
+    if (!lines || !lines.length) return;
+    say(markKeep(lines), urgent);
+  }
 
   function say(lines, urgent = false) {
     if (!lines || !lines.length) return;
@@ -512,6 +548,9 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
       stageT = 0;
       lastAmbientAt = 0;
     }
+    // だいじな話のあいだは、いつものひとことは 作りもしない（「このステージではもう言った」の印や、順番のカウントを むだに進めない）
+    const guarded = !SCENE_CHANGE[name] && keepTalking();
+    if (guarded && !viaOnce && !mayBeFirst(name)) return;
     const cd = COOLDOWN[name] ?? 0;
     if (cd && lastAt[name] !== undefined && clock - lastAt[name] < cd) return;
     lastAt[name] = clock;
@@ -525,15 +564,29 @@ const QUIET_MODES = ["cutscene", "movie", "title", "credits", "bossIntro", "boss
       if (Story.data.seen[key] && Math.random() >= rate) return;
       Story.data.seen[key] = true;
     }
+    const hitsBefore = firstTimeHits;
     const lines = builder(arg);
-    say(lines, !!URGENT[name] || !!lines?.urgent);
+    if (!lines || !lines.length) return;
+    // はじめての1回だけの話と、ステージのはじめの話は、だいじなセリフ
+    const keep = firstTimeHits !== hitsBefore || name === "stageStart" || viaOnce;
+    if (keep) markKeep(lines);
+    const urgent = !!URGENT[name] || !!lines.urgent;
+    if (guarded) {
+      if (!keep) return;   // いつものひとことは、だいじな話のじゃまをしない
+      queue.push(...lines); // だいじな話どうしは、切らずに うしろにつづける
+      idleT = Math.max(idleT, 9);
+      return;
+    }
+    say(lines, urgent);
     idleT = Math.max(idleT, 9);
   }
 
   function once(flag, name) {
     if (flags[flag]) return;
     flags[flag] = true;
-    event(name);
+    // ステージに1回だけの知らせも、だいじなセリフ（とばさずに、うしろにつづける）
+    viaOnce = true;
+    try { event(name); } finally { viaOnce = false; }
   }
 
   function poll() {
@@ -1019,5 +1072,5 @@ ${L("タップで つける／はずす", "Tap to put on / take off")}`, b => {
     return voiced ? quietT < 0.6 : hold < 1.2 + total * 0.045;
   }
 
-  window.Chat = { event, say, update, layout, drawToast, refresh, busy, next, show, release, paintAvatar, usingPanel };
+  window.Chat = { event, say: sayKeep, update, layout, drawToast, refresh, busy, next, show, release, paintAvatar, usingPanel };
 })();
